@@ -144,7 +144,7 @@ pydantic==2.10.6
     # via
     #   fastapi
     #   mesop
-pydantic-core==2.27.2
+pydantic-core==2.33.0
     # via pydantic
 pygments==2.19.1
     # via rich
