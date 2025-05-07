@@ -161,7 +161,7 @@ matplotlib==3.10.1
     # via mediapy
 matplotlib-inline==0.1.7
     # via ipython
-mediapy==1.2.3
+mediapy==1.2.4
     # via veo-app
 mesop==1.0.1
     # via veo-app
