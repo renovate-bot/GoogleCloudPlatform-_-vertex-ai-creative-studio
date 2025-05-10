@@ -13,7 +13,7 @@ asttokens==3.0.0
     # via stack-data
 blinker==1.9.0
     # via flask
-cachecontrol==0.14.2
+cachecontrol==0.14.3
     # via firebase-admin
 cachetools==5.5.2
     # via google-auth
