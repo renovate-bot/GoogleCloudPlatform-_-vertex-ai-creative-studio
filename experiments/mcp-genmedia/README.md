@@ -9,7 +9,29 @@ This repository contains Model Context Protocol (MCP) servers that enable MCP cl
 
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 
-## Documentation
+### Install the Vertex AI Genmedia MCP Servers
+
+Install the MCP Servers for Genmedia locally.
+
+You will need [Go](https://go.dev/doc/install) to install the Go versions of the MCP Servers for Genmedia.
+
+The MCP Servers for Genmedia are in preview on a feature branch of the Genmedia Creative Studio project, [mcp-genmedia-servers](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/mcp-genmedia-servers/experiments/mcp-genmedia).
+
+```bash
+# install the Chirp 3 HD Voices MCP Server
+go install github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-chirp3-go@v0.1.0-alpha
+
+# install the Imagen 3 MCP Server
+go install github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-imagen-go@v0.1.0-alpha
+
+# install the Veo 2 MCP Server
+go install github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-veo-go@v0.1.0-alpha
+```
+
+
+
+
+## Genmedia MCP Tools docs
 
 Each of the servers can be used in STDIO and SSE mode (Streamable HTTP coming soon). The default is STDIO.
 
@@ -34,8 +56,6 @@ The MCP Server for Chirp 3 HD Voices has the following tools:
 
 * `chirp_tts` - synthesize audio using a Chirp 3 HD Voice
 * `list_chirp_voices` - list available voices for a particular language
-
-
 
 ## Authentication
 
