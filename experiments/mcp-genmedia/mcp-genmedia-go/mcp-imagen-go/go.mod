@@ -1,4 +1,4 @@
-module mcp-imagen-go
+module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-imagen-go
 
 go 1.24.3
 
