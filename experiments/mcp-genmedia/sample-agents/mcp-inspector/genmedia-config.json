@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "veo-go": {
+      "command": "mcp-veo-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000",
+        "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
+        "PROJECT_ID": "veo-testing"
+      }
+    },
+    "imagen-go": {
+      "command": "mcp-imagen-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000",
+        "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
+        "PROJECT_ID": "ghchinoy-genai-sa"
+      }
+    },
+    "chirp3-go": {
+      "command": "mcp-chirp3-go",
+      "env": {
+        "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
+        "PROJECT_ID": "ghchinoy-genai-sa"
+      }
+    }
+  }
+}
