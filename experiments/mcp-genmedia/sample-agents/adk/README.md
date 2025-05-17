@@ -38,4 +38,4 @@ source .venv/bin/activate
 adk web
 ```
 
-![adk web screenshot](./assets/adk-genmedia-mcp.png)]
+![adk web screenshot](./assets/adk-genmedia-mcp.png)
