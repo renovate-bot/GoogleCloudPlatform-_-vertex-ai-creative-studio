@@ -31,29 +31,30 @@ project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 async def create_agent():
     """Gets tools from MCP Server."""
     common_exit_stack = AsyncExitStack()
-
-    # MCP Server (STDIO)
+     
+    # MCP Client (STDIO)
+    # assumes you've installed the MCP server on your path
     veo, _ = await MCPToolset.from_server(
         connection_params=StdioServerParameters(
-            command="./mcp-veo-go",
-            env={
-                "PROJECT_ID": project_id,
-            },
+            command="mcp-veo-go", 
+            env=dict(os.environ, PROJECT_ID=project_id),
         ),
         async_exit_stack=common_exit_stack,
     )
 
+    # MCP Client (STDIO)
+    # assumes you've installed the MCP server on your path
     chirp3, _ = await MCPToolset.from_server(
         connection_params=StdioServerParameters(
-            command="./mcp-chirp3-go",
-            env={
-                "PROJECT_ID": project_id,
-            },
+            command="mcp-chirp3-go",
+            env=dict(os.environ, PROJECT_ID=project_id),
         ),
         async_exit_stack=common_exit_stack,
     )
 
-    # MCP Server (SSE)
+    # MCP Client (SSE)
+    # assumes you've started the MCP server separately
+    # e.g. mcp-imagen-go --transport sse
     remote_imagen, _ = await MCPToolset.from_server(
         connection_params=SseServerParams(url="http://localhost:8080/sse"),
         async_exit_stack=common_exit_stack,
