@@ -4,4 +4,5 @@ use (
 	./mcp-chirp3-go
 	./mcp-imagen-go
 	./mcp-veo-go
+	./mcp-lyria-go
 )
