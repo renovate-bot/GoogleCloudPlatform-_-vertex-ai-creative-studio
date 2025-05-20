@@ -102,7 +102,7 @@ google-cloud-firestore==2.20.2 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-resource-manager==1.14.2
     # via google-cloud-aiplatform
-google-cloud-storage==2.19.0
+google-cloud-storage==3.1.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
