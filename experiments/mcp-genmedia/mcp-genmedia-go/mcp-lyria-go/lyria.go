@@ -39,7 +39,7 @@ import (
 var (
 	// MCP Server settings
 	transport string
-	version   = "1.0.9" // Incremented version
+	version   = "1.0.10" // Incremented version
 
 	// Google Cloud settings - typically set via environment variables
 	gcpProjectID        string // PROJECT_ID for all GCP services, including Lyria
@@ -160,7 +160,7 @@ func main() {
 // lyriaGenerateMusicHandler handles requests to the lyria_generate_music tool.
 func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	startTime := time.Now()
-	params := request.Params.Arguments
+	params := request.GetArguments()
 
 	prompt, ok := params["prompt"].(string)
 	if !ok || strings.TrimSpace(prompt) == "" {

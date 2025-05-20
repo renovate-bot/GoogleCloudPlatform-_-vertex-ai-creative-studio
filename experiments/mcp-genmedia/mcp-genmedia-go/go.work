@@ -5,4 +5,5 @@ use (
 	./mcp-imagen-go
 	./mcp-veo-go
 	./mcp-lyria-go
+	./mcp-avtool-go
 )
