@@ -83,7 +83,7 @@ def imagen_content(app_state: me.state):
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Imagen", "image")
+            header("Imagen Creative Studio", "image")
 
             with me.box(style=_BOX_STYLE):
                 me.text(
@@ -532,6 +532,7 @@ def on_click_rewrite_prompt(e: me.ClickEvent):
     """Click Event to rewrite prompt."""
     state = me.state(PageState)
     if state.image_prompt_input:
+        print("got prompt, rewriting...")
         rewritten = rewrite_prompt(state.image_prompt_input)
         state.image_prompt_input = rewritten
         state.image_prompt_placeholder = rewritten

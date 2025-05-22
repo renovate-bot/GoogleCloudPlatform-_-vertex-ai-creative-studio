@@ -48,12 +48,6 @@ class Default:
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
-    display_image_models: list[ImageModel] = field(
-        default_factory=lambda: [
-            {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN3_FAST},
-            {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN3},
-        ]
-    )
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",
@@ -63,6 +57,14 @@ class Default:
             "composition",
         ]
     )
+    
+# display_image_models: list[ImageModel] = field(
+#     default_factory=lambda: [
+#         {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN3_FAST},
+#         {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN3},
+#     ]
+# )
+
 
 
 WELCOME_PAGE = [

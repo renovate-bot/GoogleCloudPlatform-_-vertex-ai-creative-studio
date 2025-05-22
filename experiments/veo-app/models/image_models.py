@@ -12,23 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-from google.genai import types
+#import json
 
+#from google.cloud.aiplatform import telemetry
+from typing import TypedDict
+
+from google.genai import types
 from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
-from google.cloud.aiplatform import telemetry
 
-from models.model_setup import (
-    ImagenModelSetup,
-)
+#from models.model_setup import (
+#    ImagenModelSetup,
+#)
 
-""" Image Models type definitions """
-from typing import TypedDict
+
+from typing import Optional
+from dotenv import load_dotenv
+from google import genai
+from config.default import Default
 
 
 class ImageModel(TypedDict):
@@ -36,6 +41,34 @@ class ImageModel(TypedDict):
 
     display: str
     model_name: str
+
+
+
+class ImagenModelSetup:
+    """Imagen model setup"""
+    @staticmethod
+    def init(
+        project_id: Optional[str] = None,
+        location: Optional[str] = None,
+        model_id: Optional[str] = None,
+    ):
+        """Init method"""
+        config = Default()
+        if not project_id:
+            project_id = config.PROJECT_ID
+        if not location:
+            location = config.LOCATION
+        if not model_id:
+            model_id = config.MODEL_ID
+        if None in [project_id, location, model_id]:
+            raise ValueError("All parameters must be set.")
+        print(f"initiating genai client with {project_id} in {location}")
+        client = genai.Client(
+            vertexai=config.INIT_VERTEX,
+            project=project_id,
+            location=location,
+        )
+        return client
 
 @retry(
     wait=wait_exponential(
