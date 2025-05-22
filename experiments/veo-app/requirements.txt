@@ -28,8 +28,8 @@ cffi==1.17.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.2
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
-click==8.2.0
+click==8.2.1
+click==8.2.1
     # via
     #   flask
     #   uvicorn
