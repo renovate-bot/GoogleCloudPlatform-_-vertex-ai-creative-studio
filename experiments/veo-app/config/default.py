@@ -1,6 +1,8 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
+
+from models.image_models import ImageModel
 
 load_dotenv(override=True)
 
@@ -37,11 +39,35 @@ class Default:
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-base-001")
     LYRIA_PROJECT_ID: str = os.environ.get("LYRIA_PROJECT_ID")
     MEDIA_BUCKET: str = os.environ.get("MEDIA_BUCKET", f"{PROJECT_ID}-assets")
+    
+    # Imagen
+    MODEL_IMAGEN2 = "imagegeneration@006"
+    MODEL_IMAGEN_NANO = "imagegeneration@004"
+    MODEL_IMAGEN3_FAST = "imagen-3.0-fast-generate-001"
+    MODEL_IMAGEN3 = "imagen-3.0-generate-002"
+    
+    IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
+    
+    display_image_models: list[ImageModel] = field(
+        default_factory=lambda: [
+            {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN3_FAST},
+            {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN3},
+        ]
+    )
+    image_modifiers: list[str] = field(
+        default_factory=lambda: [
+            "aspect_ratio",
+            "content_type",
+            "color_tone",
+            "lighting",
+            "composition",
+        ]
+    )
 
 
 WELCOME_PAGE = [
     {"id": 0, "display": "Home", "icon": "home", "route": "/"},
-    {"id": 6, "display": "Imagen", "icon": "image", "group": "foundation"},
+    {"id": 6, "display": "Imagen", "icon": "image", "route": "/imagen", "group": "foundation"},
     {
         "id": 10,
         "display": "Veo",

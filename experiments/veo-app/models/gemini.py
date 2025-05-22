@@ -18,6 +18,8 @@ from typing import Dict, Optional
 
 from google.genai import types
 
+from google.cloud.aiplatform import telemetry
+
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -28,6 +30,8 @@ from tenacity import (
 from models.model_setup import (
     GeminiModelSetup,
 )
+
+from config.rewriters import MAGAZINE_EDITOR_PROMPT
 
 # Initialize client and default model ID for rewriter
 # The analysis function will use its own specific model ID for now.
@@ -95,7 +99,7 @@ def analyze_audio_with_gemini(
     )
 
     # Define the specific model for audio analysis (as per your sample)
-    analysis_model_id = "gemini-2.5-flash-preview-04-17"
+    analysis_model_id = "gemini-2.5-flash-preview-05-20"
 
     # Prepare the audio part using from_uri
     try:
@@ -170,10 +174,10 @@ Output this as JSON.
     generation_config_params = types.GenerateContentConfig(
         system_instruction=system_instruction_text,
         safety_settings=safety_settings_list,
-        #temperature=1.0,  # Corrected: float value
-        #top_p=1.0,  # Corrected: float value
+        # temperature=1.0,  # Corrected: float value
+        # top_p=1.0,  # Corrected: float value
         # seed=0, # Seed might not be available in all models or SDK versions, or might be int
-        #max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
+        # max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
         response_mime_type="application/json",  # This is key for JSON output
         response_schema=schema_json,
     )
@@ -200,7 +204,7 @@ Output this as JSON.
             parsed_json = json.loads(response.text)
             print(f"Successfully parsed analysis JSON: {parsed_json}")
             return parsed_json
-            #return response.text
+            # return response.text
         else:
             # Handle cases where response.text might be empty or parts are structured differently
             # This part might need adjustment based on actual API response structure for JSON
@@ -223,3 +227,96 @@ Output this as JSON.
         # The retry decorator will handle re-raising if all attempts fail.
         # If not using retry, you'd raise e here.
         raise  # Re-raise for tenacity or the caller
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def image_critique(original_prompt: str, img_uris: list[str]) -> str:
+    """Image critic
+
+    Args:
+        img_uris (list[str]): a list of GCS URIs of images to critique
+
+    Returns:
+        str: critique of images
+    """
+
+    critic_prompt = MAGAZINE_EDITOR_PROMPT.format(original_prompt)
+
+    prompt_parts = []
+
+    for idx, image_url in enumerate(img_uris):
+        prompt_parts.append(f"""image {idx+1}""")
+        prompt_parts.append(types.Part.from_uri(file_uri=image_url, mime_type="image/png"))
+
+    prompt_parts.append = types.Part.from_text(text=critic_prompt)
+
+    safety_settings_list = [
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+    ]
+    contents = [
+        types.Content(role="user", parts=prompt_parts),
+    ]
+    with telemetry.tool_context_manager("creative-studio"):
+        try:
+            print(f"Sending request to Gemini model: {model_id}")
+
+            response = client.models.generate_content(  # Or client.generate_content if client is a model instance
+                model=model_id,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_modalities=["TEXT"],
+                    safety_settings=safety_settings_list,
+                ),
+            )
+
+            print("Received response from Gemini.")
+            print(f"{response}")
+
+            # Assuming the response.text contains the JSON string due to response_mime_type
+            if response.text:
+                parsed_json = json.loads(response.text)
+                print(f"Successfully parsed analysis JSON: {parsed_json}")
+                return parsed_json
+                # return response.text
+            else:
+                # Handle cases where response.text might be empty or parts are structured differently
+                # This part might need adjustment based on actual API response structure for JSON
+                if response.parts:
+                    # Try to assemble from parts if text is empty but parts exist (less common for JSON)
+                    json_text_from_parts = "".join(
+                        part.text for part in response.parts if hasattr(part, "text")
+                    )
+                    if json_text_from_parts:
+                        parsed_json = json.loads(json_text_from_parts)
+                        print(
+                            f"Successfully parsed analysis JSON from parts: {parsed_json}"
+                        )
+                        return parsed_json
+                print("Warning: Gemini response text was empty.")
+                return None  # Or raise an error
+
+        except Exception as e:
+            print(f"Error during Gemini API call for audio analysis: {e}")
+            # The retry decorator will handle re-raising if all attempts fail.
+            # If not using retry, you'd raise e here.
+            raise  # Re-raise for tenacity or the caller
