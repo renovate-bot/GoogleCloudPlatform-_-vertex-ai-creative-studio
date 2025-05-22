@@ -15,22 +15,24 @@
 
 import json
 import random
-import requests
 import time
 from dataclasses import dataclass, field
 
 import mesop as me
-from google.cloud.aiplatform import telemetry
+import requests
 
+# from google.cloud.aiplatform import telemetry
 from components.header import header
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
 from config.default import Default
-from config.rewriters import  REWRITER_PROMPT
+from config.rewriters import REWRITER_PROMPT
+from models.gemini import image_critique, rewriter
 from models.image_models import ImageModel
-from models.gemini import image_critique
+from models.image_models import generate_images as image_generation
+from svg_icon.svg_icon_component import svg_icon_component
 
 config = Default()
 
@@ -458,18 +460,22 @@ def generate_images(input_txt: str):
     if state.image_negative_prompt_input:
         print(f"negative prompt: {state.image_negative_prompt_input}")
     print(f"model: {state.image_model_name}")
-    image_generation_model = ImageGenerationModel.from_pretrained(
-        state.image_model_name
-    )
-    response = image_generation_model.generate_images(
-        prompt=prompt,
-        add_watermark=True,
-        aspect_ratio=getattr(state, "image_aspect_ratio"),
-        number_of_images=int(state.imagen_image_count),
-        output_gcs_uri=f"gs://{config.IMAGE_BUCKET}",
-        language="auto",
-        negative_prompt=state.image_negative_prompt_input,
-    )
+
+    # image_generation_model = ImageGenerationModel.from_pretrained(
+    #     state.image_model_name
+    # )
+    # response = image_generation_model.generate_images(
+    #     prompt=prompt,
+    #     add_watermark=True,
+    #     aspect_ratio=getattr(state, "image_aspect_ratio"),
+    #     number_of_images=int(state.imagen_image_count),
+    #     output_gcs_uri=f"gs://{config.IMAGE_BUCKET}",
+    #     language="auto",
+    #     negative_prompt=state.image_negative_prompt_input,
+    # )
+
+    response = image_generation(state.image_model_name, prompt)
+
     for idx, img in enumerate(response.images):
         print(
             f"generated image: {idx} size: {len(img._as_base64_string())} at {img._gcs_uri}"
@@ -539,35 +545,16 @@ def rewrite_prompt(original_prompt: str):
         original_prompt (str): artists's original prompt
     """
     # state = me.state(State)
-    with telemetry.tool_context_manager("creative-studio"):
-        rewriting_model = GenerativeModel(cfg.MODEL_GEMINI_MULTIMODAL)
-    model_config = config.gemini_settings
-    generation_cfg = GenerationConfig(
-        temperature=model_config.generation["temperature"],
-        max_output_tokens=model_config.generation["max_output_tokens"],
-    )
-    safety_filters = {
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: model_config.safety_settings[
-            "DANGEROUS_CONTENT"
-        ],
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: model_config.safety_settings[
-            "HATE_SPEECH"
-        ],
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: model_config.safety_settings[
-            "SEXUALLY_EXPLICIT"
-        ],
-        HarmCategory.HARM_CATEGORY_HARASSMENT: model_config.safety_settings[
-            "HARASSMENT"
-        ],
-    }
-    response = rewriting_model.generate_content(
-        REWRITER_PROMPT.format(original_prompt),
-        generation_config=generation_cfg,
-        safety_settings=safety_filters,
-    )
+    all_together_now = REWRITER_PROMPT.format(original_prompt)
+
+    try:
+        rewritten = rewriter(all_together_now, "")
+    except Exception as e:
+        print(f"an error {e}")
+
     print(f"asked to rewrite: '{original_prompt}")
-    print(f"rewritten as: {response.text}")
-    return response.text
+    print(f"rewritten as: {rewritten}")
+    return rewritten
 
 
 _BOX_STYLE = me.Style(
@@ -590,10 +577,10 @@ def generate_compliment(generation_instruction: str):
     start_time = time.time()  # Record the starting time
     critique = ""
     current_error_message = ""
-    
+
     try:
         critique = image_critique(generation_instruction, state.image_output)
-        
+
     # Catch specific exceptions you anticipate
     except ValueError as err:
         print(f"ValueError caught: {err}")
@@ -644,5 +631,6 @@ def generate_compliment(generation_instruction: str):
     state.image_commentary = critique
     state.is_loading = False
     yield
-    print("I don't listen to what art critics say. I don't know anybody who needs a critic to find out what art is. - Basquiat")
-    
+    print(
+        "I don't listen to what art critics say. I don't know anybody who needs a critic to find out what art is. - Basquiat"
+    )

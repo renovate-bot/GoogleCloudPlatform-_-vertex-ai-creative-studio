@@ -251,7 +251,9 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
 
     for idx, image_url in enumerate(img_uris):
         prompt_parts.append(f"""image {idx+1}""")
-        prompt_parts.append(types.Part.from_uri(file_uri=image_url, mime_type="image/png"))
+        prompt_parts.append(
+            types.Part.from_uri(file_uri=image_url, mime_type="image/png")
+        )
 
     prompt_parts.append = types.Part.from_text(text=critic_prompt)
 
@@ -284,8 +286,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
                 model=model_id,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    response_modalities=["TEXT"],
-                    safety_settings=safety_settings_list,
+                    response_modalities=["TEXT"], safety_settings=safety_settings_list
                 ),
             )
 
