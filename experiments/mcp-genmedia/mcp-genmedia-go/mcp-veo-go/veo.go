@@ -164,7 +164,7 @@ func main() {
 		),
 		mcp.WithString("model",
 			mcp.DefaultString("veo-2.0-generate-001"),
-			mcp.Description("Model to use for video generation (e.g., veo-2.0-generate-001)."),
+			mcp.Description("Model to use for video generation (e.g., veo-2.0-generate-001, veo-3.0-generate-preview)."),
 		),
 		mcp.WithNumber("num_videos",
 			mcp.DefaultNumber(1),
