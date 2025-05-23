@@ -278,7 +278,7 @@ requests==2.32.3
     #   google-genai
 rsa==4.9.1
     # via google-auth
-shapely==2.1.0
+shapely==2.1.1
     # via google-cloud-aiplatform
 shortuuid==1.0.13
     # via veo-app
