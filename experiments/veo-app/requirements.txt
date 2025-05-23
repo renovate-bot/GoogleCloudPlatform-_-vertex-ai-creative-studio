@@ -183,7 +183,7 @@ msgpack==1.1.0
     # via
     #   cachecontrol
     #   mesop
-numpy==2.2.5
+numpy==2.2.6
     # via
     #   contourpy
     #   matplotlib
