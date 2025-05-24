@@ -51,7 +51,7 @@ google-api-core==2.24.2
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-api-python-client==2.169.0
+google-api-python-client==2.170.0
     # via google-adk
 google-auth==2.40.2
     # via

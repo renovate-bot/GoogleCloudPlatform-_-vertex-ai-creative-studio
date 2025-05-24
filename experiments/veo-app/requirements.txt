@@ -71,8 +71,8 @@ google-api-core==2.24.2
     #   google-cloud-firestore
     #   google-cloud-resource-manager
     #   google-cloud-storage
-google-api-python-client==2.169.0
-google-api-python-client==2.169.0
+google-api-python-client==2.170.0
+google-api-python-client==2.170.0
     # via firebase-admin
 google-auth==2.40.2
 google-auth==2.40.2
