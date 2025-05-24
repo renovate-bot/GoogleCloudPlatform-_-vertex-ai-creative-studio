@@ -41,8 +41,9 @@ var (
 	version   = "1.0.2" // Incremented version
 
 	// Google Cloud settings - typically set via environment variables
-	gcpProjectID string // PROJECT_ID for GCS operations
-	gcpLocation  string // LOCATION (not directly used by FFMpeg server but good for consistency)
+	gcpProjectID      string // PROJECT_ID for GCS operations
+	gcpLocation       string // LOCATION (not directly used by FFMpeg server but good for consistency)
+	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
 )
 
 const (
@@ -56,12 +57,13 @@ func init() {
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
 }
 
-// getEnv gets an environment variable or returns a default value.
+// getEnv retrieves an environment variable by key. If the variable is not set
+// or is empty, it logs a message and returns the fallback value.
 func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
 	}
-	log.Printf("Environment variable %s not set, using fallback: %s", key, fallback)
+	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
 	return fallback
 }
 
@@ -75,6 +77,11 @@ func loadConfiguration() {
 	}
 	gcpLocation = getEnv("LOCATION", "us-central1")
 	log.Printf("Using GCP Location: %s (primarily for GCS client initialization context if needed).", gcpLocation)
+
+	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper, fallback to empty string
+	if genmediaBucketEnv != "" {
+		log.Printf("Default GCS output bucket configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
+	}
 }
 
 // main is the entry point of the application.
@@ -185,11 +192,20 @@ func downloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
 	}
 	defer client.Close()
 
-	rc, err := client.Bucket(bucketName).Object(objectName).NewReader(ctx)
+	// Create a new context with its own timeout for the GCS operation
+	gcsOpCtx, cancel := context.WithTimeout(ctx, 2*time.Minute) // Use the passed-in ctx as parent
+	defer cancel()
+	rc, err := client.Bucket(bucketName).Object(objectName).NewReader(gcsOpCtx)
 	if err != nil {
 		return fmt.Errorf("Object(%q).NewReader: %w", objectName, err)
 	}
 	defer rc.Close()
+
+	// Ensure destination directory exists
+	destDir := filepath.Dir(localDestPath)
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return fmt.Errorf("os.MkdirAll for directory %s: %w", destDir, err)
+	}
 
 	f, err := os.Create(localDestPath)
 	if err != nil {
@@ -305,8 +321,35 @@ func uploadToGCS(ctx context.Context, bucketName, objectName, contentType string
 
 	obj := client.Bucket(bucketName).Object(objectName)
 	wc := obj.NewWriter(ctx)
-	if contentType != "" {
-		wc.ContentType = contentType
+
+	finalContentType := contentType
+	if finalContentType == "" {
+		ext := strings.ToLower(filepath.Ext(objectName))
+		switch ext {
+		case ".mp3":
+			finalContentType = "audio/mpeg"
+		case ".wav":
+			finalContentType = "audio/wav"
+		case ".mp4":
+			finalContentType = "video/mp4"
+		case ".mov":
+			finalContentType = "video/quicktime"
+		case ".mkv":
+			finalContentType = "video/x-matroska"
+		case ".webm":
+			finalContentType = "video/webm"
+		case ".png":
+			finalContentType = "image/png"
+		case ".jpg", ".jpeg":
+			finalContentType = "image/jpeg"
+		default:
+			log.Printf("uploadToGCS: Could not infer ContentType for extension '%s' of object '%s'. Uploading without explicit ContentType.", ext, objectName)
+		}
+	}
+
+	if finalContentType != "" {
+		wc.ContentType = finalContentType
+		log.Printf("uploadToGCS: Setting ContentType to '%s' for object '%s'", finalContentType, objectName)
 	}
 
 	if _, err := wc.Write(data); err != nil {
@@ -353,12 +396,22 @@ func ffmpegConvertAudioHandler(ctx context.Context, request mcp.CallToolRequest)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_convert_audio_wav_to_mp3", argsMap)
 
 	inputAudioURI, _ := argsMap["input_audio_uri"].(string)
 	outputFileName, _ := argsMap["output_file_name"].(string)
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
-	outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && genmediaBucketEnv != "" {
+		outputGCSBucket = genmediaBucketEnv
+		log.Printf("Handler ffmpeg_convert_audio_wav_to_mp3: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
 
 	if inputAudioURI == "" {
 		return mcp.NewToolResultError("Parameter 'input_audio_uri' is required."), nil
@@ -424,13 +477,23 @@ func ffmpegCombineAudioVideoHandler(ctx context.Context, request mcp.CallToolReq
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_combine_audio_and_video", argsMap)
 
 	inputVideoURI, _ := argsMap["input_video_uri"].(string)
 	inputAudioURI, _ := argsMap["input_audio_uri"].(string)
 	outputFileName, _ := argsMap["output_file_name"].(string)
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
-	outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && genmediaBucketEnv != "" {
+		outputGCSBucket = genmediaBucketEnv
+		log.Printf("Handler ffmpeg_combine_audio_and_video: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
 
 	if inputVideoURI == "" || inputAudioURI == "" {
 		return mcp.NewToolResultError("Parameters 'input_video_uri' and 'input_audio_uri' are required."), nil
@@ -502,6 +565,7 @@ func ffmpegOverlayImageHandler(ctx context.Context, request mcp.CallToolRequest)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_overlay_image_on_video", argsMap)
 
 	inputVideoURI, _ := argsMap["input_video_uri"].(string)
 	inputImageURI, _ := argsMap["input_image_uri"].(string)
@@ -513,7 +577,16 @@ func ffmpegOverlayImageHandler(ctx context.Context, request mcp.CallToolRequest)
 	outputFileName, _ := argsMap["output_file_name"].(string)
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
-	outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && genmediaBucketEnv != "" {
+		outputGCSBucket = genmediaBucketEnv
+		log.Printf("Handler ffmpeg_overlay_image_on_video: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
 
 	if inputVideoURI == "" || inputImageURI == "" {
 		return mcp.NewToolResultError("Parameters 'input_video_uri' and 'input_image_uri' are required."), nil
@@ -583,6 +656,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_concatenate_media_files", argsMap)
 
 	inputMediaURIsRaw, _ := argsMap["input_media_uris"].([]interface{})
 	var inputMediaURIs []string
@@ -595,7 +669,16 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 	outputFileName, _ := argsMap["output_file_name"].(string)
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
-	outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && genmediaBucketEnv != "" {
+		outputGCSBucket = genmediaBucketEnv
+		log.Printf("Handler ffmpeg_concatenate_media_files: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
 
 	if len(inputMediaURIs) == 0 {
 		return mcp.NewToolResultError("Parameter 'input_media_uris' must be a non-empty array of strings."), nil
@@ -712,6 +795,7 @@ func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_adjust_volume", argsMap)
 
 	inputAudioURI, _ := argsMap["input_audio_uri"].(string)
 	volumeDBChangeFloat, paramOK := argsMap["volume_db_change"].(float64) // Renamed ok to paramOK
@@ -723,7 +807,16 @@ func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest)
 	outputFileName, _ := argsMap["output_file_name"].(string)
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
-	outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && genmediaBucketEnv != "" {
+		outputGCSBucket = genmediaBucketEnv
+		log.Printf("Handler ffmpeg_adjust_volume: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
 
 	if inputAudioURI == "" {
 		return mcp.NewToolResultError("Parameter 'input_audio_uri' is required."), nil
@@ -799,6 +892,7 @@ func ffmpegLayerAudioHandler(ctx context.Context, request mcp.CallToolRequest) (
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_layer_audio_files", argsMap)
 
 	inputAudioURIsRaw, _ := argsMap["input_audio_uris"].([]interface{})
 	var inputAudioURIs []string
@@ -811,7 +905,16 @@ func ffmpegLayerAudioHandler(ctx context.Context, request mcp.CallToolRequest) (
 	outputFileName, _ := argsMap["output_file_name"].(string)
 	outputLocalDir, _ := argsMap["output_local_dir"].(string)
 	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
-	outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && genmediaBucketEnv != "" {
+		outputGCSBucket = genmediaBucketEnv
+		log.Printf("Handler ffmpeg_layer_audio_files: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
 
 	if len(inputAudioURIs) == 0 {
 		return mcp.NewToolResultError("Parameter 'input_audio_uris' must be a non-empty array of strings."), nil

@@ -37,9 +37,20 @@ var (
 	project, location string
 	genAIClient       *genai.Client // Global GenAI client
 	transport         string
+	genmediaBucketEnv string        // To store GENMEDIA_BUCKET env var
 )
 
 const version = "1.4.3" // Incremented version for GCS download implementation
+
+// getEnv retrieves an environment variable by key. If the variable is not set
+// or is empty, it logs a message and returns the fallback value.
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		return value
+	}
+	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
+	return fallback
+}
 
 // formatBytes converts a size in bytes to a human-readable string (KB, MB, GB).
 func formatBytes(bytes int64) string {
@@ -131,10 +142,11 @@ func main() {
 		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
 	}
 	// Get Location from environment variable, default to us-central1
-	location = os.Getenv("LOCATION")
-	if location == "" {
-		location = "us-central1"
-		log.Printf("LOCATION environment variable not set, defaulting to %s", location)
+	location = getEnv("LOCATION", "us-central1")
+
+	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
+	if genmediaBucketEnv != "" {
+		log.Printf("Default GCS bucket for URI construction configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
 	}
 
 	// Initialize Google GenAI Client once
@@ -245,16 +257,26 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	}
 
 	gcsOutputURI := ""
-	if uri, ok := request.GetArguments()["gcs_bucket_uri"].(string); ok && strings.TrimSpace(uri) != "" {
-		gcsOutputURI = strings.TrimSpace(uri)
+	gcsBucketUriParam, paramExists := request.GetArguments()["gcs_bucket_uri"].(string)
+	gcsBucketUriParam = strings.TrimSpace(gcsBucketUriParam)
+
+	if gcsBucketUriParam != "" {
+		gcsOutputURI = gcsBucketUriParam
+		// Ensure it starts with gs://
 		if !strings.HasPrefix(gcsOutputURI, "gs://") {
 			gcsOutputURI = "gs://" + gcsOutputURI
 			log.Printf("gcs_bucket_uri did not start with 'gs://', prepended. New URI: %s", gcsOutputURI)
 		}
-		if !strings.HasSuffix(gcsOutputURI, "/") {
-			gcsOutputURI += "/"
-			log.Printf("Appended '/' to gcs_bucket_uri for directory structure. New URI: %s", gcsOutputURI)
-		}
+	} else if genmediaBucketEnv != "" {
+		// Construct default URI using GENMEDIA_BUCKET
+		gcsOutputURI = fmt.Sprintf("gs://%s/imagen_outputs/", genmediaBucketEnv)
+		log.Printf("Handler imagen_t2i: 'gcs_bucket_uri' parameter not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsOutputURI)
+	}
+
+	// Ensure gcsOutputURI (if set) ends with a slash, for API compatibility
+	if gcsOutputURI != "" && !strings.HasSuffix(gcsOutputURI, "/") {
+		gcsOutputURI += "/"
+		log.Printf("Appended '/' to gcsOutputURI for directory structure. New URI: %s", gcsOutputURI)
 	}
 
 	outputDir := ""

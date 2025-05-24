@@ -48,7 +48,8 @@ var (
 	lyriaModelPublisher string // Publisher for Lyria model (LYRIA_MODEL_PUBLISHER)
 	defaultLyriaModelID string // Default Lyria model ID (DEFAULT_LYRIA_MODEL_ID)
 
-	predictionClient *aiplatform.PredictionClient // Global Prediction Client
+	predictionClient  *aiplatform.PredictionClient // Global Prediction Client
+	genmediaBucketEnv string                       // To store GENMEDIA_BUCKET env var
 )
 
 const (
@@ -65,11 +66,13 @@ func init() {
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
 }
 
-// getEnv gets an environment variable or returns a default value.
+// getEnv retrieves an environment variable by key. If the variable is not set
+// or is empty, it logs a message and returns the fallback value.
 func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
 	}
+	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
 	return fallback
 }
 
@@ -96,6 +99,11 @@ func loadConfiguration() {
 		defaultLyriaModelID = fallbackDefaultLyriaModelID
 	} else {
 		log.Printf("Default Lyria Model ID set by environment: %s", defaultLyriaModelID)
+	}
+
+	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
+	if genmediaBucketEnv != "" {
+		log.Printf("Default GCS output bucket configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
 	}
 }
 
@@ -187,8 +195,18 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	}
 
 	gcsBucketParam := ""
-	if val, ok := params["output_gcs_bucket"].(string); ok && strings.TrimSpace(val) != "" {
-		gcsBucketParam = strings.TrimPrefix(strings.TrimSpace(val), "gs://")
+	userProvidedBucket, paramExists := params["output_gcs_bucket"].(string)
+	userProvidedBucket = strings.TrimSpace(userProvidedBucket)
+
+	if userProvidedBucket != "" {
+		gcsBucketParam = userProvidedBucket
+	} else if genmediaBucketEnv != "" {
+		gcsBucketParam = genmediaBucketEnv
+		log.Printf("Handler lyria_generate_music: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", gcsBucketParam)
+	}
+
+	if gcsBucketParam != "" { // Only trim prefix if bucket is actually set
+		gcsBucketParam = strings.TrimPrefix(gcsBucketParam, "gs://")
 	}
 
 	fileNameParam := ""

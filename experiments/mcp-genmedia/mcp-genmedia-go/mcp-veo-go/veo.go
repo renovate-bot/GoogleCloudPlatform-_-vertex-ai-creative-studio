@@ -37,9 +37,20 @@ var (
 	project, location string
 	genAIClient       *genai.Client // Global GenAI client
 	transport         string
+	genmediaBucketEnv string        // To store GENMEDIA_BUCKET env var
 )
 
 const version = "1.3.4" // Version increment for optional local download
+
+// getEnv retrieves an environment variable by key. If the variable is not set
+// or is empty, it logs a message and returns the fallback value.
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		return value
+	}
+	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
+	return fallback
+}
 
 // inferMimeTypeFromURI attempts to guess the MIME type from the file extension.
 // Only "image/png" and "image/jpeg" are supported by the API.
@@ -87,7 +98,7 @@ func downloadFromGCS(parentCtx context.Context, gcsURI string, localDestPath str
 
 	// Create a new context with its own timeout for the GCS download operation.
 	// This makes the download itself resilient if parentCtx has a very short deadline.
-	gcsDownloadCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute) // 2-minute timeout for each download
+	gcsDownloadCtx, cancel := context.WithTimeout(parentCtx, 2*time.Minute) // 2-minute timeout for each download
 	defer cancel()
 
 	rc, err := storageClient.Bucket(bucketName).Object(objectName).NewReader(gcsDownloadCtx)
@@ -128,10 +139,11 @@ func main() {
 	if project == "" {
 		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
 	}
-	location = os.Getenv("LOCATION")
-	if location == "" {
-		location = "us-central1"
-		log.Printf("LOCATION environment variable not set, defaulting to %s", location)
+	location = getEnv("LOCATION", "us-central1")
+
+	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
+	if genmediaBucketEnv != "" {
+		log.Printf("Default GCS bucket for URI construction configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
 	}
 
 	log.Printf("Initializing global GenAI client...")
@@ -246,14 +258,36 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 	defaultDurationVal := int32(5)
 	durationSeconds = &defaultDurationVal
 
-	bucketVal, ok := params["bucket"].(string)
-	if !ok || strings.TrimSpace(bucketVal) == "" {
-		return "", "", "", "", 0, nil, errors.New("Google Cloud Storage bucket (parameter 'bucket') must be a non-empty string and is required")
+	// bucketVal, ok := params["bucket"].(string)
+	// if !ok || strings.TrimSpace(bucketVal) == "" {
+	// 	return "", "", "", "", 0, nil, errors.New("Google Cloud Storage bucket (parameter 'bucket') must be a non-empty string and is required")
+	// }
+	// gcsBucket = bucketVal // Assign to the correct return variable
+
+	bucketParam, bucketParamExists := params["bucket"].(string)
+	bucketParam = strings.TrimSpace(bucketParam)
+
+	if bucketParam != "" {
+		gcsBucket = bucketParam
+	} else if genmediaBucketEnv != "" {
+		// Construct default URI using GENMEDIA_BUCKET for Veo outputs
+		gcsBucket = fmt.Sprintf("gs://%s/veo_outputs/", genmediaBucketEnv)
+		log.Printf("Handler veo: 'bucket' parameter (for OutputGCSURI) not provided or empty, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
+	} else {
+		// Neither parameter provided nor env var set
+		return "", "", "", "", 0, nil, errors.New("Google Cloud Storage bucket (parameter 'bucket') must be a non-empty string or GENMEDIA_BUCKET env var must be set, and is required")
 	}
-	gcsBucket = bucketVal // Assign to the correct return variable
+
+	// Ensure gcsBucket (if set from param or env) starts with gs://
 	if !strings.HasPrefix(gcsBucket, "gs://") {
 		gcsBucket = "gs://" + gcsBucket
-		log.Printf("Bucket name did not start with 'gs://', prepended. New bucket name: %s", gcsBucket)
+		log.Printf("Bucket name/URI did not start with 'gs://', prepended. New bucket URI: %s", gcsBucket)
+	}
+
+	// Ensure gcsBucket (if set) ends with a slash for API compatibility
+	if !strings.HasSuffix(gcsBucket, "/") {
+		gcsBucket += "/"
+		log.Printf("Appended '/' to bucket URI for directory structure. New URI: %s", gcsBucket)
 	}
 
 	if dir, ok := params["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
