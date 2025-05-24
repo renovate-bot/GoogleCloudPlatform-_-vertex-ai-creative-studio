@@ -47,6 +47,8 @@ var (
 	lyriaLocation       string // Specific location for Lyria model (LYRIA_LOCATION), defaults to gcpLocation
 	lyriaModelPublisher string // Publisher for Lyria model (LYRIA_MODEL_PUBLISHER)
 	defaultLyriaModelID string // Default Lyria model ID (DEFAULT_LYRIA_MODEL_ID)
+
+	predictionClient *aiplatform.PredictionClient // Global Prediction Client
 )
 
 const (
@@ -101,6 +103,23 @@ func loadConfiguration() {
 func main() {
 	flag.Parse()
 	loadConfiguration()
+
+	log.Println("Initializing global AI Platform Prediction client...")
+	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", lyriaLocation)
+	var errInitClient error // Declare error variable for client initialization
+	predictionClient, errInitClient = aiplatform.NewPredictionClient(context.Background(), option.WithEndpoint(regionalEndpoint))
+	if errInitClient != nil {
+		log.Fatalf("Failed to create global AI Platform Prediction client: %v", errInitClient)
+	}
+	defer func() {
+		if predictionClient != nil {
+			log.Println("Closing global AI Platform Prediction client.")
+			if err := predictionClient.Close(); err != nil {
+				log.Printf("Error closing global AI Platform Prediction client: %v", err)
+			}
+		}
+	}()
+	log.Println("Global AI Platform Prediction client initialized successfully.")
 
 	s := server.NewMCPServer(
 		"Google Cloud Lyria Music Generation",
@@ -225,7 +244,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	}
 	baseFilename = strings.TrimPrefix(baseFilename, "/")
 
-	gcsUploadedObjectName, base64AudioData, err := invokeLyriaAndUpload(ctx, prompt, negativePrompt, seed, sampleCount, modelID, gcsBucketParam, baseFilename)
+	gcsUploadedObjectName, base64AudioData, err := invokeLyriaAndUpload(predictionClient, ctx, prompt, negativePrompt, seed, sampleCount, modelID, gcsBucketParam, baseFilename)
 
 	duration := time.Since(startTime)
 
@@ -311,15 +330,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 // invokeLyriaAndUpload calls the Lyria model using the provided main context (ctx).
 // If gcsBucket and gcsObjectNameForUpload are provided, it uploads the result to GCS.
 // It returns the GCS object name (if uploaded) and the base64 encoded audio data of the first sample.
-func invokeLyriaAndUpload(ctx context.Context, prompt, negativePrompt string, seed *uint32, sampleCount uint32, modelID, gcsBucket, gcsObjectNameForUpload string) (gcsWrittenObjectName string, audioDataB64 string, err error) {
-	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", lyriaLocation)
-
-	predictionClient, errClient := aiplatform.NewPredictionClient(ctx, option.WithEndpoint(regionalEndpoint))
-	if errClient != nil {
-		return "", "", fmt.Errorf("failed to create AI Platform Prediction client: %w", errClient)
-	}
-	defer predictionClient.Close()
-
+func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Context, prompt, negativePrompt string, seed *uint32, sampleCount uint32, modelID, gcsBucket, gcsObjectNameForUpload string) (gcsWrittenObjectName string, audioDataB64 string, err error) {
 	lyriaEndpointPath := fmt.Sprintf("projects/%s/locations/%s/publishers/%s/models/%s",
 		gcpProjectID, lyriaLocation, lyriaModelPublisher, modelID)
 	log.Printf("Using Lyria Endpoint Path: %s", lyriaEndpointPath)
@@ -348,7 +359,7 @@ func invokeLyriaAndUpload(ctx context.Context, prompt, negativePrompt string, se
 
 	log.Printf("Sending Predict request to Lyria model '%s'. Instance data: %+v", modelID, instanceData)
 
-	resp, errPredict := predictionClient.Predict(ctx, predictRequest)
+	resp, errPredict := client.Predict(ctx, predictRequest)
 	if errPredict != nil {
 		return "", "", fmt.Errorf("lyria prediction request failed: %w", errPredict)
 	}
