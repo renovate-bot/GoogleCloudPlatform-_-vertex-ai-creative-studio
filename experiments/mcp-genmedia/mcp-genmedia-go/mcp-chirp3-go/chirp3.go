@@ -387,7 +387,7 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	attemptLocalSave := outputDir != ""
 	log.Printf("Output directory: '%s', Attempt local save: %t", outputDir, attemptLocalSave)
 
-	synthesisAPICallCtx, synthesisAPICallCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	synthesisAPICallCtx, synthesisAPICallCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer synthesisAPICallCancel()
 
 	log.Printf("Synthesizing speech for text: \"%s\" with voice: %s. API call using independent context with timeout: 30s", text, selectedVoice.Name)

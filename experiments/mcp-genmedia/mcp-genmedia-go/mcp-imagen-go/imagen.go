@@ -284,7 +284,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		log.Printf("API will return image bytes directly.")
 	}
 
-	apiCallCtx, apiCallCancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	apiCallCtx, apiCallCancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer apiCallCancel()
 
 	log.Printf("Calling GenerateImages with Model: %s, Prompt: \"%s\". API call timeout: 3m", model, prompt)
@@ -380,7 +380,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 			if imageSourceIsGCS { // Download from GCS then save
 				log.Printf("Attempting to download image %d from GCS URI %s to %s", n, currentImageGCSURI, actualSavePath)
 				// Use a new context for the download operation
-				downloadCtx, downloadCancel := context.WithTimeout(context.Background(), 2*time.Minute) // 2 min timeout for download
+				downloadCtx, downloadCancel := context.WithTimeout(ctx, 2*time.Minute) // 2 min timeout for download
 				err := downloadFromGCS(downloadCtx, currentImageGCSURI, actualSavePath)
 				downloadCancel() // Release context resources
 				if err != nil {
