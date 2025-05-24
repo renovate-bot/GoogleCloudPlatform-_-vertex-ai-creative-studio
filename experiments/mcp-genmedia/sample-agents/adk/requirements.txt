@@ -38,7 +38,7 @@ docstring-parser==0.16
     # via google-cloud-aiplatform
 fastapi==0.115.12
     # via google-adk
-google-adk==0.3.0
+google-adk==0.5.0
     # via adk-genmedia-agent
 google-api-core==2.24.2
     # via
