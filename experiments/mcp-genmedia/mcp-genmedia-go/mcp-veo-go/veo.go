@@ -264,18 +264,26 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 	// }
 	// gcsBucket = bucketVal // Assign to the correct return variable
 
-	bucketParam, bucketParamExists := params["bucket"].(string)
-	bucketParam = strings.TrimSpace(bucketParam)
+	var gcsBucket string
+	bucketParamValue, bucketParamProvided := params["bucket"].(string) // Use 'bucketParamProvided'
+	trimmedBucketParam := strings.TrimSpace(bucketParamValue)
 
-	if bucketParam != "" {
-		gcsBucket = bucketParam
+	if bucketParamProvided && trimmedBucketParam != "" {
+		// User explicitly provided a non-empty bucket parameter.
+		gcsBucket = trimmedBucketParam
 	} else if genmediaBucketEnv != "" {
-		// Construct default URI using GENMEDIA_BUCKET for Veo outputs
+		// User either did not provide the 'bucket' parameter, or provided an empty one,
+		// AND the GENMEDIA_BUCKET environment variable is set.
 		gcsBucket = fmt.Sprintf("gs://%s/veo_outputs/", genmediaBucketEnv)
-		log.Printf("Handler veo: 'bucket' parameter (for OutputGCSURI) not provided or empty, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
+		if !bucketParamProvided {
+			log.Printf("Handler veo: 'bucket' parameter (for OutputGCSURI) not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
+		} else { // bucketParamProvided was true, but trimmedBucketParam was empty
+			log.Printf("Handler veo: 'bucket' parameter (for OutputGCSURI) was provided but empty, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
+		}
 	} else {
-		// Neither parameter provided nor env var set
-		return "", "", "", "", 0, nil, errors.New("Google Cloud Storage bucket (parameter 'bucket') must be a non-empty string or GENMEDIA_BUCKET env var must be set, and is required")
+		// Parameter was not provided or was empty, AND GENMEDIA_BUCKET is not set.
+		// This is an error condition.
+		return "", "", "", "", 0, nil, errors.New("Google Cloud Storage bucket (parameter 'bucket') must be provided as a non-empty string, or the GENMEDIA_BUCKET environment variable must be set and non-empty")
 	}
 
 	// Ensure gcsBucket (if set from param or env) starts with gs://
