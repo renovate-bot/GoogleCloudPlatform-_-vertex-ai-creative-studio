@@ -100,6 +100,7 @@ func main() {
 	addConcatenateMediaTool(s)
 	addAdjustVolumeTool(s)
 	addLayerAudioTool(s)
+	addCreateGifTool(s) // Register the new GIF creation tool
 
 	log.Printf("Starting FFMpeg AV Tool MCP Server (Version: %s, Transport: %s)", version, transport)
 	if transport == "sse" {
@@ -456,6 +457,164 @@ func ffmpegConvertAudioHandler(ctx context.Context, request mcp.CallToolRequest)
 		messageParts = append(messageParts, "No specific output location requested beyond temporary processing.")
 	}
 
+	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
+}
+
+func addCreateGifTool(s *server.MCPServer) {
+	tool := mcp.NewTool("ffmpeg_video_to_gif",
+		mcp.WithDescription("Creates a GIF from an input video using a two-pass FFMpeg process (palette generation and palette use)."),
+		mcp.WithString("input_video_uri", 
+			mcp.Required(), 
+			mcp.Description("URI of the input video file (local path or gs://)."),
+		),
+		mcp.WithNumber("scale_width_factor", 
+			mcp.DefaultNumber(0.33), 
+			mcp.Description("Factor to scale the input video's width by (e.g., 0.33 for 33%). Height is scaled automatically to maintain aspect ratio. Use 1.0 for original width."),
+		),
+		mcp.WithNumber("fps", 
+			mcp.DefaultNumber(15), 
+			mcp.Min(1), // Minimum practical FPS
+			mcp.Max(50), // Maximum practical FPS for GIF
+			mcp.Description("Frames per second for the output GIF (e.g., 10, 15, 25)."),
+		),
+		mcp.WithString("output_file_name", 
+			mcp.Description("Optional. Desired name for the output GIF file (e.g., 'animation.gif'). If omitted, a unique name is generated."),
+		),
+		mcp.WithString("output_local_dir", 
+			mcp.Description("Optional. Local directory to save the output GIF file."),
+		),
+		mcp.WithString("output_gcs_bucket", 
+			mcp.Description("Optional. GCS bucket to upload the output GIF file to (uses GENMEDIA_BUCKET if set and this is empty)."),
+		),
+	)
+	s.AddTool(tool, ffmpegVideoToGifHandler) // ffmpegVideoToGifHandler will be created in the next step
+}
+
+func ffmpegVideoToGifHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	startTime := time.Now()
+	argsMap, err := getArguments(request)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_video_to_gif", argsMap)
+
+	inputVideoURI, _ := argsMap["input_video_uri"].(string)
+	if strings.TrimSpace(inputVideoURI) == "" {
+		return mcp.NewToolResultError("Parameter 'input_video_uri' is required."), nil
+	}
+
+	scaleFactorParam, _ := argsMap["scale_width_factor"].(float64)
+	if scaleFactorParam <= 0 { // Default is 0.33, so this check handles if not present or invalid
+		scaleFactorParam = 0.33 
+	}
+	// Ensure scale factor is reasonable, e.g. not excessively large or small.
+	// For this example, we'll assume values like 0.1 to 2.0 are okay.
+	// FFMpeg will error on extreme values anyway.
+
+	fpsParam, _ := argsMap["fps"].(float64)
+	if fpsParam <= 0 { // Default is 15
+		fpsParam = 15
+	}
+	// Clamp FPS to a reasonable range, e.g. 1 to 50, as defined in tool options.
+	if fpsParam < 1 { fpsParam = 1 }
+	if fpsParam > 50 { fpsParam = 50 }
+
+
+	outputFileName, _ := argsMap["output_file_name"].(string)
+	outputLocalDir, _ := argsMap["output_local_dir"].(string)
+	
+	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
+    outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+    if outputGCSBucket == "" && genmediaBucketEnv != "" { // From global var
+        outputGCSBucket = genmediaBucketEnv
+        log.Printf("Handler ffmpeg_video_to_gif: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+    }
+    if outputGCSBucket != "" {
+        outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+    }
+
+	// Prepare input video file
+	localInputVideo, inputCleanup, err := prepareInputFile(ctx, inputVideoURI, "input_video_for_gif")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare input video: %v", err)), nil
+	}
+	defer inputCleanup()
+
+	// Create a dedicated temporary directory for palette and initial GIF output
+	gifProcessingTempDir, err := os.MkdirTemp("", defaultTempDirPrefix+"gif_processing_")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to create temp directory for GIF processing: %v", err)), nil
+	}
+	defer func() {
+		log.Printf("Cleaning up GIF processing temporary directory: %s", gifProcessingTempDir)
+		os.RemoveAll(gifProcessingTempDir)
+	}()
+
+	palettePath := filepath.Join(gifProcessingTempDir, "palette.png")
+	
+	// First ffmpeg command: Generate palette
+	// Example: ffmpeg -i example_source.mp4 -vf "fps=15,scale=iw*0.33:-1:flags=lanczos+accurate_rnd+full_chroma_inp,palettegen" -y palette.png
+	paletteVFFilter := fmt.Sprintf("fps=%.2f,scale=iw*%.2f:-1:flags=lanczos+accurate_rnd+full_chroma_inp,palettegen", fpsParam, scaleFactorParam)
+	log.Printf("Generating palette with VF filter: %s", paletteVFFilter)
+	_, ffmpegErrPalette := runFFmpegCommand(ctx, "-y", "-i", localInputVideo, "-vf", paletteVFFilter, palettePath)
+	if ffmpegErrPalette != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg palette generation failed: %v", ffmpegErrPalette)), nil
+	}
+	log.Printf("Palette generated successfully: %s", palettePath)
+
+	// Determine final GIF filename (before it's placed in final local/GCS path)
+	// This uses a similar logic to handleOutputPreparation but we do it inline for the gif.
+	var finalGifFilename string
+	if strings.TrimSpace(outputFileName) == "" {
+		uid, _ := shortid.Generate() // shortid should be imported
+		finalGifFilename = fmt.Sprintf("ffmpeg_gif_%s.gif", uid)
+	} else {
+		finalGifFilename = outputFileName
+		if !strings.HasSuffix(strings.ToLower(finalGifFilename), ".gif") {
+			finalGifFilename += ".gif"
+		}
+	}
+	tempGifOutputPath := filepath.Join(gifProcessingTempDir, finalGifFilename)
+
+
+	// Second ffmpeg command: Create GIF using palette
+	// Example: ffmpeg -i example_source.mp4 -i palette.png -lavfi "fps=15,scale=iw*0.33:-1:flags=lanczos+accurate_rnd+full_chroma_inp [x]; [x][1:v] paletteuse" -y output.gif
+	gifLavfiFilter := fmt.Sprintf("fps=%.2f,scale=iw*%.2f:-1:flags=lanczos+accurate_rnd+full_chroma_inp [x]; [x][1:v] paletteuse", fpsParam, scaleFactorParam)
+	log.Printf("Creating GIF with LAVFI filter: %s", gifLavfiFilter)
+	_, ffmpegErrGif := runFFmpegCommand(ctx, "-y", "-i", localInputVideo, "-i", palettePath, "-lavfi", gifLavfiFilter, tempGifOutputPath)
+	if ffmpegErrGif != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg GIF creation failed: %v", ffmpegErrGif)), nil
+	}
+	log.Printf("GIF created successfully in temp location: %s", tempGifOutputPath)
+	
+	// Process the generated GIF (move to local dir and/or upload to GCS)
+	finalLocalPath, finalGCSPath, processErr := processOutputAfterFFmpeg(ctx, tempGifOutputPath, finalGifFilename, outputLocalDir, outputGCSBucket)
+	if processErr != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to process generated GIF: %v", processErr)), nil
+	}
+
+	duration := time.Since(startTime)
+	var messageParts []string
+	messageParts = append(messageParts, fmt.Sprintf("GIF creation completed in %v.", duration.Round(time.Second)))
+	if finalLocalPath != "" {
+		// Check if it was saved to a user-specified dir or just a cleaned-up temp dir from processOutputAfterFFmpeg
+		if outputLocalDir != "" {
+			messageParts = append(messageParts, fmt.Sprintf("Output GIF saved locally to: %s.", finalLocalPath))
+		} else if ! (outputGCSBucket != "" && finalGCSPath != "") { 
+			// If not saved to GCS either, it means it was only in a temp path that got cleaned by processOutputAfterFFmpeg's own cleanup (if it had one)
+			// or it's the path from gifProcessingTempDir which this handler cleans up.
+			// This case needs careful message if processOutputAfterFFmpeg doesn't return a persistent path.
+			// For now, let's assume finalLocalPath from processOutputAfterFFmpeg is either the persistent one or the one in gifProcessingTempDir.
+			messageParts = append(messageParts, fmt.Sprintf("Temporary GIF output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
+		}
+	}
+	if finalGCSPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output GIF uploaded to GCS: %s.", finalGCSPath))
+	}
+	if len(messageParts) == 1 { // Only the completion message
+		messageParts = append(messageParts, "No specific output location (local/GCS) was processed or an issue occurred in processing.")
+	}
+	
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
