@@ -37,7 +37,7 @@ var (
 	project, location string
 	genAIClient       *genai.Client // Global GenAI client
 	transport         string
-	genmediaBucketEnv string        // To store GENMEDIA_BUCKET env var
+	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
 )
 
 const version = "1.3.4" // Version increment for optional local download
@@ -168,8 +168,8 @@ func main() {
 
 	commonVideoParams := []mcp.ToolOption{
 		mcp.WithString("bucket",
-			mcp.Required(),
-			mcp.Description("Google Cloud Storage bucket where the API will save the generated video(s) (e.g., gs://your-bucket/output-folder)."),
+			mcp.Required(), // Note: Requirement is handled in parseCommonVideoParams logic with GENMEDIA_BUCKET fallback
+			mcp.Description("Google Cloud Storage bucket where the API will save the generated video(s) (e.g., gs://your-bucket/output-folder). Can also be set via GENMEDIA_BUCKET env var."),
 		),
 		mcp.WithString("output_directory", // New optional parameter
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
@@ -258,13 +258,8 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 	defaultDurationVal := int32(5)
 	durationSeconds = &defaultDurationVal
 
-	// bucketVal, ok := params["bucket"].(string)
-	// if !ok || strings.TrimSpace(bucketVal) == "" {
-	// 	return "", "", "", "", 0, nil, errors.New("Google Cloud Storage bucket (parameter 'bucket') must be a non-empty string and is required")
-	// }
-	// gcsBucket = bucketVal // Assign to the correct return variable
-
-	bucketParam, bucketParamExists := params["bucket"].(string)
+	// bucketParam, bucketParamExists := params["bucket"].(string) // Original line with error
+	bucketParam, _ := params["bucket"].(string) // Corrected line: ignore bucketParamExists
 	bucketParam = strings.TrimSpace(bucketParam)
 
 	if bucketParam != "" {
@@ -280,11 +275,16 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 
 	// Ensure gcsBucket (if set from param or env) starts with gs://
 	if !strings.HasPrefix(gcsBucket, "gs://") {
+		// This case might be problematic if bucketParam was just "my-bucket" and genmediaBucketEnv was also not set.
+		// However, the API expects a full gs:// URI for OutputGCSURI.
+		// If the user provides "my-bucket/path", it should become "gs://my-bucket/path/"
+		// If they provide "gs://my-bucket/path", it should become "gs://my-bucket/path/"
+		// The logic here assumes gcsBucket might be a bucket name or a partial path needing gs:// prefix.
 		gcsBucket = "gs://" + gcsBucket
 		log.Printf("Bucket name/URI did not start with 'gs://', prepended. New bucket URI: %s", gcsBucket)
 	}
 
-	// Ensure gcsBucket (if set) ends with a slash for API compatibility
+	// Ensure gcsBucket (if set) ends with a slash for API compatibility (as it's treated as a directory)
 	if !strings.HasSuffix(gcsBucket, "/") {
 		gcsBucket += "/"
 		log.Printf("Appended '/' to bucket URI for directory structure. New URI: %s", gcsBucket)
@@ -316,7 +316,7 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 		numberOfVideos = 4
 	}
 
-	aspectRatioInput := finalAspectRatio
+	aspectRatioInput := finalAspectRatio // Default to "16:9"
 	if aspectRatioArg, ok := params["aspect_ratio"].(string); ok && aspectRatioArg != "" {
 		aspectRatioInput = aspectRatioArg
 	} else {
@@ -330,6 +330,7 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 		finalAspectRatio = "9:16"
 	default:
 		log.Printf("Invalid aspect_ratio value '%s' received. Defaulting to '16:9'. Valid options are '16:9', '9:16', 'widescreen', or 'portrait'.", aspectRatioInput)
+		// finalAspectRatio remains "16:9" as set by default
 	}
 
 	if durationArg, ok := params["duration"]; ok {
@@ -451,10 +452,10 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 
 func callGenerateVideosAPI(
 	client *genai.Client,
-	parentCtx context.Context,
+	parentCtx context.Context, // Renamed from ctx to avoid conflict with operationCtx
 	mcpServer *server.MCPServer,
 	progressToken mcp.ProgressToken,
-	outputDir string, // New parameter
+	outputDir string,
 	modelName string,
 	prompt string,
 	image *genai.Image,
@@ -464,11 +465,13 @@ func callGenerateVideosAPI(
 
 	attemptLocalDownload := outputDir != ""
 
-	operationCtx, operationCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// Context for the entire GenerateVideos operation, including polling.
+	// parentCtx is the context from the MCP handler, which might have its own deadline.
+	// We create a new context for the GenAI operation itself to ensure it has enough time.
+	operationCtx, operationCancel := context.WithTimeout(context.Background(), 5*time.Minute) // Timeout for the entire GenAI operation + polling
 	defer operationCancel()
 
 	logMsg := fmt.Sprintf("Initiating GenerateVideos (%s) with Model: %s", callType, modelName)
-	// ... (logging for image, prompt, duration, GCS output)
 	if image != nil && image.GCSURI != "" {
 		logMsg += fmt.Sprintf(", ImageGCSURI: %s, ImageMIMEType: %s", image.GCSURI, image.MIMEType)
 	}
@@ -486,9 +489,9 @@ func callGenerateVideosAPI(
 
 	startTime := time.Now()
 
+	// Use operationCtx for the initial call to GenerateVideos
 	operation, err := client.Models.GenerateVideos(operationCtx, modelName, prompt, image, config)
 	if err != nil {
-		// ... (error handling for initiation)
 		if errors.Is(err, context.DeadlineExceeded) && operationCtx.Err() == context.DeadlineExceeded {
 			log.Printf("GenerateVideos (%s) failed: initial call timed out: %v", callType, err)
 			return mcp.NewToolResultError(fmt.Sprintf("video generation (%s) initiation timed out", callType)), nil
@@ -500,7 +503,7 @@ func callGenerateVideosAPI(
 
 	if progressToken != nil && mcpServer != nil {
 		mcpServer.SendNotificationToClient(
-			parentCtx,
+			parentCtx, // Use parentCtx for notifications as it's tied to the client request
 			"notifications/progress",
 			map[string]interface{}{
 				"progressToken": progressToken,
@@ -514,20 +517,27 @@ func callGenerateVideosAPI(
 	pollingAttempt := 0
 
 	for !operation.Done {
+		// Check parentCtx first to see if the original request was canceled.
+		// If so, we should stop polling even if operationCtx hasn't timed out.
 		select {
+		case <-parentCtx.Done():
+			log.Printf("Parent context for GenerateVideos (%s) polling canceled: %v. Stopping polling.", callType, parentCtx.Err())
+			operationCancel() // Cancel the operationCtx as well
+			return mcp.NewToolResultError(fmt.Sprintf("video generation (%s) was canceled by the client: %v", callType, parentCtx.Err())), nil
 		case <-operationCtx.Done():
-			log.Printf("Polling loop for GenerateVideos (%s) canceled/timed out: %v", callType, operationCtx.Err())
+			log.Printf("Polling loop for GenerateVideos (%s) canceled/timed out by operationCtx: %v", callType, operationCtx.Err())
 			return mcp.NewToolResultError(fmt.Sprintf("video generation (%s) timed out while waiting for completion", callType)), nil
 		case <-time.After(pollingInterval):
 			pollingAttempt++
 			log.Printf("Polling GenerateVideos operation (%s): %s (Attempt: %d, Elapsed: %v)", callType, operation.Name, pollingAttempt, time.Since(pollingStartTime).Round(time.Second))
 
+			// Use operationCtx for the GetVideosOperation call
 			var getOpOpts genai.GetOperationConfig
-			updatedOp, err := client.Operations.GetVideosOperation(operationCtx, operation, &getOpOpts)
-			if err != nil {
-				// ... (polling error handling)
-				log.Printf("Error polling GenerateVideos operation (%s) %s: %v", callType, operation.Name, err)
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			updatedOp, getErr := client.Operations.GetVideosOperation(operationCtx, operation, &getOpOpts)
+			if getErr != nil {
+				log.Printf("Error polling GenerateVideos operation (%s) %s: %v", callType, operation.Name, getErr)
+				if errors.Is(getErr, context.Canceled) || errors.Is(getErr, context.DeadlineExceeded) {
+					// This would typically be due to operationCtx timeout/cancel
 					return mcp.NewToolResultError(fmt.Sprintf("video generation (%s) polling was canceled or timed out", callType)), nil
 				}
 				if progressToken != nil && mcpServer != nil {
@@ -541,20 +551,24 @@ func callGenerateVideosAPI(
 						},
 					)
 				}
-				continue
+				continue // Continue polling
 			}
 			operation = updatedOp
 
 			if progressToken != nil && mcpServer != nil {
-				// ... (progress notification logic)
 				progressMessage := fmt.Sprintf("Video generation (%s) in progress. Polling attempt %d.", callType, pollingAttempt)
-				progressPercent := -1
+				progressPercent := -1 // Default to -1 if not available
 
 				if operation.Metadata != nil {
+					// Example of how progress might be structured, adjust based on actual API response
 					if state, ok := operation.Metadata["state"].(string); ok {
 						progressMessage = fmt.Sprintf("Video generation (%s) state: %s. Polling attempt %d.", callType, state, pollingAttempt)
 					}
+					// Assuming progress_percent might be a field in metadata
 					if p, ok := operation.Metadata["progress_percent"].(float64); ok {
+						progressPercent = int(p)
+						progressMessage = fmt.Sprintf("Video generation (%s) is %d%% complete. Polling attempt %d.", callType, progressPercent, pollingAttempt)
+					} else if p, ok := operation.Metadata["progressPercent"].(float64); ok { // Check alternative casing
 						progressPercent = int(p)
 						progressMessage = fmt.Sprintf("Video generation (%s) is %d%% complete. Polling attempt %d.", callType, progressPercent, pollingAttempt)
 					}
@@ -578,7 +592,6 @@ func callGenerateVideosAPI(
 	log.Printf("GenerateVideos operation (%s) %s completed. Total duration: %v", callType, operation.Name, operationDuration.Round(time.Second))
 
 	if progressToken != nil && mcpServer != nil {
-		// ... (final progress notification logic)
 		finalStatus := "completed_successfully"
 		finalMessage := fmt.Sprintf("Video generation (%s) completed successfully in %v.", callType, operationDuration.Round(time.Second))
 		if operation.Error != nil {
@@ -592,23 +605,28 @@ func callGenerateVideosAPI(
 				"progressToken": progressToken,
 				"message":       finalMessage,
 				"status":        finalStatus,
+				"progress":      100, // Mark as 100% complete
+				"total":         100,
 			},
 		)
 	}
 
 	if operation.Error != nil {
-		// ... (operation error handling)
 		var errMessage string
-		var errCode int
+		var errCode int32 // Error code from proto is typically int32
 
+		// Assuming operation.Error is map[string]interface{} from JSON unmarshal
+		// or directly accessible fields if it's a struct.
+		// The genai.OperationError struct has Code (int32) and Message (string).
+		// If operation.Error is populated from a google.rpc.Status proto:
+		if e, ok := operation.Error["code"].(float64); ok { // JSON numbers are float64
+			errCode = int32(e)
+		}
 		if msg, ok := operation.Error["message"].(string); ok {
 			errMessage = msg
 		}
-		if code, ok := operation.Error["code"].(float64); ok {
-			errCode = int(code)
-		}
 
-		if errMessage == "" {
+		if errMessage == "" { // Fallback if direct fields aren't found
 			errorBytes, jsonErr := json.Marshal(operation.Error)
 			if jsonErr != nil {
 				errMessage = fmt.Sprintf("operation failed with unmarshalable error: %v", jsonErr)
@@ -617,7 +635,7 @@ func callGenerateVideosAPI(
 			}
 		}
 		log.Printf("GenerateVideos operation (%s) %s failed with error: %s (Code: %d, FullError: %v)", callType, operation.Name, errMessage, errCode, operation.Error)
-		return mcp.NewToolResultError(fmt.Sprintf("video generation (%s) failed: %s", callType, errMessage)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("video generation (%s) failed: %s (code: %d)", callType, errMessage, errCode)), nil
 	}
 
 	if operation.Response == nil || len(operation.Response.GeneratedVideos) == 0 {
@@ -629,36 +647,35 @@ func callGenerateVideosAPI(
 
 	var gcsVideoURIs []string
 	var downloadedLocalFiles []string
-	var downloadErrors []string // Store reasons for download/save failures
+	var downloadErrors []string
 
 	for i, generatedVideo := range operation.Response.GeneratedVideos {
 		videoGCSURI := ""
-		// Veo API typically populates generatedVideo.Video.URI with the GCS path
+		// Accessing Video.URI from the genai.GeneratedVideoContent struct
 		if generatedVideo.Video != nil && generatedVideo.Video.URI != "" {
 			videoGCSURI = generatedVideo.Video.URI
-		} else if generatedVideo.Video.URI != "" { // Fallback for other potential structures
-			videoGCSURI = generatedVideo.Video.URI
 		}
+		// Note: The original code had a redundant check: else if generatedVideo.Video.URI != ""
+		// This is covered by the above if statement.
 
 		if videoGCSURI == "" {
 			log.Printf("Generated video %d (%s) (model: %s, operation: %s) had no retrievable GCS URI.", i, callType, modelName, operation.Name)
-			continue
+			continue // Skip this video if URI is missing
 		}
 		gcsVideoURIs = append(gcsVideoURIs, videoGCSURI)
 		log.Printf("Video %d (%s) generated by operation %s is available at GCS URI: %s", i, callType, operation.Name, videoGCSURI)
 
 		if attemptLocalDownload {
-			// Generate a local filename
-			// Extract original filename from GCS URI to use as a base or create a new one
 			baseFilename := filepath.Base(videoGCSURI)
-			if baseFilename == "." || baseFilename == "/" { // Handle edge cases from filepath.Base
-				baseFilename = fmt.Sprintf("veo_video_%d.mp4", i) // Fallback filename
+			if baseFilename == "." || baseFilename == "/" || baseFilename == "" {
+				baseFilename = fmt.Sprintf("veo_video_%s_%d.mp4", callType, i) // More descriptive fallback
 			}
 			localFilepath := filepath.Join(outputDir, baseFilename)
-			localFilepath = filepath.Clean(localFilepath)
+			localFilepath = filepath.Clean(localFilepath) // Ensure path is clean
 
 			log.Printf("Attempting to download video %d from GCS URI %s to %s", i, videoGCSURI, localFilepath)
-			downloadErr := downloadFromGCS(parentCtx, videoGCSURI, localFilepath) // Use parentCtx for GCS client creation
+			// Use parentCtx for GCS client creation context, actual download uses its own timeout
+			downloadErr := downloadFromGCS(parentCtx, videoGCSURI, localFilepath)
 			if downloadErr != nil {
 				errMsg := fmt.Sprintf("Error downloading video %d from %s to %s: %v", i, videoGCSURI, localFilepath, downloadErr)
 				log.Print(errMsg)
@@ -680,7 +697,7 @@ func callGenerateVideosAPI(
 	if attemptLocalDownload {
 		saveMessageParts = append(saveMessageParts, fmt.Sprintf("Attempted to download videos to local directory '%s'.", outputDir))
 		if len(downloadedLocalFiles) > 0 {
-			saveMessageParts = append(saveMessageParts, fmt.Sprintf("Successfully downloaded and saved locally: %s.", strings.Join(downloadedLocalFiles, ", ")))
+			saveMessageParts = append(saveMessageParts, fmt.Sprintf("Successfully downloaded locally: %s.", strings.Join(downloadedLocalFiles, ", ")))
 		}
 		if len(downloadErrors) > 0 {
 			saveMessageParts = append(saveMessageParts, fmt.Sprintf("Local download/save issues: %s.", strings.Join(downloadErrors, "; ")))
@@ -694,13 +711,21 @@ func callGenerateVideosAPI(
 			operationDuration.Round(time.Second),
 			strings.Join(saveMessageParts, " "),
 		)
-	} else {
-		resultText = fmt.Sprintf("Processed request (%s) for model %s (took %s), but no video URIs were found in the completed operation %s.",
+	} else if operation.Error == nil { // No videos but also no operation error
+		resultText = fmt.Sprintf("Processed request (%s) for model %s (took %s), but no video URIs were found in the completed operation %s. No specific error reported by the operation.",
+			callType,
+			modelName,
+			operationDuration.Round(time.Second),
+			operation.Name,
+		)
+	} else { // Should have been caught by operation.Error check earlier, but as a fallback
+		resultText = fmt.Sprintf("Video generation request (%s) for model %s (took %s) did not yield videos and encountered an issue with operation %s.",
 			callType,
 			modelName,
 			operationDuration.Round(time.Second),
 			operation.Name,
 		)
 	}
+
 	return mcp.NewToolResultText(strings.TrimSpace(resultText)), nil
 }
