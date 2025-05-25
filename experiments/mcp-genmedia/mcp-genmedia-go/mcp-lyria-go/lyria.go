@@ -195,7 +195,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	}
 
 	gcsBucketParam := ""
-	userProvidedBucket, paramExists := params["output_gcs_bucket"].(string)
+	userProvidedBucket, _ := params["output_gcs_bucket"].(string)
 	userProvidedBucket = strings.TrimSpace(userProvidedBucket)
 
 	if userProvidedBucket != "" {

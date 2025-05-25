@@ -37,7 +37,7 @@ var (
 	project, location string
 	genAIClient       *genai.Client // Global GenAI client
 	transport         string
-	genmediaBucketEnv string        // To store GENMEDIA_BUCKET env var
+	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
 )
 
 const version = "1.4.3" // Incremented version for GCS download implementation
@@ -257,7 +257,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	}
 
 	gcsOutputURI := ""
-	gcsBucketUriParam, paramExists := request.GetArguments()["gcs_bucket_uri"].(string)
+	gcsBucketUriParam, _ := request.GetArguments()["gcs_bucket_uri"].(string)
 	gcsBucketUriParam = strings.TrimSpace(gcsBucketUriParam)
 
 	if gcsBucketUriParam != "" {
