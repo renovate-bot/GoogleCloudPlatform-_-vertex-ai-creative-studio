@@ -90,7 +90,7 @@ func main() {
 	loadConfiguration()
 
 	s := server.NewMCPServer(
-		"FFMpeg AV Processing Tool",
+		"FFMpeg AV Tool", // Standardized name
 		version,
 	)
 
@@ -103,29 +103,29 @@ func main() {
 	addCreateGifTool(s) // Register the new GIF creation tool
 
 	log.Printf("Starting FFMpeg AV Tool MCP Server (Version: %s, Transport: %s)", version, transport)
+
 	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081")) // Assuming WithBaseURL is correct for SSE server
-		log.Printf("SSE server listening on :8081")
-		if err := sseServer.Start(":8081"); err != nil { // Ensure port matches
+		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
+		log.Printf("FFMpeg AV Tool MCP Server listening on SSE at :8081")
+		if err := sseServer.Start(":8081"); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		// Default port 8080 and path /mcp
-		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
-		log.Printf("HTTP server listening on :8080/mcp")
-		if err := httpServer.Start(); err != nil {
+		httpServer := server.NewStreamableHTTPServer(s, "/mcp") // Base path /mcp
+		log.Printf("FFMpeg AV Tool MCP Server listening on HTTP at :8080/mcp")
+		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
-		if transport != "stdio" && transport != "" { // Log if an unsupported transport was specified but defaulting to stdio
+		if transport != "stdio" && transport != "" {
 			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
 		}
-		log.Printf("STDIO server listening")
+		log.Printf("FFMpeg AV Tool MCP Server listening on STDIO")
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
 	}
-	log.Println("Server has stopped.")
+	log.Println("FFMpeg AV Tool Server has stopped.")
 }
 
 // runFFmpegCommand executes an FFMpeg command and returns its combined output.

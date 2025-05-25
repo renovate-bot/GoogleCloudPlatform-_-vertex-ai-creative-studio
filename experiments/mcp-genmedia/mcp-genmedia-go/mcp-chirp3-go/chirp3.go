@@ -220,7 +220,7 @@ func main() {
 	}
 
 	s := server.NewMCPServer(
-		"Google Cloud TTS with Chirp",
+		"Chirp3", // Standardized name
 		version,
 	)
 
@@ -275,41 +275,37 @@ func main() {
 		transport = "sse"
 	}
 
+	log.Printf("Starting Chirp3 MCP Server (Version: %s, Transport: %s)", version, transport)
+
 	if transport == "sse" {
 		if port == "" {
-			port = "8080"
+			port = "8081" // Default SSE port to 8081 if not specified, to avoid conflict with HTTP default 8080
 			log.Printf("Transport is SSE but no port specified, defaulting to %s", port)
 		}
 		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%s", port)))
-		log.Printf("SSE server listening on :%s with tools: chirp_tts, list_chirp_voices", port)
+		log.Printf("Chirp3 MCP Server listening on SSE at :%s with tools: chirp_tts, list_chirp_voices", port)
 		if err := sseServer.Start(fmt.Sprintf(":%s", port)); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
-		log.Println("SSE Server has stopped.")
-		if ttsClient != nil {
-			ttsClient.Close()
-		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
-		log.Printf("HTTP server listening on :8080/mcp with tools: chirp_tts, list_chirp_voices")
-		if err := httpServer.Start(); err != nil {
+		httpServer := server.NewStreamableHTTPServer(s, "/mcp") // Base path /mcp
+		log.Printf("Chirp3 MCP Server listening on HTTP at :8080/mcp with tools: chirp_tts, list_chirp_voices")
+		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)
-		}
-		log.Println("HTTP Server has stopped.")
-		if ttsClient != nil {
-			ttsClient.Close()
 		}
 	} else { // Default to stdio
 		if transport != "stdio" && transport != "" {
 			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
 		}
-		log.Printf("STDIO server listening with tools: chirp_tts, list_chirp_voices")
+		log.Printf("Chirp3 MCP Server listening on STDIO with tools: chirp_tts, list_chirp_voices")
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
-		if ttsClient != nil {
-			ttsClient.Close()
-		}
+	}
+
+	log.Println("Chirp3 Server has stopped.")
+	if ttsClient != nil {
+		ttsClient.Close() // Ensure client is closed on server stop, regardless of transport
 	}
 }
 
