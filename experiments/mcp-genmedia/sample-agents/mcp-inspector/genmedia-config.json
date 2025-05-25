@@ -5,7 +5,7 @@
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
         "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
-        "PROJECT_ID": "veo-testing"
+        "PROJECT_ID": "YOUR_PROJECT"
       }
     },
     "imagen-go": {
@@ -13,28 +13,28 @@
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
         "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
-        "PROJECT_ID": "ghchinoy-genai-sa"
+        "PROJECT_ID": "YOUR_PROJECT"
       }
     },
     "chirp3-go": {
       "command": "mcp-chirp3-go",
       "env": {
         "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
-        "PROJECT_ID": "ghchinoy-genai-sa"
+        "PROJECT_ID": "YOUR_PROJECT"
       }
     },
     "lyria-go": {
       "command": "mcp-lyria-go",
       "env": {
         "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
-        "PROJECT_ID": "music-generation-434117",
+        "PROJECT_ID": "YOUR_PROJECT",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
     "avtool-go": {
       "command": "mcp-avtool-go",
       "env": {
-        "PROJECT_ID": "ghchinoy-genai-sa",
+        "PROJECT_ID": "YOUR_PROJECT",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     }
