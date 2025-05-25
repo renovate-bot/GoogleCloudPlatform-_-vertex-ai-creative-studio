@@ -130,7 +130,7 @@ func main() {
 	log.Println("Global AI Platform Prediction client initialized successfully.")
 
 	s := server.NewMCPServer(
-		"Google Cloud Lyria Music Generation",
+		"Lyria", // Standardized name
 		version,
 	)
 
@@ -169,28 +169,30 @@ func main() {
 	s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
 
 	log.Printf("Starting Lyria MCP Server (Version: %s, Transport: %s)", version, transport)
+
 	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8080")) // Assuming 8080 is the desired SSE port for Lyria
-		log.Printf("SSE server listening on :8080 with tool: %s", lyriaTool.Name)
-		if err := sseServer.Start(":8080"); err != nil {
+		// Assuming 8081 is the desired SSE port for Lyria to avoid conflict if HTTP uses 8080
+		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
+		log.Printf("Lyria MCP Server listening on SSE at :8081 with tool: %s", lyriaTool.Name)
+		if err := sseServer.Start(":8081"); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
-		log.Printf("HTTP server listening on :8080/mcp with tool: %s", lyriaTool.Name)
-		if err := httpServer.Start(); err != nil {
+		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
+		log.Printf("Lyria MCP Server listening on HTTP at :8080/mcp with tool: %s", lyriaTool.Name)
+		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
 		if transport != "stdio" && transport != "" {
 			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
 		}
-		log.Printf("STDIO server listening with tool: %s", lyriaTool.Name)
+		log.Printf("Lyria MCP Server listening on STDIO with tool: %s", lyriaTool.Name)
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
 	}
-	log.Println("Server has stopped.")
+	log.Println("Lyria Server has stopped.")
 }
 
 // lyriaGenerateMusicHandler handles requests to the lyria_generate_music tool.

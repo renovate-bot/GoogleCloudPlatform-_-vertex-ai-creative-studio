@@ -167,7 +167,7 @@ func main() {
 
 	// Create MCP server
 	s := server.NewMCPServer(
-		"Google Cloud Imagen 3",
+		"Imagen", // Standardized name
 		version,
 	)
 
@@ -205,29 +205,31 @@ func main() {
 	}
 	s.AddTool(tool, handlerWithClient)
 
-	log.Printf("Starting Google Cloud Imagen 3 MCP Server (Version: %s, Transport: %s)", version, transport)
+	log.Printf("Starting Imagen MCP Server (Version: %s, Transport: %s)", version, transport)
+
 	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8080")) // Assuming 8080 is the desired SSE port for Imagen
-		log.Printf("SSE server listening on :8080 with t2i tools")
-		if err := sseServer.Start(":8080"); err != nil {
+		// Assuming 8081 is the desired SSE port for Imagen to avoid conflict if HTTP uses 8080
+		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
+		log.Printf("Imagen MCP Server listening on SSE at :8081 with t2i tools")
+		if err := sseServer.Start(":8081"); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
-		log.Printf("HTTP server listening on :8080/mcp with t2i tools")
-		if err := httpServer.Start(); err != nil {
+		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
+		log.Printf("Imagen MCP Server listening on HTTP at :8080/mcp with t2i tools")
+		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
 		if transport != "stdio" && transport != "" {
 			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
 		}
-		log.Printf("STDIO server listening with t2i tools")
+		log.Printf("Imagen MCP Server listening on STDIO with t2i tools")
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
 	}
-	log.Println("Server has stopped.")
+	log.Println("Imagen Server has stopped.")
 }
 
 // imagenGenerationHandler invokes Imagen text to image generation
