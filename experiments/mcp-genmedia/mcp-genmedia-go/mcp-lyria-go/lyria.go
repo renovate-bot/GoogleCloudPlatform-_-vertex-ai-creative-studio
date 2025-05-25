@@ -48,7 +48,8 @@ var (
 	lyriaModelPublisher string // Publisher for Lyria model (LYRIA_MODEL_PUBLISHER)
 	defaultLyriaModelID string // Default Lyria model ID (DEFAULT_LYRIA_MODEL_ID)
 
-	predictionClient *aiplatform.PredictionClient // Global Prediction Client
+	predictionClient  *aiplatform.PredictionClient // Global Prediction Client
+	genmediaBucketEnv string                       // To store GENMEDIA_BUCKET env var
 )
 
 const (
@@ -61,15 +62,17 @@ const (
 // init handles command-line flags and initial logging setup.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
+	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 }
 
-// getEnv gets an environment variable or returns a default value.
+// getEnv retrieves an environment variable by key. If the variable is not set
+// or is empty, it logs a message and returns the fallback value.
 func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
 	}
+	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
 	return fallback
 }
 
@@ -96,6 +99,11 @@ func loadConfiguration() {
 		defaultLyriaModelID = fallbackDefaultLyriaModelID
 	} else {
 		log.Printf("Default Lyria Model ID set by environment: %s", defaultLyriaModelID)
+	}
+
+	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
+	if genmediaBucketEnv != "" {
+		log.Printf("Default GCS output bucket configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
 	}
 }
 
@@ -162,12 +170,21 @@ func main() {
 
 	log.Printf("Starting Lyria MCP Server (Version: %s, Transport: %s)", version, transport)
 	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8080"))
+		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8080")) // Assuming 8080 is the desired SSE port for Lyria
 		log.Printf("SSE server listening on :8080 with tool: %s", lyriaTool.Name)
 		if err := sseServer.Start(":8080"); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
-	} else {
+	} else if transport == "http" {
+		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
+		log.Printf("HTTP server listening on :8080/mcp with tool: %s", lyriaTool.Name)
+		if err := httpServer.Start(); err != nil {
+			log.Fatalf("HTTP Server error: %v", err)
+		}
+	} else { // Default to stdio
+		if transport != "stdio" && transport != "" {
+			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
+		}
 		log.Printf("STDIO server listening with tool: %s", lyriaTool.Name)
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
@@ -187,8 +204,18 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	}
 
 	gcsBucketParam := ""
-	if val, ok := params["output_gcs_bucket"].(string); ok && strings.TrimSpace(val) != "" {
-		gcsBucketParam = strings.TrimPrefix(strings.TrimSpace(val), "gs://")
+	userProvidedBucket, _ := params["output_gcs_bucket"].(string)
+	userProvidedBucket = strings.TrimSpace(userProvidedBucket)
+
+	if userProvidedBucket != "" {
+		gcsBucketParam = userProvidedBucket
+	} else if genmediaBucketEnv != "" {
+		gcsBucketParam = genmediaBucketEnv
+		log.Printf("Handler lyria_generate_music: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", gcsBucketParam)
+	}
+
+	if gcsBucketParam != "" { // Only trim prefix if bucket is actually set
+		gcsBucketParam = strings.TrimPrefix(gcsBucketParam, "gs://")
 	}
 
 	fileNameParam := ""

@@ -75,22 +75,21 @@ var LanguageNameToCodeMap = map[string]string{
 // OriginalLanguageNames is used to get the original casing for display in disambiguation messages.
 var OriginalLanguageNames = make(map[string]string) // map[lowercase_name]Original_Cased_Name
 
-// envCheck checks for an environment variable, otherwise returns default
-func envCheck(environmentVariable, defaultVar string) string {
-	if envar, ok := os.LookupEnv(environmentVariable); !ok {
-		return defaultVar
-	} else if envar == "" {
-		return defaultVar
-	} else {
-		return envar
+// getEnv retrieves an environment variable by key. If the variable is not set
+// or is empty, it logs a message and returns the fallback value.
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		return value
 	}
+	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
+	return fallback
 }
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&port, "p", "8080", "Port for SSE server if transport is sse")
+	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&port, "p", "8080", "Port for SSE server if transport is sse") // This port is for SSE, HTTP will use its own.
 	flag.Parse()
 
 	titleCaser := cases.Title(language.Und)
@@ -195,11 +194,13 @@ func parseMcpPronunciations(pronunciationsParam interface{}, encodingStr string)
 }
 
 func main() {
-	projectID = envCheck("PROJECT_ID", "")
+	projectID = getEnv("PROJECT_ID", "") // Renamed from envCheck
 	if projectID == "" {
-		log.Fatal("PROJECT_ID environment variable not set. Please set it, e.g., export PROJECT_ID=$(gcloud config get project)")
+		// This specific check for PROJECT_ID being fatal can remain,
+		// as it's more critical than just falling back to an empty string.
+		log.Fatal("PROJECT_ID environment variable not set or empty. Please set it, e.g., export PROJECT_ID=$(gcloud config get project)")
 	}
-	location = envCheck("LOCATION", "us-central1")
+	location = getEnv("LOCATION", "us-central1") // Renamed from envCheck
 	log.Printf("Using Project ID: %s, Location: %s", projectID, location)
 
 	log.Printf("Initializing global Text-to-Speech client...")
@@ -288,7 +289,20 @@ func main() {
 		if ttsClient != nil {
 			ttsClient.Close()
 		}
-	} else {
+	} else if transport == "http" {
+		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
+		log.Printf("HTTP server listening on :8080/mcp with tools: chirp_tts, list_chirp_voices")
+		if err := httpServer.Start(); err != nil {
+			log.Fatalf("HTTP Server error: %v", err)
+		}
+		log.Println("HTTP Server has stopped.")
+		if ttsClient != nil {
+			ttsClient.Close()
+		}
+	} else { // Default to stdio
+		if transport != "stdio" && transport != "" {
+			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
+		}
 		log.Printf("STDIO server listening with tools: chirp_tts, list_chirp_voices")
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
