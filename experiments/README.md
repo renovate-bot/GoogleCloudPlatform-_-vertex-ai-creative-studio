@@ -6,6 +6,11 @@ The experimental folder contains features not yet ready for inclusion into the m
 
 We'd love to hear your feedback on these!
 
+## MCP Tools for Genmedia
+
+Model Context Protocol servers for Genmedia services for AI applications to utilize Veo, Imagen, Lyria, Chirp 3 HD, along with a composition service, avtool.
+
+
 ## Veo
 
 A stand-alone application for generative video creation with Veo!
