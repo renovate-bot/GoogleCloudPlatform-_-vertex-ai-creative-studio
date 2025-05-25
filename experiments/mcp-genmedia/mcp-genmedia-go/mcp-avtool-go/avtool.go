@@ -53,8 +53,8 @@ const (
 // init handles command-line flags and initial logging setup.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
+	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 }
 
 // getEnv retrieves an environment variable by key. If the variable is not set
@@ -104,12 +104,22 @@ func main() {
 
 	log.Printf("Starting FFMpeg AV Tool MCP Server (Version: %s, Transport: %s)", version, transport)
 	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
+		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081")) // Assuming WithBaseURL is correct for SSE server
 		log.Printf("SSE server listening on :8081")
-		if err := sseServer.Start(":8081"); err != nil {
+		if err := sseServer.Start(":8081"); err != nil { // Ensure port matches
 			log.Fatalf("SSE Server error: %v", err)
 		}
-	} else {
+	} else if transport == "http" {
+		// Default port 8080 and path /mcp
+		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
+		log.Printf("HTTP server listening on :8080/mcp")
+		if err := httpServer.Start(); err != nil {
+			log.Fatalf("HTTP Server error: %v", err)
+		}
+	} else { // Default to stdio
+		if transport != "stdio" && transport != "" { // Log if an unsupported transport was specified but defaulting to stdio
+			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
+		}
 		log.Printf("STDIO server listening")
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)

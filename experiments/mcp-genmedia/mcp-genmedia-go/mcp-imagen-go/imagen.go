@@ -130,8 +130,8 @@ func downloadFromGCS(ctx context.Context, gcsURI string, localDestPath string) e
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
+	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 	flag.Parse()
 }
 
@@ -205,19 +205,29 @@ func main() {
 	}
 	s.AddTool(tool, handlerWithClient)
 
+	log.Printf("Starting Google Cloud Imagen 3 MCP Server (Version: %s, Transport: %s)", version, transport)
 	if transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8080"))
+		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8080")) // Assuming 8080 is the desired SSE port for Imagen
 		log.Printf("SSE server listening on :8080 with t2i tools")
 		if err := sseServer.Start(":8080"); err != nil {
-			log.Fatalf("Server error: %v", err)
+			log.Fatalf("SSE Server error: %v", err)
 		}
-		log.Println("Server has stopped.")
-	} else {
+	} else if transport == "http" {
+		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
+		log.Printf("HTTP server listening on :8080/mcp with t2i tools")
+		if err := httpServer.Start(); err != nil {
+			log.Fatalf("HTTP Server error: %v", err)
+		}
+	} else { // Default to stdio
+		if transport != "stdio" && transport != "" {
+			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
+		}
 		log.Printf("STDIO server listening with t2i tools")
 		if err := server.ServeStdio(s); err != nil {
-			log.Fatalf("Server error: %v", err)
+			log.Fatalf("STDIO Server error: %v", err)
 		}
 	}
+	log.Println("Server has stopped.")
 }
 
 // imagenGenerationHandler invokes Imagen text to image generation

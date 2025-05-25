@@ -87,9 +87,9 @@ func getEnv(key, fallback string) string {
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&port, "p", "8080", "Port for SSE server if transport is sse")
+	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&port, "p", "8080", "Port for SSE server if transport is sse") // This port is for SSE, HTTP will use its own.
 	flag.Parse()
 
 	titleCaser := cases.Title(language.Und)
@@ -289,7 +289,20 @@ func main() {
 		if ttsClient != nil {
 			ttsClient.Close()
 		}
-	} else {
+	} else if transport == "http" {
+		httpServer := server.NewStreamableHTTPServer(s, server.WithListenAddr(":8080"), server.WithPath("/mcp"))
+		log.Printf("HTTP server listening on :8080/mcp with tools: chirp_tts, list_chirp_voices")
+		if err := httpServer.Start(); err != nil {
+			log.Fatalf("HTTP Server error: %v", err)
+		}
+		log.Println("HTTP Server has stopped.")
+		if ttsClient != nil {
+			ttsClient.Close()
+		}
+	} else { // Default to stdio
+		if transport != "stdio" && transport != "" {
+			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
+		}
 		log.Printf("STDIO server listening with tools: chirp_tts, list_chirp_voices")
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
