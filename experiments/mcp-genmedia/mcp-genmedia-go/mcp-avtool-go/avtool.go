@@ -38,7 +38,7 @@ import (
 var (
 	// MCP Server settings
 	transport string
-	version   = "1.0.2" // Incremented version
+	version   = "1.0.3" // Incremented version for streamable http
 
 	// Google Cloud settings - typically set via environment variables
 	gcpProjectID      string // PROJECT_ID for GCS operations
@@ -111,7 +111,7 @@ func main() {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s, "/mcp") // Base path /mcp
+		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
 		log.Printf("FFMpeg AV Tool MCP Server listening on HTTP at :8080/mcp")
 		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)
