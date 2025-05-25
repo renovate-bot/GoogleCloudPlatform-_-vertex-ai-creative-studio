@@ -246,7 +246,7 @@ func main() {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s, "/mcp") // Base path /mcp
+		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
 		log.Printf("Veo MCP Server listening on HTTP at :8080/mcp with t2v and i2v tools")
 		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)

@@ -288,7 +288,7 @@ func main() {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s, "/mcp") // Base path /mcp
+		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
 		log.Printf("Chirp3 MCP Server listening on HTTP at :8080/mcp with tools: chirp_tts, list_chirp_voices")
 		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
 			log.Fatalf("HTTP Server error: %v", err)
