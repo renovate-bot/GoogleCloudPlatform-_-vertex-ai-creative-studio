@@ -156,6 +156,7 @@ def add_music_metadata(
     """Add Music metadata to Firestore persistence"""
     current_datetime = datetime.datetime.now()
 
+
     # Store the image metadata in Firestore
     doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
     doc_ref.set(
@@ -196,13 +197,17 @@ def add_video_metadata(
 
     current_datetime = datetime.datetime.now()
 
+    veo_model = Default.VEO_MODEL_ID
+    if model == "3.0":
+        veo_model = Default.VEO_EXP_MODEL_ID
+
     # Store the image metadata in Firestore
     doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
     doc_ref.set(
         {
             "gcsuri": gcsuri,
             "prompt": prompt,
-            "model": model,
+            "model": veo_model,
             "aspect": aspect_ratio,
             "duration": duration,
             "generation_time": generation_time,

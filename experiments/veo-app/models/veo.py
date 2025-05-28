@@ -33,6 +33,10 @@ t2v_video_model = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{c
 t2v_prediction_endpoint = f"{t2v_video_model}:predictLongRunning"
 fetch_endpoint = f"{t2v_video_model}:fetchPredictOperation"
 
+t2v_video_model_exp = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{config.VEO_EXP_PROJECT_ID}/locations/us-central1/publishers/google/models/{config.VEO_EXP_MODEL_ID}"
+t2v_prediction_endpoint_exp = f"{t2v_video_model_exp}:predictLongRunning"
+fetch_endpoint_exp = f"{t2v_video_model_exp}:fetchPredictOperation"
+
 i2v_video_model = f"https://us-central1-aiplatform.googleapis.com/v1beta1/projects/{config.VEO_PROJECT_ID}/locations/us-central1/publishers/google/models/{config.VEO_EXP_MODEL_ID}"
 i2v_prediction_endpoint = f"{i2v_video_model}:predictLongRunning"
 
@@ -105,7 +109,14 @@ def compose_videogen_request(
 
 
 def text_to_video(
-    prompt, seed, aspect_ratio, sample_count, output_gcs, enable_pr, duration_seconds
+    model,
+    prompt,
+    seed,
+    aspect_ratio,
+    sample_count,
+    output_gcs,
+    enable_pr,
+    duration_seconds,
 ):
     """Text to video"""
     req = compose_videogen_request(
@@ -119,9 +130,15 @@ def text_to_video(
         duration_seconds,
         None,
     )
-    resp = send_request_to_google_api(t2v_prediction_endpoint, req)
+    prediction_endpoint = t2v_prediction_endpoint
+    fetch_ep = fetch_endpoint
+    if model == "3.0":
+        prediction_endpoint = t2v_prediction_endpoint_exp
+        fetch_ep = fetch_endpoint_exp
+
+    resp = send_request_to_google_api(prediction_endpoint, req)
     print(resp)
-    return fetch_operation(resp["name"])
+    return fetch_operation(fetch_ep, resp["name"])
 
 
 def image_to_video(
@@ -148,7 +165,7 @@ def image_to_video(
     )
     resp = send_request_to_google_api(t2v_prediction_endpoint, req)
     print(resp)
-    return fetch_operation(resp["name"])
+    return fetch_operation(fetch_endpoint, resp["name"])
 
 
 def images_to_video(
@@ -177,10 +194,10 @@ def images_to_video(
     print(f"Request: {req}")
     resp = send_request_to_google_api(exp_prediction_endpoint, req)
     print(resp)
-    return fetch_operation(resp["name"])
+    return fetch_operation(fetch_endpoint, resp["name"])
 
 
-def fetch_operation(lro_name):
+def fetch_operation(fetch_endpoint, lro_name):
     """Long Running Operation fetch"""
     request = {"operationName": lro_name}
     # The generation usually takes 2 minutes. Loop 30 times, around 5 minutes.

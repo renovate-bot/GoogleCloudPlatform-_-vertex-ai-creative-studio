@@ -59,7 +59,7 @@ def home_page():
 
 @me.page(
     path="/veo",
-    title="Veo 2 - GenMedia Creative Studio",
+    title="Veo - GenMedia Creative Studio",
     on_load=on_load,
 )
 def veo_page():
