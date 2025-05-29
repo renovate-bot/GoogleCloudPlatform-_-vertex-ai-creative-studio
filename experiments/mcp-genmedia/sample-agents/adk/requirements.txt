@@ -28,7 +28,7 @@ click==8.2.1
     #   uvicorn
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==44.0.3
+cryptography==45.0.3
     # via authlib
 deprecated==1.2.18
     # via
@@ -36,9 +36,11 @@ deprecated==1.2.18
     #   opentelemetry-semantic-conventions
 docstring-parser==0.16
     # via google-cloud-aiplatform
+dotenv==0.9.9
+    # via adk-genmedia-agent
 fastapi==0.115.12
     # via google-adk
-google-adk==0.5.0
+google-adk==1.1.1
     # via adk-genmedia-agent
 google-api-core==2.24.2
     # via
@@ -69,7 +71,7 @@ google-auth==2.40.2
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.94.0
+google-cloud-aiplatform==1.95.0
     # via google-adk
 google-cloud-bigquery==3.33.0
     # via google-cloud-aiplatform
@@ -93,8 +95,10 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.16.1
-    # via google-adk
+google-genai==1.17.0
+    # via
+    #   google-adk
+    #   google-cloud-aiplatform
 google-resumable-media==2.7.2
     # via
     #   google-cloud-bigquery
@@ -141,7 +145,7 @@ idna==3.10
     #   anyio
     #   httpx
     #   requests
-importlib-metadata==8.7.0
+importlib-metadata==8.6.1
     # via opentelemetry-api
 mcp==1.9.1
     # via google-adk
@@ -163,7 +167,7 @@ opentelemetry-sdk==1.33.1
     #   google-adk
     #   opentelemetry-exporter-gcp-trace
     #   opentelemetry-resourcedetector-gcp
-opentelemetry-semantic-conventions==0.53b1
+opentelemetry-semantic-conventions==0.54b1
     # via opentelemetry-sdk
 packaging==25.0
     # via
@@ -177,7 +181,7 @@ proto-plus==1.26.1
     #   google-cloud-secret-manager
     #   google-cloud-speech
     #   google-cloud-trace
-protobuf==5.29.4
+protobuf==5.29.5
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -205,7 +209,7 @@ pydantic==2.11.5
     #   google-genai
     #   mcp
     #   pydantic-settings
-pydantic-core==2.34.1
+pydantic-core==2.33.2
     # via pydantic
 pydantic-settings==2.9.1
     # via mcp
@@ -215,8 +219,11 @@ python-dateutil==2.9.0.post0
     # via google-cloud-bigquery
 python-dotenv==1.1.0
     # via
+    #   dotenv
     #   google-adk
     #   pydantic-settings
+python-multipart==0.0.20
+    # via mcp
 pyyaml==6.0.2
     # via google-adk
 requests==2.32.3
@@ -274,5 +281,5 @@ websockets==15.0.1
     # via google-genai
 wrapt==1.17.2
     # via deprecated
-zipp==3.21.0
+zipp==3.22.0
     # via importlib-metadata
