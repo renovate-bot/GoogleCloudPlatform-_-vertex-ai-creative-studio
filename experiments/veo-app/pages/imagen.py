@@ -354,7 +354,7 @@ def imagen_content(app_state: me.state):
                                 # print(f"{idx}: {len(img)}")
                                 img_url = img.replace(
                                     "gs://",
-                                    "https://storage.mtls.cloud.google.com/",
+                                    "https://storage.googleapis.com/", # Changed to standard public GCS URL
                                 )
                                 me.image(
                                     # src=f"data:image/png;base64,{img}",
