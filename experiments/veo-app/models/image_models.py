@@ -81,15 +81,21 @@ def generate_images(model: str, prompt: str):
     """Imagen image generation with Google GenAI client"""
     
     client  = ImagenModelSetup.init(model_id=model)
+    cfg = Default() # Instantiate Default config to access IMAGE_BUCKET
     
+    # Define a GCS path for outputting generated images
+    # Using a subfolder "generated_images" within the configured IMAGE_BUCKET
+    gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/generated_images"
+
     try:
         response = client.models.generate_images(
             model=model,  # Use the 'model' parameter passed to the function
             prompt=prompt,
             config=types.GenerateImagesConfig(
-                number_of_images=3,
+                number_of_images=3, # This is currently hardcoded, consider making it a parameter if needed
                 include_rai_reason=True,
-                # output_mime_type='image/jpeg', # Removing this to encourage GCS URI population
+                output_gcs_uri=gcs_output_directory, # Specify GCS output path
+                # output_mime_type should not be set if output_gcs_uri is used and we want URIs
             ),
         )
         return response
