@@ -515,20 +515,20 @@ def generate_images(input_txt: str):
             image_data_for_size_calc = None 
 
             if hasattr(img_obj, 'image') and img_obj.image is not None:
-                actual_image_object = img_obj.image
-                # Try to get the URI using the .uri attribute
-                if hasattr(actual_image_object, 'uri'):
-                    image_uri_to_append = actual_image_object.uri 
-                else:
-                    print(f"Warning: Image object for image {idx} does not have a .uri attribute.")
+                actual_image_object = img_obj.image # This is google.genai.types.Image
 
-                # Prefer base64_string for size if available, otherwise image_bytes
-                if hasattr(actual_image_object, 'base64_string') and actual_image_object.base64_string:
-                    image_data_for_size_calc = actual_image_object.base64_string
-                elif hasattr(actual_image_object, 'image_bytes') and actual_image_object.image_bytes:
+                # Try to get the URI using the .gcs_uri attribute
+                if hasattr(actual_image_object, 'gcs_uri') and actual_image_object.gcs_uri:
+                    image_uri_to_append = actual_image_object.gcs_uri
+                else:
+                    print(f"Warning: Image object for image {idx} does not have a .gcs_uri attribute or it's empty.")
+
+                # Use image_bytes for size calculation as per type definition
+                if hasattr(actual_image_object, 'image_bytes') and actual_image_object.image_bytes:
                     image_data_for_size_calc = actual_image_object.image_bytes # len() works on bytes
                 else:
-                    print(f"Warning: Image object for image {idx} has no base64_string or image_bytes for size calculation.")
+                    # If output_gcs_uri was used, image_bytes might be None.
+                    print(f"Warning: Image object for image {idx} has no image_bytes for size calculation (this is expected if GCS URI is populated).")
             else:
                 print(f"Warning: GeneratedImage at index {idx} does not have a valid .image attribute or it's None.")
 
