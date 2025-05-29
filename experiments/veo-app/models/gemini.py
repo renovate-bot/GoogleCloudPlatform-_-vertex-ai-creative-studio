@@ -20,6 +20,8 @@ from google.genai import types
 
 from google.cloud.aiplatform import telemetry
 
+from google.cloud.aiplatform import telemetry
+
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -30,6 +32,8 @@ from tenacity import (
 from models.model_setup import (
     GeminiModelSetup,
 )
+
+from config.rewriters import MAGAZINE_EDITOR_PROMPT
 
 from config.rewriters import MAGAZINE_EDITOR_PROMPT
 
@@ -99,6 +103,7 @@ def analyze_audio_with_gemini(
     )
 
     # Define the specific model for audio analysis (as per your sample)
+    analysis_model_id = "gemini-2.5-flash-preview-05-20"
     analysis_model_id = "gemini-2.5-flash-preview-05-20"
 
     # Prepare the audio part using from_uri
@@ -176,7 +181,10 @@ Output this as JSON.
         safety_settings=safety_settings_list,
         # temperature=1.0,  # Corrected: float value
         # top_p=1.0,  # Corrected: float value
+        # temperature=1.0,  # Corrected: float value
+        # top_p=1.0,  # Corrected: float value
         # seed=0, # Seed might not be available in all models or SDK versions, or might be int
+        # max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
         # max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
         response_mime_type="application/json",  # This is key for JSON output
         response_schema=schema_json,

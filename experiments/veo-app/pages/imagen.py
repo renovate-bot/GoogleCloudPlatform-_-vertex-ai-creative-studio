@@ -22,6 +22,7 @@ import mesop as me
 import requests
 
 # from google.cloud.aiplatform import telemetry
+# from google.cloud.aiplatform import telemetry
 from components.header import header
 from components.page_scaffold import (
     page_frame,
@@ -30,6 +31,7 @@ from components.page_scaffold import (
 from config.default import Default, ImageModel
 from config.rewriters import REWRITER_PROMPT
 from models.gemini import image_critique, rewriter
+
 # from models.image_models import ImageModel # Ensure this is removed if ImageModel moved
 from models.image_models import generate_images as image_generation
 from svg_icon.svg_icon_component import svg_icon_component
@@ -58,7 +60,28 @@ class PageState:
     # General UI state
     is_loading: bool = False
     show_advanced: bool = False
+    show_advanced: bool = False
 
+    # Image prompt and related settings
+    image_prompt_input: str = ""
+    image_prompt_placeholder: str = ""
+    image_textarea_key: int = 0
+
+    image_negative_prompt_input: str = ""
+    image_negative_prompt_placeholder: str = ""
+    image_negative_prompt_key: int = 0  # Or handle None later
+
+    # Image generation parameters
+    imagen_watermark: bool = True
+    imagen_seed: int = 0
+    imagen_image_count: int = 3
+
+    # Image style modifiers
+    image_content_type: str = "Photo"
+    image_color_tone: str = "Cool tone"
+    image_lighting: str = "Golden hour"
+    image_composition: str = "Wide angle"
+    image_aspect_ratio: str = "1:1"
     # Image prompt and related settings
     image_prompt_input: str = ""
     image_prompt_placeholder: str = ""
@@ -84,6 +107,7 @@ class PageState:
 def imagen_content(app_state: me.state):
     """Imagen Mesop Page"""
 
+    state = me.state(PageState)
     state = me.state(PageState)
 
     with page_scaffold():  # pylint: disable=not-context-manager
