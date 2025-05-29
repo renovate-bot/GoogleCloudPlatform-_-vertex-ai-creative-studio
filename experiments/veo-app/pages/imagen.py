@@ -27,14 +27,19 @@ from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-from config.default import Default
+from config.default import Default, ImageModel
 from config.rewriters import REWRITER_PROMPT
 from models.gemini import image_critique, rewriter
-from models.image_models import ImageModel
+# from models.image_models import ImageModel # Ensure this is removed if ImageModel moved
 from models.image_models import generate_images as image_generation
 from svg_icon.svg_icon_component import svg_icon_component
 
-config = Default()
+app_config_instance = Default()
+
+
+def _get_default_image_models():
+    """Helper function for PageState default_factory."""
+    return app_config_instance.display_image_models.copy()
 
 
 @dataclass
@@ -44,11 +49,11 @@ class PageState:
 
     # Image generation model selection and output
     image_models: list[ImageModel] = field(
-        default_factory=lambda: config.display_image_models.copy()
+        default_factory=_get_default_image_models
     )
     image_output: list[str] = field(default_factory=list)
     image_commentary: str = ""
-    image_model_name: str = config.MODEL_IMAGEN3_FAST
+    image_model_name: str = app_config_instance.MODEL_IMAGEN3_FAST
 
     # General UI state
     is_loading: bool = False
@@ -450,7 +455,7 @@ def generate_images(input_txt: str):
         input_txt = state.image_prompt_placeholder
     state.image_output.clear()
     modifiers = []
-    for mod in config.image_modifiers:
+    for mod in app_config_instance.image_modifiers:
         if mod != "aspect_ratio":
             if getattr(state, f"image_{mod}") != "None":
                 modifiers.append(getattr(state, f"image_{mod}"))
