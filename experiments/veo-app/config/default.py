@@ -1,10 +1,19 @@
 import os
 from dataclasses import dataclass, field
+from typing import TypedDict # Add this import
 from dotenv import load_dotenv
 
-from models.image_models import ImageModel
+# from models.image_models import ImageModel # Remove this import
 
 load_dotenv(override=True)
+
+
+# Define ImageModel here
+class ImageModel(TypedDict):
+    """Defines Models For Image Generation."""
+
+    display: str
+    model_name: str
 
 
 @dataclass

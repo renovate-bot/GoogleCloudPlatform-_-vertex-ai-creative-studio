@@ -15,7 +15,7 @@
 #import json
 
 #from google.cloud.aiplatform import telemetry
-from typing import TypedDict
+# from typing import TypedDict # Remove if not used elsewhere in this file
 
 from google.genai import types
 from tenacity import (
@@ -36,12 +36,11 @@ from google import genai
 from config.default import Default
 
 
-class ImageModel(TypedDict):
-    """Defines Models For Image Generation."""
-
-    display: str
-    model_name: str
-
+# class ImageModel(TypedDict): # Remove this definition
+#     """Defines Models For Image Generation."""
+# 
+#     display: str
+#     model_name: str
 
 
 class ImagenModelSetup:
