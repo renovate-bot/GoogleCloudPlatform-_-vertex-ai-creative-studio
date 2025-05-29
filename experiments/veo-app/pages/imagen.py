@@ -509,8 +509,8 @@ def generate_images(input_txt: str):
             # or accessible via another part of the 'response' object.
             # For now, we assume img_obj is the GeneratedImage.
 
-            image_uri = img_obj.uri
-            b64_string = img_obj.base64_string
+            image_uri = img_obj.image.gcs_uri
+            b64_string = img_obj.image.image_bytes
 
             size_str = "N/A"
             if b64_string is not None:
