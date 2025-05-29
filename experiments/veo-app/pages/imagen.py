@@ -456,7 +456,8 @@ def on_click_generate_images(e: me.ClickEvent):
     try:
         generate_images(state.image_prompt_input) # This is pages.imagen.generate_images
         if state.image_output: # Only generate compliment if images were successfully produced
-            print("Proceeding to generate compliments for produced images.")
+            print(f"Proceeding to generate compliments for {len(state.image_output)} produced images.")
+            print(state.image_output)
             generate_compliment(state.image_prompt_input)
         else:
             print("Skipping compliment generation as no images were added to state.image_output.")
