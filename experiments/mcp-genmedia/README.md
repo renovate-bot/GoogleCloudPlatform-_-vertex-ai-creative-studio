@@ -7,6 +7,8 @@ This repository contains Model Context Protocol (MCP) servers that enable MCP cl
 * Chirp 3 HD - for audio synthesis
 * Lyria - for music generation
 
+Additionally, there's a compositing MCP server, avtool, which instruments ffmpeg, to combine these together.
+
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 
 ### Install the Vertex AI Genmedia MCP Servers
@@ -15,27 +17,51 @@ Install the MCP Servers for Genmedia locally.
 
 You will need [Go](https://go.dev/doc/install) to install the Go versions of the MCP Servers for Genmedia.
 
-The MCP Servers for Genmedia are in preview on a feature branch of the Genmedia Creative Studio project, [mcp-genmedia-servers](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/mcp-genmedia-servers/experiments/mcp-genmedia).
+The MCP Servers for Genmedia available in the /experimental/mcp-genmedia/mcp-genmedia-go directory can be installed with the following commands:
 
 ```bash
-# install the Chirp 3 HD Voices MCP Server
-go install github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-chirp3-go@v0.1.0-alpha
-
-# install the Imagen 3 MCP Server
-go install github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-imagen-go@v0.1.0-alpha
-
-# install the Veo 2 MCP Server
-go install github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-veo-go@v0.1.0-alpha
+# step 1: clone the repo
+git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
 ```
 
+```bash
+# Step 2: change directory to the mcp-genmedia-go directory
+cd vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go
+```
 
+```bash
+# Step 3 (all): install all MCP Servers for Genmedia 
+# Installs: mcp-avtool-go, mcp-chirp3-go, mcp-imagen-go, etc.
+go install ./...
+```
+
+```bash
+# Step3 (individually): install a single MCP Server for Genmedia
+cd mcp-imagen-go/
+go install .
+```
+
+### Verify your installation
+
+Confirm that the go binaries are on your path
+
+```bash
+export PATH=$(go env GOPATH)/bin:$PATH
+```
+
+Test with `--help`
+
+```bash
+# imagen mcp
+mcp-imagen-go --help
+```
 
 
 ## Genmedia MCP Tools docs
 
-Each of the servers can be used in STDIO and SSE mode (Streamable HTTP coming soon). The default is STDIO.
+Each of the servers can be used in STDIO and Streamable HTTP mode (with SSE mode still available). The default is STDIO.
 
-To start a server in SSE mode, use the `--transport sse` flag.
+To start a server in Streamable HTTP mode, use the `--transport http` flag.
 
 ### Imagen
 
