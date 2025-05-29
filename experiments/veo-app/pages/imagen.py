@@ -503,10 +503,11 @@ def generate_images(input_txt: str):
     if hasattr(response, 'generated_images') and isinstance(response.generated_images, list):
         if not response.generated_images:
             print("No images were generated (generated_images list is empty).")
-        for idx, item_tuple in enumerate(response.generated_images):
-            # When include_rai_reason=True, item_tuple is (GeneratedImage_object, SafetyReason_object)
-            img_obj = item_tuple[0]  # Extract the GeneratedImage object
-            # rai_reason = item_tuple[1] # The SafetyReason object, if needed
+        for idx, img_obj in enumerate(response.generated_images):
+            # img_obj is now directly the GeneratedImage object.
+            # If include_rai_reason=True, the RAI reason might be an attribute of img_obj
+            # or accessible via another part of the 'response' object.
+            # For now, we assume img_obj is the GeneratedImage.
 
             image_uri = img_obj.uri
             b64_string = img_obj.base64_string
