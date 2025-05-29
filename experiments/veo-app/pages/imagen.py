@@ -497,7 +497,7 @@ def on_image_input(e: me.InputEvent):
 def random_prompt_generator(e: me.ClickEvent):
     """Click Event to generate a random prompt from a list of predefined prompts."""
     state = me.state(PageState)
-    with open(config.IMAGEN_PROMPTS_JSON, "r", encoding="utf-8") as file:
+    with open(app_config_instance.IMAGEN_PROMPTS_JSON, "r", encoding="utf-8") as file:
         data = file.read()
     prompts = json.loads(data)
     random_prompt = random.choice(prompts["imagen"])
