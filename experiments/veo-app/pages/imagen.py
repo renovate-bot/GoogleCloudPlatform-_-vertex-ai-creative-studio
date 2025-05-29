@@ -451,11 +451,23 @@ def on_click_generate_images(e: me.ClickEvent):
     state = me.state(PageState)
     state.is_loading = True
     state.image_output.clear()
+    state.image_commentary = "" # Clear previous commentary
     yield
-    generate_images(state.image_prompt_input)
-    generate_compliment(state.image_prompt_input)
-    state.is_loading = False
-    yield
+    try:
+        generate_images(state.image_prompt_input) # This is pages.imagen.generate_images
+        if state.image_output: # Only generate compliment if images were successfully produced
+            print("Proceeding to generate compliments for produced images.")
+            generate_compliment(state.image_prompt_input)
+        else:
+            print("Skipping compliment generation as no images were added to state.image_output.")
+    except Exception as ex:
+        print(f"Error in on_click_generate_images main processing block: {ex}")
+        state.error_message = f"An error occurred during image generation or critique: {ex}"
+        # Consider adding a state variable to show this error in a dialog if you have one for imagen page
+        # state.show_error_dialog = True 
+    finally:
+        state.is_loading = False
+        yield
 
 
 def on_select_image_count(e: me.SelectSelectionChangeEvent):
@@ -497,7 +509,7 @@ def generate_images(input_txt: str):
     #     negative_prompt=state.image_negative_prompt_input,
     # )
 
-    response = image_generation(state.image_model_name, prompt)
+    response = image_generation(state.image_model_name, prompt, state.imagen_image_count)
 
     # Check if response has generated_images and it's a list
     if hasattr(response, 'generated_images') and isinstance(response.generated_images, list):

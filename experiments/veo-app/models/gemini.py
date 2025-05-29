@@ -255,7 +255,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
             types.Part.from_uri(file_uri=image_url, mime_type="image/png")
         )
 
-    prompt_parts.append = types.Part.from_text(text=critic_prompt)
+    prompt_parts.append(types.Part.from_text(text=critic_prompt))
 
     safety_settings_list = [
         types.SafetySetting(
@@ -275,49 +275,46 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
             threshold=types.HarmBlockThreshold.BLOCK_NONE,
         ),
     ]
-    contents = [
-        types.Content(role="user", parts=prompt_parts),
-    ]
+    # prompt_parts is already a list of Part-like objects (str, Part).
+    # The SDK will form a single Content message from this list.
+    # No need to wrap it in types.Content manually here if it's for a single turn.
+    # contents_payload = [types.Content(role="user", parts=prompt_parts)] # This would be for multi-turn history
+
+    # For a single user message with multiple parts:
+    contents_payload = prompt_parts
+
+
+    # The telemetry.tool_context_manager is from the Vertex AI SDK,
+    # client here is from google-genai, so this context manager might not apply or could cause issues.
+    # If it's not needed or causes errors, it should be removed.
+    # Assuming it's a no-op or handled if telemetry is not configured for google-genai.
     with telemetry.tool_context_manager("creative-studio"):
         try:
-            print(f"Sending request to Gemini model: {model_id}")
+            print(f"Sending critique request to Gemini model: {model_id} with {len(contents_payload)} parts.")
 
-            response = client.models.generate_content(  # Or client.generate_content if client is a model instance
-                model=model_id,
-                contents=contents,
+            response = client.models.generate_content(
+                model=model_id, # Uses global model_id from GeminiModelSetup.init()
+                contents=contents_payload,
                 config=types.GenerateContentConfig(
                     response_modalities=["TEXT"], safety_settings=safety_settings_list
                 ),
             )
 
-            print("Received response from Gemini.")
-            print(f"{response}")
+            print("Received critique response from Gemini.")
+            # print(f"Full critique response: {response}") # Avoid printing large raw response
 
-            # Assuming the response.text contains the JSON string due to response_mime_type
             if response.text:
-                parsed_json = json.loads(response.text)
-                print(f"Successfully parsed analysis JSON: {parsed_json}")
-                return parsed_json
-                # return response.text
+                print(f"Critique generated: {response.text[:200]}...") # Log a snippet
+                return response.text # Return the text directly
+            # Fallback for safety reasons, though .text should be populated for text responses
+            elif response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[0].text:
+                text_response = response.candidates[0].content.parts[0].text
+                print(f"Critique extracted from parts: {text_response[:200]}...")
+                return text_response
             else:
-                # Handle cases where response.text might be empty or parts are structured differently
-                # This part might need adjustment based on actual API response structure for JSON
-                if response.parts:
-                    # Try to assemble from parts if text is empty but parts exist (less common for JSON)
-                    json_text_from_parts = "".join(
-                        part.text for part in response.parts if hasattr(part, "text")
-                    )
-                    if json_text_from_parts:
-                        parsed_json = json.loads(json_text_from_parts)
-                        print(
-                            f"Successfully parsed analysis JSON from parts: {parsed_json}"
-                        )
-                        return parsed_json
-                print("Warning: Gemini response text was empty.")
-                return None  # Or raise an error
+                print("Warning: Gemini critique response text was empty or response structure unexpected.")
+                return "Critique could not be generated (empty or unexpected response)."
 
         except Exception as e:
-            print(f"Error during Gemini API call for audio analysis: {e}")
-            # The retry decorator will handle re-raising if all attempts fail.
-            # If not using retry, you'd raise e here.
-            raise  # Re-raise for tenacity or the caller
+            print(f"Error during Gemini API call for image critique: {e}")
+            raise

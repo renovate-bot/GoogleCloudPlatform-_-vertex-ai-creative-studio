@@ -77,7 +77,7 @@ class ImagenModelSetup:
     retry=retry_if_exception_type(Exception),  # Retry on all exceptions for robustness
     reraise=True,  # re-raise the last exception if all retries fail
 )
-def generate_images(model: str, prompt: str):
+def generate_images(model: str, prompt: str, number_of_images: int):
     """Imagen image generation with Google GenAI client"""
     
     client  = ImagenModelSetup.init(model_id=model)
@@ -88,17 +88,38 @@ def generate_images(model: str, prompt: str):
     gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/generated_images"
 
     try:
+        print(f"models.image_models.generate_images: Requesting {number_of_images} images for model {model} with output to {gcs_output_directory}")
         response = client.models.generate_images(
-            model=model,  # Use the 'model' parameter passed to the function
+            model=model,
             prompt=prompt,
             config=types.GenerateImagesConfig(
-                number_of_images=3, # This is currently hardcoded, consider making it a parameter if needed
+                number_of_images=number_of_images,
                 include_rai_reason=True,
-                output_gcs_uri=gcs_output_directory, # Specify GCS output path
-                # output_mime_type should not be set if output_gcs_uri is used and we want URIs
+                output_gcs_uri=gcs_output_directory,
             ),
         )
+        
+        # Diagnostic logging for the response
+        if response and hasattr(response, 'generated_images') and response.generated_images:
+            print(f"models.image_models.generate_images: Received {len(response.generated_images)} generated_images.")
+            for i, gen_img in enumerate(response.generated_images):
+                if hasattr(gen_img, 'image') and gen_img.image:
+                    if not gen_img.image.gcs_uri:
+                        print(f"models.image_models.generate_images: Image {i} has NO gcs_uri. Image object: {gen_img.image}")
+                    else:
+                        print(f"models.image_models.generate_images: Image {i} has gcs_uri: {gen_img.image.gcs_uri}")
+                    if not gen_img.image.image_bytes:
+                         print(f"models.image_models.generate_images: Image {i} has NO image_bytes.")
+                elif hasattr(gen_img, 'error'):
+                     print(f"models.image_models.generate_images: GeneratedImage {i} has an error: {getattr(gen_img, 'error', 'Unknown error')}")
+                else:
+                    print(f"models.image_models.generate_images: GeneratedImage {i} has no .image attribute or it's None. Full GeneratedImage object: {gen_img}")
+        elif response and hasattr(response, 'error'):
+             print(f"models.image_models.generate_images: API response contains an error: {getattr(response, 'error', 'Unknown error')}")
+        else:
+            print(f"models.image_models.generate_images: Response has no generated_images or is empty. Full response: {response}")
+            
         return response
     except Exception as e:
-        print(f"Image generation error: {e}")
+        print(f"models.image_models.generate_images: API call failed: {e}")
         raise
