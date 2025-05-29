@@ -499,7 +499,7 @@ def generate_images(input_txt: str):
 
     response = image_generation(state.image_model_name, prompt)
 
-    for idx, img in enumerate(response.images):
+    for idx, img in enumerate(response):
         print(
             f"generated image: {idx} size: {len(img._as_base64_string())} at {img._gcs_uri}"
         )
