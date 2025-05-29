@@ -89,7 +89,7 @@ def generate_images(model: str, prompt: str):
             config=types.GenerateImagesConfig(
                 number_of_images=3,
                 include_rai_reason=True,
-                output_mime_type='image/jpeg',
+                # output_mime_type='image/jpeg', # Removing this to encourage GCS URI population
             ),
         )
         return response
