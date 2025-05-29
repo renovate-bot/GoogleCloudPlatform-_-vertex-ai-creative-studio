@@ -501,9 +501,9 @@ def generate_images(input_txt: str):
 
     for idx, img in enumerate(response):
         print(
-            f"generated image: {idx} size: {len(img._as_base64_string())} at {img._gcs_uri}"
+            f"generated image: {idx} size: {len(img.base64_string)} at {img.uri}"
         )
-        state.image_output.append(img._gcs_uri)
+        state.image_output.append(img.uri)
 
 
 def on_image_input(e: me.InputEvent):
