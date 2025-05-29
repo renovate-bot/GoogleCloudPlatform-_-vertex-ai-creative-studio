@@ -500,10 +500,12 @@ def generate_images(input_txt: str):
     response = image_generation(state.image_model_name, prompt)
 
     for idx, img in enumerate(response):
+        # Assuming the GeneratedImage object is the first element of the tuple
+        generated_image_obj = img[0]
         print(
-            f"generated image: {idx} size: {len(img.base64_string)} at {img.uri}"
+            f"generated image: {idx} size: {len(generated_image_obj.base64_string)} at {generated_image_obj.uri}"
         )
-        state.image_output.append(img.uri)
+        state.image_output.append(generated_image_obj.uri)
 
 
 def on_image_input(e: me.InputEvent):

@@ -84,7 +84,7 @@ def generate_images(model: str, prompt: str):
     
     try:
         response = client.models.generate_images(
-            model='imagen-3.0-generate-002',
+            model=model,  # Use the 'model' parameter passed to the function
             prompt=prompt,
             config=types.GenerateImagesConfig(
                 number_of_images=3,
