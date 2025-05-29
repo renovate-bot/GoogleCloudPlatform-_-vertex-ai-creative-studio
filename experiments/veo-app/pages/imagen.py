@@ -499,23 +499,31 @@ def generate_images(input_txt: str):
 
     response = image_generation(state.image_model_name, prompt)
 
-    for idx, img_tuple in enumerate(response): # img_tuple is (image_uri_string, rai_reason_object)
-        image_uri = img_tuple[0]  # This is expected to be the URI string
+    # Check if response has generated_images and it's a list
+    if hasattr(response, 'generated_images') and isinstance(response.generated_images, list):
+        if not response.generated_images:
+            print("No images were generated (generated_images list is empty).")
+        for idx, img_obj in enumerate(response.generated_images):
+            # img_obj is a GeneratedImage object
+            image_uri = img_obj.uri
+            b64_string = img_obj.base64_string
 
-        # Verify if image_uri is indeed a string, otherwise, the assumption is wrong.
-        if not isinstance(image_uri, str):
-            print(f"ERROR: Expected image_uri (img_tuple[0]) to be a string, but got {type(image_uri)}. Value: {image_uri}")
-            # Optionally, handle this unexpected case, e.g., by skipping or raising an error.
-            # For now, we'll let it proceed, and it might fail later if not a string.
-            # However, the original error implies it IS a string.
-            pass # Assuming it will be a string based on the error.
-
-        # We only have the URI string here.
-        # We cannot get base64_string length without fetching the image from the URI.
-        print(
-            f"generated image: {idx} at {image_uri}"
-        )
-        state.image_output.append(image_uri) # Append the URI string directly
+            size_str = "N/A"
+            if b64_string is not None:
+                size_str = str(len(b64_string))
+            
+            uri_str = "N/A"
+            if image_uri is not None:
+                uri_str = image_uri
+                state.image_output.append(image_uri) # Append valid URI
+            
+            print(
+                f"generated image: {idx} size: {size_str} at {uri_str}"
+            )
+    else:
+        print("Error: 'generated_images' attribute not found in response or is not a list.")
+        # For debugging, you might want to log the actual response:
+        # print(f"Response type: {type(response)}, Response content: {response}")
 
 
 def on_image_input(e: me.InputEvent):
