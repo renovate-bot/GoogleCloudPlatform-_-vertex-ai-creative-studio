@@ -731,8 +731,8 @@ def generate_compliment(generation_instruction: str):
         #         state.show_error_dialog = True
 
     state.image_commentary = critique
-    state.is_loading = False
-    yield
+    # state.is_loading = False # Removed: Managed by the caller
+    # yield # Removed: Managed by the caller
     print(
         "I don't listen to what art critics say. I don't know anybody who needs a critic to find out what art is. - Basquiat"
     )
