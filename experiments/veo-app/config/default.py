@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
 from typing import TypedDict # Add this import
+import json # Add this import
 from dotenv import load_dotenv
 
 # from models.image_models import ImageModel # Remove this import
@@ -52,8 +53,8 @@ class Default:
     # Imagen
     MODEL_IMAGEN2 = "imagegeneration@006"
     MODEL_IMAGEN_NANO = "imagegeneration@004"
-    MODEL_IMAGEN3_FAST = "imagen-3.0-fast-generate-001"
-    MODEL_IMAGEN3 = "imagen-3.0-generate-002"
+    MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"  # Renamed
+    MODEL_IMAGEN = "imagen-3.0-generate-002"  # Renamed
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
@@ -67,12 +68,46 @@ class Default:
         ]
     )
     
-    display_image_models: list[ImageModel] = field( # Uncomment this field
-        default_factory=lambda: [
-            {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN3_FAST},
-            {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN3},
-        ]
+    display_image_models: list[ImageModel] = field(
+        default_factory=lambda: Default._get_display_image_models()
     )
+
+    @staticmethod
+    def _get_display_image_models() -> list[ImageModel]:
+        imagen_models_override_str = os.environ.get("IMAGEN_MODELS")
+        if imagen_models_override_str:
+            try:
+                parsed_models = json.loads(imagen_models_override_str)
+                if isinstance(parsed_models, list) and all(
+                    isinstance(item, dict) and "display" in item and "model_name" in item
+                    for item in parsed_models
+                ):
+                    print(f"Using IMAGEN_MODELS override from environment: {parsed_models}")
+                    return parsed_models # type: ignore
+                else:
+                    print(
+                        "Warning: IMAGEN_MODELS environment variable has invalid format. "
+                        "Expected a JSON list of {'display': str, 'model_name': str}. "
+                        "Falling back to default models."
+                    )
+            except json.JSONDecodeError:
+                print(
+                    "Warning: IMAGEN_MODELS environment variable is not valid JSON. "
+                    "Falling back to default models."
+                )
+            except Exception as e:
+                print(
+                    f"Warning: Error processing IMAGEN_MODELS environment variable: {e}. "
+                    "Falling back to default models."
+                )
+        
+        # Default models if override is not present or invalid
+        return [
+            {"display": "Imagen Fast", "model_name": Default.MODEL_IMAGEN_FAST},
+            {"display": "Imagen", "model_name": Default.MODEL_IMAGEN},
+            # Example: to include Nano by default if not overridden:
+            # {"display": "Imagen Nano", "model_name": Default.MODEL_IMAGEN_NANO},
+        ]
 
 
 

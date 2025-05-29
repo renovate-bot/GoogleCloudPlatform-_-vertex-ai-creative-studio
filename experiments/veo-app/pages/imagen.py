@@ -53,7 +53,7 @@ class PageState:
     )
     image_output: list[str] = field(default_factory=list)
     image_commentary: str = ""
-    image_model_name: str = app_config_instance.MODEL_IMAGEN3_FAST
+    image_model_name: str = app_config_instance.MODEL_IMAGEN_FAST # Updated constant name
 
     # General UI state
     is_loading: bool = False
