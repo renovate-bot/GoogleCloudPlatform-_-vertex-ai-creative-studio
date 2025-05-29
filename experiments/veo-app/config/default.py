@@ -53,8 +53,10 @@ class Default:
     # Imagen
     MODEL_IMAGEN2 = "imagegeneration@006"
     MODEL_IMAGEN_NANO = "imagegeneration@004"
-    MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"  # Renamed
-    MODEL_IMAGEN = "imagen-3.0-generate-002"  # Renamed
+    MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"
+    MODEL_IMAGEN = "imagen-3.0-generate-002" 
+    MODEL_IMAGEN_NEXT = "imagen-4.0-generate-preview-05-20"
+    MODEL_IMAGEN_ULTRA = "imagen-4.0-ultra-generate-exp-05-20"
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
@@ -103,8 +105,10 @@ class Default:
         
         # Default models if override is not present or invalid
         return [
-            {"display": "Imagen Fast", "model_name": Default.MODEL_IMAGEN_FAST},
-            {"display": "Imagen", "model_name": Default.MODEL_IMAGEN},
+            {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN_FAST},
+            {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN},
+            {"display": "Imagen 4 (preview)", "model_name": Default.MODEL_IMAGEN_NEXT},
+            {"display": "Imagen 4 Ultra (preview)", "model_name": Default.MODEL_IMAGEN_ULTRA},
             # Example: to include Nano by default if not overridden:
             # {"display": "Imagen Nano", "model_name": Default.MODEL_IMAGEN_NANO},
         ]
