@@ -582,7 +582,7 @@ def rewrite_prompt(original_prompt: str):
 
 
 _BOX_STYLE = me.Style(
-    flex_basis="max(480px, calc(50% - 48px))",
+    #flex_basis="max(480px, calc(50% - 48px))",
     # background="#fff",
     background=me.theme_var("background"),
     border_radius=12,
@@ -590,6 +590,7 @@ _BOX_STYLE = me.Style(
     padding=me.Padding(top=16, left=16, right=16, bottom=16),
     display="flex",
     flex_direction="column",
+    margin=me.Margin(bottom=28)
 )
 
 
