@@ -451,24 +451,39 @@ def on_click_generate_images(e: me.ClickEvent):
     state = me.state(PageState)
     state.is_loading = True
     state.image_output.clear()
-    state.image_commentary = "" # Clear previous commentary
-    yield
+    state.image_commentary = ""
+    state.error_message = ""  # Clear previous general errors
+    # state.show_error_dialog = False # This will be handled by generate_compliment or the except block
+    yield  # UI: Spinner ON for image generation, outputs cleared
+
     try:
-        generate_images(state.image_prompt_input) # This is pages.imagen.generate_images
-        if state.image_output: # Only generate compliment if images were successfully produced
+        # Phase 1: Generate Images
+        generate_images(state.image_prompt_input)  # This populates state.image_output
+
+        # UI Update: Show images, stop image generation spinner
+        state.is_loading = False  # Stop main spinner
+        yield  # Show images
+
+        # Phase 2: Generate Compliment (if images were produced)
+        if state.image_output:
             print(f"Proceeding to generate compliments for {len(state.image_output)} produced images.")
-            print(state.image_output)
-            generate_compliment(state.image_prompt_input)
+            state.is_loading = True  # Spinner ON for critique
+            yield  # Show spinner for critique
+
+            generate_compliment(state.image_prompt_input)  # Populates state.image_commentary
+
+            state.is_loading = False  # Spinner OFF after critique
+            yield  # Show critique (or critique error dialog if generate_compliment set it)
         else:
             print("Skipping compliment generation as no images were added to state.image_output.")
-    except Exception as ex:
-        print(f"Error in on_click_generate_images main processing block: {ex}")
-        state.error_message = f"An error occurred during image generation or critique: {ex}"
-        # Consider adding a state variable to show this error in a dialog if you have one for imagen page
-        # state.show_error_dialog = True 
-    finally:
-        state.is_loading = False
-        yield
+            # is_loading is already False from after image generation.
+
+    except Exception as ex:  # Catches errors from generate_images()
+        print(f"Error during image generation phase: {ex}")
+        state.error_message = f"An error occurred during image generation: {ex}"
+        # state.show_error_dialog = True # Assuming generate_compliment handles its own dialog for critique errors
+        state.is_loading = False  # Ensure spinner is off
+        yield  # Update UI with error message
 
 
 def on_select_image_count(e: me.SelectSelectionChangeEvent):
