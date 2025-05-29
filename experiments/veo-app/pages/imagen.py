@@ -89,6 +89,24 @@ def imagen_content(app_state: me.state):
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
             header("Imagen Creative Studio", "image")
+            
+            with me.box(
+                style=me.Style(display="flex",justify_content="end"),
+            ):
+                image_model_options = []
+                for c in state.image_models:
+                    image_model_options.append(
+                        me.SelectOption(
+                            label=c.get("display"), value=c.get("model_name")
+                        )
+                    )
+                me.select(
+                    label="Imagen version",
+                    options=image_model_options,
+                    key="model_name",
+                    on_selection_change=on_selection_change_image,
+                    value=state.image_model_name,
+            )
 
             with me.box(style=_BOX_STYLE):
                 me.text(
