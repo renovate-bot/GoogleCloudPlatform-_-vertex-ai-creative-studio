@@ -67,12 +67,12 @@ class Default:
         ]
     )
     
-# display_image_models: list[ImageModel] = field(
-#     default_factory=lambda: [
-#         {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN3_FAST},
-#         {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN3},
-#     ]
-# )
+    display_image_models: list[ImageModel] = field( # Uncomment this field
+        default_factory=lambda: [
+            {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN3_FAST},
+            {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN3},
+        ]
+    )
 
 
 
