@@ -508,21 +508,46 @@ def generate_images(input_txt: str):
             # If include_rai_reason=True, the RAI reason might be an attribute of img_obj
             # or accessible via another part of the 'response' object.
             # For now, we assume img_obj is the GeneratedImage.
+            # Access actual image data and URI via the .image attribute of GeneratedImage.
+            
+            image_uri_to_append = None
+            # For size calculation, we can use base64_string or image_bytes.
+            image_data_for_size_calc = None 
 
-            image_uri = img_obj.image.gcs_uri
-            b64_string = img_obj.image.image_bytes
+            if hasattr(img_obj, 'image') and img_obj.image is not None:
+                actual_image_object = img_obj.image
+                # Try to get the URI using the .uri attribute
+                if hasattr(actual_image_object, 'uri'):
+                    image_uri_to_append = actual_image_object.uri 
+                else:
+                    print(f"Warning: Image object for image {idx} does not have a .uri attribute.")
+
+                # Prefer base64_string for size if available, otherwise image_bytes
+                if hasattr(actual_image_object, 'base64_string') and actual_image_object.base64_string:
+                    image_data_for_size_calc = actual_image_object.base64_string
+                elif hasattr(actual_image_object, 'image_bytes') and actual_image_object.image_bytes:
+                    image_data_for_size_calc = actual_image_object.image_bytes # len() works on bytes
+                else:
+                    print(f"Warning: Image object for image {idx} has no base64_string or image_bytes for size calculation.")
+            else:
+                print(f"Warning: GeneratedImage at index {idx} does not have a valid .image attribute or it's None.")
 
             size_str = "N/A"
-            if b64_string is not None:
-                size_str = str(len(b64_string))
+            if image_data_for_size_calc is not None:
+                try:
+                    size_str = str(len(image_data_for_size_calc))
+                except TypeError: # Should not happen if it's string or bytes
+                    print(f"Warning: Could not get length of image_data_for_size_calc for image {idx} (type: {type(image_data_for_size_calc)}).")
             
-            uri_str = "N/A"
-            if image_uri is not None:
-                uri_str = image_uri
-                state.image_output.append(image_uri) # Append valid URI
+            uri_str_for_print = "N/A"
+            if image_uri_to_append is not None:
+                uri_str_for_print = image_uri_to_append
+                state.image_output.append(image_uri_to_append) # Append valid URI
+            else:
+                print(f"Warning: No valid URI to append for image {idx}.")
             
             print(
-                f"generated image: {idx} size: {size_str} at {uri_str}"
+                f"generated image: {idx} size: {size_str} at {uri_str_for_print}"
             )
     else:
         print("Error: 'generated_images' attribute not found in response or is not a list.")
