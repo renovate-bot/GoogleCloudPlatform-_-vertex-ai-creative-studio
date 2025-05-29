@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,6 +18,7 @@ import (
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/cors"
 	"github.com/mark3labs/mcp-go/server"
 
 	"golang.org/x/text/cases"
@@ -31,7 +33,7 @@ var (
 	port                string
 )
 
-const version = "1.3.4" // Version increment for breaking changes
+const version = "1.3.5" // Version increment for CORS support
 
 const (
 	timeFormatForFilename = "20060102-150405"
@@ -288,9 +290,25 @@ func main() {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
-		log.Printf("Chirp3 MCP Server listening on HTTP at :8080/mcp with tools: chirp_tts, list_chirp_voices")
-		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
+		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
+
+		// Configure CORS
+		c := cors.New(cors.Options{
+			AllowedOrigins:   []string{"*"}, // Consider making this configurable via env var for production
+			AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-MCP-Progress-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: true,
+			MaxAge:           300, // In seconds
+			// Debug: true, // Uncomment for debugging CORS issues
+		})
+
+		// Wrap the MCP handler with the CORS middleware
+		handlerWithCORS := c.Handler(mcpHTTPHandler)
+
+		log.Printf("Chirp3 MCP Server listening on HTTP at :8080/mcp with tools: chirp_tts, list_chirp_voices and CORS enabled")
+		// Start the server using the wrapped handler
+		if err := http.ListenAndServe(":8080", handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
