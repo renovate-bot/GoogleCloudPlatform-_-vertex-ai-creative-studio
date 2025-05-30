@@ -728,9 +728,8 @@ def generate_compliment(generation_instruction: str):
         #  If an error occurred, update the state to show the dialog
         if current_error_message:
             state.error_message = current_error_message
-            state.show_error_dialog = True
-            # Ensure no result video is displayed on error
-            state.result_video = ""
+            # state.show_error_dialog = True # REMOVE/COMMENT OUT - causes AttributeError
+            # state.result_video = ""      # REMOVE/COMMENT OUT - causes AttributeError
 
         # try:
         #     add_video_metadata(
