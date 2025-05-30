@@ -30,8 +30,8 @@ import (
 
 	"cloud.google.com/go/storage" // Added for GCS download
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/cors"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/rs/cors"
 	"google.golang.org/genai"
 )
 
