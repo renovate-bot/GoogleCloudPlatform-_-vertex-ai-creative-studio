@@ -181,7 +181,7 @@ proto-plus==1.26.1
     #   google-cloud-secret-manager
     #   google-cloud-speech
     #   google-cloud-trace
-protobuf==5.29.5
+protobuf==6.31.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
