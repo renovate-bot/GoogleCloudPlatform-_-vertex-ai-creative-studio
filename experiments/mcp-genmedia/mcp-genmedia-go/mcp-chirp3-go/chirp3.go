@@ -306,9 +306,11 @@ func main() {
 		// Wrap the MCP handler with the CORS middleware
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
 
-		log.Printf("Chirp3 MCP Server listening on HTTP at :8080/mcp with tools: chirp_tts, list_chirp_voices and CORS enabled")
+		httpPort := getEnv("PORT", "8080")
+		listenAddr := fmt.Sprintf(":%s", httpPort)
+		log.Printf("Chirp3 MCP Server listening on HTTP at %s/mcp with tools: chirp_tts, list_chirp_voices and CORS enabled", listenAddr)
 		// Start the server using the wrapped handler
-		if err := http.ListenAndServe(":8080", handlerWithCORS); err != nil {
+		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
