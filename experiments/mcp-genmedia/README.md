@@ -65,23 +65,44 @@ To start a server in Streamable HTTP mode, use the `--transport http` flag.
 
 ### Imagen
 
-The MCP Server for Imagen has the following tools:
+The MCP Server for Imagen provides tools for image generation:
 
-* `imagen_t2i` - generate an image from a prompt, following the [Imagen API](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview) 
+* `imagen_t2i`: Generates an image from a text prompt. Supports output to GCS, local disk, or as base64 data. (Follows the [Imagen API](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview))
 
-## Veo
+### Veo
 
-The MCP Server for Veo has the following tools:
+The MCP Server for Veo offers tools for video generation:
 
-* `veo_t2v` - generate a video from a provided text prompt
-* `veo_2v` - generate a video from a provided reference image and an optional text prompt
+* `veo_t2v`: Generates a video from a provided text prompt.
+* `veo_i2v`: Generates a video from a provided reference image (GCS URI) and an optional text prompt.
+(Both tools save video to GCS and can optionally download it locally.)
 
-## Chirp 3 HD Voices
+### Chirp 3 HD Voices
 
-The MCP Server for Chirp 3 HD Voices has the following tools:
+The MCP Server for Chirp 3 HD Voices includes tools for speech synthesis:
 
-* `chirp_tts` - synthesize audio using a Chirp 3 HD Voice
-* `list_chirp_voices` - list available voices for a particular language
+* `chirp_tts`: Synthesizes audio from text using a specified Chirp 3 HD Voice. Can return audio data directly or save to a local file.
+* `list_chirp_voices`: Lists available Chirp 3 HD voices, filterable by language.
+
+### Lyria
+
+The MCP Server for Lyria enables music generation:
+
+* `lyria_generate_music`: Generates music from a text prompt. Supports output to GCS, local disk, or as base64 data.
+
+### AVTool (Audio/Video Compositing)
+
+The MCP Server for AVTool provides various media processing capabilities by instrumenting FFMpeg and FFprobe:
+
+* `ffmpeg_get_media_info`: Retrieves detailed media information (metadata, streams).
+* `ffmpeg_combine_audio_and_video`: Combines separate video and audio files.
+* `ffmpeg_concatenate_media_files`: Concatenates multiple video or audio files.
+* `ffmpeg_video_to_gif`: Converts a video segment to an animated GIF.
+* `ffmpeg_convert_audio_wav_to_mp3`: Converts WAV audio to MP3.
+* `ffmpeg_overlay_image_on_video`: Overlays an image onto a video.
+* `ffmpeg_adjust_volume`: Adjusts the volume of an audio file.
+* `ffmpeg_layer_audio_files`: Mixes multiple audio files together.
+(Most AVTool tools support GCS URIs for input/output and local file operations.)
 
 ## Authentication
 
