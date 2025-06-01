@@ -1,4 +1,4 @@
-# MCP Lyria-Go Tool (Version: 1.0.11)
+# MCP Lyria Server
 
 This tool provides music generation capabilities using Google's Lyria models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate music from text prompts.
 

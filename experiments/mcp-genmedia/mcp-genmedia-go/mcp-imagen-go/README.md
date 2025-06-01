@@ -1,4 +1,4 @@
-# MCP Imagen-Go Tool (Version: 1.4.4)
+# MCP Imagen Server
 
 This tool provides image generation capabilities using Google's Imagen models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate images from text prompts.
 

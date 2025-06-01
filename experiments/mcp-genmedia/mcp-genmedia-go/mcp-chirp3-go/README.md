@@ -1,4 +1,4 @@
-# MCP Chirp3-Go Tool (Version: 1.3.5)
+# MCP Chirp 3 HD Server 
 
 This tool provides Text-to-Speech (TTS) capabilities using Google Cloud TTS with Chirp3-HD voices. It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to enable LLMs and other MCP clients to synthesize speech.
 
