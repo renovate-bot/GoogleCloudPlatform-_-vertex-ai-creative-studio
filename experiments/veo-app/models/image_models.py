@@ -77,7 +77,7 @@ class ImagenModelSetup:
     retry=retry_if_exception_type(Exception),  # Retry on all exceptions for robustness
     reraise=True,  # re-raise the last exception if all retries fail
 )
-def generate_images(model: str, prompt: str, number_of_images: int):
+def generate_images(model: str, prompt: str, number_of_images: int, aspect_ratio: str, negative_prompt: str):
     """Imagen image generation with Google GenAI client"""
     
     client  = ImagenModelSetup.init(model_id=model)
@@ -86,6 +86,8 @@ def generate_images(model: str, prompt: str, number_of_images: int):
     # Define a GCS path for outputting generated images
     # Using a subfolder "generated_images" within the configured IMAGE_BUCKET
     gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/generated_images"
+
+
 
     try:
         print(f"models.image_models.generate_images: Requesting {number_of_images} images for model {model} with output to {gcs_output_directory}")
@@ -96,6 +98,8 @@ def generate_images(model: str, prompt: str, number_of_images: int):
                 number_of_images=number_of_images,
                 include_rai_reason=True,
                 output_gcs_uri=gcs_output_directory,
+                aspect_ratio=aspect_ratio,
+                negative_prompt=negative_prompt,
             ),
         )
         

@@ -63,7 +63,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
     """
 
     full_prompt = f"{rewriter_prompt} {original_prompt}"
-
+    print(f"Rewriter: '{full_prompt}'")
     try:
         response = client.models.generate_content(
             model=REWRITER_MODEL_ID,
@@ -312,7 +312,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
             # print(f"Full critique response: {response}") # Avoid printing large raw response
 
             if response.text:
-                print(f"Critique generated: {response.text[:200]}...") # Log a snippet
+                print(f"Critique generated (truncated): {response.text[:200]}...") # Log a snippet
                 return response.text # Return the text directly
             # Fallback for safety reasons, though .text should be populated for text responses
             elif response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[0].text:

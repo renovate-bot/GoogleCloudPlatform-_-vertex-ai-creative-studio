@@ -46,7 +46,7 @@ class Default:
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
     
     # Lyria
-    LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-base-001")
+    LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
     LYRIA_PROJECT_ID: str = os.environ.get("LYRIA_PROJECT_ID")
     MEDIA_BUCKET: str = os.environ.get("MEDIA_BUCKET", f"{PROJECT_ID}-assets")
     
@@ -54,7 +54,7 @@ class Default:
     MODEL_IMAGEN2 = "imagegeneration@006"
     MODEL_IMAGEN_NANO = "imagegeneration@004"
     MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"
-    MODEL_IMAGEN = "imagen-3.0-generate-002" 
+    MODEL_IMAGEN = "imagen-3.0-generate-002"
     MODEL_IMAGEN_NEXT = "imagen-4.0-generate-preview-05-20"
     MODEL_IMAGEN_ULTRA = "imagen-4.0-ultra-generate-exp-05-20"
     
@@ -109,10 +109,15 @@ class Default:
             {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN},
             {"display": "Imagen 4 (preview)", "model_name": Default.MODEL_IMAGEN_NEXT},
             {"display": "Imagen 4 Ultra (preview)", "model_name": Default.MODEL_IMAGEN_ULTRA},
+            {"display": "Imagen 4 Fast (preview)", "model_name": "imagen-4.0-fast-generate-preview-06-06"},
+            {"display": "Imagen 4 (preview)", "model_name": "imagen-4.0-generate-preview-06-06"},
             # Example: to include Nano by default if not overridden:
             # {"display": "Imagen Nano", "model_name": Default.MODEL_IMAGEN_NANO},
         ]
-
+# New: Imagen 4 (fast) using the imagen-4.0-fast-generate-preview-06-06 endpoint
+# Regression testing: Imagen 4 (standard) using the imagen-4.0-generate-preview-06-06 endpoint
+# Regression testing: Imagen 4 (ultra) using the imagen-4.0-ultra-generate-preview-06-06 endpoint
+    
 
 
 WELCOME_PAGE = [
