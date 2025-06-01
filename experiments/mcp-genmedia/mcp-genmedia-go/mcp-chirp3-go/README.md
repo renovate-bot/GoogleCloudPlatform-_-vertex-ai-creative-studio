@@ -1,6 +1,6 @@
 # MCP Chirp3-Go Tool (Version: 1.3.5)
 
-This tool provides Text-to-Speech (TTS) capabilities using Google Cloud TTS with Chirp3-HD voices, integrated into the Model Context Protocol (MCP) GenMedia toolkit. It acts as an MCP server component, enabling LLMs and other MCP clients to synthesize speech.
+This tool provides Text-to-Speech (TTS) capabilities using Google Cloud TTS with Chirp3-HD voices. It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to enable LLMs and other MCP clients to synthesize speech.
 
 ## MCP Tool Definitions
 

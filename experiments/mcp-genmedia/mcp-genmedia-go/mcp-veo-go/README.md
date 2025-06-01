@@ -1,6 +1,6 @@
 # MCP Veo-Go Tool (Version: 1.3.6)
 
-This tool provides video generation capabilities using Google's Veo models (via Vertex AI), integrated into the Model Context Protocol (MCP) GenMedia toolkit. It acts as an MCP server component, allowing LLMs and other MCP clients to generate videos from text prompts or source images.
+This tool provides video generation capabilities using Google's Veo models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to allow LLMs and other MCP clients to generate videos from text prompts or source images.
 
 ## MCP Tool Definitions
 
