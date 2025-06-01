@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/cors"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/teris-io/shortid"
 	// Mimetype detection can be added if needed for advanced logic
@@ -38,7 +40,7 @@ import (
 var (
 	// MCP Server settings
 	transport string
-	version   = "1.0.3" // Incremented version for streamable http
+	version   = "1.0.4" // Version increment for CORS support
 
 	// Google Cloud settings - typically set via environment variables
 	gcpProjectID      string // PROJECT_ID for GCS operations
@@ -111,9 +113,27 @@ func main() {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	} else if transport == "http" {
-		httpServer := server.NewStreamableHTTPServer(s) // Base path /mcp
-		log.Printf("FFMpeg AV Tool MCP Server listening on HTTP at :8080/mcp")
-		if err := httpServer.Start(":8080"); err != nil { // Listen address :8080
+		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
+
+		// Configure CORS
+		c := cors.New(cors.Options{
+			AllowedOrigins:   []string{"*"}, // Consider making this configurable via env var for production
+			AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-MCP-Progress-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: true,
+			MaxAge:           300, // In seconds
+			// Debug: true, // Uncomment for debugging CORS issues
+		})
+
+		// Wrap the MCP handler with the CORS middleware
+		handlerWithCORS := c.Handler(mcpHTTPHandler)
+
+		httpPort := getEnv("PORT", "8080")
+		listenAddr := fmt.Sprintf(":%s", httpPort)
+		log.Printf("FFMpeg AV Tool MCP Server listening on HTTP at %s/mcp and CORS enabled", listenAddr)
+		// Start the server using the wrapped handler
+		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
