@@ -112,9 +112,23 @@ The server uses Google's authentication. Make sure you have either:
 2. Set a GOOGLE_APPLICATION_CREDENTIALS environment variable
 3. Used `gcloud auth application-default login`
 
+
+Please note, you may need to provide your user (user@email.com) with access to the Google Cloud Storage bucket (`BUCKET_NAME`).
+
+```bash
+gcloud storage buckets add-iam-policy-binding gs://BUCKET_NAME \
+  --member=user:user@email.com \
+  --role=roles/storage.objectUser
+```
+
 ## Client Configurations
 
-The MCP servers from this repo can be used with the following clients
+The MCP servers from this repo can be used various clients/hosts. 
+
+A sample MCP configuration JSON can be seen at [genmedia-config.json](./sample-agents/mcp-inspector/genmedia-config.json).
+
+
+This repository provides some AI application samples:
 
 1. [Google ADK(Agent Development Kit)](https://google.github.io/adk-docs/) Agents (a prebuilt agent is provided, details [below](#using-the-prebuilt-google-adk-agent-as-client))
 2. [Google Firebase Genkit](https://firebase.google.com/docs/genkit) with the [MCP plugin](https://github.com/firebase/genkit/tree/main/js/plugins/mcp)
