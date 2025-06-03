@@ -250,7 +250,7 @@ starlette==0.46.2
     #   fastapi
     #   mcp
     #   sse-starlette
-typing-extensions==4.13.2
+typing-extensions==4.14.0
     # via
     #   fastapi
     #   google-cloud-aiplatform
