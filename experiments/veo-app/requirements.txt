@@ -308,7 +308,7 @@ typing-inspection==0.4.1
     # via pydantic
 tzdata==2025.2
     # via pandas
-uritemplate==4.1.1
+uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.4.0
     # via requests
