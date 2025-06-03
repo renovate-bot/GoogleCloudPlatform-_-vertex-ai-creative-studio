@@ -98,7 +98,7 @@ google-cloud-core==2.4.3
     #   google-cloud-bigquery
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.20.2 ; platform_python_implementation != 'PyPy'
+google-cloud-firestore==2.21.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-resource-manager==1.14.2
     # via google-cloud-aiplatform
