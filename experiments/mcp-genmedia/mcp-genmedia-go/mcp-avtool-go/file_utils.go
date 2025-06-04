@@ -1,0 +1,155 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/teris-io/shortid"
+)
+
+func prepareInputFile(ctx context.Context, fileURI, purpose string) (localPath string, cleanupFunc func(), err error) {
+	cleanupFunc = func() {}
+
+	if strings.HasPrefix(fileURI, "gs://") {
+		if gcpProjectID == "" { // gcpProjectID from config.go
+			return "", cleanupFunc, errors.New("PROJECT_ID not set, cannot download from GCS")
+		}
+		tempDir, errMkdir := os.MkdirTemp("", defaultTempDirPrefix+"input_") // defaultTempDirPrefix from config.go
+		if errMkdir != nil {
+			return "", cleanupFunc, fmt.Errorf("failed to create temp dir for GCS download: %w", errMkdir)
+		}
+
+		base := filepath.Base(fileURI)
+		if base == "." || base == "/" {
+			uid, _ := shortid.Generate()
+			base = fmt.Sprintf("gcs_download_%s_%s", purpose, uid)
+		}
+		localPath = filepath.Join(tempDir, base)
+
+		log.Printf("Downloading GCS file %s to temporary path %s for %s", fileURI, localPath, purpose)
+
+		gcsErr := downloadFromGCS(ctx, fileURI, localPath) // from gcs_utils.go
+		if gcsErr != nil {
+			os.RemoveAll(tempDir)
+			return "", cleanupFunc, fmt.Errorf("failed to download %s from GCS: %w", fileURI, gcsErr)
+		}
+
+		cleanupFunc = func() {
+			log.Printf("Cleaning up temporary directory for GCS download: %s", tempDir)
+			os.RemoveAll(tempDir)
+		}
+		return localPath, cleanupFunc, nil
+	}
+
+	if _, statErr := os.Stat(fileURI); os.IsNotExist(statErr) {
+		return "", cleanupFunc, fmt.Errorf("local input file %s does not exist for %s", fileURI, purpose)
+	}
+	log.Printf("Using local input file %s for %s", fileURI, purpose)
+	return fileURI, cleanupFunc, nil
+}
+
+func handleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLocalOutputFile string, finalOutputFilename string, cleanupFunc func(), err error) {
+	cleanupFunc = func() {}
+
+	tempDir, errMkdir := os.MkdirTemp("", defaultTempDirPrefix+"output_") // defaultTempDirPrefix from config.go
+	if errMkdir != nil {
+		return "", "", cleanupFunc, fmt.Errorf("failed to create temp dir for FFMpeg output: %w", errMkdir)
+	}
+
+	finalOutputFilename = desiredOutputFilename
+	if finalOutputFilename == "" {
+		uid, _ := shortid.Generate()
+		finalOutputFilename = fmt.Sprintf("ffmpeg_output_%s.%s", uid, defaultExt)
+	} else {
+		currentExt := filepath.Ext(finalOutputFilename)
+		if currentExt == "" {
+			finalOutputFilename = finalOutputFilename + "." + defaultExt
+		} else if strings.ToLower(currentExt) != "."+strings.ToLower(defaultExt) {
+			log.Printf("Warning: output_file_name '%s' has extension '%s', but expected '%s'. Using original extension.", desiredOutputFilename, currentExt, defaultExt)
+		}
+	}
+
+	tempLocalOutputFile = filepath.Join(tempDir, finalOutputFilename)
+
+	cleanupFunc = func() {
+		log.Printf("Cleaning up temporary output directory: %s", tempDir)
+		os.RemoveAll(tempDir)
+	}
+
+	log.Printf("FFMpeg will write temporary output to: %s", tempLocalOutputFile)
+	log.Printf("Final output filename will be: %s", finalOutputFilename)
+	return tempLocalOutputFile, finalOutputFilename, cleanupFunc, nil
+}
+
+func processOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, finalOutputFilename, outputLocalDir, outputGCSBucket string) (finalLocalPath string, finalGCSPath string, err error) {
+	currentLocalPath := ffmpegOutputActualPath
+
+	if outputLocalDir != "" {
+		if errMkdir := os.MkdirAll(outputLocalDir, 0755); errMkdir != nil {
+			return "", "", fmt.Errorf("failed to create specified output local directory %s: %w", outputLocalDir, errMkdir)
+		}
+		destLocalPath := filepath.Join(outputLocalDir, finalOutputFilename)
+		log.Printf("Moving FFMpeg output from %s to %s", currentLocalPath, destLocalPath)
+		if errRename := os.Rename(currentLocalPath, destLocalPath); errRename != nil {
+			// If rename fails (e.g. different devices), try copy then remove original
+			log.Printf("Rename failed (%v), attempting copy and remove for %s to %s", errRename, currentLocalPath, destLocalPath)
+			inputBytes, readErr := os.ReadFile(currentLocalPath)
+			if readErr != nil {
+				return "", "", fmt.Errorf("failed to read source for copy %s: %w", currentLocalPath, readErr)
+			}
+			if writeErr := os.WriteFile(destLocalPath, inputBytes, 0644); writeErr != nil {
+				return "", "", fmt.Errorf("failed to write destination for copy %s: %w", destLocalPath, writeErr)
+			}
+			if removeErr := os.Remove(currentLocalPath); removeErr != nil {
+				log.Printf("Warning: failed to remove original file %s after copy: %v", currentLocalPath, removeErr)
+				// Not returning error here as the file is copied, but log it.
+			}
+		}
+		currentLocalPath = destLocalPath
+		finalLocalPath = currentLocalPath
+		log.Printf("Output saved to local directory: %s", finalLocalPath)
+	} else {
+		finalLocalPath = ffmpegOutputActualPath
+		log.Printf("Output generated at temporary location: %s (will be cleaned up if not moved or uploaded)", finalLocalPath)
+	}
+
+	if outputGCSBucket != "" {
+		if gcpProjectID == "" { // gcpProjectID from config.go
+			return finalLocalPath, "", errors.New("PROJECT_ID not set, cannot upload to GCS")
+		}
+		if _, errStat := os.Stat(currentLocalPath); os.IsNotExist(errStat) {
+			return finalLocalPath, "", fmt.Errorf("ffmpeg output file %s not found for GCS upload", currentLocalPath)
+		}
+
+		log.Printf("Uploading %s to GCS bucket %s as object %s", currentLocalPath, outputGCSBucket, finalOutputFilename)
+
+		fileData, readErr := os.ReadFile(currentLocalPath)
+		if readErr != nil {
+			return finalLocalPath, "", fmt.Errorf("failed to read file %s for GCS upload: %w", currentLocalPath, readErr)
+		}
+
+		contentType := "" // uploadToGCS will infer it
+
+		errUpload := uploadToGCS(ctx, outputGCSBucket, finalOutputFilename, contentType, fileData) // from gcs_utils.go
+		if errUpload != nil {
+			return finalLocalPath, "", fmt.Errorf("failed to upload to GCS (gs://%s/%s): %w", outputGCSBucket, finalOutputFilename, errUpload)
+		}
+		finalGCSPath = fmt.Sprintf("gs://%s/%s", outputGCSBucket, finalOutputFilename)
+		log.Printf("Output uploaded to GCS: %s", finalGCSPath)
+	}
+	return finalLocalPath, finalGCSPath, nil
+}
+
+// getTail returns the last n lines of a string.
+func getTail(s string, n int) string {
+	lines := strings.Split(s, "\n")
+	if len(lines) <= n {
+		return s
+	}
+	return strings.Join(lines[len(lines)-n:], "\n")
+}

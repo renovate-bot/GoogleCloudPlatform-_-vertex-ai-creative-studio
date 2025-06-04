@@ -1,41 +1,78 @@
-# Veo MCP Server
+# MCP Chirp 3 HD Server 
 
-This is the GenMedia Creative Studio Chirp 3 HD MCP server.
+This tool provides Text-to-Speech (TTS) capabilities using Google Cloud TTS with Chirp3-HD voices. It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to enable LLMs and other MCP clients to synthesize speech.
 
+## MCP Tool Definitions
 
-## Requirements
+The following tools are exposed by this server:
 
-Environment variables `PROJECT_ID` and `LOCATION`
+### 1. `chirp_tts`
 
-* `PROJECT_ID` - Google Cloud Project ID, eg. `gcloud config get project`
-* `LOCATION` - region, optional, defaults to `us-central1`
+*   **Description**: Synthesizes speech from text using Google Cloud TTS with Chirp3-HD voices. Returns audio data and optionally saves it locally.
+*   **Handler**: `chirpTTSHandler`
+*   **Parameters**:
+    *   `text` (string, required): The text to synthesize into speech.
+    *   `voice_name` (string, optional): The specific Chirp3-HD voice name to use (e.g., "en-US-Chirp3-HD-Zephyr").
+        *   If not provided, defaults to "en-US-Chirp3-HD-Zephyr" if available, otherwise the first available Chirp3-HD voice.
+    *   `output_filename_prefix` (string, optional): A prefix for the output WAV filename if saving locally. A timestamp and .wav extension will be appended.
+        *   Default: `"chirp_audio"`
+    *   `output_directory` (string, optional): If provided, specifies a local directory to save the generated audio file to. Filenames will be generated automatically using the prefix. If not provided, audio data is returned in the response.
+    *   `pronunciations` (array of strings, optional): An array of custom pronunciations. Each item should be a string in the format 'phrase:phonetic_representation' (e.g., 'tomato:təˈmeɪtoʊ'). All items must use the same encoding specified by `pronunciation_encoding`.
+    *   `pronunciation_encoding` (string, optional, enum: "ipa", "xsampa"): The phonetic encoding used for the `pronunciations` array.
+        *   Default: `"ipa"`
+
+### 2. `list_chirp_voices`
+
+*   **Description**: Lists Chirp3-HD voices, filtered by the provided language (either descriptive name or BCP-47 code).
+*   **Handler**: `listChirpVoicesHandler`
+*   **Parameters**:
+    *   `language` (string, required): The language to filter voices by. Can be a descriptive name (e.g., 'English (United States)') or a BCP-47 code (e.g., 'en-US').
+
+## Environment Variable Configuration
+
+The tool utilizes the following environment variables:
+
+*   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
+*   `LOCATION` (string): The Google Cloud location/region for services.
+    *   Default: `"us-central1"`
+*   `PORT` (string, for HTTP/SSE transport): The port for the server to listen on if using HTTP or SSE transport.
+    *   Default for HTTP: `"8080"` (from `getEnv` call in `main` for HTTP).
+    *   Default for SSE: `"8081"` (if `-p` flag is not used and transport is `sse`). The `-p` flag can override this.
+
+## Transports Supported
+
+*   `stdio` (default)
+*   `sse` (Server-Sent Events)
+*   `http` (Streamable HTTP)
+
+CORS is enabled for the HTTP transport, allowing all origins by default.
 
 ## Run
 
-The MCP Server can be used as either a STDIO or SSE server.
+Build the tool using `go build` or `go install`.
 
-### STDIO 
-
-To start a STDIO server, build this as a binary and install it
-
-```bash
-go install
-```
-
-This will install `mcp-chirp3-go` in your path, and you'll be able to call it as a binary.
-
-### Server-Sent Events SSE
-
-Start an MCP Server on :8080, with SSE endpoint at `/sse`
-
-```bash
-go run *.go --transport sse
-```
+*   **STDIO (Default)**:
+    ```bash
+    ./mcp-chirp3-go
+    # or
+    ./mcp-chirp3-go -transport stdio
+    ```
+*   **HTTP**:
+    ```bash
+    ./mcp-chirp3-go -transport http 
+    # Optionally set PORT environment variable, e.g., PORT=8082 ./mcp-chirp3-go -transport http
+    ```
+    The MCP server will be available at `http://localhost:<PORT>/mcp`.
+*   **SSE (Server-Sent Events)**:
+    ```bash
+    ./mcp-chirp3-go -transport sse -p <SSE_PORT>
+    # Example: ./mcp-chirp3-go -transport sse -p 8081
+    ```
+    The MCP server will be available at `http://localhost:<SSE_PORT>`.
 
 ## Examples
 
-list_chirp_voices: List voices
-
+### List Chirp Voices
 ```json
 {
   "method": "tools/call",
@@ -43,23 +80,22 @@ list_chirp_voices: List voices
     "name": "list_chirp_voices",
     "arguments": {
       "language": "english (australia)"
-    },
+    }
   }
 }
 ```
 
-chirp_tts: Synthesis
-
+### Chirp TTS Synthesis
 ```json
 {
   "method": "tools/call",
   "params": {
     "name": "chirp_tts",
     "arguments": {
-      "output_filename_prefix": "chirp_audio",
-      "text": "Synthesizes speech from text using Google Cloud TTS with Chirp3-HD voices and saves it as a local WAV file.",
-      "voice_name": "en-AU-Chirp3-HD-Autonoe"
-    },
+      "text": "Hello from the Model Context Protocol and Chirp3!",
+      "voice_name": "en-US-Chirp3-HD-Zephyr",
+      "output_directory": "./audio_output" 
+    }
   }
 }
 ```

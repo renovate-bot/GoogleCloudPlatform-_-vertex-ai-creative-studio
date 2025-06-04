@@ -56,7 +56,7 @@ flask==3.1.1
     # via mesop
 fonttools==4.58.1
     # via matplotlib
-google-api-core==2.24.2
+google-api-core==2.25.0
     # via
     #   firebase-admin
     #   google-api-python-client
@@ -66,7 +66,7 @@ google-api-core==2.24.2
     #   google-cloud-firestore
     #   google-cloud-resource-manager
     #   google-cloud-storage
-google-api-python-client==2.170.0
+google-api-python-client==2.171.0
     # via firebase-admin
 google-auth==2.40.2
     # via
@@ -82,7 +82,7 @@ google-auth==2.40.2
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.95.0
+google-cloud-aiplatform==1.96.0
     # via veo-app
 google-cloud-bigquery==3.34.0
     # via google-cloud-aiplatform
@@ -91,7 +91,7 @@ google-cloud-core==2.4.3
     #   google-cloud-bigquery
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.20.2 ; platform_python_implementation != 'PyPy'
+google-cloud-firestore==2.21.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-resource-manager==1.14.2
     # via google-cloud-aiplatform
@@ -103,7 +103,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.17.0
+google-genai==1.18.0
     # via
     #   google-cloud-aiplatform
     #   veo-app
@@ -118,13 +118,13 @@ googleapis-common-protos==1.70.0
     #   grpcio-status
 grpc-google-iam-v1==0.14.2
     # via google-cloud-resource-manager
-grpcio==1.71.0
+grpcio==1.72.1
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.71.0
+grpcio-status==1.72.1
     # via google-api-core
 gunicorn==23.0.0
     # via veo-app
@@ -145,7 +145,7 @@ idna==3.10
     #   anyio
     #   httpx
     #   requests
-ipython==9.2.0
+ipython==9.3.0
     # via mediapy
 ipython-pygments-lexers==1.1.1
     # via ipython
@@ -208,7 +208,7 @@ proto-plus==1.26.1
     #   google-cloud-aiplatform
     #   google-cloud-firestore
     #   google-cloud-resource-manager
-protobuf==5.29.5
+protobuf==6.31.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -285,7 +285,7 @@ traitlets==5.14.3
     # via
     #   ipython
     #   matplotlib-inline
-typing-extensions==4.13.2
+typing-extensions==4.14.0
     # via
     #   fastapi
     #   google-cloud-aiplatform
@@ -297,11 +297,11 @@ typing-inspection==0.4.1
     # via pydantic
 tzdata==2025.2
     # via pandas
-uritemplate==4.1.1
+uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.4.0
     # via requests
-uvicorn==0.34.2
+uvicorn==0.34.3
     # via veo-app
 watchdog==6.0.0
     # via mesop
