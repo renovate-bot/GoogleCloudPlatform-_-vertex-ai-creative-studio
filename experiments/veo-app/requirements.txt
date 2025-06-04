@@ -61,7 +61,7 @@ flask==3.1.1
 fonttools==4.58.1
 fonttools==4.58.1
     # via matplotlib
-google-api-core==2.24.2
+google-api-core==2.25.0
     # via
     #   firebase-admin
     #   google-api-python-client
