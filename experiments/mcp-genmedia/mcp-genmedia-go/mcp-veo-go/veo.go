@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/cors"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/rs/cors"
 	"google.golang.org/genai"
 )
 
@@ -36,7 +36,7 @@ var (
 	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
 )
 
-const version = "1.3.7" // Version increment for CORS support
+const version = "1.3.8" // Version increment for code refactor
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
