@@ -84,3 +84,4 @@ class GeminiModelSetup:
             location=location,
         )
         return client, model_id
+

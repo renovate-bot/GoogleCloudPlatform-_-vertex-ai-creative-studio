@@ -18,6 +18,10 @@ from typing import Dict, Optional
 
 from google.genai import types
 
+from google.cloud.aiplatform import telemetry
+
+from google.cloud.aiplatform import telemetry
+
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -28,6 +32,10 @@ from tenacity import (
 from models.model_setup import (
     GeminiModelSetup,
 )
+
+from config.rewriters import MAGAZINE_EDITOR_PROMPT
+
+from config.rewriters import MAGAZINE_EDITOR_PROMPT
 
 # Initialize client and default model ID for rewriter
 # The analysis function will use its own specific model ID for now.
@@ -55,7 +63,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
     """
 
     full_prompt = f"{rewriter_prompt} {original_prompt}"
-
+    print(f"Rewriter: '{full_prompt}'")
     try:
         response = client.models.generate_content(
             model=REWRITER_MODEL_ID,
@@ -95,7 +103,8 @@ def analyze_audio_with_gemini(
     )
 
     # Define the specific model for audio analysis (as per your sample)
-    analysis_model_id = "gemini-2.5-flash-preview-04-17"
+    analysis_model_id = "gemini-2.5-flash-preview-05-20"
+    analysis_model_id = "gemini-2.5-flash-preview-05-20"
 
     # Prepare the audio part using from_uri
     try:
@@ -170,10 +179,13 @@ Output this as JSON.
     generation_config_params = types.GenerateContentConfig(
         system_instruction=system_instruction_text,
         safety_settings=safety_settings_list,
-        #temperature=1.0,  # Corrected: float value
-        #top_p=1.0,  # Corrected: float value
+        # temperature=1.0,  # Corrected: float value
+        # top_p=1.0,  # Corrected: float value
+        # temperature=1.0,  # Corrected: float value
+        # top_p=1.0,  # Corrected: float value
         # seed=0, # Seed might not be available in all models or SDK versions, or might be int
-        #max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
+        # max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
+        # max_output_tokens=8192,  # Max for Flash is 8192. 65535 is too high.
         response_mime_type="application/json",  # This is key for JSON output
         response_schema=schema_json,
     )
@@ -200,7 +212,7 @@ Output this as JSON.
             parsed_json = json.loads(response.text)
             print(f"Successfully parsed analysis JSON: {parsed_json}")
             return parsed_json
-            #return response.text
+            # return response.text
         else:
             # Handle cases where response.text might be empty or parts are structured differently
             # This part might need adjustment based on actual API response structure for JSON
@@ -223,3 +235,94 @@ Output this as JSON.
         # The retry decorator will handle re-raising if all attempts fail.
         # If not using retry, you'd raise e here.
         raise  # Re-raise for tenacity or the caller
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def image_critique(original_prompt: str, img_uris: list[str]) -> str:
+    """Image critic
+
+    Args:
+        img_uris (list[str]): a list of GCS URIs of images to critique
+
+    Returns:
+        str: critique of images
+    """
+
+    critic_prompt = MAGAZINE_EDITOR_PROMPT.format(original_prompt)
+
+    prompt_parts = []
+
+    for idx, image_url in enumerate(img_uris):
+        prompt_parts.append(f"""image {idx+1}""")
+        prompt_parts.append(
+            types.Part.from_uri(file_uri=image_url, mime_type="image/png")
+        )
+
+    prompt_parts.append(types.Part.from_text(text=critic_prompt))
+
+    safety_settings_list = [
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold=types.HarmBlockThreshold.BLOCK_NONE,
+        ),
+    ]
+    # prompt_parts is already a list of Part-like objects (str, Part).
+    # The SDK will form a single Content message from this list.
+    # No need to wrap it in types.Content manually here if it's for a single turn.
+    # contents_payload = [types.Content(role="user", parts=prompt_parts)] # This would be for multi-turn history
+
+    # For a single user message with multiple parts:
+    contents_payload = prompt_parts
+
+
+    # The telemetry.tool_context_manager is from the Vertex AI SDK,
+    # client here is from google-genai, so this context manager might not apply or could cause issues.
+    # If it's not needed or causes errors, it should be removed.
+    # Assuming it's a no-op or handled if telemetry is not configured for google-genai.
+    with telemetry.tool_context_manager("creative-studio"):
+        try:
+            print(f"Sending critique request to Gemini model: {model_id} with {len(contents_payload)} parts.")
+
+            response = client.models.generate_content(
+                model=model_id, # Uses global model_id from GeminiModelSetup.init()
+                contents=contents_payload,
+                config=types.GenerateContentConfig(
+                    response_modalities=["TEXT"], safety_settings=safety_settings_list
+                ),
+            )
+
+            print("Received critique response from Gemini.")
+            # print(f"Full critique response: {response}") # Avoid printing large raw response
+
+            if response.text:
+                print(f"Critique generated (truncated): {response.text[:200]}...") # Log a snippet
+                return response.text # Return the text directly
+            # Fallback for safety reasons, though .text should be populated for text responses
+            elif response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[0].text:
+                text_response = response.candidates[0].content.parts[0].text
+                print(f"Critique extracted from parts: {text_response[:200]}...")
+                return text_response
+            else:
+                print("Warning: Gemini critique response text was empty or response structure unexpected.")
+                return "Critique could not be generated (empty or unexpected response)."
+
+        except Exception as e:
+            print(f"Error during Gemini API call for image critique: {e}")
+            raise
