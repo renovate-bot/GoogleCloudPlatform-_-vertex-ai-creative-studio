@@ -190,7 +190,7 @@ packaging==25.0
     #   google-cloud-bigquery
     #   gunicorn
     #   matplotlib
-pandas==2.2.3
+pandas==2.3.0
     # via veo-app
 parso==0.8.4
     # via jedi
