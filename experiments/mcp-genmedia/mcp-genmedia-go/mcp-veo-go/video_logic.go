@@ -166,7 +166,10 @@ func callGenerateVideosAPI(
 	attemptLocalDownload := outputDir != ""
 
 	// Context for the entire GenerateVideos operation, including polling.
-	operationCtx, operationCancel := context.WithTimeout(context.Background(), 5*time.Minute) // Timeout for the entire GenAI operation + polling
+	// We derive the operation context from the parent context to ensure that if the
+	// client disconnects or the parent request is canceled, we propagate the
+	// cancellation to the long-running GenAI operation.
+	operationCtx, operationCancel := context.WithTimeout(parentCtx, 5*time.Minute) // Timeout for the entire GenAI operation + polling
 	defer operationCancel()
 
 	logMsg := fmt.Sprintf("Initiating GenerateVideos (%s) with Model: %s", callType, modelName)
@@ -227,6 +230,20 @@ func callGenerateVideosAPI(
 		case <-time.After(pollingInterval): // Time to poll
 			pollingAttempt++
 			log.Printf("Polling GenerateVideos operation (%s): %s (Attempt: %d, Elapsed: %v)", callType, operation.Name, pollingAttempt, time.Since(pollingStartTime).Round(time.Second))
+
+			// Send a proactive heartbeat notification BEFORE making the potentially slow network call.
+			// This resets the client's inactivity timer.
+			if progressToken != nil && mcpServer != nil {
+				mcpServer.SendNotificationToClient(
+					parentCtx,
+					"notifications/progress",
+					map[string]interface{}{
+						"progressToken": progressToken,
+						"message":       fmt.Sprintf("Checking video status (polling attempt %d)...", pollingAttempt),
+						"status":        "polling",
+					},
+				)
+			}
 
 			var getOpOpts genai.GetOperationConfig
 			// Use operationCtx for the GetVideosOperation call, as it's part of the GenAI operation lifecycle

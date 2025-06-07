@@ -36,7 +36,7 @@ var (
 	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
 )
 
-const version = "1.3.8" // Version increment for code refactor
+const version = "1.4.0" // Add proactive heartbeat to prevent client timeout.
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
