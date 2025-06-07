@@ -6,6 +6,8 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // runFFmpegCommand executes an FFMpeg command and returns its combined output.
@@ -18,7 +20,7 @@ func runFFmpegCommand(ctx context.Context, args ...string) (string, error) {
 		log.Printf("FFMpeg command failed. Error: %v\nFFMpeg Output:\n%s", err, string(output))
 		return string(output), fmt.Errorf("ffmpeg command failed: %w. Output: %s", err, string(output))
 	}
-	log.Printf("FFMpeg command successful. Output (last few lines):\n%s", getTail(string(output), 5)) // getTail from file_utils.go
+	log.Printf("FFMpeg command successful. Output (last few lines):\n%s", common.GetTail(string(output), 5)) // getTail from file_utils.go
 	return string(output), nil
 }
 

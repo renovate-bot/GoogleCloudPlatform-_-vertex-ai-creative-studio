@@ -17,10 +17,10 @@ import (
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/cors"
 	"github.com/mark3labs/mcp-go/server"
-
+	"github.com/rs/cors"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -31,11 +31,11 @@ var (
 	availableVoices     []*texttospeechpb.Voice
 	transport           string
 	port                string
+	version             = "0.0.1"
 )
 
-const version = "1.3.5" // Version increment for CORS support
-
 const (
+	serviceName             = "mcp-chirp3-go"
 	timeFormatForFilename = "20060102-150405"
 	defaultChirpVoiceName = "en-US-Chirp3-HD-Zephyr"
 )
@@ -77,15 +77,7 @@ var LanguageNameToCodeMap = map[string]string{
 // OriginalLanguageNames is used to get the original casing for display in disambiguation messages.
 var OriginalLanguageNames = make(map[string]string) // map[lowercase_name]Original_Cased_Name
 
-// getEnv retrieves an environment variable by key. If the variable is not set
-// or is empty, it logs a message and returns the fallback value.
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists && value != "" {
-		return value
-	}
-	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
-	return fallback
-}
+
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -196,20 +188,21 @@ func parseMcpPronunciations(pronunciationsParam interface{}, encodingStr string)
 }
 
 func main() {
-	projectID = getEnv("PROJECT_ID", "") // Renamed from envCheck
-	if projectID == "" {
-		// This specific check for PROJECT_ID being fatal can remain,
-		// as it's more critical than just falling back to an empty string.
-		log.Fatal("PROJECT_ID environment variable not set or empty. Please set it, e.g., export PROJECT_ID=$(gcloud config get project)")
+	// Initialize OpenTelemetry
+	tp, err := common.InitTracerProvider(serviceName, version)
+	if err != nil {
+		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	location = getEnv("LOCATION", "us-central1") // Renamed from envCheck
-	log.Printf("Using Project ID: %s, Location: %s", projectID, location)
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	log.Printf("Initializing global Text-to-Speech client...")
 	startupCtx, startupCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer startupCancel()
 
-	var err error
 	ttsClient, err = texttospeech.NewClient(startupCtx)
 	if err != nil {
 		log.Fatalf("Error creating global Text-to-Speech client: %v", err)
@@ -222,7 +215,7 @@ func main() {
 	}
 
 	s := server.NewMCPServer(
-		"Chirp3", // Standardized name
+		serviceName, // Standardized name
 		version,
 	)
 
@@ -277,7 +270,7 @@ func main() {
 		transport = "sse"
 	}
 
-	log.Printf("Starting Chirp3 MCP Server (Version: %s, Transport: %s)", version, transport)
+	log.Printf("Starting %s MCP Server (Version: %s, Transport: %s)", serviceName, version, transport)
 
 	if transport == "sse" {
 		if port == "" {
@@ -285,7 +278,7 @@ func main() {
 			log.Printf("Transport is SSE but no port specified, defaulting to %s", port)
 		}
 		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%s", port)))
-		log.Printf("Chirp3 MCP Server listening on SSE at :%s with tools: chirp_tts, list_chirp_voices", port)
+		log.Printf("%s MCP Server listening on SSE at :%s with tools: chirp_tts, list_chirp_voices", serviceName, port)
 		if err := sseServer.Start(fmt.Sprintf(":%s", port)); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
@@ -306,9 +299,9 @@ func main() {
 		// Wrap the MCP handler with the CORS middleware
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
 
-		httpPort := getEnv("PORT", "8080")
+		httpPort := common.GetEnv("PORT", "8080")
 		listenAddr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("Chirp3 MCP Server listening on HTTP at %s/mcp with tools: chirp_tts, list_chirp_voices and CORS enabled", listenAddr)
+		log.Printf("%s MCP Server listening on HTTP at %s/mcp with tools: chirp_tts, list_chirp_voices and CORS enabled", serviceName, listenAddr)
 		// Start the server using the wrapped handler
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
@@ -317,13 +310,13 @@ func main() {
 		if transport != "stdio" && transport != "" {
 			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
 		}
-		log.Printf("Chirp3 MCP Server listening on STDIO with tools: chirp_tts, list_chirp_voices")
+		log.Printf("%s MCP Server listening on STDIO with tools: chirp_tts, list_chirp_voices", serviceName)
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
 	}
 
-	log.Println("Chirp3 Server has stopped.")
+	log.Printf("%s Server has stopped.", serviceName)
 	if ttsClient != nil {
 		ttsClient.Close() // Ensure client is closed on server stop, regardless of transport
 	}

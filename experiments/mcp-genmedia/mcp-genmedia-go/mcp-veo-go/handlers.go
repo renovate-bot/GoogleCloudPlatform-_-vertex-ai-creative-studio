@@ -23,9 +23,15 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"google.golang.org/genai"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "veo_t2v")
+	defer span.End()
+
 	prompt, ok := request.GetArguments()["prompt"].(string)
 	if !ok || strings.TrimSpace(prompt) == "" {
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required for text-to-video"), nil
@@ -35,6 +41,16 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+
+	span.SetAttributes(
+		attribute.String("prompt", prompt),
+		attribute.String("gcs_bucket", gcsBucket),
+		attribute.String("output_dir", outputDir),
+		attribute.String("model", model),
+		attribute.String("aspect_ratio", finalAspectRatio),
+		attribute.Int("num_videos", int(numberOfVideos)),
+		attribute.Int("duration_secs", int(*durationSecs)),
+	)
 
 	mcpServer := server.ServerFromContext(ctx)
 	var progressToken mcp.ProgressToken
@@ -61,6 +77,10 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 }
 
 func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "veo_i2v")
+	defer span.End()
+
 	imageURI, ok := request.GetArguments()["image_uri"].(string)
 	if !ok || strings.TrimSpace(imageURI) == "" {
 		return mcp.NewToolResultError("image_uri must be a non-empty string (GCS URI) and is required for image-to-video"), nil
@@ -95,6 +115,18 @@ func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request m
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+
+	span.SetAttributes(
+		attribute.String("image_uri", imageURI),
+		attribute.String("mime_type", mimeType),
+		attribute.String("prompt", prompt),
+		attribute.String("gcs_bucket", gcsBucket),
+		attribute.String("output_dir", outputDir),
+		attribute.String("model", modelName),
+		attribute.String("aspect_ratio", finalAspectRatio),
+		attribute.Int("num_videos", int(numberOfVideos)),
+		attribute.Int("duration_secs", int(*durationSecs)),
+	)
 
 	mcpServer := server.ServerFromContext(ctx)
 	var progressToken mcp.ProgressToken

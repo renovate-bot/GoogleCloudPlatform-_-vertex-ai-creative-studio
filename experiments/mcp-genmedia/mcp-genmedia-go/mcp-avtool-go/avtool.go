@@ -1,58 +1,71 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/cors"
 )
 
+const (
+	serviceName = "mcp-avtool-go"
+	version     = "2.0.0" // Version bump for refactoring
+)
+
+var transport = flag.String("transport", "stdio", "Transport type (stdio, sse, or http)")
+
 // init handles command-line flags and initial logging setup.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	initConfigFlags() // From config.go - call to parse flags
 }
 
 // main is the entry point of the application.
 func main() {
-	// flag.Parse() should be called in main, after all flags are defined.
-	// Since initConfigFlags calls flag.String, flag.Parse should be here.
-	// However, the mcp-go server library might also define flags or expect parsing at a certain time.
-	// For now, let's assume it's safe to parse here. If there are conflicts or order issues
-	// with flags defined by the mcp-go library, this might need adjustment.
-	// The original code had flag.Parse() in main before loadConfiguration.
-	// Let's keep it that way for now.
 	flag.Parse() // Ensure flags are parsed before use
 
-	loadConfiguration() // From config.go
+	cfg := common.LoadConfig()
+
+	// Initialize OpenTelemetry
+	tp, err := common.InitTracerProvider(serviceName, version)
+	if err != nil {
+		log.Fatalf("failed to initialize tracer provider: %v", err)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	s := server.NewMCPServer(
 		"AV Compositing Tool", // More general name
-		version, // From config.go
+		version,
 	)
 
 	// Register tools - these functions are now in mcp_handlers.go
-	addConvertAudioTool(s)
-	addCombineAudioVideoTool(s)
-	addOverlayImageOnVideoTool(s)
-	addConcatenateMediaTool(s)
-	addAdjustVolumeTool(s)
-	addLayerAudioTool(s)
-	addCreateGifTool(s)
-	addGetMediaInfoTool(s)
+	// and now require the config to be passed.
+	addConvertAudioTool(s, cfg)
+	addCombineAudioVideoTool(s, cfg)
+	addOverlayImageOnVideoTool(s, cfg)
+	addConcatenateMediaTool(s, cfg)
+	addAdjustVolumeTool(s, cfg)
+	addLayerAudioTool(s, cfg)
+	addCreateGifTool(s, cfg)
+	addGetMediaInfoTool(s, cfg)
 
-	log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: %s)", version, transport) // version, transport from config.go
+	log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: %s)", version, *transport)
 
-	if transport == "sse" {
+	if *transport == "sse" {
 		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
 		log.Printf("AV Compositing Tool (avtool) MCP Server listening on SSE at :8081")
 		if err := sseServer.Start(":8081"); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
-	} else if transport == "http" {
+	} else if *transport == "http" {
 		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
 
 		c := cors.New(cors.Options{
@@ -66,15 +79,15 @@ func main() {
 
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
 
-		httpPort := getEnv("PORT", "8080") // From config.go
+		httpPort := common.GetEnv("PORT", "8080")
 		listenAddr := fmt.Sprintf(":%s", httpPort)
 		log.Printf("AV Compositing Tool (avtool) MCP Server listening on HTTP at %s/mcp and CORS enabled", listenAddr)
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	} else { // Default to stdio
-		if transport != "stdio" && transport != "" {
-			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
+		if *transport != "stdio" && *transport != "" {
+			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", *transport)
 		}
 		log.Printf("AV Compositing Tool (avtool) MCP Server listening on STDIO")
 		if err := server.ServeStdio(s); err != nil {

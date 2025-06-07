@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-func downloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
-	bucketName, objectName, err := parseGCSPath(gcsURI)
+func DownloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
+	bucketName, objectName, err := ParseGCSPath(gcsURI)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func downloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
 	return nil
 }
 
-func uploadToGCS(ctx context.Context, bucketName, objectName, contentType string, data []byte) error {
+func UploadToGCS(ctx context.Context, bucketName, objectName, contentType string, data []byte) error {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %w", err)
@@ -103,7 +103,7 @@ func uploadToGCS(ctx context.Context, bucketName, objectName, contentType string
 	return nil
 }
 
-func parseGCSPath(gcsURI string) (bucketName, objectName string, err error) {
+func ParseGCSPath(gcsURI string) (bucketName, objectName string, err error) {
 	if !strings.HasPrefix(gcsURI, "gs://") {
 		return "", "", fmt.Errorf("invalid GCS URI: must start with 'gs://', got %s", gcsURI)
 	}

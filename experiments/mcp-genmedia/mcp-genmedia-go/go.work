@@ -6,4 +6,5 @@ use (
 	./mcp-veo-go
 	./mcp-lyria-go
 	./mcp-avtool-go
+./mcp-common
 )
