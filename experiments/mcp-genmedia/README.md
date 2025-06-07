@@ -2,115 +2,109 @@
 
 This repository contains Model Context Protocol (MCP) servers that enable MCP clients (like AI agents) to access Google Cloud's generative media APIs.
 
-* Imagen 3 - for image generation and editing
-* Veo 2 - for video creation
-* Chirp 3 HD - for audio synthesis
-* Lyria - for music generation
+*Generative Media*
 
-Additionally, there's a compositing MCP server, avtool, which instruments ffmpeg, to combine these together.
+*   **Imagen 3** - for image generation and editing
+*   **Veo 2** - for video creation
+*   **Chirp 3 HD** - for audio synthesis
+*   **Lyria** - for music generation
+
+*Compositing*
+
+*   **AVTool** - for audio/video compositing and manipulation
 
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 
-### Install the Vertex AI Genmedia MCP Servers
+## Installation
 
-Install the MCP Servers for Genmedia locally.
+To install the MCP Servers for Genmedia, you will need [Go](https://go.dev/doc/install) installed on your system.
 
-You will need [Go](https://go.dev/doc/install) to install the Go versions of the MCP Servers for Genmedia.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
+    cd vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go
+    ```
 
-The MCP Servers for Genmedia available in the /experimental/mcp-genmedia/mcp-genmedia-go directory can be installed with the following commands:
+2.  **Install the MCP Servers:**
+    Each MCP server must be installed individually. From the `mcp-genmedia-go` directory, run the following commands to install the servers you need:
 
+    ```bash
+    # Install all servers
+    go install ./...
+
+    # Or, install a specific server (e.g., Imagen)
+    go install ./mcp-imagen-go
+    ```
+
+3.  **Verify your installation:**
+    Ensure the Go binaries are in your system's `PATH`.
+    ```bash
+    export PATH=$(go env GOPATH)/bin:$PATH
+    ```
+    You can then verify the installation by running the server with the `--help` flag:
+    ```bash
+    mcp-imagen-go --help
+    ```
+
+## Running the Servers
+
+The MCP servers can be run using different transport protocols. The default is `stdio`.
+
+To start a server in Streamable HTTP mode, use the `--transport http` flag:
 ```bash
-# step 1: clone the repo
-git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
+mcp-imagen-go --transport http
 ```
 
-```bash
-# Step 2: change directory to the mcp-genmedia-go directory
-cd vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go
-```
+## Configuration
 
-Please install the MCP server of your choice individually
+The servers are configured primarily through environment variables. Key variables include:
 
-```bash
-# Step 3 (imagen example): install a single MCP Server for Genmedia
-cd mcp-imagen-go/
-go install .
-```
+*   `PROJECT_ID`: Your Google Cloud project ID.
+*   `LOCATION`: The Google Cloud region for the APIs (e.g., `us-central1`).
+*   `PORT`: The port for the HTTP server (e.g., `8080`).
+*   `GENMEDIA_BUCKET`: The Google Cloud Storage bucket for media assets.
 
-### Verify your installation
+## Available Tools
 
-Confirm that the go binaries are on your path
-
-```bash
-export PATH=$(go env GOPATH)/bin:$PATH
-```
-
-Test with `--help`
-
-```bash
-# imagen mcp
-mcp-imagen-go --help
-```
-
-
-## Genmedia MCP Tools docs
-
-Each of the servers can be used in STDIO and Streamable HTTP mode (with SSE mode still available). The default is STDIO.
-
-To start a server in Streamable HTTP mode, use the `--transport http` flag.
+Here is a high-level overview of the tools provided by each MCP server.
 
 ### Imagen
 
-The MCP Server for Imagen provides tools for image generation:
-
-* `imagen_t2i`: Generates an image from a text prompt. Supports output to GCS, local disk, or as base64 data. (Follows the [Imagen API](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview))
+*   `imagen_t2i`: Generates an image from a text prompt.
 
 ### Veo
 
-The MCP Server for Veo offers tools for video generation:
-
-* `veo_t2v`: Generates a video from a provided text prompt.
-* `veo_i2v`: Generates a video from a provided reference image (GCS URI) and an optional text prompt.
-(Both tools save video to GCS and can optionally download it locally.)
+*   `veo_t2v`: Generates a video from a text prompt.
+*   `veo_i2v`: Generates a video from a reference image and an optional prompt.
 
 ### Chirp 3 HD Voices
 
-The MCP Server for Chirp 3 HD Voices includes tools for speech synthesis:
-
-* `chirp_tts`: Synthesizes audio from text using a specified Chirp 3 HD Voice. Can return audio data directly or save to a local file.
-* `list_chirp_voices`: Lists available Chirp 3 HD voices, filterable by language.
+*   `chirp_tts`: Synthesizes audio from text.
+*   `list_chirp_voices`: Lists available Chirp voices.
 
 ### Lyria
 
-The MCP Server for Lyria enables music generation:
-
-* `lyria_generate_music`: Generates music from a text prompt. Supports output to GCS, local disk, or as base64 data.
+*   `lyria_generate_music`: Generates music from a text prompt.
 
 ### AVTool (Audio/Video Compositing)
 
-The MCP Server for AVTool provides various media processing capabilities by instrumenting FFMpeg and FFprobe:
-
-* `ffmpeg_get_media_info`: Retrieves detailed media information (metadata, streams).
-* `ffmpeg_combine_audio_and_video`: Combines separate video and audio files.
-* `ffmpeg_concatenate_media_files`: Concatenates multiple video or audio files.
-* `ffmpeg_video_to_gif`: Converts a video segment to an animated GIF.
-* `ffmpeg_convert_audio_wav_to_mp3`: Converts WAV audio to MP3.
-* `ffmpeg_overlay_image_on_video`: Overlays an image onto a video.
-* `ffmpeg_adjust_volume`: Adjusts the volume of an audio file.
-* `ffmpeg_layer_audio_files`: Mixes multiple audio files together.
-(Most AVTool tools support GCS URIs for input/output and local file operations.)
+*   `ffmpeg_get_media_info`: Retrieves media file information.
+*   `ffmpeg_combine_audio_and_video`: Combines video and audio files.
+*   `ffmpeg_concatenate_media_files`: Concatenates multiple media files.
+*   `ffmpeg_video_to_gif`: Converts a video to a GIF.
+*   `ffmpeg_convert_audio_wav_to_mp3`: Converts WAV audio to MP3.
+*   `ffmpeg_overlay_image_on_video`: Overlays an image on a video.
+*   `ffmpeg_adjust_volume`: Adjusts the volume of an audio file.
+*   `ffmpeg_layer_audio_files`: Mixes multiple audio files.
 
 ## Authentication
 
-The server uses Google's authentication. Make sure you have either:
+The servers use Google's Application Default Credentials (ADC). Ensure you have authenticated by one of the following methods:
 
-1. Set up Application Default Credentials (ADC)
-2. Set a GOOGLE_APPLICATION_CREDENTIALS environment variable
-3. Used `gcloud auth application-default login`
+1.  Set up ADC: `gcloud auth application-default login`
+2.  Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your service account key file.
 
-
-Please note, you may need to provide your user (user@email.com) with access to the Google Cloud Storage bucket (`BUCKET_NAME`).
-
+You may also need to grant your user or service account access to the Google Cloud Storage bucket:
 ```bash
 gcloud storage buckets add-iam-policy-binding gs://BUCKET_NAME \
   --member=user:user@email.com \
@@ -119,25 +113,16 @@ gcloud storage buckets add-iam-policy-binding gs://BUCKET_NAME \
 
 ## Client Configurations
 
-The MCP servers from this repo can be used various clients/hosts. 
+The MCP servers can be used with various clients and hosts. A sample MCP configuration JSON can be found at [genmedia-config.json](./sample-agents/mcp-inspector/genmedia-config.json).
 
-A sample MCP configuration JSON can be seen at [genmedia-config.json](./sample-agents/mcp-inspector/genmedia-config.json).
+This repository provides AI application samples for:
 
+*   [Google ADK (Agent Development Kit)](./sample-agents/adk/README.md)
+*   [Google Firebase Genkit](./sample-agents/genkit/README.md)
 
-This repository provides some AI application samples:
+## Development and Contribution
 
-1. [Google ADK(Agent Development Kit)](https://google.github.io/adk-docs/) Agents (a prebuilt agent is provided, details [below](#using-the-prebuilt-google-adk-agent-as-client))
-2. [Google Firebase Genkit](https://firebase.google.com/docs/genkit) with the [MCP plugin](https://github.com/firebase/genkit/tree/main/js/plugins/mcp)
-
-
-### Using the Google ADK agent as client
-
-Please refer to the [README file](./sample-agents/adk/README.md) for an example of locally running an ADK agent that uses the MCP Servers for Genmedia.
-
-### Using Google Genkit agent as a client
-
-Please refer to the [README file](./sample-agents/genkit/README.md) for locally running an example Genkit agent that uses the MCP Servers for Genmedia.
-
+For those interested in extending the existing servers or creating new ones, the `mcp-genmedia-go` directory contains a more detailed `README.md` with information on the architecture and development process. Please refer to the [mcp-genmedia-go/README.md](./mcp-genmedia-go/README.md) for more information.
 
 ## License
 
