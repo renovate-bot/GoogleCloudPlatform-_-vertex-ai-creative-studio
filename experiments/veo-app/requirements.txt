@@ -50,7 +50,7 @@ executing==2.2.0
     # via stack-data
 fastapi==0.115.12
     # via veo-app
-firebase-admin==6.8.0
+firebase-admin==6.9.0
     # via veo-app
 flask==3.1.1
     # via mesop
