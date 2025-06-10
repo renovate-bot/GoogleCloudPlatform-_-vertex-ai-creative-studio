@@ -1,18 +1,3 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""Veo 2 model methods"""
-
 import time
 
 import google.auth
@@ -22,6 +7,7 @@ from dotenv import load_dotenv
 
 from config.default import Default
 from models.model_setup import VeoModelSetup
+from common.error_handling import GenerationError
 
 config = Default()
 
@@ -108,6 +94,91 @@ def compose_videogen_request(
     return request
 
 
+def generate_video(state):
+    """Generates a video based on the current state."""
+    try:
+        if state.reference_image_gcs:
+            if state.last_reference_image_gcs:
+                print(
+                    f"Interpolation invoked. I see you have two images! {state.reference_image_gcs} & {state.last_reference_image_gcs}"
+                )
+                op = images_to_video(
+                    state.veo_prompt_input,
+                    state.reference_image_gcs,
+                    state.last_reference_image_gcs,
+                    120,
+                    state.aspect_ratio,
+                    1,
+                    f"gs://{config.VIDEO_BUCKET}",
+                    state.auto_enhance_prompt,
+                    state.video_length,
+                )
+            else:
+                print(
+                    f"I2V invoked. I see you have an image! {state.reference_image_gcs}"
+                )
+                op = image_to_video(
+                    state.veo_prompt_input,
+                    state.reference_image_gcs,
+                    120,
+                    state.aspect_ratio,
+                    1,
+                    f"gs://{config.VIDEO_BUCKET}",
+                    state.auto_enhance_prompt,
+                    state.video_length,
+                )
+        else:
+            print("T2V invoked.")
+            op = text_to_video(
+                state.veo_model,
+                state.veo_prompt_input,
+                120,
+                state.aspect_ratio,
+                1,
+                f"gs://{config.VIDEO_BUCKET}",
+                state.auto_enhance_prompt,
+                state.video_length,
+            )
+
+        print(f"Operation result: {op}")
+
+        if op.get("done") and op.get("error"):
+            raise GenerationError(op["error"].get("message", "Unknown API error"))
+        elif op.get("done") and op.get("response"):
+            response_data = op["response"]
+            print(f"Response: {response_data}")
+
+            if response_data.get("raiMediaFilteredCount", 0) > 0 and response_data.get(
+                "raiMediaFilteredReasons"
+            ):
+                filter_reason = response_data["raiMediaFilteredReasons"][0]
+                raise GenerationError(f"Content Filtered: {filter_reason}")
+
+            else:
+                if (
+                    "generatedSamples" in response_data
+                    and response_data["generatedSamples"]
+                ):
+                    return (
+                        response_data["generatedSamples"][0]
+                        .get("video", {})
+                        .get("uri", "")
+                    )
+                elif "videos" in response_data and response_data["videos"]:
+                    return response_data["videos"][0].get("gcsUri", "")
+                else:
+                    raise GenerationError(
+                        "API reported success but no video URI was found in the response."
+                    )
+        else:
+            raise GenerationError(
+                "Unexpected API response structure or operation not done."
+            )
+
+    except requests.exceptions.HTTPError as err:
+        raise GenerationError(f"Network/API Error: {err}") from err
+
+
 def text_to_video(
     model,
     prompt,
@@ -192,7 +263,7 @@ def images_to_video(
         last_image_gcs,
     )
     print(f"Request: {req}")
-    resp = send_request_to_google_api(exp_prediction_endpoint, req)
+    resp = send_.google_api(exp_prediction_endpoint, req)
     print(resp)
     return fetch_operation(fetch_endpoint, resp["name"])
 
@@ -206,29 +277,3 @@ def fetch_operation(fetch_endpoint, lro_name):
         if "done" in resp and resp["done"]:
             return resp
         time.sleep(10)
-
-
-def show_video(op):
-    """show video"""
-    print(op)
-    if op["response"]:
-        print(f"Done: {op['response']['done']}")
-        if op["response"]["generatedSamples"]:
-            # veo-2.0-generate-exp
-            for video in op["response"]["generatedSamples"]:
-                print(video)
-                gcs_uri = video["video"]["uri"]
-                file_name = gcs_uri.split("/")[-1]
-                print("Video generated - use the following to copy locally")
-                print(f"gsutil cp {gcs_uri} {file_name}")
-                return gcs_uri
-        elif op["response"]["videos"]:
-            # veo-2.0-generate-001
-            print(f"Videos: {op['response']['videos']}")
-            for video in op["response"]["videos"]:
-                print(f"> {video}")
-                gcs_uri = video["gcsUri"]
-                file_name = gcs_uri.split("/")[-1]
-                print("Video generated - use the following to copy locally")
-                print(f"gsutil cp {gcs_uri} {file_name}")
-                return gcs_uri
