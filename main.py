@@ -140,7 +140,7 @@ def generate_images(input_txt: str):
         language="auto",
         negative_prompt=state.image_negative_prompt_input,
     )
-    for idx, img in enumerate(response.images):
+    for idx, img in enumerate(response):
         print(
             f"generated image: {idx} size: {len(img._as_base64_string())} at {img._gcs_uri}"
         )

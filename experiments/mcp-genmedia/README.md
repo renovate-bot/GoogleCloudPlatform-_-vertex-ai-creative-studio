@@ -29,14 +29,10 @@ git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
 cd vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go
 ```
 
-```bash
-# Step 3 (all): install all MCP Servers for Genmedia 
-# Installs: mcp-avtool-go, mcp-chirp3-go, mcp-imagen-go, etc.
-go install ./...
-```
+Please install the MCP server of your choice individually
 
 ```bash
-# Step3 (individually): install a single MCP Server for Genmedia
+# Step 3 (imagen example): install a single MCP Server for Genmedia
 cd mcp-imagen-go/
 go install .
 ```
