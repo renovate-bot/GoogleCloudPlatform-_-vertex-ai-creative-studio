@@ -18,7 +18,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// getArguments safely extracts arguments from the MCP request.
+// getArguments safely extracts the tool call arguments from an MCP request.
+// It checks if the arguments are present and are of the expected type (map[string]interface{}).
+// This function helps in gracefully handling malformed or missing arguments.
 func getArguments(request mcp.CallToolRequest) (map[string]interface{}, error) {
 	if request.Params.Arguments == nil {
 		log.Println("Warning: request.Params.Arguments is nil, treating as empty arguments.")
@@ -32,7 +34,8 @@ func getArguments(request mcp.CallToolRequest) (map[string]interface{}, error) {
 	return argsMap, nil
 }
 
-// --- FFprobe Tool Handler --- //
+// addGetMediaInfoTool defines and registers the 'ffmpeg_get_media_info' tool with the MCP server.
+// This tool is designed to extract media information using ffprobe.
 func addGetMediaInfoTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_get_media_info",
 		mcp.WithDescription("Gets media information (streams, format, etc.) from a media file using ffprobe. Returns JSON output."),
@@ -43,6 +46,8 @@ func addGetMediaInfoTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegGetMediaInfoHandler is the handler function for the 'ffmpeg_get_media_info' tool.
+// It processes the request, prepares the input file, executes ffprobe, and returns the media information as a JSON string.
 func ffmpegGetMediaInfoHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_get_media_info")
@@ -88,7 +93,8 @@ func ffmpegGetMediaInfoHandler(ctx context.Context, request mcp.CallToolRequest,
 	return mcp.NewToolResultText(outputJSON), nil
 }
 
-// --- Convert Audio Tool Handler --- //
+// addConvertAudioTool defines and registers the 'ffmpeg_convert_audio_wav_to_mp3' tool.
+// This tool converts WAV audio files to MP3 format.
 func addConvertAudioTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_convert_audio_wav_to_mp3",
 		mcp.WithDescription("Converts a WAV audio file to MP3 format using FFMpeg."),
@@ -102,6 +108,8 @@ func addConvertAudioTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegConvertAudioHandler handles the logic for the 'ffmpeg_convert_audio_wav_to_mp3' tool.
+// It manages file preparation, executes the FFmpeg conversion command, and handles the output.
 func ffmpegConvertAudioHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_convert_audio_wav_to_mp3")
@@ -186,7 +194,8 @@ func ffmpegConvertAudioHandler(ctx context.Context, request mcp.CallToolRequest,
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
-// --- Create GIF Tool Handler --- //
+// addCreateGifTool defines and registers the 'ffmpeg_video_to_gif' tool.
+// This tool converts a video file into a GIF animation.
 func addCreateGifTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_video_to_gif",
 		mcp.WithDescription("Creates a GIF from an input video using a two-pass FFMpeg process (palette generation and palette use)."),
@@ -202,6 +211,8 @@ func addCreateGifTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegVideoToGifHandler orchestrates the two-pass process of creating a GIF from a video.
+// It first generates a color palette from the source video and then uses this palette to create a high-quality GIF.
 func ffmpegVideoToGifHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_video_to_gif")
@@ -331,7 +342,8 @@ func ffmpegVideoToGifHandler(ctx context.Context, request mcp.CallToolRequest, c
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
-// --- Combine Audio/Video Tool Handler --- //
+// addCombineAudioVideoTool defines and registers the 'ffmpeg_combine_audio_and_video' tool.
+// This tool merges a video stream from one file and an audio stream from another into a single video file.
 func addCombineAudioVideoTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_combine_audio_and_video",
 		mcp.WithDescription("Combines separate audio and video files into a single video file."),
@@ -346,6 +358,9 @@ func addCombineAudioVideoTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegCombineAudioVideoHandler is the handler for the audio/video combination tool.
+// It prepares the separate video and audio input files, then uses FFmpeg to combine them,
+// copying the video codec and taking the audio from the second input.
 func ffmpegCombineAudioVideoHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_combine_audio_and_video")
@@ -437,7 +452,8 @@ func ffmpegCombineAudioVideoHandler(ctx context.Context, request mcp.CallToolReq
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
-// --- Overlay Image on Video Tool Handler --- //
+// addOverlayImageOnVideoTool defines and registers the 'ffmpeg_overlay_image_on_video' tool.
+// This tool places an image on top of a video at specified coordinates.
 func addOverlayImageOnVideoTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_overlay_image_on_video",
 		mcp.WithDescription("Overlays an image onto a video at specified coordinates."),
@@ -454,6 +470,8 @@ func addOverlayImageOnVideoTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegOverlayImageHandler handles the request to overlay an image onto a video.
+// It prepares both the video and image files, then uses FFmpeg's overlay filter to perform the composition.
 func ffmpegOverlayImageHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_overlay_image_on_video")
@@ -552,11 +570,13 @@ func ffmpegOverlayImageHandler(ctx context.Context, request mcp.CallToolRequest,
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
-// --- Concatenate Media Tool Handler --- //
+// addConcatenateMediaTool defines and registers the 'ffmpeg_concatenate_media_files' tool.
+// This tool is capable of joining multiple media files into a single file.
+// It has special handling for WAV files to ensure compatibility.
 func addConcatenateMediaTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_concatenate_media_files",
 		mcp.WithDescription("Concatenates multiple media files. If output is WAV, inputs must be PCM WAV; otherwise, inputs are standardized to MP4/AAC before concatenation."),
-		mcp.WithArray("input_media_uris", mcp.Required(), mcp.Description("Array of URIs for the input media files (local paths or gs://).")),
+		mcp.WithArray("input_media_uris", mcp.Required(), mcp.Description("Array of URIs for the input media files (local paths or gs://)."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_file_name", mcp.Description("Optional. Desired name for the output file (e.g., 'concatenated.mp4'). Extension determines behavior for audio concatenation.")),
 		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
 		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to.")),
@@ -566,6 +586,10 @@ func addConcatenateMediaTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegConcatenateMediaHandler provides the logic for concatenating media files.
+// It handles two primary cases: direct concatenation of compatible PCM WAV files, and
+// a more general case where inputs are first standardized to a common format (MP4/AAC)
+// before being concatenated. This ensures a reliable join for a variety of input formats.
 func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_concatenate_media_files")
@@ -929,7 +953,8 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
-// --- Adjust Volume Tool Handler --- //
+// addAdjustVolumeTool defines and registers the 'ffmpeg_adjust_volume' tool.
+// This tool allows for changing the volume of an audio file by a specified decibel (dB) level.
 func addAdjustVolumeTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_adjust_volume",
 		mcp.WithDescription("Adjusts the volume of an audio file by a specified dB amount."),
@@ -944,6 +969,8 @@ func addAdjustVolumeTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegAdjustVolumeHandler is the handler for the volume adjustment tool.
+// It applies a volume change to the input audio file using FFmpeg's volume filter.
 func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_adjust_volume")
@@ -1048,7 +1075,8 @@ func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest,
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
-// --- Layer Audio Tool Handler --- //
+// addLayerAudioTool defines and registers the 'ffmpeg_layer_audio_files' tool.
+// This tool is used to mix (layer) multiple audio files together into a single audio stream.
 func addLayerAudioTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_layer_audio_files",
 		mcp.WithDescription("Layers multiple audio files together (mixing)."),
@@ -1062,6 +1090,8 @@ func addLayerAudioTool(s *server.MCPServer, cfg *common.Config) {
 	})
 }
 
+// ffmpegLayerAudioHandler is the handler for the audio layering tool.
+// It takes multiple audio inputs and uses FFmpeg's amix filter to merge them into a single output file.
 func ffmpegLayerAudioHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "ffmpeg_layer_audio_files")

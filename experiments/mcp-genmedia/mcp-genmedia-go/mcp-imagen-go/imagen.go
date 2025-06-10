@@ -54,13 +54,13 @@ func init() {
 	flag.Parse()
 }
 
+// main is the entry point for the mcp-imagen-go service.
+// It initializes the configuration, OpenTelemetry, and the Google GenAI client.
+// It then creates an MCP server, registers the 'imagen_t2i' tool, and starts
+// listening for requests on the configured transport.
 func main() {
 	// Load configuration using the common module
-	var err error
 	appConfig = common.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
 
 	// Initialize OpenTelemetry
 	tp, err := common.InitTracerProvider(serviceName, version)
@@ -78,11 +78,18 @@ func main() {
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer clientCancel()
 
-	genAIClient, err = genai.NewClient(clientCtx, &genai.ClientConfig{
+	clientConfig := &genai.ClientConfig{
 		Backend:  genai.BackendVertexAI,
 		Project:  appConfig.ProjectID,
 		Location: appConfig.Location,
-	})
+	}
+
+	if appConfig.ApiEndpoint != "" {
+		log.Printf("Using custom Vertex AI endpoint: %s", appConfig.ApiEndpoint)
+		clientConfig.HTTPOptions.BaseURL = appConfig.ApiEndpoint
+	}
+
+	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
 		log.Fatalf("Error creating global GenAI client: %v", err)
 	}
@@ -174,7 +181,10 @@ func main() {
 	log.Println("Imagen Server has stopped.")
 }
 
-// imagenGenerationHandler invokes Imagen text to image generation
+// imagenGenerationHandler is the handler for the 'imagen_t2i' tool.
+// It parses the request parameters, calls the Imagen API to generate images,
+// and then handles the response. It can save images to GCS, a local directory,
+// or return them as base64-encoded data in the response.
 func imagenGenerationHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "imagen_t2i")

@@ -6,12 +6,10 @@ import (
 )
 
 type Config struct {
-	ProjectID           string
-	Location            string
-	GenmediaBucket      string
-	LyriaLocation       string
-	LyriaModelPublisher string
-	DefaultLyriaModelID string
+	ProjectID      string
+	Location       string
+	GenmediaBucket string
+	ApiEndpoint    string // New field
 }
 
 func LoadConfig() *Config {
@@ -21,15 +19,16 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		ProjectID:           projectID,
-		Location:            GetEnv("LOCATION", "us-central1"),
-		GenmediaBucket:      GetEnv("GENMEDIA_BUCKET", ""),
-		LyriaLocation:       GetEnv("LYRIA_LOCATION", GetEnv("LOCATION", "us-central1")),
-		LyriaModelPublisher: GetEnv("LYRIA_MODEL_PUBLISHER", "google"),
-		DefaultLyriaModelID: GetEnv("DEFAULT_LYRIA_MODEL_ID", "lyria-002"),
+		ProjectID:      projectID,
+		Location:       GetEnv("LOCATION", "us-central1"),
+		GenmediaBucket: GetEnv("GENMEDIA_BUCKET", ""),
+		ApiEndpoint:    os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
 	}
 }
 
+// GetEnv retrieves an environment variable by its key.
+// If the variable is not set or is empty, it returns a fallback value.
+// This function is useful for providing default values for optional configurations.
 func GetEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value

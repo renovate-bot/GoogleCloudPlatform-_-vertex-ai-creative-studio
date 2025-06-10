@@ -92,7 +92,10 @@ func init() {
 	}
 }
 
-// listAndCacheChirpHDVoices fetches and stores all voices containing "Chirp3-HD".
+// listAndCacheChirpHDVoices fetches the list of available voices from the
+// Google Cloud Text-to-Speech API and caches those that are identified as
+// Chirp3-HD voices. This cached list is used by other functions to validate
+// voice selections and provide voice options.
 func listAndCacheChirpHDVoices(ctx context.Context) error {
 	log.Println("Fetching available Chirp3-HD voices...")
 	tempClient, err := texttospeech.NewClient(ctx)
@@ -122,8 +125,11 @@ func listAndCacheChirpHDVoices(ctx context.Context) error {
 	return nil
 }
 
-// parseMcpPronunciations parses the custom pronunciations from MCP parameters.
-// pronunciationsParam is expected to be []interface{}, where each item is a string "phrase:phonetic_form".
+// parseMcpPronunciations processes custom pronunciation parameters provided in an MCP request.
+// It takes the raw `pronunciations` parameter (expected as an array of strings)
+// and an encoding string ('ipa' or 'xsampa'). Each string in the array should be in
+// the format 'phrase:phonetic_form'. The function validates the inputs and converts
+// them into the appropriate protobuf message structure required by the Text-to-Speech API.
 func parseMcpPronunciations(pronunciationsParam interface{}, encodingStr string) (*texttospeechpb.CustomPronunciations, error) {
 	if pronunciationsParam == nil {
 		return nil, nil // No pronunciations provided
@@ -187,6 +193,11 @@ func parseMcpPronunciations(pronunciationsParam interface{}, encodingStr string)
 	}, nil
 }
 
+// main is the entry point for the mcp-chirp3-go service.
+// It initializes the OpenTelemetry provider, the Google Cloud Text-to-Speech client,
+// and caches the available Chirp3-HD voices. It then sets up an MCP server, registers
+// the 'chirp_tts' and 'list_chirp_voices' tools, and starts listening for requests
+// on the configured transport (stdio, sse, or http).
 func main() {
 	// Initialize OpenTelemetry
 	tp, err := common.InitTracerProvider(serviceName, version)
@@ -322,7 +333,11 @@ func main() {
 	}
 }
 
-// chirpTTSHandler handles requests for the chirp_tts tool.
+// chirpTTSHandler is the core logic for the 'chirp_tts' tool.
+// It handles requests to synthesize speech from text. The function extracts parameters
+// from the request, selects an appropriate voice, and calls the Text-to-Speech API.
+// It can save the resulting audio to a local file or return it directly in the
+// response as base64-encoded data.
 func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	var contentItems []mcp.Content
 
@@ -496,7 +511,9 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	return &mcp.CallToolResult{Content: finalContentItems}, nil
 }
 
-// synthesizeWithVoice now accepts customPronos
+// synthesizeWithVoice encapsulates the call to the Google Cloud Text-to-Speech API.
+// It constructs the synthesis request with the specified voice, text, and custom pronunciations,
+// sends it to the API, and returns the raw audio content as a byte slice.
 func synthesizeWithVoice(ctx context.Context, client *texttospeech.Client, voice *texttospeechpb.Voice, textToSynthesize string, customPronos *texttospeechpb.CustomPronunciations) ([]byte, error) {
 	req := texttospeechpb.SynthesizeSpeechRequest{
 		Input: &texttospeechpb.SynthesisInput{
@@ -525,6 +542,10 @@ type VoiceInfo struct {
 	Gender       string `json:"gender"`
 }
 
+// listChirpVoicesHandler handles requests for the 'list_chirp_voices' tool.
+// It filters the cached list of Chirp3-HD voices based on a provided language query.
+// The query can be a descriptive name (e.g., "English (United States)") or a BCP-47 code.
+// The function returns a JSON array of matching voices and a human-readable summary.
 func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if err := ctx.Err(); err != nil {
 		log.Printf("listChirpVoicesHandler: Incoming context (ctx) is already canceled or has an error upon entry: %v. Attempting to proceed with listing.", err)

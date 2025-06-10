@@ -19,8 +19,9 @@ import (
 	"strings"
 )
 
-// inferMimeTypeFromURI attempts to guess the MIME type from the file extension.
-// Only "image/png" and "image/jpeg" are supported by the API.
+// inferMimeTypeFromURI attempts to determine the MIME type of a file based on its extension.
+// It supports common image formats like PNG and JPEG, which are used in the image-to-video workflow.
+// This helps in providing the correct metadata to the video generation API.
 func inferMimeTypeFromURI(uri string) string {
 	ext := strings.ToLower(filepath.Ext(uri))
 	switch ext {

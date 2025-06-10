@@ -11,6 +11,10 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
+// InitTracerProvider initializes and configures the OpenTelemetry tracer provider.
+// It sets up a GRPC exporter to send trace data and configures the tracer with
+// service name and version attributes. This is crucial for observability, allowing
+// for distributed tracing of requests as they flow through the system.
 func InitTracerProvider(serviceName, serviceVersion string) (*tracesdk.TracerProvider, error) {
 	ctx := context.Background()
 

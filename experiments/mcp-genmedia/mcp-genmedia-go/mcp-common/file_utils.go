@@ -12,6 +12,11 @@ import (
 	"github.com/teris-io/shortid"
 )
 
+// PrepareInputFile handles the logic for making a file available locally for processing.
+// It checks if the given file URI is a GCS path (gs://...) or a local path.
+// If it's a GCS path, it downloads the file to a temporary local directory.
+// If it's a local path, it verifies that the file exists.
+// It returns the local path to the file and a cleanup function to remove any temporary files.
 func PrepareInputFile(ctx context.Context, fileURI, purpose string, gcpProjectID string) (localPath string, cleanupFunc func(), err error) {
 	cleanupFunc = func() {}
 
@@ -53,6 +58,10 @@ func PrepareInputFile(ctx context.Context, fileURI, purpose string, gcpProjectID
 	return fileURI, cleanupFunc, nil
 }
 
+// HandleOutputPreparation creates a temporary directory for FFmpeg output and determines the final output filename.
+// If a desired filename is provided, it uses that; otherwise, it generates a unique filename.
+// It ensures the filename has the correct extension.
+// It returns the full path to the temporary output file, the final filename, and a cleanup function.
 func HandleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLocalOutputFile string, finalOutputFilename string, cleanupFunc func(), err error) {
 	cleanupFunc = func() {}
 
@@ -86,6 +95,9 @@ func HandleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLoca
 	return tempLocalOutputFile, finalOutputFilename, cleanupFunc, nil
 }
 
+// ProcessOutputAfterFFmpeg manages the file after it has been processed by FFmpeg.
+// It can move the file to a specified local directory and/or upload it to a GCS bucket.
+// It returns the final local path and the GCS path of the file.
 func ProcessOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, finalOutputFilename, outputLocalDir, outputGCSBucket string, gcpProjectID string) (finalLocalPath string, finalGCSPath string, err error) {
 	currentLocalPath := ffmpegOutputActualPath
 
@@ -154,7 +166,8 @@ func GetTail(s string, n int) string {
 	return strings.Join(lines[len(lines)-n:], "\n")
 }
 
-// formatBytes converts a size in bytes to a human-readable string (KB, MB, GB).
+// FormatBytes converts a size in bytes to a more human-readable format (e.g., KB, MB, GB).
+// This is useful for logging file sizes in a way that is easy to understand.
 func FormatBytes(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {

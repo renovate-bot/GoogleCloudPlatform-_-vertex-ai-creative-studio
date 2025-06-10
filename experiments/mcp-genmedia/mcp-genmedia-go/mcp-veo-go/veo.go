@@ -23,7 +23,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
+	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/cors"
@@ -31,9 +31,10 @@ import (
 )
 
 var (
-	appConfig   *common.Config
-	genAIClient *genai.Client // Global GenAI client
-	transport   string
+	appConfig    *common.Config
+	genAIClient  *genai.Client // Global GenAI client
+	transport    string
+	otel_enabled bool
 )
 
 const (
@@ -41,40 +42,52 @@ const (
 	version     = "1.6.0" // Version increment for OTel instrumentation
 )
 
+// init handles command-line flags and initial logging setup.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.BoolVar(&otel_enabled, "otel", true, "Enable OpenTelemetry")
 	flag.Parse()
 }
 
+// main is the entry point for the mcp-veo-go service.
+// It initializes the configuration, OpenTelemetry, and the Google GenAI client.
+// It then creates an MCP server, registers the 'veo_t2v' and 'veo_i2v' tools,
+// and starts listening for requests on the configured transport.
 func main() {
 	var err error
 	appConfig = common.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
 
 	// Initialize OpenTelemetry
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
+	if otel_enabled {
+		tp, err := common.InitTracerProvider(serviceName, version)
+		if err != nil {
+			log.Fatalf("failed to initialize tracer provider: %v", err)
 		}
-	}()
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer clientCancel()
 
-	genAIClient, err = genai.NewClient(clientCtx, &genai.ClientConfig{
+	clientConfig := &genai.ClientConfig{
 		Backend:  genai.BackendVertexAI,
 		Project:  appConfig.ProjectID,
 		Location: appConfig.Location,
-	})
+	}
+
+	if appConfig.ApiEndpoint != "" {
+		log.Printf("Using custom Vertex AI endpoint: %s", appConfig.ApiEndpoint)
+		clientConfig.HTTPOptions.BaseURL = appConfig.ApiEndpoint
+	}
+
+	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
 		log.Fatalf("Error creating global GenAI client: %v", err)
 	}

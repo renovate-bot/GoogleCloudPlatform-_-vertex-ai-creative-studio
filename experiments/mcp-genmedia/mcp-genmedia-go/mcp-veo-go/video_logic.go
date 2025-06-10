@@ -31,8 +31,10 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-// parseCommonVideoParams parses common video generation parameters from the request.
-// gcsBucket is a named return value, so it's already declared in this function's scope.
+// parseCommonVideoParams extracts and validates common video generation parameters
+// from an MCP request. This includes settings like the GCS bucket for output,
+// model selection, aspect ratio, and video duration. It provides sensible defaults
+// and ensures that the parameters are within the accepted ranges.
 func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir, model, finalAspectRatio string, numberOfVideos int32, durationSeconds *int32, err error) {
 	// Initialize default values for some parameters
 	model = "veo-2.0-generate-001" // Default model
@@ -152,6 +154,10 @@ func parseCommonVideoParams(params map[string]interface{}) (gcsBucket, outputDir
 	return // Returns the named return values (gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSeconds, err)
 }
 
+// callGenerateVideosAPI orchestrates the entire video generation process.
+// It initiates the video generation operation, polls for its completion, and handles
+// progress notifications. Once the video is generated, it can download the file
+// to a local directory if requested. It returns a summary of the operation's outcome.
 func callGenerateVideosAPI(
 	client *genai.Client,
 	parentCtx context.Context, // Renamed from ctx to avoid conflict with operationCtx

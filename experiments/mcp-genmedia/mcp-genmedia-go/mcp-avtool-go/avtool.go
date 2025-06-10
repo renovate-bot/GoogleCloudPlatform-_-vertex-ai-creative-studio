@@ -20,11 +20,16 @@ const (
 var transport = flag.String("transport", "stdio", "Transport type (stdio, sse, or http)")
 
 // init handles command-line flags and initial logging setup.
+// It configures the log package to include standard flags and the short file name
+// of the caller in log messages, which is useful for debugging.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-// main is the entry point of the application.
+// main is the entry point of the application. It initializes the configuration,
+// sets up OpenTelemetry for tracing, creates a new MCP server, registers all the
+// available AV (Audio/Video) tools, and starts the server based on the specified
+// transport mechanism (stdio, sse, or http).
 func main() {
 	flag.Parse() // Ensure flags are parsed before use
 

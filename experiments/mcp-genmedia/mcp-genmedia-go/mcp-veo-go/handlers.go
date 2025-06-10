@@ -27,6 +27,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// veoTextToVideoHandler is the handler for the 'veo_t2v' tool.
+// It parses the request parameters, including the prompt and other video generation settings,
+// and then calls the main video generation logic.
 func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "veo_t2v")
@@ -76,6 +79,9 @@ func veoTextToVideoHandler(client *genai.Client, ctx context.Context, request mc
 	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, model, prompt, nil, config, "t2v")
 }
 
+// veoImageToVideoHandler is the handler for the 'veo_i2v' tool.
+// It handles requests to generate a video from an image. It parses the image URI,
+// infers the MIME type if necessary, and then calls the main video generation logic.
 func veoImageToVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "veo_i2v")

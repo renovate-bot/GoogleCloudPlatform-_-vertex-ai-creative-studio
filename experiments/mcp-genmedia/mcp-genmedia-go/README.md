@@ -4,6 +4,37 @@ This directory houses the Go language implementations of Model Context Protocol 
 
 These servers enable MCP clients (such as AI agents or other applications) to leverage powerful media generation and manipulation capabilities.
 
+## Getting Started: Installation
+
+This project uses a Go workspace (`go.work`) to manage the multiple modules. The following steps will ensure all dependencies are correctly synchronized and the server binaries are installed.
+
+**Prerequisites:**
+*   Go (version 1.18 or later is recommended for workspace support)
+*   Git
+
+**Instructions:**
+
+1.  **Navigate to the Workspace Directory**
+    All commands should be run from this `mcp-genmedia-go` directory.
+
+2.  **Tidy Workspace Dependencies**
+    This command synchronizes the dependencies between the modules in the workspace. This is a crucial step to avoid build errors.
+    ```bash
+    go work sync
+    ```
+
+3.  **Install the Binaries**
+    This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
+    ```bash
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
+    ```
+
+4.  **Verify the Installation**
+    Check that the binaries are available in your path.
+    ```bash
+    ls $(go env GOBIN)/mcp-*
+    ```
+
 ## Available Go MCP Servers:
 
 *   **`mcp-avtool-go`**:

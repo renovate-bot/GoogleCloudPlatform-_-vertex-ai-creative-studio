@@ -29,10 +29,7 @@ To install the MCP Servers for Genmedia, you will need [Go](https://go.dev/doc/i
     Each MCP server must be installed individually. From the `mcp-genmedia-go` directory, run the following commands to install the servers you need:
 
     ```bash
-    # Install all servers
-    go install ./...
-
-    # Or, install a specific server (e.g., Imagen)
+    # install a specific server (e.g., Imagen)
     go install ./mcp-imagen-go
     ```
 
