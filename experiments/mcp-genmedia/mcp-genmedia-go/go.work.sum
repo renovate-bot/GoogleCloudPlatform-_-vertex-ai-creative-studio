@@ -24,6 +24,8 @@ cloud.google.com/go/aiplatform v1.85.0/go.mod h1:S4DIKz3TFLSt7ooF2aCRdAqsUR4v/YD
 cloud.google.com/go/aiplatform v1.86.0/go.mod h1:xp3wFix8imliXkVpgMRkjnreJYTaNzLF44GOrnIENto=
 cloud.google.com/go/aiplatform v1.89.0 h1:niSJYc6ldWWVM9faXPo1Et1MVSQoLvVGriD7fwbJdtE=
 cloud.google.com/go/aiplatform v1.89.0/go.mod h1:TzZtegPkinfXTtXVvZZpxx7noINFMVDrLkE7cEWhYEk=
+cloud.google.com/go/aiplatform v1.90.0 h1:QdNBP8/2HtWYMXZczGd5LsL72lTiMyzliXgBSk7R9HE=
+cloud.google.com/go/aiplatform v1.90.0/go.mod h1:ouoFeopVQaYTFwvviZJi17excXiwMGi+HvznNH2B1tw=
 cloud.google.com/go/analytics v0.26.0/go.mod h1:KZWJfs8uX/+lTjdIjvT58SFa86V9KM6aPXwZKK6uNVI=
 cloud.google.com/go/analytics v0.28.0/go.mod h1:hNT09bdzGB3HsL7DBhZkoPi4t5yzZPZROoFv+JzGR7I=
 cloud.google.com/go/analytics v0.28.1 h1:W2ft49J/LeEj9A07Jsd5Q2kAzajK0j0IffOyyzbxw04=
@@ -449,6 +451,8 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0 h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4
 github.com/klauspost/compress v1.16.7/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
 github.com/klauspost/cpuid/v2 v2.2.5/go.mod h1:Lcz8mBdAVJIBVzewtcLocK12l3Y+JytZYpaMropDUws=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
+github.com/mark3labs/mcp-go v0.30.1 h1:3R1BPvNT/rC1iPpLx+EMXFy+gvux/Mz/Nio3c6XEU9E=
+github.com/mark3labs/mcp-go v0.30.1/go.mod h1:rXqOudj/djTORU/ThxYx8fqEVj/5pvTuuebQ2RC7uk4=
 github.com/pierrec/lz4/v4 v4.1.18/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
