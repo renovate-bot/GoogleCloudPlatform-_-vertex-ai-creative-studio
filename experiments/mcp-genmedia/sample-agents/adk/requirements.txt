@@ -116,7 +116,7 @@ grpc-google-iam-v1==0.14.2
     # via
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.71.0
+grpcio==1.72.1
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -245,7 +245,7 @@ sqlalchemy==2.0.41
     # via google-adk
 sse-starlette==2.3.6
     # via mcp
-starlette==0.46.2
+starlette==0.47.0
     # via
     #   fastapi
     #   mcp
