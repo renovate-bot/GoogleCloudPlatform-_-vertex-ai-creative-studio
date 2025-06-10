@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"context"
@@ -12,14 +12,19 @@ import (
 	"github.com/teris-io/shortid"
 )
 
-func prepareInputFile(ctx context.Context, fileURI, purpose string) (localPath string, cleanupFunc func(), err error) {
+// PrepareInputFile handles the logic for making a file available locally for processing.
+// It checks if the given file URI is a GCS path (gs://...) or a local path.
+// If it's a GCS path, it downloads the file to a temporary local directory.
+// If it's a local path, it verifies that the file exists.
+// It returns the local path to the file and a cleanup function to remove any temporary files.
+func PrepareInputFile(ctx context.Context, fileURI, purpose string, gcpProjectID string) (localPath string, cleanupFunc func(), err error) {
 	cleanupFunc = func() {}
 
 	if strings.HasPrefix(fileURI, "gs://") {
-		if gcpProjectID == "" { // gcpProjectID from config.go
+		if gcpProjectID == "" {
 			return "", cleanupFunc, errors.New("PROJECT_ID not set, cannot download from GCS")
 		}
-		tempDir, errMkdir := os.MkdirTemp("", defaultTempDirPrefix+"input_") // defaultTempDirPrefix from config.go
+		tempDir, errMkdir := os.MkdirTemp("", "input_")
 		if errMkdir != nil {
 			return "", cleanupFunc, fmt.Errorf("failed to create temp dir for GCS download: %w", errMkdir)
 		}
@@ -33,7 +38,7 @@ func prepareInputFile(ctx context.Context, fileURI, purpose string) (localPath s
 
 		log.Printf("Downloading GCS file %s to temporary path %s for %s", fileURI, localPath, purpose)
 
-		gcsErr := downloadFromGCS(ctx, fileURI, localPath) // from gcs_utils.go
+		gcsErr := DownloadFromGCS(ctx, fileURI, localPath)
 		if gcsErr != nil {
 			os.RemoveAll(tempDir)
 			return "", cleanupFunc, fmt.Errorf("failed to download %s from GCS: %w", fileURI, gcsErr)
@@ -53,10 +58,14 @@ func prepareInputFile(ctx context.Context, fileURI, purpose string) (localPath s
 	return fileURI, cleanupFunc, nil
 }
 
-func handleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLocalOutputFile string, finalOutputFilename string, cleanupFunc func(), err error) {
+// HandleOutputPreparation creates a temporary directory for FFmpeg output and determines the final output filename.
+// If a desired filename is provided, it uses that; otherwise, it generates a unique filename.
+// It ensures the filename has the correct extension.
+// It returns the full path to the temporary output file, the final filename, and a cleanup function.
+func HandleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLocalOutputFile string, finalOutputFilename string, cleanupFunc func(), err error) {
 	cleanupFunc = func() {}
 
-	tempDir, errMkdir := os.MkdirTemp("", defaultTempDirPrefix+"output_") // defaultTempDirPrefix from config.go
+	tempDir, errMkdir := os.MkdirTemp("", "output_")
 	if errMkdir != nil {
 		return "", "", cleanupFunc, fmt.Errorf("failed to create temp dir for FFMpeg output: %w", errMkdir)
 	}
@@ -86,7 +95,10 @@ func handleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLoca
 	return tempLocalOutputFile, finalOutputFilename, cleanupFunc, nil
 }
 
-func processOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, finalOutputFilename, outputLocalDir, outputGCSBucket string) (finalLocalPath string, finalGCSPath string, err error) {
+// ProcessOutputAfterFFmpeg manages the file after it has been processed by FFmpeg.
+// It can move the file to a specified local directory and/or upload it to a GCS bucket.
+// It returns the final local path and the GCS path of the file.
+func ProcessOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, finalOutputFilename, outputLocalDir, outputGCSBucket string, gcpProjectID string) (finalLocalPath string, finalGCSPath string, err error) {
 	currentLocalPath := ffmpegOutputActualPath
 
 	if outputLocalDir != "" {
@@ -119,7 +131,7 @@ func processOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, final
 	}
 
 	if outputGCSBucket != "" {
-		if gcpProjectID == "" { // gcpProjectID from config.go
+		if gcpProjectID == "" {
 			return finalLocalPath, "", errors.New("PROJECT_ID not set, cannot upload to GCS")
 		}
 		if _, errStat := os.Stat(currentLocalPath); os.IsNotExist(errStat) {
@@ -135,7 +147,7 @@ func processOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, final
 
 		contentType := "" // uploadToGCS will infer it
 
-		errUpload := uploadToGCS(ctx, outputGCSBucket, finalOutputFilename, contentType, fileData) // from gcs_utils.go
+		errUpload := UploadToGCS(ctx, outputGCSBucket, finalOutputFilename, contentType, fileData)
 		if errUpload != nil {
 			return finalLocalPath, "", fmt.Errorf("failed to upload to GCS (gs://%s/%s): %w", outputGCSBucket, finalOutputFilename, errUpload)
 		}
@@ -145,11 +157,27 @@ func processOutputAfterFFmpeg(ctx context.Context, ffmpegOutputActualPath, final
 	return finalLocalPath, finalGCSPath, nil
 }
 
-// getTail returns the last n lines of a string.
-func getTail(s string, n int) string {
+// GetTail returns the last n lines of a string.
+func GetTail(s string, n int) string {
 	lines := strings.Split(s, "\n")
 	if len(lines) <= n {
 		return s
 	}
 	return strings.Join(lines[len(lines)-n:], "\n")
 }
+
+// FormatBytes converts a size in bytes to a more human-readable format (e.g., KB, MB, GB).
+// This is useful for logging file sizes in a way that is easy to understand.
+func FormatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+

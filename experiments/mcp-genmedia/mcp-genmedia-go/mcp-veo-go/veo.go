@@ -23,6 +23,7 @@ import (
 	"os"
 	"time"
 
+	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/cors"
@@ -30,43 +31,63 @@ import (
 )
 
 var (
-	project, location string
-	genAIClient       *genai.Client // Global GenAI client
-	transport         string
-	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
+	appConfig    *common.Config
+	genAIClient  *genai.Client // Global GenAI client
+	transport    string
+	otel_enabled bool
 )
 
-const version = "1.4.0" // Add proactive heartbeat to prevent client timeout.
+const (
+	serviceName = "mcp-veo-go"
+	version     = "1.6.0" // Version increment for OTel instrumentation
+)
 
+// init handles command-line flags and initial logging setup.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.BoolVar(&otel_enabled, "otel", true, "Enable OpenTelemetry")
 	flag.Parse()
 }
 
+// main is the entry point for the mcp-veo-go service.
+// It initializes the configuration, OpenTelemetry, and the Google GenAI client.
+// It then creates an MCP server, registers the 'veo_t2v' and 'veo_i2v' tools,
+// and starts listening for requests on the configured transport.
 func main() {
-	project = os.Getenv("PROJECT_ID")
-	if project == "" {
-		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
-	}
-	location = getEnv("LOCATION", "us-central1")
+	var err error
+	appConfig = common.LoadConfig()
 
-	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
-	if genmediaBucketEnv != "" {
-		log.Printf("Default GCS bucket for URI construction configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
+	// Initialize OpenTelemetry
+	if otel_enabled {
+		tp, err := common.InitTracerProvider(serviceName, version)
+		if err != nil {
+			log.Fatalf("failed to initialize tracer provider: %v", err)
+		}
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
 	}
 
 	log.Printf("Initializing global GenAI client...")
-	var err error
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer clientCancel()
 
-	genAIClient, err = genai.NewClient(clientCtx, &genai.ClientConfig{
+	clientConfig := &genai.ClientConfig{
 		Backend:  genai.BackendVertexAI,
-		Project:  project,
-		Location: location,
-	})
+		Project:  appConfig.ProjectID,
+		Location: appConfig.Location,
+	}
+
+	if appConfig.ApiEndpoint != "" {
+		log.Printf("Using custom Vertex AI endpoint: %s", appConfig.ApiEndpoint)
+		clientConfig.HTTPOptions.BaseURL = appConfig.ApiEndpoint
+	}
+
+	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
 		log.Fatalf("Error creating global GenAI client: %v", err)
 	}
@@ -79,7 +100,6 @@ func main() {
 
 	commonVideoParams := []mcp.ToolOption{
 		mcp.WithString("bucket",
-			// mcp.Required(), // Requirement is now handled by logic: param OR env var must exist.
 			mcp.Description("Google Cloud Storage bucket where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). If not provided, GENMEDIA_BUCKET env var will be used. One of them is required."),
 		),
 		mcp.WithString("output_directory",
@@ -167,16 +187,16 @@ func main() {
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: true,
 			MaxAge:           300, // In seconds
-			// Debug: true, // Uncomment for debugging CORS issues
 		})
 
-		// Wrap the MCP handler with the CORS middleware
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
 
-		httpPort := getEnv("PORT", "8080")
+		httpPort := os.Getenv("PORT")
+		if httpPort == "" {
+			httpPort = "8080"
+		}
 		listenAddr := fmt.Sprintf(":%s", httpPort)
 		log.Printf("Veo MCP Server listening on HTTP at %s/mcp with t2v and i2v tools and CORS enabled", listenAddr)
-		// Start the server using the wrapped handler
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}

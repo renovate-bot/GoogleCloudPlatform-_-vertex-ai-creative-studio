@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"context"
@@ -13,8 +13,11 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-func downloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
-	bucketName, objectName, err := parseGCSPath(gcsURI)
+// DownloadFromGCS downloads a file from a GCS bucket to a local path.
+// It parses the GCS URI, creates a GCS client, and then reads the object's contents,
+// writing them to a new local file. It also creates the destination directory if it doesn't exist.
+func DownloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
+	bucketName, objectName, err := ParseGCSPath(gcsURI)
 	if err != nil {
 		return err
 	}
@@ -51,7 +54,11 @@ func downloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
 	return nil
 }
 
-func uploadToGCS(ctx context.Context, bucketName, objectName, contentType string, data []byte) error {
+// UploadToGCS uploads data to a specified GCS bucket and object.
+// It takes the data as a byte slice and infers the content type from the object name's extension
+// if it's not explicitly provided. This is useful for ensuring that GCS objects have the correct
+// metadata, which is important for serving them correctly.
+func UploadToGCS(ctx context.Context, bucketName, objectName, contentType string, data []byte) error {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %w", err)
@@ -103,7 +110,11 @@ func uploadToGCS(ctx context.Context, bucketName, objectName, contentType string
 	return nil
 }
 
-func parseGCSPath(gcsURI string) (bucketName, objectName string, err error) {
+// ParseGCSPath extracts the bucket and object names from a GCS URI.
+// It validates that the URI has the correct format (gs://bucket/object)
+// and returns the two components. This is a helper function to make working
+// with GCS paths easier and more reliable.
+func ParseGCSPath(gcsURI string) (bucketName, objectName string, err error) {
 	if !strings.HasPrefix(gcsURI, "gs://") {
 		return "", "", fmt.Errorf("invalid GCS URI: must start with 'gs://', got %s", gcsURI)
 	}

@@ -29,11 +29,13 @@ import (
 
 	aiplatform "cloud.google.com/go/aiplatform/apiv1"
 	"cloud.google.com/go/aiplatform/apiv1/aiplatformpb"
-	"cloud.google.com/go/storage"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/cors"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/rs/cors"
 	"github.com/teris-io/shortid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -41,22 +43,18 @@ import (
 var (
 	// MCP Server settings
 	transport string
-	version   = "1.0.11" // Version increment for CORS support
 
-	// Google Cloud settings - typically set via environment variables
-	gcpProjectID        string // PROJECT_ID for all GCP services, including Lyria
-	gcpLocation         string // LOCATION for all GCP services, including Lyria
-	lyriaLocation       string // Specific location for Lyria model (LYRIA_LOCATION), defaults to gcpLocation
-	lyriaModelPublisher string // Publisher for Lyria model (LYRIA_MODEL_PUBLISHER)
-	defaultLyriaModelID string // Default Lyria model ID (DEFAULT_LYRIA_MODEL_ID)
+	// Google Cloud settings
+	appConfig *common.Config
 
-	predictionClient  *aiplatform.PredictionClient // Global Prediction Client
-	genmediaBucketEnv string                       // To store GENMEDIA_BUCKET env var
+	predictionClient *aiplatform.PredictionClient // Global Prediction Client
 )
 
 const (
+	serviceName                 = "mcp-lyria-go"
+	version                     = "1.2.0" // Version increment for OTel instrumentation
 	defaultPublisher            = "google"
-	fallbackDefaultLyriaModelID = "lyria-002"
+	defaultLyriaModelID         = "lyria-002"
 	defaultSampleCount          = 1
 	audioMIMEType               = "audio/wav" // Define MIME type for audio
 )
@@ -68,58 +66,30 @@ func init() {
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 }
 
-// getEnv retrieves an environment variable by key. If the variable is not set
-// or is empty, it logs a message and returns the fallback value.
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists && value != "" {
-		return value
-	}
-	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
-	return fallback
-}
-
-// loadConfiguration loads settings from environment variables.
-func loadConfiguration() {
-	gcpProjectID = os.Getenv("PROJECT_ID")
-	if gcpProjectID == "" {
-		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
-	}
-	log.Printf("Using GCP Project ID: %s for all services.", gcpProjectID)
-
-	gcpLocation = getEnv("LOCATION", "us-central1")
-	log.Printf("MCP Server using GCP Location: %s", gcpLocation)
-
-	lyriaLocation = getEnv("LYRIA_LOCATION", gcpLocation)
-	log.Printf("Lyria using Location: %s", lyriaLocation)
-
-	lyriaModelPublisher = getEnv("LYRIA_MODEL_PUBLISHER", defaultPublisher)
-	log.Printf("Lyria using Model Publisher: %s", lyriaModelPublisher)
-
-	defaultLyriaModelID = os.Getenv("DEFAULT_LYRIA_MODEL_ID")
-	if defaultLyriaModelID == "" {
-		log.Printf("DEFAULT_LYRIA_MODEL_ID environment variable not set. Using fallback: %s", fallbackDefaultLyriaModelID)
-		defaultLyriaModelID = fallbackDefaultLyriaModelID
-	} else {
-		log.Printf("Default Lyria Model ID set by environment: %s", defaultLyriaModelID)
-	}
-
-	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
-	if genmediaBucketEnv != "" {
-		log.Printf("Default GCS output bucket configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
-	}
-}
-
-// main is the entry point of the application.
+// main is the entry point for the mcp-lyria-go service.
+// It initializes the configuration, OpenTelemetry, and the AI Platform Prediction client.
+// It then creates an MCP server, registers the 'lyria_generate_music' tool, and starts
+// listening for requests on the configured transport.
 func main() {
 	flag.Parse()
-	loadConfiguration()
+	appConfig = common.LoadConfig()
+
+	// Initialize OpenTelemetry
+	tp, err := common.InitTracerProvider(serviceName, version)
+	if err != nil {
+		log.Fatalf("failed to initialize tracer provider: %v", err)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	log.Println("Initializing global AI Platform Prediction client...")
-	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", lyriaLocation)
-	var errInitClient error // Declare error variable for client initialization
-	predictionClient, errInitClient = aiplatform.NewPredictionClient(context.Background(), option.WithEndpoint(regionalEndpoint))
-	if errInitClient != nil {
-		log.Fatalf("Failed to create global AI Platform Prediction client: %v", errInitClient)
+	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", appConfig.Location)
+	predictionClient, err = aiplatform.NewPredictionClient(context.Background(), option.WithEndpoint(regionalEndpoint))
+	if err != nil {
+		log.Fatalf("Failed to create global AI Platform Prediction client: %v", err)
 	}
 	defer func() {
 		if predictionClient != nil {
@@ -190,16 +160,16 @@ func main() {
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: true,
 			MaxAge:           300, // In seconds
-			// Debug: true, // Uncomment for debugging CORS issues
 		})
 
-		// Wrap the MCP handler with the CORS middleware
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
 
-		httpPort := getEnv("PORT", "8080")
+		httpPort := os.Getenv("PORT")
+		if httpPort == "" {
+			httpPort = "8080"
+		}
 		listenAddr := fmt.Sprintf(":%s", httpPort)
 		log.Printf("Lyria MCP Server listening on HTTP at %s/mcp with tool: %s and CORS enabled", listenAddr, lyriaTool.Name)
-		// Start the server using the wrapped handler
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
@@ -215,8 +185,15 @@ func main() {
 	log.Println("Lyria Server has stopped.")
 }
 
-// lyriaGenerateMusicHandler handles requests to the lyria_generate_music tool.
+// lyriaGenerateMusicHandler is the handler for the 'lyria_generate_music' tool.
+// It parses the request parameters, calls the Lyria model to generate music,
+// and then handles the response. It can save the generated audio to GCS, a local directory,
+// or return it as base64-encoded data in the response.
 func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "lyria_generate_music")
+	defer span.End()
+
 	startTime := time.Now()
 	params := request.GetArguments()
 
@@ -231,8 +208,8 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 
 	if userProvidedBucket != "" {
 		gcsBucketParam = userProvidedBucket
-	} else if genmediaBucketEnv != "" {
-		gcsBucketParam = genmediaBucketEnv
+	} else if appConfig.GenmediaBucket != "" {
+		gcsBucketParam = appConfig.GenmediaBucket
 		log.Printf("Handler lyria_generate_music: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", gcsBucketParam)
 	}
 
@@ -277,6 +254,19 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 		}
 	}
 
+	span.SetAttributes(
+		attribute.String("prompt", prompt),
+		attribute.String("negative_prompt", negativePrompt),
+		attribute.String("model_id", modelID),
+		attribute.Int("sample_count", int(sampleCount)),
+		attribute.String("output_gcs_bucket", gcsBucketParam),
+		attribute.String("file_name", fileNameParam),
+		attribute.String("local_path", localDirectoryPathParameter),
+	)
+	if seed != nil {
+		span.SetAttributes(attribute.Int("seed", int(*seed)))
+	}
+
 	log.Printf("Handling Lyria request: Prompt='%s', NegativePrompt='%s', ModelID='%s', Seed=%v, SampleCount=%d, GCSBucket='%s', FileName='%s', LocalDir='%s'",
 		prompt, negativePrompt, modelID, seed, sampleCount, gcsBucketParam, fileNameParam, localDirectoryPathParameter)
 
@@ -296,8 +286,10 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	gcsUploadedObjectName, base64AudioData, err := invokeLyriaAndUpload(predictionClient, ctx, prompt, negativePrompt, seed, sampleCount, modelID, gcsBucketParam, baseFilename)
 
 	duration := time.Since(startTime)
+	span.SetAttributes(attribute.Float64("duration_ms", float64(duration.Milliseconds())))
 
 	if err != nil {
+		span.RecordError(err)
 		log.Printf("Error in invokeLyriaAndUpload after %v: %v", duration, err)
 		errMsg := fmt.Sprintf("Music generation failed after %v: %v", duration, err)
 		if gcsBucketParam != "" {
@@ -376,12 +368,17 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	}, nil
 }
 
-// invokeLyriaAndUpload calls the Lyria model using the provided main context (ctx).
-// If gcsBucket and gcsObjectNameForUpload are provided, it uploads the result to GCS.
-// It returns the GCS object name (if uploaded) and the base64 encoded audio data of the first sample.
+// invokeLyriaAndUpload calls the Lyria model and optionally uploads the result to GCS.
+// It constructs the prediction request, sends it to the AI Platform Prediction service,
+// and processes the response. If a GCS bucket is specified, it uploads the generated
+// audio to the bucket.
 func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Context, prompt, negativePrompt string, seed *uint32, sampleCount uint32, modelID, gcsBucket, gcsObjectNameForUpload string) (gcsWrittenObjectName string, audioDataB64 string, err error) {
-	lyriaEndpointPath := fmt.Sprintf("projects/%s/locations/%s/publishers/%s/models/%s",
-		gcpProjectID, lyriaLocation, lyriaModelPublisher, modelID)
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "invokeLyriaAndUpload")
+	defer span.End()
+
+	lyriaEndpointPath := fmt.Sprintf("projects/%s/locations/%s/publishers/google/models/%s",
+		appConfig.ProjectID, appConfig.Location, modelID)
 	log.Printf("Using Lyria Endpoint Path: %s", lyriaEndpointPath)
 
 	instanceData := map[string]interface{}{
@@ -459,7 +456,7 @@ func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Conte
 		}
 		log.Printf("Decoded audio data (decoded length: %d bytes) for GCS upload.", len(audioBytes))
 
-		uploadErr := uploadToGCS(ctx, gcsBucket, gcsObjectNameForUpload, audioMIMEType, audioBytes)
+		uploadErr := common.UploadToGCS(ctx, gcsBucket, gcsObjectNameForUpload, audioMIMEType, audioBytes)
 		if uploadErr != nil {
 			return "", extractedB64Audio, fmt.Errorf("failed to upload audio to GCS (bucket: %s, object: %s): %w", gcsBucket, gcsObjectNameForUpload, uploadErr)
 		}
@@ -469,29 +466,4 @@ func invokeLyriaAndUpload(client *aiplatform.PredictionClient, ctx context.Conte
 
 	log.Println("GCS bucket not provided, skipping upload.")
 	return "", extractedB64Audio, nil
-}
-
-// uploadToGCS uploads byte data to the specified GCS bucket and object using the provided context (ctx).
-func uploadToGCS(ctx context.Context, bucketName, objectName, contentType string, data []byte) error {
-	storageClient, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer storageClient.Close()
-
-	bucket := storageClient.Bucket(bucketName)
-	obj := bucket.Object(objectName)
-
-	wc := obj.NewWriter(ctx)
-	wc.ContentType = contentType
-
-	if _, err := wc.Write(data); err != nil {
-		wc.Close()
-		return fmt.Errorf("Writer.Write: %w", err)
-	}
-
-	if err := wc.Close(); err != nil {
-		return fmt.Errorf("Writer.Close: %w", err)
-	}
-	return nil
 }

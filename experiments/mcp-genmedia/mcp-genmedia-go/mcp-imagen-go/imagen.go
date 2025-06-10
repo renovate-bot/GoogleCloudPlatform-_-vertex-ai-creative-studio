@@ -20,115 +20,32 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io" // Required for GCS download
 	"log"
 	"net/http"
 	"os"
-	"path/filepath" // For manipulating file paths
+	"path/filepath"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/storage" // Added for GCS download
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/cors"
 	"google.golang.org/genai"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var (
-	project, location string
-	genAIClient       *genai.Client // Global GenAI client
-	transport         string
-	genmediaBucketEnv string // To store GENMEDIA_BUCKET env var
+	appConfig   *common.Config
+	genAIClient *genai.Client // Global GenAI client
+	transport   string
 )
 
-const version = "1.4.4" // Version increment for CORS support
-
-// getEnv retrieves an environment variable by key. If the variable is not set
-// or is empty, it logs a message and returns the fallback value.
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists && value != "" {
-		return value
-	}
-	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
-	return fallback
-}
-
-// formatBytes converts a size in bytes to a human-readable string (KB, MB, GB).
-func formatBytes(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-}
-
-// parseGCSPath splits a GCS URI (gs://bucket/object/path) into bucket and object path.
-func parseGCSPath(gcsURI string) (bucketName string, objectName string, err error) {
-	if !strings.HasPrefix(gcsURI, "gs://") {
-		return "", "", fmt.Errorf("invalid GCS URI: must start with gs://")
-	}
-	trimmedURI := strings.TrimPrefix(gcsURI, "gs://")
-	parts := strings.SplitN(trimmedURI, "/", 2)
-	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", fmt.Errorf("invalid GCS URI format: %s. Expected gs://bucket/object", gcsURI)
-	}
-	return parts[0], parts[1], nil
-}
-
-// downloadFromGCS downloads an object from GCS to a local file.
-func downloadFromGCS(ctx context.Context, gcsURI string, localDestPath string) error {
-	bucketName, objectName, err := parseGCSPath(gcsURI)
-	if err != nil {
-		return fmt.Errorf("parseGCSPath for %s: %w", gcsURI, err)
-	}
-
-	storageClient, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer storageClient.Close()
-
-	// Create a new context with its own timeout for the GCS operation
-	// to avoid being cancelled by the parent context if it's too short.
-	gcsCtx, cancel := context.WithTimeout(ctx, time.Second*60) // 60-second timeout for download
-	defer cancel()
-
-	rc, err := storageClient.Bucket(bucketName).Object(objectName).NewReader(gcsCtx)
-	if err != nil {
-		return fmt.Errorf("Object(%q in bucket %q).NewReader: %w", objectName, bucketName, err)
-	}
-	defer rc.Close()
-
-	// Ensure destination directory exists
-	destDir := filepath.Dir(localDestPath)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("os.MkdirAll for %s: %w", destDir, err)
-	}
-
-	f, err := os.Create(localDestPath)
-	if err != nil {
-		return fmt.Errorf("os.Create for %s: %w", localDestPath, err)
-	}
-	defer f.Close() // Ensure file is closed
-
-	if _, err := io.Copy(f, rc); err != nil {
-		return fmt.Errorf("io.Copy to %s: %w", localDestPath, err)
-	}
-
-	// f.Close() is called by defer, but an explicit close here can catch errors earlier.
-	// However, the deferred close will still run.
-	// if err = f.Close(); err != nil {
-	//  return fmt.Errorf("f.Close for %s: %w", localDestPath, err)
-	// }
-	log.Printf("Successfully downloaded GCS object %s to %s", gcsURI, localDestPath)
-	return nil
-}
+const (
+	serviceName = "mcp-imagen-go"
+	version     = "1.6.0" // Version increment for OTel instrumentation
+)
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -137,31 +54,42 @@ func init() {
 	flag.Parse()
 }
 
+// main is the entry point for the mcp-imagen-go service.
+// It initializes the configuration, OpenTelemetry, and the Google GenAI client.
+// It then creates an MCP server, registers the 'imagen_t2i' tool, and starts
+// listening for requests on the configured transport.
 func main() {
-	// Get Project ID from environment variable
-	project = os.Getenv("PROJECT_ID")
-	if project == "" {
-		log.Fatal("PROJECT_ID environment variable not set. Please set the env variable, e.g. export PROJECT_ID=$(gcloud config get project)")
-	}
-	// Get Location from environment variable, default to us-central1
-	location = getEnv("LOCATION", "us-central1")
+	// Load configuration using the common module
+	appConfig = common.LoadConfig()
 
-	genmediaBucketEnv = getEnv("GENMEDIA_BUCKET", "") // Use existing getEnv helper
-	if genmediaBucketEnv != "" {
-		log.Printf("Default GCS bucket for URI construction configured from GENMEDIA_BUCKET: %s", genmediaBucketEnv)
+	// Initialize OpenTelemetry
+	tp, err := common.InitTracerProvider(serviceName, version)
+	if err != nil {
+		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	// Initialize Google GenAI Client once
 	log.Printf("Initializing global GenAI client...")
-	var err error
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer clientCancel()
 
-	genAIClient, err = genai.NewClient(clientCtx, &genai.ClientConfig{
+	clientConfig := &genai.ClientConfig{
 		Backend:  genai.BackendVertexAI,
-		Project:  project,
-		Location: location,
-	})
+		Project:  appConfig.ProjectID,
+		Location: appConfig.Location,
+	}
+
+	if appConfig.ApiEndpoint != "" {
+		log.Printf("Using custom Vertex AI endpoint: %s", appConfig.ApiEndpoint)
+		clientConfig.HTTPOptions.BaseURL = appConfig.ApiEndpoint
+	}
+
+	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
 		log.Fatalf("Error creating global GenAI client: %v", err)
 	}
@@ -227,16 +155,17 @@ func main() {
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: true,
 			MaxAge:           300, // In seconds
-			// Debug: true, // Uncomment for debugging CORS issues
 		})
 
-		// Wrap the MCP handler with the CORS middleware
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
 
-		httpPort := getEnv("PORT", "8080")
+		httpPort := os.Getenv("PORT")
+		if httpPort == "" {
+			httpPort = "8080"
+		}
+
 		listenAddr := fmt.Sprintf(":%s", httpPort)
 		log.Printf("Imagen MCP Server listening on HTTP at %s/mcp with t2i tools and CORS enabled", listenAddr)
-		// Start the server using the wrapped handler
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
@@ -252,8 +181,15 @@ func main() {
 	log.Println("Imagen Server has stopped.")
 }
 
-// imagenGenerationHandler invokes Imagen text to image generation
+// imagenGenerationHandler is the handler for the 'imagen_t2i' tool.
+// It parses the request parameters, calls the Imagen API to generate images,
+// and then handles the response. It can save images to GCS, a local directory,
+// or return them as base64-encoded data in the response.
 func imagenGenerationHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "imagen_t2i")
+	defer span.End()
+
 	// --- 1. Parse Parameters ---
 	prompt, ok := request.GetArguments()["prompt"].(string)
 	if !ok {
@@ -294,18 +230,15 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 
 	if gcsBucketUriParam != "" {
 		gcsOutputURI = gcsBucketUriParam
-		// Ensure it starts with gs://
 		if !strings.HasPrefix(gcsOutputURI, "gs://") {
 			gcsOutputURI = "gs://" + gcsOutputURI
 			log.Printf("gcs_bucket_uri did not start with 'gs://', prepended. New URI: %s", gcsOutputURI)
 		}
-	} else if genmediaBucketEnv != "" {
-		// Construct default URI using GENMEDIA_BUCKET
-		gcsOutputURI = fmt.Sprintf("gs://%s/imagen_outputs/", genmediaBucketEnv)
+	} else if appConfig.GenmediaBucket != "" {
+		gcsOutputURI = fmt.Sprintf("gs://%s/imagen_outputs/", appConfig.GenmediaBucket)
 		log.Printf("Handler imagen_t2i: 'gcs_bucket_uri' parameter not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsOutputURI)
 	}
 
-	// Ensure gcsOutputURI (if set) ends with a slash, for API compatibility
 	if gcsOutputURI != "" && !strings.HasSuffix(gcsOutputURI, "/") {
 		gcsOutputURI += "/"
 		log.Printf("Appended '/' to gcsOutputURI for directory structure. New URI: %s", gcsOutputURI)
@@ -316,6 +249,15 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		outputDir = strings.TrimSpace(dir)
 	}
 	attemptLocalSave := outputDir != ""
+
+	span.SetAttributes(
+		attribute.String("prompt", prompt),
+		attribute.String("model", model),
+		attribute.Int("num_images", int(numberOfImages)),
+		attribute.String("aspect_ratio", aspectRatio),
+		attribute.String("gcs_bucket_uri", gcsBucketUriParam),
+		attribute.String("output_directory", outputDir),
+	)
 
 	select {
 	case <-ctx.Done():
@@ -353,6 +295,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 
 	apiCallDuration := time.Since(startTime)
 	log.Printf("GenerateImages call took: %v", apiCallDuration)
+	span.SetAttributes(attribute.Float64("duration_ms", float64(apiCallDuration.Milliseconds())))
 
 	var contentItems []mcp.Content
 
@@ -367,6 +310,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		} else {
 			log.Printf("Error generating images (API call failed): %v", err)
 		}
+		span.RecordError(err)
 		contentItems = append(contentItems, mcp.TextContent{Type: "text", Text: errMessage})
 		return &mcp.CallToolResult{Content: contentItems}, nil
 	}
@@ -383,7 +327,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	var savedLocalFilenames []string
 	var failedLocalSaveReasons []string
 	var gcsSavedURIs []string
-	var totalSizeBytesGenerated int64 = 0 // Only for bytes directly from API
+	var totalSizeBytesGenerated int64 = 0
 	var imagesWithDataOrURI int = 0
 	returnImageDataInResponse := gcsOutputURI == "" && !attemptLocalSave
 	log.Printf("Will return image data in response: %t", returnImageDataInResponse)
@@ -410,16 +354,14 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 			if genImg.Image.MIMEType != "" {
 				imageMimeType = genImg.Image.MIMEType
 			}
-			log.Printf("Image %d received as bytes from API (Size: %s, MIME: %s)", n, formatBytes(int64(len(imageData))), imageMimeType)
+			log.Printf("Image %d received as bytes from API (Size: %s, MIME: %s)", n, common.FormatBytes(int64(len(imageData))), imageMimeType)
 		} else {
 			log.Printf("Generated image %d (model: %s) from API had no GCS URI and no direct image data.", n, model)
 			continue
 		}
 
-		// Handle local saving
 		if attemptLocalSave {
 			localFilename := fmt.Sprintf("imagen-%s-%s-%d", model, time.Now().Format("20060102-150405"), n)
-			// Add extension based on MIME type, default to .png
 			switch imageMimeType {
 			case "image/jpeg":
 				localFilename += ".jpg"
@@ -431,12 +373,11 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 			actualSavePath := filepath.Join(outputDir, localFilename)
 			actualSavePath = filepath.Clean(actualSavePath)
 
-			if imageSourceIsGCS { // Download from GCS then save
+			if imageSourceIsGCS {
 				log.Printf("Attempting to download image %d from GCS URI %s to %s", n, currentImageGCSURI, actualSavePath)
-				// Use a new context for the download operation
-				downloadCtx, downloadCancel := context.WithTimeout(ctx, 2*time.Minute) // 2 min timeout for download
-				err := downloadFromGCS(downloadCtx, currentImageGCSURI, actualSavePath)
-				downloadCancel() // Release context resources
+				downloadCtx, downloadCancel := context.WithTimeout(ctx, 2*time.Minute)
+				err := common.DownloadFromGCS(downloadCtx, currentImageGCSURI, actualSavePath)
+				downloadCancel()
 				if err != nil {
 					errMsg := fmt.Sprintf("Error downloading image %d from %s to %s: %v", n, currentImageGCSURI, actualSavePath, err)
 					log.Print(errMsg)
@@ -444,15 +385,14 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 				} else {
 					log.Printf("Successfully downloaded and saved image %d to %s", n, actualSavePath)
 					savedLocalFilenames = append(savedLocalFilenames, actualSavePath)
-					// If downloaded, get file info to report size
 					fileInfo, statErr := os.Stat(actualSavePath)
 					if statErr == nil {
-						totalSizeBytesGenerated += fileInfo.Size() // Add downloaded file size
+						totalSizeBytesGenerated += fileInfo.Size()
 					} else {
 						log.Printf("Could not get file info for downloaded file %s: %v", actualSavePath, statErr)
 					}
 				}
-			} else if len(imageData) > 0 { // Save directly from bytes
+			} else if len(imageData) > 0 {
 				if err := os.MkdirAll(outputDir, 0755); err != nil {
 					errMsg := fmt.Sprintf("Error creating directory %s for image %d: %v", outputDir, n, err)
 					log.Print(errMsg)
@@ -463,14 +403,13 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 						log.Print(errMsg)
 						failedLocalSaveReasons = append(failedLocalSaveReasons, errMsg)
 					} else {
-						log.Printf("Saved image %s (Size: %s)", actualSavePath, formatBytes(int64(len(imageData))))
+						log.Printf("Saved image %s (Size: %s)", actualSavePath, common.FormatBytes(int64(len(imageData))))
 						savedLocalFilenames = append(savedLocalFilenames, actualSavePath)
 					}
 				}
 			}
 		}
 
-		// Add image data to MCP response ONLY if no GCS output and no local save specified
 		if returnImageDataInResponse && len(imageData) > 0 {
 			base64Data := base64.StdEncoding.EncodeToString(imageData)
 			imageItem := mcp.ImageContent{
@@ -482,7 +421,6 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		}
 	}
 
-	// --- 5. Prepare Text Summary and Add to MCP Content ---
 	var resultText string
 	var saveMessageParts []string
 
@@ -521,9 +459,9 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	}
 
 	sizeReport := ""
-	if totalSizeBytesGenerated > 0 { // This now reflects size of direct bytes OR downloaded files
-		sizeReport = fmt.Sprintf("(total processed/downloaded byte size: %s) ", formatBytes(totalSizeBytesGenerated))
-	} else if len(gcsSavedURIs) > 0 && !attemptLocalSave { // Only GCS URIs, no download attempt
+	if totalSizeBytesGenerated > 0 {
+		sizeReport = fmt.Sprintf("(total processed/downloaded byte size: %s) ", common.FormatBytes(totalSizeBytesGenerated))
+	} else if len(gcsSavedURIs) > 0 && !attemptLocalSave {
 		sizeReport = "(image sizes are on GCS) "
 	}
 
