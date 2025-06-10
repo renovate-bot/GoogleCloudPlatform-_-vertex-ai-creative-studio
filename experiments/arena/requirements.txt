@@ -18,7 +18,7 @@ cryptography==44.0.3
 deepdiff==8.4.2
 docstring-parser==0.16
 fastparquet==2024.11.0
-firebase-admin==6.8.0
+firebase-admin==6.9.0
 flask==3.1.1
 fsspec==2025.5.1
 google-api-core==2.24.2
