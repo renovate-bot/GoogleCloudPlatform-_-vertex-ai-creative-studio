@@ -5,7 +5,7 @@ import mesop as me
 from config.default import (
     Default,
     ImageModel,
-) 
+)
 
 app_config_instance = Default()
 

@@ -15,6 +15,8 @@
 import time
 
 import mesop as me
+
+from common.error_handling import GenerationError
 from common.metadata import add_video_metadata
 from components.dialog import dialog, dialog_actions
 from components.header import header
@@ -23,13 +25,10 @@ from components.veo.file_uploader import file_uploader
 from components.veo.generation_controls import generation_controls
 from components.veo.video_display import video_display
 from config.default import Default
-from models.model_setup import VeoModelSetup
-from models.veo import generate_video
-from common.error_handling import GenerationError
 from config.rewriters import VIDEO_REWRITER
 from models.gemini import rewriter
-
-
+from models.model_setup import VeoModelSetup
+from models.veo import generate_video
 
 config = Default()
 

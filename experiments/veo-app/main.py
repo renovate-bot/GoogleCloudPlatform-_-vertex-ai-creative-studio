@@ -101,6 +101,11 @@ def config_page():
     path="/imagen",
     title="GenMedia Creative Studio - Imagen",
     on_load=on_load,
+    security_policy=me.SecurityPolicy(
+        allowed_script_srcs=[
+            "https://cdn.jsdelivr.net",
+        ]
+    ),
 )
 def imagen_page():
     """Imagen Page"""
@@ -130,7 +135,6 @@ def hello(request: Request):
     if user_email:
         return {"message": f"Hello, {user_email}!"}
     return {"message": "Hello, anonymous user!"}
-
 
 
 app.mount(

@@ -14,14 +14,12 @@
 """Gemini methods"""
 
 import json
+import time
 from typing import Dict, Optional
 
+import requests
+from google.cloud.aiplatform import telemetry
 from google.genai import types
-
-from google.cloud.aiplatform import telemetry
-
-from google.cloud.aiplatform import telemetry
-
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -29,13 +27,11 @@ from tenacity import (
     wait_exponential,
 )
 
+from common.error_handling import GenerationError
+from config.rewriters import MAGAZINE_EDITOR_PROMPT, REWRITER_PROMPT
 from models.model_setup import (
     GeminiModelSetup,
 )
-
-from config.rewriters import MAGAZINE_EDITOR_PROMPT
-
-from config.rewriters import MAGAZINE_EDITOR_PROMPT
 
 # Initialize client and default model ID for rewriter
 # The analysis function will use its own specific model ID for now.
@@ -255,15 +251,10 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
 
     critic_prompt = MAGAZINE_EDITOR_PROMPT.format(original_prompt)
 
-    prompt_parts = []
+    prompt_parts = [critic_prompt]
 
-    for idx, image_url in enumerate(img_uris):
-        prompt_parts.append(f"""image {idx+1}""")
-        prompt_parts.append(
-            types.Part.from_uri(file_uri=image_url, mime_type="image/png")
-        )
-
-    prompt_parts.append(types.Part.from_text(text=critic_prompt))
+    for img_uri in img_uris:
+        prompt_parts.append(types.Part.from_uri(file_uri=img_uri, mime_type="image/png"))
 
     safety_settings_list = [
         types.SafetySetting(
@@ -304,7 +295,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
                 model=model_id, # Uses global model_id from GeminiModelSetup.init()
                 contents=contents_payload,
                 config=types.GenerateContentConfig(
-                    response_modalities=["TEXT"], safety_settings=safety_settings_list
+                    response_modalities=["TEXT"], safety_settings=safety_settings_list, max_output_tokens=8192
                 ),
             )
 
@@ -317,7 +308,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
             # Fallback for safety reasons, though .text should be populated for text responses
             elif response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[0].text:
                 text_response = response.candidates[0].content.parts[0].text
-                print(f"Critique extracted from parts: {text_response[:200]}...")
+                print(f"Critique generated (truncated): {response.text[:200]}...")
                 return text_response
             else:
                 print("Warning: Gemini critique response text was empty or response structure unexpected.")
@@ -326,3 +317,65 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
         except Exception as e:
             print(f"Error during Gemini API call for image critique: {e}")
             raise
+
+def rewrite_prompt_with_gemini(original_prompt: str) -> str:
+    """
+    Outputs a rewritten prompt using the Gemini model.
+    Args:
+        original_prompt (str): The user's original prompt.
+    Returns:
+        str: The rewritten prompt.
+    Raises:
+        Exception: If the rewriter service fails.
+    """
+    try:
+        rewritten_text = rewriter(original_prompt, REWRITER_PROMPT)
+        if not rewritten_text:
+            print("Warning: Rewriter returned an empty prompt.")
+            return original_prompt
+        return rewritten_text
+    except Exception as e:
+        print(f"Gemini rewriter failed: {e}")
+        raise
+
+def generate_compliment(generation_instruction: str, image_output):
+    """
+    Generates a Gemini-powered critique/commentary for the generated images.
+    Updates PageState.image_commentary and PageState.error_message directly.
+    """
+    start_time = time.time()
+    critique_text = ""
+    error_for_this_op = ""
+
+    print(
+        f"Generating critique for instruction: '{generation_instruction}' and {len(image_output)} images."
+    )
+    try:
+        # Assuming image_critique is a blocking call to your Gemini model for critique
+        critique_text = image_critique(generation_instruction, image_output)
+        if not critique_text:
+            print("Warning: Image critique returned empty.")
+            # critique_text = "No critique available for these images." # Optional default
+
+    except requests.exceptions.HTTPError as err_http:
+        print(f"HTTPError during image critique: {err_http}")
+        error_for_this_op = f"Network error during critique: {err_http.response.status_code if err_http.response else 'Unknown'}"
+    except ValueError as err_value:
+        print(f"ValueError during image critique: {err_value}")
+        error_for_this_op = f"Input error for critique: {str(err_value)}"
+    except Exception as err_generic:
+        print(
+            f"Generic Exception during image critique: {type(err_generic).__name__}: {err_generic}"
+        )
+        error_for_this_op = f"Unexpected error during critique: {str(err_generic)}"
+    finally:
+        end_time = time.time()
+        execution_time = end_time - start_time
+        timing = f"Critique generation time: {execution_time:.2f} seconds"  # More precise timing
+        print(timing)
+
+        if error_for_this_op:  # If an error occurred specifically in this operation
+            raise GenerationError(error_for_this_op)
+
+    print("Critique generation function finished.")
+    return critique_text

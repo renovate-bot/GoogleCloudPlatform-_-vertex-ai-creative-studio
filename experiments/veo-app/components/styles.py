@@ -13,3 +13,13 @@ _FANCY_TEXT_GRADIENT = me.Style(
         " text"
     ),
 )
+
+_BOX_STYLE = me.Style(
+    background=me.theme_var("surface"),  # Use theme variable for background
+    border_radius=12,
+    box_shadow=me.theme_var("shadow_elevation_2"),  # Use theme variable for shadow
+    padding=me.Padding.all(16),  # Simpler padding
+    display="flex",
+    flex_direction="column",
+    margin=me.Margin(bottom=28),
+)
