@@ -258,7 +258,7 @@ python-dotenv==1.1.0
     # via mesop
 pytz==2025.2
     # via pandas
-requests==2.32.3
+requests==2.32.4
     # via
     #   cachecontrol
     #   google-api-core
