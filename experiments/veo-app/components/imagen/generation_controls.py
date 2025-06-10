@@ -16,6 +16,22 @@ def generation_controls():
     """Image generation controls"""
     state = me.state(PageState)
     with me.box(style=_BOX_STYLE):
+        with me.box(style=me.Style(display="flex", justify_content="end")):
+            image_model_options = []
+            for c in state.image_models:
+                image_model_options.append(
+                    me.SelectOption(
+                        label=c.get("display_name", c.get("display")),
+                        value=c.get("model_name"),
+                    )
+                )
+            me.select(
+                label="Imagen version",
+                options=image_model_options,
+                on_selection_change=on_selection_change_image_model,
+                value=state.image_model_name,
+            )
+
         me.text(
             "Prompt for image generation",
             style=me.Style(font_weight=500),
@@ -83,6 +99,12 @@ def on_blur_image_prompt(e: me.InputBlurEvent):
     )  # Also update placeholder to reflect current input
 
 
+def on_selection_change_image_model(e: me.SelectSelectionChangeEvent):
+    """Handles selection change for the image model."""
+    state = me.state(PageState)
+    state.image_model_name = e.value
+
+
 def on_click_generate_images(e: me.ClickEvent):
     """Click Event to generate images and commentary."""
     state = me.state(PageState)
@@ -142,7 +164,8 @@ def on_click_generate_images(e: me.ClickEvent):
 
     except Exception as ex:
         print(f"Error during the image generation or critique process: {ex}")
-        state.error_message = f"An unexpected error occurred: {str(ex)}"
+        state.dialog_message = f"An unexpected error occurred: {str(ex)}"
+        state.show_dialog = True
         state.image_output = []
     finally:
         state.is_loading = False

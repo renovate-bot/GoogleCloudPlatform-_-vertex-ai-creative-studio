@@ -30,6 +30,8 @@ class PageState:
     is_loading: bool = False
     show_advanced: bool = False
     error_message: str = ""
+    show_dialog: bool = False
+    dialog_message: str = ""
 
     # Image prompt and related settings
     image_prompt_input: str = ""
