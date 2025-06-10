@@ -158,7 +158,7 @@ pytz==2025.2
     # via pandas
 pyyaml==6.0.2
     # via uvicorn
-requests==2.32.3
+requests==2.32.4
     # via google-api-core
 rich==14.0.0
     # via
