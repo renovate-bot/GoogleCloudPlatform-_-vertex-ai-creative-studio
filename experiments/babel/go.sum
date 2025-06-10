@@ -42,6 +42,8 @@ cloud.google.com/go/storage v1.55.0 h1:NESjdAToN9u1tmhVqhXCaCwYBuvEhZLLv0gBr+2zn
 cloud.google.com/go/storage v1.55.0/go.mod h1:ztSmTTwzsdXe5syLVS0YsbFxXuvEmEyZj7v7zChEmuY=
 cloud.google.com/go/texttospeech v1.12.1 h1:IdYOIwagXmSjBuACNC86KTB3E/b7vgwyXzYzlLLxDhM=
 cloud.google.com/go/texttospeech v1.12.1/go.mod h1:f8vrD3OXAKTRr4eL0TPjZgYQhiN6ti/tKM3i1Uub5X0=
+cloud.google.com/go/texttospeech v1.13.0 h1:oWWFQp0yFl4EJOr3opDkKH9304wUsZjgPjrTDS6S1a8=
+cloud.google.com/go/texttospeech v1.13.0/go.mod h1:g/tW/m0VJnulGncDrAoad6WdELMTes8eb77Idz+4HCo=
 cloud.google.com/go/trace v1.11.3 h1:c+I4YFjxRQjvAhRmSsmjpASUKq88chOX854ied0K/pE=
 cloud.google.com/go/trace v1.11.3/go.mod h1:pt7zCYiDSQjC9Y2oqCsh9jF4GStB/hmjrYLsxRR27q8=
 cloud.google.com/go/vertexai v0.13.3 h1:pbw1KfpdE8ZDrXxBKcIsS/j+EixyQRsyu6gxRkXq8/k=
