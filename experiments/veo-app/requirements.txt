@@ -170,7 +170,7 @@ mediapy==1.2.4
     # via veo-app
 mesop==1.0.1
     # via veo-app
-msgpack==1.1.0
+msgpack==1.1.1
     # via
     #   cachecontrol
     #   mesop
