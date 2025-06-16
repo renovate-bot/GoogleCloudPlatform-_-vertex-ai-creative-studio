@@ -47,7 +47,7 @@ def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
 
 @me.page(
     path="/",
-    title="GenMedia Creative Studio - Veo 2",
+    title="GenMedia Creative Studio - v.next",
     on_load=on_load,
 )
 def home_page():
@@ -101,6 +101,12 @@ def config_page():
     path="/imagen",
     title="GenMedia Creative Studio - Imagen",
     on_load=on_load,
+    security_policy=me.SecurityPolicy(
+        allowed_script_srcs=[
+            "https://cdn.jsdelivr.net",
+        ],
+        dangerously_disable_trusted_types=True,
+    ),
 )
 def imagen_page():
     """Imagen Page"""
@@ -130,7 +136,6 @@ def hello(request: Request):
     if user_email:
         return {"message": f"Hello, {user_email}!"}
     return {"message": "Hello, anonymous user!"}
-
 
 
 app.mount(

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Library"""
+"""A library page that displays media items from Firestore."""
 
 import json
 from dataclasses import dataclass, field
@@ -35,6 +35,7 @@ from components.dialog import (
     dialog_actions,
 )
 from components.header import header
+from components.library.image_details import image_details
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
@@ -45,7 +46,7 @@ from components.pill import pill
 @me.stateclass
 @dataclass
 class PageState:
-    """Local Page State"""
+    """State for the library page."""
 
     is_loading: bool = False
     current_page: int = 1
@@ -70,9 +71,16 @@ def get_media_for_page(
     type_filters: Optional[List[str]] = None,
     error_filter: str = "all", # "all", "no_errors", "only_errors"
 ) -> List[MediaItem]:
-    """
-    Helper function to get media for a specific page as MediaItem objects,
-    including filtering by mime_type and error messages.
+    """Fetches a paginated and filtered list of media items from Firestore.
+
+    Args:
+        page: The page number to fetch.
+        media_per_page: The number of media items to fetch per page.
+        type_filters: A list of media types to filter by.
+        error_filter: The error filter to apply.
+
+    Returns:
+        A list of MediaItem objects.
     """
     fetch_limit = (
         1000  # Max items to fetch for client-side filtering/pagination
@@ -157,6 +165,7 @@ def get_media_for_page(
                 gcsuri=str(raw_item_data.get("gcsuri"))
                 if raw_item_data.get("gcsuri") is not None
                 else None,
+                gcs_uris=raw_item_data.get("gcs_uris", []),
                 prompt=str(raw_item_data.get("prompt"))
                 if raw_item_data.get("prompt") is not None
                 else None,
@@ -175,6 +184,9 @@ def get_media_for_page(
                 error_message=str(raw_item_data.get("error_message"))
                 if raw_item_data.get("error_message") is not None
                 else None,
+                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
+                if raw_item_data.get("rewritten_prompt") is not None
+                else None,
                 raw_data=raw_item_data,
             )
             all_fetched_items.append(media_item)
@@ -191,7 +203,12 @@ def get_media_for_page(
 
 
 def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = False):
-    """Helper to load media, update total count, and items. Used by filter changes and page changes."""
+    """Loads media from Firestore and updates the page state.
+
+    Args:
+        pagestate: The current page state.
+        is_filter_change: Whether the media is being loaded due to a filter change.
+    """
     if is_filter_change:
         pagestate.current_page = 1 # Reset to first page on any filter change
 
@@ -217,7 +234,11 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
 
 
 def library_content(app_state: me.state):
-    """Library Content"""
+    """The main content of the library page.
+
+    Args:
+        app_state: The global application state.
+    """
     pagestate = me.state(PageState)
 
     if not pagestate.initial_url_param_processed:
@@ -341,10 +362,19 @@ def library_content(app_state: me.state):
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             )
                             if m_item.gcsuri
-                            else ""
+                            else (
+                                m_item.gcs_uris[0].replace(
+                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                )
+                                if m_item.gcs_uris
+                                else ""
+                            )
                         )
 
-                        prompt_full = m_item.prompt or ""
+                        if media_type_group == "image":
+                            prompt_full = m_item.rewritten_prompt or m_item.prompt or ""
+                        else:
+                            prompt_full = m_item.prompt or ""
                         prompt_display_grid = (
                             (prompt_full[:100] + "...")
                             if len(prompt_full) > 100
@@ -454,7 +484,6 @@ def library_content(app_state: me.state):
                                                 ),
                                             )
 
-                                
                                 # Pill for error message
                                 if m_item.error_message:
                                     pill("Error", "error_present",)
@@ -521,7 +550,7 @@ def library_content(app_state: me.state):
                                     elif media_type_group == "image" and item_url:
                                         me.image(
                                             src=item_url,
-                                            alt_text=m_item.prompt or "Generated Image",
+                                            #alt_text=m_item.prompt or "Generated Image",
                                             style=me.Style(
                                                 max_width="100%", # Ensure it doesn't overflow
                                                 max_height="150px", # Max height for consistency
@@ -639,8 +668,6 @@ def library_content(app_state: me.state):
                             flex_direction="column",
                             gap=12,
                             width="100%",
-                            max_width="900px", # Max width for content inside dialog
-                            height="auto", # Auto height based on content
                             max_height="80vh", # Max viewport height
                             overflow_y="auto", # Scroll if content exceeds max height
                             padding=me.Padding.all(24),
@@ -662,9 +689,17 @@ def library_content(app_state: me.state):
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             )
                             if item.gcsuri
-                            else ""
+                            else (
+                                item.gcs_uris[0].replace(
+                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                )
+                                if item.gcs_uris
+                                else ""
+                            )
                         )
-                        if dialog_media_type_group == "video" and item_display_url and not item.error_message:
+                        if dialog_media_type_group == "image":
+                            image_details(item)
+                        elif dialog_media_type_group == "video" and item_display_url and not item.error_message:
                             me.video(
                                 src=item_display_url,
                                 style=me.Style(
@@ -673,18 +708,6 @@ def library_content(app_state: me.state):
                                     border_radius=8,
                                     background="#000", # Background for video player
                                     display="block", # Ensure it takes block space
-                                    margin=me.Margin(bottom=16),
-                                ),
-                            )
-                        elif dialog_media_type_group == "image" and item_display_url and not item.error_message:
-                            me.image(
-                                src=item_display_url,
-                                alt_text=item.prompt or "Image",
-                                style=me.Style(
-                                    width="100%",
-                                    max_height="40vh",
-                                    border_radius=8,
-                                    object_fit="contain",
                                     margin=me.Margin(bottom=16),
                                 ),
                             )
@@ -706,9 +729,12 @@ def library_content(app_state: me.state):
                                 ),
                             )
 
-                        me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
-                        if item.enhanced_prompt:
-                            me.text(f'Enhanced Prompt: "{item.enhanced_prompt}"')
+                        me.text(f"Model: {item.raw_data['model']}")
+                        
+                        if dialog_media_type_group != "image":
+                            me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
+                            if item.enhanced_prompt:
+                                me.text(f'Enhanced Prompt: "{item.enhanced_prompt}"')
                         
                         dialog_timestamp_str_detail = "N/A"
                         if item.timestamp:
@@ -825,8 +851,7 @@ def library_content(app_state: me.state):
                     with me.box(style=me.Style(padding=me.Padding.all(16))):
                         me.text("No media item selected or found for the given ID.")
                 
-                with dialog_actions():  # pylint: disable=not-context-manager
-                    me.button("Close", on_click=on_close_details_dialog, type="flat")
+                me.button("Close", on_click=on_close_details_dialog, type="flat", style=me.Style(margin=me.Margin(top=24)))
 
             # Pagination controls
             if total_pages > 1:

@@ -87,8 +87,6 @@ def generate_images(model: str, prompt: str, number_of_images: int, aspect_ratio
     # Using a subfolder "generated_images" within the configured IMAGE_BUCKET
     gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/generated_images"
 
-
-
     try:
         print(f"models.image_models.generate_images: Requesting {number_of_images} images for model {model} with output to {gcs_output_directory}")
         response = client.models.generate_images(
@@ -127,3 +125,31 @@ def generate_images(model: str, prompt: str, number_of_images: int, aspect_ratio
     except Exception as e:
         print(f"models.image_models.generate_images: API call failed: {e}")
         raise
+
+
+def generate_images_from_prompt(
+    input_txt: str,
+    current_model_name: str,
+    image_count: int,
+    negative_prompt: str,
+    prompt_modifiers_segment: str,
+    aspect_ratio: str,
+) -> list[str]:
+    """
+    Generates images based on the input prompt and parameters.
+    Returns a list of image URIs. Does not directly modify PageState.
+    """
+    full_prompt = f"{input_txt}, {prompt_modifiers_segment}"
+    response = generate_images(
+        model=current_model_name,
+        prompt=full_prompt,
+        number_of_images=image_count,
+        aspect_ratio=aspect_ratio,
+        negative_prompt=negative_prompt,
+    )
+    generated_uris = [
+        img.image.gcs_uri
+        for img in response.generated_images
+        if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
+    ]
+    return generated_uris

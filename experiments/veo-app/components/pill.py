@@ -33,7 +33,7 @@ def pill(label: str, pill_type: str):
     elif pill_type == "duration" or pill_type == "fps":
         background_color = me.theme_var("surface-variant")
         text_color = me.theme_var("on-surface-variant")
-    elif pill_type == "media_type_audio" or pill_type == "media_type_video":
+    elif pill_type == "media_type_audio" or pill_type == "media_type_video" or pill_type == "media_type_image":
         background_color = me.theme_var("inverse-primary")
         text_color = me.theme_var("on-surface-variant")
     elif pill_type == "error_present":

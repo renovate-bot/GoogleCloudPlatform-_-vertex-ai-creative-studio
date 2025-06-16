@@ -39,6 +39,7 @@ class MediaItem:
     id: Optional[str] = None
     aspect: Optional[str] = None
     gcsuri: Optional[str] = None
+    gcs_uris: list[str] = field(default_factory=list)
     prompt: Optional[str] = None
     generation_time: Optional[float] = None
     timestamp: Optional[str] = None
@@ -53,6 +54,7 @@ class MediaItem:
     raw_data: Optional[Dict] = field(
         default_factory=dict
     )  # To store the raw Firestore document
+    critique: Optional[str] = None
 
 
 def get_media_item_by_id(
@@ -111,9 +113,10 @@ def get_media_item_by_id(
                 gcsuri=str(raw_item_data.get("gcsuri"))
                 if raw_item_data.get("gcsuri") is not None
                 else None,
-                prompt=str(raw_item_data.get("prompt"))
-                if raw_item_data.get("prompt") is not None
-                else None,
+                gcs_uris=raw_item_data.get("gcs_uris", []),
+                prompt=str(raw_item_data.get("original_prompt"))
+                if raw_item_data.get("original_prompt") is not None
+                else str(raw_item_data.get("prompt")),
                 generation_time=gen_time,
                 timestamp=timestamp_iso_str,
                 reference_image=str(raw_item_data.get("reference_image"))
@@ -131,6 +134,9 @@ def get_media_item_by_id(
                 else None,
                 rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
                 if raw_item_data.get("rewritten_prompt") is not None
+                else None,
+                critique=str(raw_item_data.get("critique"))
+                if raw_item_data.get("critique") is not None
                 else None,
                 raw_data=raw_item_data,
             )
@@ -222,6 +228,47 @@ def add_video_metadata(
     )
 
     print(f"Video data stored in Firestore with document ID: {doc_ref.id}")
+
+def add_image_metadata(
+    gcs_uris: list[str],
+    original_prompt: str,
+    rewritten_prompt: str,
+    modifiers: list[str],
+    negative_prompt: str,
+    num_images: int,
+    seed: int,
+    critique: str,
+    model: str,
+    aspect_ratio: str,
+    generation_time: float,
+    error_message: str,
+):
+    """Add Image metadata to Firestore persistence"""
+
+    current_datetime = datetime.datetime.now()
+
+    # Store the image metadata in Firestore
+    doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
+    doc_ref.set(
+        {
+            "gcs_uris": gcs_uris,
+            "original_prompt": original_prompt,
+            "rewritten_prompt": rewritten_prompt,
+            "modifiers": modifiers,
+            "negative_prompt": negative_prompt,
+            "num_images": num_images,
+            "seed": seed,
+            "critique": critique,
+            "model": model,
+            "aspect_ratio": aspect_ratio,
+            "generation_time": generation_time,
+            "mime_type": "image/png",
+            "error_message": error_message,
+            "timestamp": current_datetime,
+        }
+    )
+
+    print(f"Image data stored in Firestore with document ID: {doc_ref.id}")
 
 
 def get_latest_videos(limit: int = 10):
