@@ -1,9 +1,10 @@
 go 1.24.3
 
 use (
-	./mcp-chirp3-go
-	./mcp-imagen-go
-	./mcp-veo-go
-	./mcp-lyria-go
 	./mcp-avtool-go
+	./mcp-chirp3-go
+	./mcp-common
+	./mcp-imagen-go
+	./mcp-lyria-go
+	./mcp-veo-go
 )

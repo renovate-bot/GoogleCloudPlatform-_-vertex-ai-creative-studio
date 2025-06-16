@@ -40,9 +40,9 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.115.12
     # via google-adk
-google-adk==1.1.1
+google-adk==1.2.1
     # via adk-genmedia-agent
-google-api-core==2.24.2
+google-api-core==2.25.0
     # via
     #   google-api-python-client
     #   google-cloud-aiplatform
@@ -53,9 +53,9 @@ google-api-core==2.24.2
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-api-python-client==2.170.0
+google-api-python-client==2.171.0
     # via google-adk
-google-auth==2.40.2
+google-auth==2.40.3
     # via
     #   google-api-core
     #   google-api-python-client
@@ -110,19 +110,19 @@ googleapis-common-protos==1.70.0
     #   grpcio-status
 graphviz==0.20.3
     # via google-adk
-greenlet==3.2.2 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
+greenlet==3.2.3 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
     # via sqlalchemy
 grpc-google-iam-v1==0.14.2
     # via
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.71.0
+grpcio==1.72.1
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.71.0
+grpcio-status==1.73.0
     # via google-api-core
 h11==0.16.0
     # via
@@ -147,7 +147,7 @@ idna==3.10
     #   requests
 importlib-metadata==8.7.0
     # via opentelemetry-api
-mcp==1.9.2
+mcp==1.9.3
     # via google-adk
 numpy==2.2.6
     # via shapely
@@ -226,7 +226,7 @@ python-multipart==0.0.20
     # via mcp
 pyyaml==6.0.2
     # via google-adk
-requests==2.32.3
+requests==2.32.4
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -245,7 +245,7 @@ sqlalchemy==2.0.41
     # via google-adk
 sse-starlette==2.3.6
     # via mcp
-starlette==0.46.2
+starlette==0.47.0
     # via
     #   fastapi
     #   mcp

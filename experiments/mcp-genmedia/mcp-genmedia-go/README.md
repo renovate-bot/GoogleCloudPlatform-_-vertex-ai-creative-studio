@@ -4,6 +4,37 @@ This directory houses the Go language implementations of Model Context Protocol 
 
 These servers enable MCP clients (such as AI agents or other applications) to leverage powerful media generation and manipulation capabilities.
 
+## Getting Started: Installation
+
+This project uses a Go workspace (`go.work`) to manage the multiple modules. The following steps will ensure all dependencies are correctly synchronized and the server binaries are installed.
+
+**Prerequisites:**
+*   Go (version 1.18 or later is recommended for workspace support)
+*   Git
+
+**Instructions:**
+
+1.  **Navigate to the Workspace Directory**
+    All commands should be run from this `mcp-genmedia-go` directory.
+
+2.  **Tidy Workspace Dependencies**
+    This command synchronizes the dependencies between the modules in the workspace. This is a crucial step to avoid build errors.
+    ```bash
+    go work sync
+    ```
+
+3.  **Install the Binaries**
+    This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
+    ```bash
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
+    ```
+
+4.  **Verify the Installation**
+    Check that the binaries are available in your path.
+    ```bash
+    ls $(go env GOBIN)/mcp-*
+    ```
+
 ## Available Go MCP Servers:
 
 *   **`mcp-avtool-go`**:
@@ -38,3 +69,37 @@ These servers enable MCP clients (such as AI agents or other applications) to le
 *   **Google Cloud Authentication**: Relies on Application Default Credentials (ADC) or service account keys.
 
 Please refer to the `README.md` file within each server's subdirectory for detailed information on its specific tools, parameters, environment variables, and usage examples.
+
+## Developing MCP Servers for Genmedia
+
+This section provides guidance on how to understand the architecture and extend or create a new MCP server for Genmedia.
+
+### Architecture
+
+The MCP servers in this repository are all structured in a similar way. They all use the `mcp-common` package for configuration, file handling, and OpenTelemetry. They all use the `mcp-go` library to create the MCP server and tools. They all support the same transport protocols (`stdio`, `http`, and `sse`).
+
+The `mcp-common` package provides the following functionality:
+
+*   **Configuration**: The `config.go` file provides a way to load configuration from environment variables.
+*   **File Utilities**: The `file_utils.go` file provides utility functions for working with files.
+*   **GCS Utilities**: The `gcs_utils.go` file provides utility functions for working with Google Cloud Storage.
+*   **OpenTelemetry**: The `otel.go` file provides a function for initializing OpenTelemetry.
+
+### Extending an Existing Server
+
+To extend an existing server, you'll need to do the following:
+
+1.  Add a new tool to the server. You can do this by calling the `AddTool` method on the `server.MCPServer` struct.
+2.  Implement the tool's handler function. The handler function will be called when the tool is invoked. The handler function should take a `context.Context` and a `mcp.CallToolRequest` as input and should return a `mcp.CallToolResult` and an error.
+
+### Creating a New Server
+
+To create a new server, you'll need to do the following:
+
+1.  Create a new directory for the server.
+2.  Create a new `go.mod` file for the server.
+3.  Create a new `main.go` file for the server.
+4.  In the `main.go` file, you'll need to do the following:
+    1.  Create a new `server.MCPServer` struct.
+    2.  Add one or more tools to the server.
+    3.  Start the server.

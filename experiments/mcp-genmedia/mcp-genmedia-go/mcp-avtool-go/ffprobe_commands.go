@@ -28,7 +28,10 @@ func runFFprobeCommand(ctx context.Context, args ...string) (string, error) {
 	return string(output), nil
 }
 
-// Specific ffprobe command function
+// executeGetMediaInfo uses ffprobe to extract detailed media information from a given file.
+// It specifically requests format and stream information in JSON format.
+// The function assembles the required command-line arguments for this task and
+// calls runFFprobeCommand to execute the command, returning the resulting JSON string.
 func executeGetMediaInfo(ctx context.Context, localInputMedia string) (string, error) {
 	ffprobeArgs := []string{
 		"-v", "quiet",

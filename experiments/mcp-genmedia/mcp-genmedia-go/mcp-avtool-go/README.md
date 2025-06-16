@@ -1,6 +1,6 @@
 # AV Compositing Tool (avtool)
 
-Version: 1.0.10
+Version: 2.0.0
 
 ## Overview
 
@@ -105,17 +105,18 @@ Output files can be saved to a specified local directory and/or uploaded to a GC
 
 ## Development
 
+For a detailed description of the `ffmpeg` and `ffprobe` commands used in this service, see the `compositing_recipes.md` file.
+
 The codebase is structured as follows:
 
 *   `avtool.go`: Main application entry point, MCP server setup, transport handling.
 *   `mcp_handlers.go`: MCP tool registration and the top-level handler functions for each tool.
 *   `ffmpeg_commands.go`: Functions that build and execute FFMpeg commands.
 *   `ffprobe_commands.go`: Functions that build and execute FFprobe commands.
-*   `gcs_utils.go`: GCS interaction logic (upload, download, path parsing).
-*   `file_utils.go`: Local file/directory management (temp dirs, input preparation, output processing).
-*   `config.go`: Configuration loading (env vars), global constants.
+
+The `mcp-common` package provides common functionality for configuration, file handling, and GCS operations.
 
 To add a new tool:
 1.  Define the FFMpeg/FFprobe command logic (if new) in `ffmpeg_commands.go` or `ffprobe_commands.go`.
 2.  Create a new handler function in `mcp_handlers.go`.
-3.  Register the tool in `mcp_handlers.go` using `s.AddTool()` and in `avtool.go` by calling the `add<NewToolName>Tool(s)` function.
+3.  Register the tool in `avtool.go` by calling the `add<NewToolName>Tool(s, cfg)` function.
