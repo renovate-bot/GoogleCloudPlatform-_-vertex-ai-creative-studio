@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Library"""
+"""A library page that displays media items from Firestore."""
 
 import json
 from dataclasses import dataclass, field
@@ -46,7 +46,7 @@ from components.pill import pill
 @me.stateclass
 @dataclass
 class PageState:
-    """Local Page State"""
+    """State for the library page."""
 
     is_loading: bool = False
     current_page: int = 1
@@ -71,9 +71,16 @@ def get_media_for_page(
     type_filters: Optional[List[str]] = None,
     error_filter: str = "all", # "all", "no_errors", "only_errors"
 ) -> List[MediaItem]:
-    """
-    Helper function to get media for a specific page as MediaItem objects,
-    including filtering by mime_type and error messages.
+    """Fetches a paginated and filtered list of media items from Firestore.
+
+    Args:
+        page: The page number to fetch.
+        media_per_page: The number of media items to fetch per page.
+        type_filters: A list of media types to filter by.
+        error_filter: The error filter to apply.
+
+    Returns:
+        A list of MediaItem objects.
     """
     fetch_limit = (
         1000  # Max items to fetch for client-side filtering/pagination
@@ -196,7 +203,12 @@ def get_media_for_page(
 
 
 def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = False):
-    """Helper to load media, update total count, and items. Used by filter changes and page changes."""
+    """Loads media from Firestore and updates the page state.
+
+    Args:
+        pagestate: The current page state.
+        is_filter_change: Whether the media is being loaded due to a filter change.
+    """
     if is_filter_change:
         pagestate.current_page = 1 # Reset to first page on any filter change
 
@@ -222,7 +234,11 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
 
 
 def library_content(app_state: me.state):
-    """Library Content"""
+    """The main content of the library page.
+
+    Args:
+        app_state: The global application state.
+    """
     pagestate = me.state(PageState)
 
     if not pagestate.initial_url_param_processed:
@@ -713,6 +729,8 @@ def library_content(app_state: me.state):
                                 ),
                             )
 
+                        me.text(f"Model: {item.raw_data['model']}")
+                        
                         if dialog_media_type_group != "image":
                             me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
                             if item.enhanced_prompt:

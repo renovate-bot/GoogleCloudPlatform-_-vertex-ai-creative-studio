@@ -5,22 +5,29 @@ from common.metadata import MediaItem
 
 @me.stateclass
 class CarouselState:
+    """State for the image carousel."""
     current_index: int = 0
 
 
 def on_next(e: me.ClickEvent):
+    """Event handler for the 'Next' button in the image carousel."""
     state = me.state(CarouselState)
     state.current_index += 1
 
 
 def on_prev(e: me.ClickEvent):
+    """Event handler for the 'Previous' button in the image carousel."""
     state = me.state(CarouselState)
     state.current_index -= 1
 
 
 @me.component
 def image_details(item: MediaItem):
-    """Image details component"""
+    """A component that displays image details in a carousel.
+
+    Args:
+        item: The MediaItem to display.
+    """
     state = me.state(CarouselState)
     num_images = len(item.gcs_uris)
 
