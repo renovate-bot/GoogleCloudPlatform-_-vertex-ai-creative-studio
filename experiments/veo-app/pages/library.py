@@ -652,8 +652,6 @@ def library_content(app_state: me.state):
                             flex_direction="column",
                             gap=12,
                             width="100%",
-                            max_width="900px", # Max width for content inside dialog
-                            height="auto", # Auto height based on content
                             max_height="80vh", # Max viewport height
                             overflow_y="auto", # Scroll if content exceeds max height
                             padding=me.Padding.all(24),
@@ -835,8 +833,7 @@ def library_content(app_state: me.state):
                     with me.box(style=me.Style(padding=me.Padding.all(16))):
                         me.text("No media item selected or found for the given ID.")
                 
-                with dialog_actions():  # pylint: disable=not-context-manager
-                    me.button("Close", on_click=on_close_details_dialog, type="flat")
+                me.button("Close", on_click=on_close_details_dialog, type="flat", style=me.Style(margin=me.Margin(top=24)))
 
             # Pagination controls
             if total_pages > 1:
