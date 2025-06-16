@@ -158,6 +158,7 @@ def get_media_for_page(
                 gcsuri=str(raw_item_data.get("gcsuri"))
                 if raw_item_data.get("gcsuri") is not None
                 else None,
+                gcs_uris=raw_item_data.get("gcs_uris", []),
                 prompt=str(raw_item_data.get("prompt"))
                 if raw_item_data.get("prompt") is not None
                 else None,
@@ -175,6 +176,9 @@ def get_media_for_page(
                 duration=item_duration,
                 error_message=str(raw_item_data.get("error_message"))
                 if raw_item_data.get("error_message") is not None
+                else None,
+                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
+                if raw_item_data.get("rewritten_prompt") is not None
                 else None,
                 raw_data=raw_item_data,
             )
@@ -350,11 +354,11 @@ def library_content(app_state: me.state):
                                 else ""
                             )
                         )
-                        print(f"mime-type: {mime_type}")
-                        print(f"m_item.gcsuri: {m_item.gcsuri}")
-                        print(f"m_item.item_url: {item_url}")
 
-                        prompt_full = m_item.prompt or ""
+                        if media_type_group == "image":
+                            prompt_full = m_item.rewritten_prompt or m_item.prompt or ""
+                        else:
+                            prompt_full = m_item.prompt or ""
                         prompt_display_grid = (
                             (prompt_full[:100] + "...")
                             if len(prompt_full) > 100
@@ -530,7 +534,7 @@ def library_content(app_state: me.state):
                                     elif media_type_group == "image" and item_url:
                                         me.image(
                                             src=item_url,
-                                            alt_text=m_item.prompt or "Generated Image",
+                                            #alt_text=m_item.prompt or "Generated Image",
                                             style=me.Style(
                                                 max_width="100%", # Ensure it doesn't overflow
                                                 max_height="150px", # Max height for consistency
@@ -671,7 +675,13 @@ def library_content(app_state: me.state):
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             )
                             if item.gcsuri
-                            else ""
+                            else (
+                                item.gcs_uris[0].replace(
+                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                )
+                                if item.gcs_uris
+                                else ""
+                            )
                         )
                         if dialog_media_type_group == "image":
                             image_details(item)
