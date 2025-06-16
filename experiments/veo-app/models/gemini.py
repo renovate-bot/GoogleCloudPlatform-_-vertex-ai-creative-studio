@@ -300,7 +300,6 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
             )
 
             print("Received critique response from Gemini.")
-            # print(f"Full critique response: {response}") # Avoid printing large raw response
 
             if response.text:
                 print(f"Critique generated (truncated): {response.text[:200]}...") # Log a snippet
@@ -308,7 +307,7 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
             # Fallback for safety reasons, though .text should be populated for text responses
             elif response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[0].text:
                 text_response = response.candidates[0].content.parts[0].text
-                print(f"Critique generated (truncated): {response.text[:200]}...")
+                print(f"Critique generated (truncated): {text_response[:200]}...")
                 return text_response
             else:
                 print("Warning: Gemini critique response text was empty or response structure unexpected.")

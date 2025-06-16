@@ -35,6 +35,7 @@ from components.dialog import (
     dialog_actions,
 )
 from components.header import header
+from components.library.image_details import image_details
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
@@ -341,8 +342,17 @@ def library_content(app_state: me.state):
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             )
                             if m_item.gcsuri
-                            else ""
+                            else (
+                                m_item.gcs_uris[0].replace(
+                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                )
+                                if m_item.gcs_uris
+                                else ""
+                            )
                         )
+                        print(f"mime-type: {mime_type}")
+                        print(f"m_item.gcsuri: {m_item.gcsuri}")
+                        print(f"m_item.item_url: {item_url}")
 
                         prompt_full = m_item.prompt or ""
                         prompt_display_grid = (
@@ -454,7 +464,6 @@ def library_content(app_state: me.state):
                                                 ),
                                             )
 
-                                
                                 # Pill for error message
                                 if m_item.error_message:
                                     pill("Error", "error_present",)
@@ -664,7 +673,9 @@ def library_content(app_state: me.state):
                             if item.gcsuri
                             else ""
                         )
-                        if dialog_media_type_group == "video" and item_display_url and not item.error_message:
+                        if dialog_media_type_group == "image":
+                            image_details(item)
+                        elif dialog_media_type_group == "video" and item_display_url and not item.error_message:
                             me.video(
                                 src=item_display_url,
                                 style=me.Style(
@@ -673,18 +684,6 @@ def library_content(app_state: me.state):
                                     border_radius=8,
                                     background="#000", # Background for video player
                                     display="block", # Ensure it takes block space
-                                    margin=me.Margin(bottom=16),
-                                ),
-                            )
-                        elif dialog_media_type_group == "image" and item_display_url and not item.error_message:
-                            me.image(
-                                src=item_display_url,
-                                alt_text=item.prompt or "Image",
-                                style=me.Style(
-                                    width="100%",
-                                    max_height="40vh",
-                                    border_radius=8,
-                                    object_fit="contain",
                                     margin=me.Margin(bottom=16),
                                 ),
                             )
@@ -706,9 +705,10 @@ def library_content(app_state: me.state):
                                 ),
                             )
 
-                        me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
-                        if item.enhanced_prompt:
-                            me.text(f'Enhanced Prompt: "{item.enhanced_prompt}"')
+                        if dialog_media_type_group != "image":
+                            me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
+                            if item.enhanced_prompt:
+                                me.text(f'Enhanced Prompt: "{item.enhanced_prompt}"')
                         
                         dialog_timestamp_str_detail = "N/A"
                         if item.timestamp:

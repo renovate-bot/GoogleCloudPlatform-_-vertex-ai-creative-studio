@@ -47,7 +47,7 @@ def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
 
 @me.page(
     path="/",
-    title="GenMedia Creative Studio - Veo 2",
+    title="GenMedia Creative Studio - v.next",
     on_load=on_load,
 )
 def home_page():
@@ -104,7 +104,8 @@ def config_page():
     security_policy=me.SecurityPolicy(
         allowed_script_srcs=[
             "https://cdn.jsdelivr.net",
-        ]
+        ],
+        dangerously_disable_trusted_types=True,
     ),
 )
 def imagen_page():

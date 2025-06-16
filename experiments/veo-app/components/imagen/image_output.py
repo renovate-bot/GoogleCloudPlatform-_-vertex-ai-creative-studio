@@ -1,3 +1,17 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import mesop as me
 
 from state.imagen_state import PageState
@@ -8,6 +22,7 @@ from svg_icon.svg_icon_component import svg_icon_component
 def image_output():
     """Image output display"""
     state = me.state(PageState)
+    print(f"Rendering image_output, commentary: {state.image_commentary}")
     with me.box(style=_BOX_STYLE):
         me.text("Output", style=me.Style(font_weight=500))
         me.box(style=me.Style(height=10))
@@ -45,22 +60,23 @@ def image_output():
                     )
                 ):
                     for img_uri in state.image_output:
-                        final_img_src = img_uri
-                        if img_uri.startswith("gs://"):
-                            final_img_src = img_uri.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            )
+                        if img_uri:
+                            final_img_src = img_uri
+                            if img_uri.startswith("gs://"):
+                                final_img_src = img_uri.replace(
+                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                )
 
-                        me.image(
-                            src=final_img_src,
-                            style=me.Style(
-                                width="300px",
-                                height="300px",
-                                object_fit="contain",
-                                border_radius="12px",
-                                box_shadow="0 2px 4px rgba(0,0,0,0.1)",
-                            ),
-                        )
+                            me.image(
+                                src=final_img_src,
+                                style=me.Style(
+                                    width="300px",
+                                    height="300px",
+                                    object_fit="contain",
+                                    border_radius="12px",
+                                    box_shadow="0 2px 4px rgba(0,0,0,0.1)",
+                                ),
+                            )
                 if state.imagen_watermark:
                     with me.box(
                         style=me.Style(

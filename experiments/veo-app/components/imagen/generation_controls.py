@@ -1,8 +1,24 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import random
+import time
 
 import mesop as me
 
+from common.metadata import add_image_metadata
 from config.default import Default
 from models.gemini import generate_compliment, rewrite_prompt_with_gemini
 from models.image_models import generate_images_from_prompt
@@ -132,6 +148,8 @@ def on_click_generate_images(e: me.ClickEvent):
     state.error_message = ""  # Clear previous errors
     yield  # UI: Spinner ON, outputs cleared
 
+    start_time = time.time()
+
     try:
         # Phase 1: Generate Images
         print(f"Starting image generation for prompt: '{current_prompt}'")
@@ -156,20 +174,39 @@ def on_click_generate_images(e: me.ClickEvent):
             aspect_ratio=state.image_aspect_ratio,
         )
         state.image_output = new_image_uris
+        state.is_loading = False
 
         if state.image_output:
+            # Generate commentary in the background
             state.image_commentary = generate_compliment(
                 current_prompt, state.image_output
             )
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+
+        add_image_metadata(
+            gcs_uris=state.image_output,
+            original_prompt=current_prompt,
+            rewritten_prompt=state.image_prompt_input,
+            modifiers=modifiers,
+            negative_prompt=state.image_negative_prompt_input,
+            num_images=state.imagen_image_count,
+            seed=state.imagen_seed,
+            critique=state.image_commentary,
+            model=state.image_model_name,
+            aspect_ratio=state.image_aspect_ratio,
+            generation_time=execution_time,
+            error_message="",
+        )
 
     except Exception as ex:
         print(f"Error during the image generation or critique process: {ex}")
         state.dialog_message = f"An unexpected error occurred: {str(ex)}"
         state.show_dialog = True
         state.image_output = []
-    finally:
         state.is_loading = False
-        yield
+    yield
 
 
 def random_prompt_generator(e: me.ClickEvent):

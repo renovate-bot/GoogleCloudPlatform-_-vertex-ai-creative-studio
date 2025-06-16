@@ -39,6 +39,11 @@ Create a few sentence critique and commentary (3-4 sentences) complimenting each
 
 Include aesthetic qualities (come up with a score). Include commentary on color, tone, subject, lighting, and composition. You may address the author as "you."
 
+For each image, provide a critique in the following format:
+
+**Image <image number>:**
+<critique>
+
 """
 
 

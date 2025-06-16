@@ -259,4 +259,4 @@ def on_close_error_dialog(e: me.ClickEvent):
     """Handler to close the error dialog."""
     state = me.state(PageState)
     state.show_error_dialog = False
-    yield  # Update UI to hide dialog
+    yield
