@@ -277,7 +277,7 @@ def images_to_video(
         last_image_gcs,
     )
     print(f"Request: {req}")
-    resp = send_.google_api(exp_prediction_endpoint, req)
+    resp = send_request_to_google_api(t2v_prediction_endpoint, req)
     print(resp)
     return fetch_operation(fetch_endpoint, resp["name"])
 
