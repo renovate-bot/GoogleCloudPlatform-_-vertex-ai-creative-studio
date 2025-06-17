@@ -1,8 +1,9 @@
 import os
 from dataclasses import dataclass, field
-from typing import TypedDict # Add this import
-import json # Add this import
+import json
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from typing import List, Optional, TypedDict
 
 # from models.image_models import ImageModel # Remove this import
 
@@ -15,6 +16,19 @@ class ImageModel(TypedDict):
 
     display: str
     model_name: str
+
+class NavItem(BaseModel):
+    id: int
+    display: str
+    icon: str
+    route: Optional[str] = None
+    group: Optional[str] = None
+    align: Optional[str] = None
+    feature_flag: Optional[str] = None
+    feature_flag_not: Optional[str] = None
+
+class NavConfig(BaseModel):
+    pages: List[NavItem]
 
 
 @dataclass
@@ -55,8 +69,10 @@ class Default:
     MODEL_IMAGEN_NANO = "imagegeneration@004"
     MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"
     MODEL_IMAGEN = "imagen-3.0-generate-002"
-    MODEL_IMAGEN_NEXT = "imagen-4.0-generate-preview-05-20"
-    MODEL_IMAGEN_ULTRA = "imagen-4.0-ultra-generate-exp-05-20"
+    MODEL_IMAGEN4 = "imagen-4.0-generate-preview-06-06"
+    MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-preview-06-06"
+    MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-preview-06-06"
+    MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
@@ -107,74 +123,30 @@ class Default:
         return [
             {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN_FAST},
             {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN},
-            {"display": "Imagen 4 (preview)", "model_name": Default.MODEL_IMAGEN_NEXT},
-            {"display": "Imagen 4 Ultra (preview)", "model_name": Default.MODEL_IMAGEN_ULTRA},
-            {"display": "Imagen 4 Fast (preview)", "model_name": "imagen-4.0-fast-generate-preview-06-06"},
-            {"display": "Imagen 4 (preview)", "model_name": "imagen-4.0-generate-preview-06-06"},
+            {"display": "Imagen 4 Fast (preview)", "model_name": Default.MODEL_IMAGEN4_FAST},
+            {"display": "Imagen 4 (preview)", "model_name": Default.MODEL_IMAGEN4},
+            {"display": "Imagen 4 Ultra (preview)", "model_name": Default.MODEL_IMAGEN4_ULTRA},
             # Example: to include Nano by default if not overridden:
             # {"display": "Imagen Nano", "model_name": Default.MODEL_IMAGEN_NANO},
         ]
-# New: Imagen 4 (fast) using the imagen-4.0-fast-generate-preview-06-06 endpoint
-# Regression testing: Imagen 4 (standard) using the imagen-4.0-generate-preview-06-06 endpoint
-# Regression testing: Imagen 4 (ultra) using the imagen-4.0-ultra-generate-preview-06-06 endpoint
-    
 
 
-WELCOME_PAGE = [
-    {"id": 0, "display": "Home", "icon": "home", "route": "/"},
-    {"id": 6, "display": "Imagen", "icon": "image", "route": "/imagen", "group": "foundation"},
-    {
-        "id": 10,
-        "display": "Veo",
-        "icon": "movie_filter",
-        "route": "/veo",
-        "group": "foundation",
-    },
-    {"id": 15, "display": "Chirp 3 HD", "icon": "graphic_eq", "group": "foundation"},
-]
+def load_welcome_page_config():
+    with open('config/navigation.json', 'r') as f:
+        data = json.load(f)
 
-if Default.LYRIA_PROJECT_ID is not None:
-    WELCOME_PAGE.append(
-        {
-            "id": 20,
-            "display": "Lyria",
-            "icon": "music_note",
-            "route": "/lyria",
-            "group": "foundation",
-        }
-    )
-else:
-    WELCOME_PAGE.append(
-        {"id": 30, "display": "Lyria", "icon": "music_note", "group": "foundation"}
-    )
+    # This will raise a validation error if the JSON is malformed
+    config = NavConfig(**data)
 
-WELCOME_PAGE.append(
-    {
-        "id": 40,
-        "display": "Motion Portraits",
-        "icon": "portrait",
-        "route": "/motion_portraits",
-        "group": "workflows",
-    }
-)
+    def is_feature_enabled(page: NavItem):
+        if page.feature_flag:
+            return bool(getattr(Default, page.feature_flag, False))
+        if page.feature_flag_not:
+            return not bool(getattr(Default, page.feature_flag_not, False))
+        return True
 
-WELCOME_PAGE.extend(
-    [
-        # {"id": 3, "display": "Imagen", "icon": "image", "route": "/imagen"}, # This ID might conflict if Lyria is also 3
-        {
-            "id": 50,
-            "display": "Library",
-            "icon": "perm_media",
-            "route": "/library",
-            "group": "app",
-        },
-        {
-            "id": 100,
-            "display": "Settings",
-            "icon": "settings",
-            "route": "/config",
-            "align": "bottom",
-            "group": "app",
-        },
-    ]
-)
+    filtered_pages = [page.model_dump(exclude_none=True) for page in config.pages if is_feature_enabled(page)]
+
+    return sorted(filtered_pages, key=lambda x: x['id'])
+
+WELCOME_PAGE = load_welcome_page_config()

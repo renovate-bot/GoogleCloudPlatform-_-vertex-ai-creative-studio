@@ -198,6 +198,7 @@ def on_click_generate_images(e: me.ClickEvent):
             aspect_ratio=state.image_aspect_ratio,
             generation_time=execution_time,
             error_message="",
+            user_email=state.user_email,
         )
 
     except Exception as ex:

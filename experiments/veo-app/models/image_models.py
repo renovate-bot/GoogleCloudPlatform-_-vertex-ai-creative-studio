@@ -153,3 +153,72 @@ def generate_images_from_prompt(
         if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
     ]
     return generated_uris
+
+
+@retry(
+    wait=wait_exponential(
+        multiplier=1, min=1, max=10
+    ),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def edit_image(
+    model: str,
+    prompt: str,
+    edit_mode: str,
+    mask_mode: str,
+    reference_image_bytes: bytes,
+    number_of_images: int,
+):
+    """Edits an image using the Google GenAI client."""
+    client = ImagenModelSetup.init(model_id=model)
+    cfg = Default()
+    gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/edited_images"
+
+    raw_ref_image = RawReferenceImage(
+        reference_id=1,
+        reference_image=reference_image_bytes,
+    )
+
+    mask_ref_image = MaskReferenceImage(
+        reference_id=2,
+        config=types.MaskReferenceConfig(
+            mask_mode=mask_mode,
+            mask_dilation=0,
+        ),
+    )
+
+    try:
+        print(f"models.image_models.edit_image: Requesting {number_of_images} edited images for model {model} with output to {gcs_output_directory}")
+        response = client.models.edit_image(
+            model=model,
+            prompt=prompt,
+            reference_images=[raw_ref_image, mask_ref_image],
+            config=types.EditImageConfig(
+                edit_mode=edit_mode,
+                number_of_images=number_of_images,
+                include_rai_reason=True,
+                output_gcs_uri=gcs_output_directory,
+                output_mime_type='image/jpeg',
+            ),
+        )
+
+        if response and hasattr(response, 'generated_images') and response.generated_images:
+            print(f"models.image_models.edit_image: Received {len(response.generated_images)} edited images.")
+            edited_uris = [
+                img.image.gcs_uri
+                for img in response.generated_images
+                if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
+            ]
+            return edited_uris
+        elif response and hasattr(response, 'error'):
+             print(f"models.image_models.edit_image: API response contains an error: {getattr(response, 'error', 'Unknown error')}")
+             return []
+        else:
+            print(f"models.image_models.edit_image: Response has no generated_images or is empty. Full response: {response}")
+            return []
+
+    except Exception as e:
+        print(f"models.image_models.edit_image: API call failed: {e}")
+        raise

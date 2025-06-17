@@ -24,7 +24,7 @@ class PageState:
     image_models: list[ImageModel] = field(default_factory=_get_default_image_models)
     image_output: list[str] = field(default_factory=list)
     image_commentary: str = ""
-    image_model_name: str = app_config_instance.MODEL_IMAGEN_FAST
+    image_model_name: str = app_config_instance.MODEL_IMAGEN4_FAST
 
     # General UI state
     is_loading: bool = False

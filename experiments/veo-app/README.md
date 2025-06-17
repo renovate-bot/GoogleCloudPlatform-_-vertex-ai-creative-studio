@@ -1,8 +1,8 @@
-# Experiment: Veo 2 app
+# Genmedia Creative Studio: v.Next
 
-This is the initial experiment for the Veo 2 addition to Vertex AI GenMedia Creative Studio.
+This is the next gen version of GenMedia Creative Studio
 
-![Veo 2 Experimental App UI](./assets/veo-app.png)
+![Next Gen Experimental App UI](./assets/veo-app.png)
 
 
 Current featureset
@@ -17,7 +17,6 @@ Future featureset
 * Prompt rewriter
 * Additional Veo 2 features: seed, negative prompt, person generation control
 * Advanced Veo 2 features
-* Integration into main GenMedia Creative Studio
 
 
 This is built using [Mesop](https://mesop-dev.github.io/mesop/) with [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).
@@ -101,7 +100,7 @@ See the template dotenv.template file for the defaults and what environment vari
 
 
 
-## GenMedia Creative Studio - Veo 2 Studio
+## GenMedia Creative Studio - v.next
 
 
 ### Running
@@ -134,6 +133,52 @@ Start the app, use the mesop command in your python virutal environment
 ```bash
 mesop main.py
 ```
+
+## Navigation
+
+The application's side navigation is dynamically generated from the `config/navigation.json` file. This approach allows for easy updates to the navigation structure without modifying Python code.
+
+### How it Works
+
+When the application starts, it reads `config/navigation.json` and uses Pydantic models to validate the structure of the navigation items. This ensures that each entry has the required fields and correct data types, preventing runtime errors.
+
+### Modifying the Navigation
+
+To add, remove, or modify a navigation link, simply edit the `config/navigation.json` file. Each item in the `pages` list is a JSON object with the following structure:
+
+*   `id` (required, integer): A unique identifier for the navigation item. The list is sorted by this value.
+*   `display` (required, string): The text that will be displayed for the link.
+*   `icon` (required, string): The name of the [Material Symbol](https://fonts.google.com/icons) to display.
+*   `route` (optional, string): The application route to navigate to (e.g., `/home`).
+*   `group` (optional, string): The group the item belongs to (e.g., `foundation`, `workflows`, `app`).
+*   `align` (optional, string): Set to `bottom` to align the item to the bottom of the navigation panel.
+
+### How to Control Navigation Items with Feature Flags
+
+You can temporarily hide or show a navigation item by using a feature flag in `navigation.json` and controlling it via your `.env` file.
+
+**1. Add the Feature Flag:**
+First, add a `feature_flag` key to the item you want to control in `config/navigation.json`. Give it a descriptive name, for example:
+
+```json
+{
+  "id": 40,
+  "display": "Motion Portraits",
+  "icon": "portrait",
+  "route": "/motion_portraits",
+  "group": "workflows",
+  "feature_flag": "MOTION_PORTRAITS_ENABLED"
+}
+```
+
+**2. Control Visibility via `.env` file:**
+Now, you can control whether this item appears in the navigation by setting the `MOTION_PORTRAITS_ENABLED` variable in your `.env` file.
+
+*   **To HIDE the page:** Either **do not** include `MOTION_PORTRAITS_ENABLED` in your `.env` file, or set it to `False`.
+*   **To SHOW the page:** Add `MOTION_PORTRAITS_ENABLED=True` to your `.env` file.
+
+The application will automatically show or hide the link when you restart it.
+
 
 
 # Disclaimer
