@@ -31,6 +31,7 @@ from config.default import Default
 from config.rewriters import MUSIC_REWRITER
 from models.gemini import analyze_audio_with_gemini, rewriter
 from models.lyria import generate_music_with_lyria
+from state.state import AppState
 
 cfg = Default()
 
@@ -381,6 +382,7 @@ def on_click_lyria_rewriter(e: me.ClickEvent):
 
 def on_click_lyria(e: me.ClickEvent):
     """Generate music with Lyria handler"""
+    app_state = me.state(AppState)
     state = me.state(PageState)
     prompt_for_api = state.music_prompt_input
     if not prompt_for_api:

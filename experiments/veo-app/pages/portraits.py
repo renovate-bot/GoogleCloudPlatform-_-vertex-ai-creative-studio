@@ -40,6 +40,7 @@ from tenacity import (
 from config.default import Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import image_to_video
+from state.state import AppState
 from pages.styles import (
     _BOX_STYLE_CENTER_DISTRIBUTED,
     _BOX_STYLE_CENTER_DISTRIBUTED_MARGIN,
@@ -533,6 +534,7 @@ def on_click_clear_reference_image(e: me.ClickEvent):  # pylint: disable=unused-
 
 def on_click_motion_portraits(e: me.ClickEvent):
     """Create the motion portrait"""
+    app_state = me.state(AppState)
     state = me.state(PageState)
 
     if not state.reference_image_gcs:

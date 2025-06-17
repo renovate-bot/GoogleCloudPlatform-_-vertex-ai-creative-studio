@@ -22,6 +22,7 @@ from common.metadata import add_image_metadata
 from config.default import Default
 from models.gemini import generate_compliment, rewrite_prompt_with_gemini
 from models.image_models import generate_images_from_prompt
+from state.state import AppState
 from state.imagen_state import PageState
 
 app_config_instance = Default()
@@ -123,6 +124,7 @@ def on_selection_change_image_model(e: me.SelectSelectionChangeEvent):
 
 def on_click_generate_images(e: me.ClickEvent):
     """Click Event to generate images and commentary."""
+    app_state = me.state(AppState)
     state = me.state(PageState)
 
     # Determine the current prompt to use

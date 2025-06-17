@@ -29,6 +29,7 @@ from config.rewriters import VIDEO_REWRITER
 from models.gemini import rewriter
 from models.model_setup import VeoModelSetup
 from models.veo import generate_video
+from state.state import AppState
 
 config = Default()
 
@@ -119,6 +120,7 @@ def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argume
 
 def on_click_veo(e: me.ClickEvent):
     """Veo generate request handler"""
+    app_state = me.state(AppState)
     state = me.state(PageState)
     state.is_loading = True
     state.show_error_dialog = False
