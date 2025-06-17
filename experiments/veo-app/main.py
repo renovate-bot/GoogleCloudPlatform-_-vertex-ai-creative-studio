@@ -13,14 +13,19 @@
 # limitations under the License.
 """Main Mesop App"""
 
+import inspect
 import os
 
 import mesop as me
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.wsgi import WSGIMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from components.page_scaffold import page_scaffold
 from pages.config import config_page_contents
+from pages.edit_images import content as edit_images_content
 from pages.home import home_page_content
 from pages.imagen import imagen_content
 from pages.library import library_content
@@ -29,12 +34,38 @@ from pages.portraits import motion_portraits_content
 from pages.veo import veo_content
 from state.state import AppState
 
+
+class UserInfo(BaseModel):
+    email: str | None
+    agent: str | None
+
+
+# FastAPI server with Mesop
+app = FastAPI()
+router = APIRouter()
+app.include_router(router)
+
+
+@app.middleware("http")
+async def add_custom_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self';"
+    return response
+
+
 # from pages.gemini2 import gemini_page_content
 
 
 def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
     """On load event"""
     s = me.state(AppState)
+    if hasattr(app.state, "user_info") and app.state.user_info:
+        s.user_email = app.state.user_info.email
+        s.user_agent = app.state.user_info.agent
+    else:
+        s.user_email = ""
+        s.user_agent = ""
+
     if s.theme_mode:
         if s.theme_mode == "light":
             me.set_theme_mode("light")
@@ -46,7 +77,7 @@ def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
 
 
 @me.page(
-    path="/",
+    path="/home",
     title="GenMedia Creative Studio - v.next",
     on_load=on_load,
 )
@@ -123,20 +154,42 @@ def library_page():
     library_content(me.state(AppState))
 
 
-# FastAPI server with Mesop
-app = FastAPI()
-router = APIRouter()
-app.include_router(router)
+@me.page(
+    path="/edit_images",
+    title="GenMedia Creative Studio - Edit Images",
+    on_load=on_load,
+)
+def edit_images_page():
+    """Edit Images Page"""
+    edit_images_content(me.state(AppState))
 
 
-@app.get("/hello")
-def hello(request: Request):
-    """Hello endpoint that returns the user email from the headers."""
+@app.get("/__/auth/")
+def auth_proxy(request: Request) -> RedirectResponse:
+    user_agent = request.headers.get("user-agent")
     user_email = request.headers.get("X-Goog-Authenticated-User-Email")
-    if user_email:
-        return {"message": f"Hello, {user_email}!"}
-    return {"message": "Hello, anonymous user!"}
+    app.state.user_info = UserInfo(email=user_email, agent=user_agent)
+    return RedirectResponse(url="/home")
 
+
+
+
+
+@app.get("/")
+def home() -> RedirectResponse:
+    return RedirectResponse(url="/__/auth/")
+
+
+# Use this to mount the static files for the Mesop app
+app.mount(
+    "/static",
+    StaticFiles(
+        directory=os.path.join(
+            os.path.dirname(inspect.getfile(me)), "web", "src", "app", "prod", "web_package"
+        )
+    ),
+    name="static",
+)
 
 app.mount(
     "/",
@@ -144,6 +197,8 @@ app.mount(
         me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")
     ),
 )
+
+
 
 if __name__ == "__main__":
     import uvicorn

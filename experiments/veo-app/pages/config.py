@@ -25,7 +25,7 @@ from config.default import Default
 from state.state import AppState  
 
 
-def get_config_table():
+def get_config_table(app_state: AppState):
     """Construct a table of the Defaults, including optional new attributes"""
 
     # app_state = me.state(AppState) # Not currently used in this function
@@ -33,6 +33,7 @@ def get_config_table():
     # Start with a base list of configurations
     config_data = {
         "Config": [
+            "Username",
             "Vertex AI Enabled",
             "Project ID",
             "Location",
@@ -44,6 +45,7 @@ def get_config_table():
             "Veo Experimental Model ID",
         ],
         "Value": [
+            app_state.user_email if app_state.user_email else "Anonymous",
             str(Default.INIT_VERTEX),
             Default.PROJECT_ID,
             Default.LOCATION,
@@ -81,7 +83,7 @@ def config_page_contents(app_state: me.state):  # pylint: disable=unused-argumen
             header("Configurations", "settings")
 
             me.table(
-                get_config_table(),
+                get_config_table(app_state),
                 header=me.TableHeader(sticky=True),
                 columns={
                     "Config": me.TableColumn(sticky=True),

@@ -23,3 +23,5 @@ class AppState:
 
     theme_mode: str
 
+    user_email: str
+
