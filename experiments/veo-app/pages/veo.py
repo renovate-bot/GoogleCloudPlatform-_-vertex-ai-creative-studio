@@ -157,6 +157,7 @@ def on_click_veo(e: me.ClickEvent):
                 error_message=state.error_message,
                 comment="veo default generation",
                 last_reference_image=state.last_reference_image_gcs,
+                user_email=app_state.user_email,
             )
         except Exception as meta_err:
             print(f"CRITICAL: Failed to store metadata: {meta_err}")

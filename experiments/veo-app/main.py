@@ -167,7 +167,9 @@ def edit_images_page():
 @app.get("/__/auth/")
 def auth_proxy(request: Request) -> RedirectResponse:
     user_agent = request.headers.get("user-agent")
-    user_email = request.headers.get("X-Goog-Authenticated-User-Email")
+    user_email_header = request.headers.get("X-Goog-Authenticated-User-Email", "")
+    # The header is in the format "accounts.google.com:user@example.com"
+    user_email = user_email_header.split(":")[-1]
     app.state.user_info = UserInfo(email=user_email, agent=user_agent)
     return RedirectResponse(url="/home")
 

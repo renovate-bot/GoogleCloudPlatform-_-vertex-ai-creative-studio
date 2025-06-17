@@ -158,6 +158,7 @@ def add_music_metadata(
     generation_time: float,
     error_message: str,
     audio_analysis: str,
+    user_email: str,
 ):
     """Add Music metadata to Firestore persistence"""
     current_datetime = datetime.datetime.now()
@@ -178,6 +179,7 @@ def add_music_metadata(
             "mime_type": "audio/wav",
             "error_message": error_message,
             "audio_analysis": audio_analysis,
+            "user_email": user_email,
             # "comment": comment,
             "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
         }
@@ -198,6 +200,7 @@ def add_video_metadata(
     error_message: str,
     comment: str,
     last_reference_image: str,
+    user_email: str,
 ):
     """Add Video metadata to Firestore persistence"""
 
@@ -223,6 +226,7 @@ def add_video_metadata(
             "mime_type": "video/mp4",
             "error_message": error_message,
             "comment": comment,
+            "user_email": user_email,
             "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
         }
     )
@@ -242,6 +246,7 @@ def add_image_metadata(
     aspect_ratio: str,
     generation_time: float,
     error_message: str,
+    user_email: str,
 ):
     """Add Image metadata to Firestore persistence"""
 
@@ -264,6 +269,7 @@ def add_image_metadata(
             "generation_time": generation_time,
             "mime_type": "image/png",
             "error_message": error_message,
+            "user_email": user_email,
             "timestamp": current_datetime,
         }
     )

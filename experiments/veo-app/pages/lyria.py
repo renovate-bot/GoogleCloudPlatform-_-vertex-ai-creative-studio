@@ -485,6 +485,7 @@ def on_click_lyria(e: me.ClickEvent):
             generation_time=execution_time,
             error_message=lyria_error_message_for_metadata,
             audio_analysis=analysis_dict_for_metadata,
+            user_email=app_state.user_email,
         )
     except Exception as meta_err:
         print(f"CRITICAL: Failed to store metadata: {meta_err}")
