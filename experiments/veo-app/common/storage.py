@@ -24,7 +24,7 @@ from config.default import Default
 cfg = Default()
 
 def store_to_gcs(
-    folder: str, file_name: str, mime_type: str, contents: str, decode: bool = False
+    folder: str, file_name: str, mime_type: str, contents: str | bytes, decode: bool = False
 ):
     """store contents to GCS"""
     print(f"store_to_gcs: {cfg.PROJECT_ID} {cfg.GENMEDIA_BUCKET}")
@@ -35,6 +35,8 @@ def store_to_gcs(
     if decode:
         contents_bytes = base64.b64decode(contents)
         blob.upload_from_string(contents_bytes, content_type=mime_type)
+    elif isinstance(contents, bytes):
+        blob.upload_from_string(contents, content_type=mime_type)
     else:
         blob.upload_from_string(contents, content_type=mime_type)
     return f"{cfg.GENMEDIA_BUCKET}/{destination_blob_name}"

@@ -276,6 +276,31 @@ def add_image_metadata(
 
     print(f"Image data stored in Firestore with document ID: {doc_ref.id}")
 
+def add_vto_metadata(
+    person_image_gcs: str,
+    product_image_gcs: str,
+    result_image_gcs: str,
+    user_email: str,
+):
+    """Add VTO metadata to Firestore persistence"""
+
+    current_datetime = datetime.datetime.now()
+
+    doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
+    doc_ref.set(
+        {
+            "person_image_gcs": person_image_gcs,
+            "product_image_gcs": product_image_gcs,
+            "gcs_uris": [result_image_gcs],
+            "mime_type": "image/png",
+            "user_email": user_email,
+            "timestamp": current_datetime,
+            "model": config.VTO_MODEL_ID,
+        }
+    )
+
+    print(f"VTO data stored in Firestore with document ID: {doc_ref.id}")
+
 
 def get_latest_videos(limit: int = 10):
     """Retrieve the last 10 videos"""

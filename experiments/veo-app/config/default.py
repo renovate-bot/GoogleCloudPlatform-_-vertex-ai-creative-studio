@@ -58,6 +58,9 @@ class Default:
 
     VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-preview")
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
+
+    # VTO
+    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-exp-05-31")
     
     # Lyria
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")

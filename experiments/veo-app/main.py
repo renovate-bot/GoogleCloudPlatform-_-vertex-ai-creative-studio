@@ -32,6 +32,7 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.veo import veo_content
+from pages.vto import vto
 from state.state import AppState
 
 
@@ -162,6 +163,16 @@ def library_page():
 def edit_images_page():
     """Edit Images Page"""
     edit_images_content(me.state(AppState))
+
+
+@me.page(
+    path="/vto",
+    title="GenMedia Creative Studio - Virtual Try-On",
+    on_load=on_load,
+)
+def vto_page():
+    """VTO Page"""
+    vto()
 
 
 @app.get("/__/auth/")
