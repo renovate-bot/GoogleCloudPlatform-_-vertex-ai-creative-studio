@@ -16,7 +16,7 @@ def vto():
             header("Virtual Try-On", "checkroom")
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
-                with me.box(style=me.Style(width="calc(50% - 8px)")):
+                with me.box(style=me.Style(width="calc(50% - 8px)", display="flex", flex_direction="column", align_items="center")):
                     me.uploader(
                         label="Upload Person Image",
                         on_upload=lambda e: on_upload_person(e),
@@ -26,7 +26,7 @@ def vto():
                     if state.person_image_gcs:
                         me.image(src=state.person_image_gcs, style=me.Style(width="400px", margin=me.Margin(top=16), border_radius=12))
 
-                with me.box(style=me.Style(width="calc(50% - 8px)")):
+                with me.box(style=me.Style(width="calc(50% - 8px)", display="flex", flex_direction="column", align_items="center")):
                     me.uploader(
                         label="Upload Product Image",
                         on_upload=lambda e: on_upload_product(e),
@@ -36,6 +36,18 @@ def vto():
                     if state.product_image_gcs:
                         me.image(src=state.product_image_gcs, style=me.Style(width="400px", margin=me.Margin(top=16), border_radius=12))
 
+            with me.box(style=me.Style(width="400px", margin=me.Margin(top=16))):
+                with me.box(style=me.Style(display="flex", justify_content="space-between")):
+                    me.text("Number of images")
+                    me.text(f"{state.vto_sample_count}")
+                me.slider(
+                    min=1,
+                    max=4,
+                    step=1,
+                    value=state.vto_sample_count,
+                    on_value_change=lambda e: on_sample_count_change(e.value),
+                )
+
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, margin=me.Margin(top=16))):
               me.button("Generate", on_click=on_generate)
               me.button("Clear", on_click=on_clear, type="stroked")
@@ -43,8 +55,11 @@ def vto():
             if state.is_loading:
                 me.progress_spinner()
 
-            if state.result_image:
-                me.image(src=state.result_image, style=me.Style(width="100%", margin=me.Margin(top=16)))
+            if state.result_images:
+                print(f"Images: {state.result_images}")
+                with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=16, margin=me.Margin(top=16))):
+                    for image in state.result_images:
+                        me.image(src=image, style=me.Style(width="400px", border_radius=12))
 
 def on_upload_person(e: me.UploadEvent):
     state = me.state(PageState)
@@ -67,15 +82,15 @@ def on_generate(e: me.ClickEvent):
     yield
 
     try:
-        result_gcs_uri = generate_vto_image(state.person_image_gcs, state.product_image_gcs)
-        if result_gcs_uri.startswith("gs://"):
-            state.result_image = result_gcs_uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-        else:
-            state.result_image = result_gcs_uri
+        result_gcs_uris = generate_vto_image(state.person_image_gcs, state.product_image_gcs, state.vto_sample_count, state.vto_base_steps)
+        state.result_images = [
+            uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+            for uri in result_gcs_uris
+        ]
         add_vto_metadata(
             person_image_gcs=state.person_image_gcs,
             product_image_gcs=state.product_image_gcs,
-            result_image_gcs=result_gcs_uri,
+            result_image_gcs=result_gcs_uris,
             user_email=app_state.user_email,
         )
     except Exception as e:
@@ -84,10 +99,16 @@ def on_generate(e: me.ClickEvent):
     finally:
         state.is_loading = False
         yield
+    yield
+
+def on_sample_count_change(value: int):
+    state = me.state(PageState)
+    state.vto_sample_count = value
+    yield
 
 def on_clear(e: me.ClickEvent):
     state = me.state(PageState)
     state.person_image_gcs = ""
     state.product_image_gcs = ""
-    state.result_image = ""
+    state.result_images = []
     yield
