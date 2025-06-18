@@ -71,6 +71,24 @@ Next do the following steps:
 
 The name of the collection can be changed via environment variables in the `.env` file, by setting the environment variable `GENMEDIA_COLLECTIONS_NAME` to your chosen collection name.
 
+Next, you'll need to create an index for the `timestamp` field. This will allow the library page to sort the media by the time it was created. You can create this index manually in the Google Cloud Console under Firestore > Indexes, or Firestore will prompt you to create it automatically the first time the query is run by the application.
+
+Finally, you'll need to set up security rules to protect the data in your Firestore database. A good starting point is to ensure that only authenticated users can read or write documents, and they can only access documents that they created. You can paste the following rules into the "Rules" tab of your Firestore database in the Google Cloud Console:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Match any document in the 'genmedia' collection
+    match /genmedia/{docId} {
+      // Allow read and write access only if the user is authenticated
+      // and their email matches the 'user_email' field in the document.
+      allow read, write: if request.auth != null && request.auth.token.email == resource.data.user_email;
+    }
+  }
+}
+```
+
 
 
 ### Python virtual environment
