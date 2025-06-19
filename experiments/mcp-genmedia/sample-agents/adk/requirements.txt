@@ -149,7 +149,7 @@ importlib-metadata==8.7.0
     # via opentelemetry-api
 mcp==1.9.3
     # via google-adk
-numpy==2.2.6
+numpy==2.3.0
     # via shapely
 opentelemetry-api==1.33.1
     # via
