@@ -1,47 +1,25 @@
 # MCP Servers for Google Cloud Genmedia APIs
 
-This repository contains Model Context Protocol (MCP) servers that enable MCP clients (like AI agents) to access Google Cloud's generative media APIs.
-
-*Generative Media*
-
-*   **Imagen 3** - for image generation and editing
-*   **Veo 2** - for video creation
-*   **Chirp 3 HD** - for audio synthesis
-*   **Lyria** - for music generation
-
-*Compositing*
-
-*   **AVTool** - for audio/video compositing and manipulation
+This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage Google Cloud's powerful generative media APIs (Imagen, Veo, Chirp, Lyria) and advanced audio/video compositing capabilities (AVTool).
 
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 
-## Installation
+## Generative Media & Compositing Capabilities
 
-To install the MCP Servers for Genmedia, you will need [Go](https://go.dev/doc/install) installed on your system.
+*   **[Imagen 3](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
+*   **[Veo 2](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
+*   **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for audio synthesis
+*   **[Lyria](https://cloud.google.com/vertex-ai/generative-ai/docs/music/generate-music)** - for music generation
+*   **AVTool** - for audio/video compositing and manipulation
+
+## Installation
 
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
-    cd vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go
+    cd vertex-ai-creative-studio/experiments/mcp-genmedia
     ```
-
-2.  **Install the MCP Servers:**
-    Each MCP server must be installed individually. From the `mcp-genmedia-go` directory, run the following commands to install the servers you need:
-
-    ```bash
-    # install a specific server (e.g., Imagen)
-    go install ./mcp-imagen-go
-    ```
-
-3.  **Verify your installation:**
-    Ensure the Go binaries are in your system's `PATH`.
-    ```bash
-    export PATH=$(go env GOPATH)/bin:$PATH
-    ```
-    You can then verify the installation by running the server with the `--help` flag:
-    ```bash
-    mcp-imagen-go --help
-    ```
+2.  **Install MCP Servers:** For detailed installation instructions, including an easy-to-use installer script, please refer to the [Go Implementations README](./mcp-genmedia-go/README.md).
 
 ## Running the Servers
 
@@ -61,38 +39,15 @@ The servers are configured primarily through environment variables. Key variable
 *   `PORT`: The port for the HTTP server (e.g., `8080`).
 *   `GENMEDIA_BUCKET`: The Google Cloud Storage bucket for media assets.
 
-## Available Tools
+## Available MCP Servers and Capabilities
 
-Here is a high-level overview of the tools provided by each MCP server.
+*   **Imagen:** Generate and edit images from text prompts.
+*   **Veo:** Create videos from text or images.
+*   **Chirp 3 HD:** Synthesize high-quality audio from text.
+*   **Lyria:** Generate music from text prompts.
+*   **AVTool:** Perform audio/video compositing and manipulation (e.g., combining, concatenating, format conversion).
 
-### Imagen
-
-*   `imagen_t2i`: Generates an image from a text prompt.
-
-### Veo
-
-*   `veo_t2v`: Generates a video from a text prompt.
-*   `veo_i2v`: Generates a video from a reference image and an optional prompt.
-
-### Chirp 3 HD Voices
-
-*   `chirp_tts`: Synthesizes audio from text.
-*   `list_chirp_voices`: Lists available Chirp voices.
-
-### Lyria
-
-*   `lyria_generate_music`: Generates music from a text prompt.
-
-### AVTool (Audio/Video Compositing)
-
-*   `ffmpeg_get_media_info`: Retrieves media file information.
-*   `ffmpeg_combine_audio_and_video`: Combines video and audio files.
-*   `ffmpeg_concatenate_media_files`: Concatenates multiple media files.
-*   `ffmpeg_video_to_gif`: Converts a video to a GIF.
-*   `ffmpeg_convert_audio_wav_to_mp3`: Converts WAV audio to MP3.
-*   `ffmpeg_overlay_image_on_video`: Overlays an image on a video.
-*   `ffmpeg_adjust_volume`: Adjusts the volume of an audio file.
-*   `ffmpeg_layer_audio_files`: Mixes multiple audio files.
+For a detailed list of tools provided by each server, refer to the [Go Implementations README](./mcp-genmedia-go/README.md).
 
 ## Authentication
 
