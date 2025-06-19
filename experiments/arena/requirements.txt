@@ -81,7 +81,7 @@ typing-extensions==4.13.2
 typing-inspection==0.4.1
 tzdata==2025.2
 uritemplate==4.1.1
-urllib3==2.4.0
+urllib3==2.5.0
 watchdog==6.0.0
 websockets==15.0.1
 werkzeug==3.1.3
