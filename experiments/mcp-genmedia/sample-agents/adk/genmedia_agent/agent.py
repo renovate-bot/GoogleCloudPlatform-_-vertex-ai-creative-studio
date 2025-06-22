@@ -14,11 +14,15 @@
 
 
 import os
-from google.adk.agents import LlmAgent
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
 
+# as of google-adk==1.3.0, StdioConnectionParams
 from dotenv import load_dotenv
-
+from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool.mcp_toolset import (
+    MCPToolset,
+    StdioConnectionParams,
+    StdioServerParameters,
+)
 
 load_dotenv()
 
@@ -27,23 +31,32 @@ project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 # MCP Client (STDIO)
 # assumes you've installed the MCP server on your path
 veo = MCPToolset(
-    connection_params=StdioServerParameters(
-        command="mcp-veo-go", 
-        env=dict(os.environ, PROJECT_ID=project_id),
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="mcp-veo-go",
+            env=dict(os.environ, PROJECT_ID=project_id),
+        ),
+        timeout=60,
     ),
 )
 
 chirp3 = MCPToolset(
-    connection_params=StdioServerParameters(
-        command="mcp-chirp3-go",
-        env=dict(os.environ, PROJECT_ID=project_id),
+    connection_params=StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command="mcp-chirp3-go",
+                env=dict(os.environ, PROJECT_ID=project_id),
+            ),
+            timeout=60,
     ),
 )
 
 imagen = MCPToolset(
-    connection_params=StdioServerParameters(
-        command="mcp-imagen-go",
-        env=dict(os.environ, PROJECT_ID=project_id),
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="mcp-imagen-go",
+            env=dict(os.environ, PROJECT_ID=project_id),
+        ),
+        timeout=60,
     ),
 )
 
@@ -56,9 +69,12 @@ imagen = MCPToolset(
 # )
 
 avtool = MCPToolset(
-    connection_params=StdioServerParameters(
-        command="mcp-avtool-go",
-        env=dict(os.environ, PROJECT_ID=project_id),
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="mcp-avtool-go",
+            env=dict(os.environ, PROJECT_ID=project_id),
+        ),
+        timeout=240,
     ),
 )
 
