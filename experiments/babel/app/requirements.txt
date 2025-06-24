@@ -98,7 +98,7 @@ marshmallow==4.0.0
     # via dataclasses-json
 mdurl==0.1.2
     # via markdown-it-py
-mesop==1.0.1
+mesop==1.1.0
     # via babel-web (pyproject.toml)
 msgpack==1.1.1
     # via mesop
