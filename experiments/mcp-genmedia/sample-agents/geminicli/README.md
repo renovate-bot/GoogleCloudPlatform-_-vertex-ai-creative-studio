@@ -62,6 +62,9 @@ Add the following to your .gemini/settings.json `mcpServers` - you can do this a
 }
 ```
 
+Please note, you can add `"trust": true` to any of the MCP Servers to allow trusting the MCP server and its tools to bypass confirmations. See the [Configuration docs](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md).
+
+
 ## .gemini/extensions/google-genmedia Extension
 
 [Extensions](https://github.com/google-gemini/gemini-cli/blob/main/docs/extension.md) are the way to extend the gemini cli capabilities and bundle MCP servers.
