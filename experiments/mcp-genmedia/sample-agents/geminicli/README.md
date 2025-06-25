@@ -15,6 +15,8 @@ To configure these servers for gemini cli, you can either add these to your ~/.g
 
 Add the following to your .gemini/settings.json `mcpServers` - you can do this at your ~/.gemini or per project directory.
 
+A `sample_settings.json` is provided for your convenience.
+
 ```json
 {
   "mcpServers": {
@@ -69,17 +71,20 @@ Please note, you can add `"trust": true` to any of the MCP Servers to allow trus
 
 [Extensions](https://github.com/google-gemini/gemini-cli/blob/main/docs/extension.md) are the way to extend the gemini cli capabilities and bundle MCP servers.
 
+
 First, create a directory for your extension - this can be at the home directory level (below), or per project directory.
 
 ```bash
-mkdir -p ~/.gemini/extensions/genmedia-extension/
+mkdir -p ~/.gemini/extensions/google-genmedia-extension/
 ```
+
+A `sample_extensions` directory is provided for your convenience.
 
 Then, add to that directory a `gemini-extension.json`
 
 ```json
 {
-  "name": "genmedia-extension",
+  "name": "google-genmedia-extension",
   "version": "1.0.0",
 
   "mcpServers": {
