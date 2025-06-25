@@ -3,8 +3,11 @@
 Use the MCP Servers for Genmedia with the [Gemini CLI](https://github.com/google-gemini/gemini-cli) ([launch announcement blog post](https://blog.google/technology/developers/introducing-gemini-cli-open-source-ai-agent/))
 
 
-![geminicli x genmedia mcp](../../assets/GenMedia_demo_keyword.gif) ([full video](https://storage.googleapis.com/gweb-uniblog-publish-prod/original_videos/GenMedia_demo_keyword.mp4))
+![geminicli x genmedia mcp](../../assets/GenMedia_demo_keyword.gif) 
+([full video](https://storage.googleapis.com/gweb-uniblog-publish-prod/original_videos/GenMedia_demo_keyword.mp4))
 
+
+To install these MCP servers, please see [Installation](../../mcp-genmedia-go/README.md).
 
 To configure these servers for gemini cli, you can either add these to your ~/.gemini/settings.json (see [Configuration](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md#available-settings-in-settingsjson)) or create an Extension (preferred, [Extensions](https://github.com/google-gemini/gemini-cli/blob/main/docs/extension.md)).
 
