@@ -19,6 +19,8 @@ For a guided experience, you can use the interactive installer script. It will h
 2.  **Follow the On-Screen Instructions**
     The script will present you with a menu to install a single server or all of them. It will also check if Go is installed and if your `PATH` is configured correctly.
 
+![run the install.sh](../assets/install-mcp-genmedia.gif)
+
 ### Manual Installation
 
 This project uses a Go workspace (`go.work`) to manage the multiple modules. The following steps will ensure all dependencies are correctly synchronized and the server binaries are installed.

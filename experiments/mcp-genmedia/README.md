@@ -69,8 +69,9 @@ The MCP servers can be used with various clients and hosts. A sample MCP configu
 
 This repository provides AI application samples for:
 
-*   [Google ADK (Agent Development Kit)](./sample-agents/adk/README.md)
-*   [Google Firebase Genkit](./sample-agents/genkit/README.md)
+* [geminicli](./sample-agents/geminicli/)
+* [Google ADK (Agent Development Kit)](./sample-agents/adk/README.md)
+* [Google Firebase Genkit](./sample-agents/genkit/README.md)
 
 ## Development and Contribution
 
