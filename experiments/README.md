@@ -8,6 +8,7 @@ We'd love to hear your feedback on these!
 
 Table of Contents
 
+* [Veo Genetic Prompt Optimizer](#veo-genetic-prompt-optimizer) - an automated system that uses a genetic algorithm to evolve and refine high-level "metaprompts," that guides Gemini to generate superior, task-specific prompts for Google's Veo video generation model.
 * [VeoStart](#veostart) - a prompt creator assistant for Veo 2 & Veo 3
 * [MCP Tools for Genmedia](#mcp-tools-for-genmedia) - MCP Servers for Genmedia services
 * [Genmedia Creative Studio v.Next](#genmedia-creative-studio-vnext) - v.next of Genmedia creative studio
@@ -15,6 +16,9 @@ Table of Contents
 * [Arena](#arena---rate-images) - rate your images with in a visual arena
 * [Babel](#babel---chirp-3-hd-voices) - experiment with Chirp 3 HD voices
 
+## Veo Genetic Prompt Optimizer
+
+A sophisticated, automated system designed to enhance the quality of video generation from  Google's Veo model. It employs a genetic algorithm to evolve and optimize "metaprompts," which are high-level instructions that guide Gemini in rewriting user-provided base prompts into more detailed and effective versions for Veo. The process involves generating  an initial population of metaprompts, evaluating their fitness based on the quality of the augmented prompts they produce and their ability to   preserve user intent, and then using selection, crossover, and mutation to breed better metaprompts over multiple generations. The system can  also optionally generate videos from the augmented prompts and use an LLM-based judge to evaluate the video quality, feeding this information   back into the evolutionary process to further refine the metaprompts. The ultimate goal is to discover an optimal metaprompt that consistently  produces superior, task-specific prompts for Veo, leading to higher-quality video outputs.
 
 ## VeoStart
 
