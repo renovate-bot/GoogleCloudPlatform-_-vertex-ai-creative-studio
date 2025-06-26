@@ -32,10 +32,10 @@ graph TD
     A[Strategic Input: Base Prompts] --> B{Metaprompt Population Initialization};
     B --> C[LLM-Guided Prompt Augmentation];
     C --> D[Automated Metaprompt Fitness Evaluation];
-    D --> E[Veo Video Generation (Empirical Validation)];
+    D --> E["Veo Video Generation (Empirical Validation)"];
     E --> F[LLM-Driven Video Realization Quality Assessment];
     F --> G{Adaptive Parent Selection};
-    G -- Qualitative Refinement --> H[LLM-Based Tie-Breaking & Judgment];
+    G -- Qualitative Refinement --> H["LLM-Based Tie-Breaking & Judgment"];
     G --> I{Intelligent Genetic Operations};
     I -- Mutation --> J[Refined Metaprompts];
     I -- Crossover --> K[Hybrid Metaprompts];
