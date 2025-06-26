@@ -20,6 +20,8 @@ Table of Contents
 
 A sophisticated, automated system designed to enhance the quality of video generation from  Google's Veo model. It employs a genetic algorithm to evolve and optimize "metaprompts," which are high-level instructions that guide Gemini in rewriting user-provided base prompts into more detailed and effective versions for Veo. The process involves generating  an initial population of metaprompts, evaluating their fitness based on the quality of the augmented prompts they produce and their ability to   preserve user intent, and then using selection, crossover, and mutation to breed better metaprompts over multiple generations. The system can  also optionally generate videos from the augmented prompts and use an LLM-based judge to evaluate the video quality, feeding this information   back into the evolutionary process to further refine the metaprompts. The ultimate goal is to discover an optimal metaprompt that consistently  produces superior, task-specific prompts for Veo, leading to higher-quality video outputs.
 
+See [Veo Genetic Prompt Optimizer](./veo-genetic-prompt-optimizer/)
+
 ## VeoStart
 
 VeoStart is a web-based tool designed to help users craft high-quality, effective prompts for Google's Veo video generation model. It provides a structured interface for building prompts from scratch and a gallery of examples to inspire creativity.
