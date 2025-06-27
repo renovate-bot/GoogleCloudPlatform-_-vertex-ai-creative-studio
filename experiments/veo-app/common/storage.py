@@ -27,10 +27,11 @@ def store_to_gcs(
     folder: str, file_name: str, mime_type: str, contents: str | bytes, decode: bool = False
 ):
     """store contents to GCS"""
-    print(f"store_to_gcs: {cfg.PROJECT_ID} {cfg.GENMEDIA_BUCKET}")
+    print(f"store_to_gcs: Project {cfg.PROJECT_ID}, Bucket {cfg.GENMEDIA_BUCKET}")
     client = storage.Client(project=cfg.PROJECT_ID)
     bucket = client.get_bucket(cfg.GENMEDIA_BUCKET)
     destination_blob_name = f"{folder}/{file_name}"
+    print(f"store_to_gcs: Destination {destination_blob_name}")
     blob = bucket.blob(destination_blob_name)
     if decode:
         contents_bytes = base64.b64decode(contents)
@@ -39,4 +40,4 @@ def store_to_gcs(
         blob.upload_from_string(contents, content_type=mime_type)
     else:
         blob.upload_from_string(contents, content_type=mime_type)
-    return f"{cfg.GENMEDIA_BUCKET}/{destination_blob_name}"
+    return destination_blob_name

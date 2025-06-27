@@ -498,10 +498,10 @@ def on_click_upload(e: me.UploadEvent):
         "uploads", e.file.name, e.file.mime_type, contents
     )
     # gcs
-    state.reference_image_gcs = f"gs://{destination_blob_name}"
+    state.reference_image_gcs = f"gs://{config.GENMEDIA_BUCKET}/{destination_blob_name}"
     # url
     state.reference_image_uri = (
-        f"https://storage.mtls.cloud.google.com/{destination_blob_name}"
+        f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{destination_blob_name}"
     )
     # log
     print(

@@ -6,6 +6,9 @@ from common.storage import store_to_gcs
 from models.vto import generate_vto_image
 from common.metadata import add_vto_metadata
 from state.state import AppState
+from config.default import Default
+
+config = Default()
 
 @me.page(path="/vto")
 def vto():
@@ -62,20 +65,23 @@ def vto():
                         me.image(src=image, style=me.Style(width="400px", border_radius=12))
 
 def on_upload_person(e: me.UploadEvent):
+    """Upload person image handler"""
     state = me.state(PageState)
     state.person_image_file = e.file
     gcs_url = store_to_gcs("vto_person_images", e.file.name, e.file.mime_type, e.file.getvalue())
-    state.person_image_gcs = f"https://storage.mtls.cloud.google.com/{gcs_url}"
+    state.person_image_gcs = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{gcs_url}"
     yield
 
 def on_upload_product(e: me.UploadEvent):
+    """Upload product image handler"""
     state = me.state(PageState)
     state.product_image_file = e.file
     gcs_url = store_to_gcs("vto_product_images", e.file.name, e.file.mime_type, e.file.getvalue())
-    state.product_image_gcs = f"https://storage.mtls.cloud.google.com/{gcs_url}"
+    state.product_image_gcs = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{gcs_url}"
     yield
 
 def on_generate(e: me.ClickEvent):
+    """Generate VTO handler"""
     app_state = me.state(AppState)
     state = me.state(PageState)
     state.is_loading = True
@@ -83,6 +89,7 @@ def on_generate(e: me.ClickEvent):
 
     try:
         result_gcs_uris = generate_vto_image(state.person_image_gcs, state.product_image_gcs, state.vto_sample_count, state.vto_base_steps)
+        print(f"Result GCS URIs: {result_gcs_uris}")
         state.result_images = [
             uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
             for uri in result_gcs_uris
