@@ -245,7 +245,7 @@ pydantic==2.11.7
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.35.1
+pydantic-core==2.35.2
     # via pydantic
 pygments==2.19.2
     # via
