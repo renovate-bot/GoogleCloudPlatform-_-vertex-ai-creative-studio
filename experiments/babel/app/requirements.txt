@@ -192,7 +192,7 @@ tzdata==2025.2
     # via pandas
 urllib3==2.5.0
     # via requests
-uvicorn==0.34.3
+uvicorn==0.35.0
     # via
     #   babel-web (pyproject.toml)
     #   fastapi-cli
