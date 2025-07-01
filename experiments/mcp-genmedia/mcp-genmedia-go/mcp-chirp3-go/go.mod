@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 require (
 	cloud.google.com/go/texttospeech v1.13.0
-	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250629191938-bd3907287d82
+	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250701131840-273d5c397edd
 	github.com/mark3labs/mcp-go v0.32.0
 	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.26.0
