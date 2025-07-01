@@ -164,7 +164,7 @@ rich==14.0.0
     # via
     #   rich-toolkit
     #   typer
-rich-toolkit==0.14.7
+rich-toolkit==0.14.8
     # via fastapi-cli
 rsa==4.9.1
     # via google-auth
