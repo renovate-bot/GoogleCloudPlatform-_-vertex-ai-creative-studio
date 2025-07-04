@@ -42,7 +42,7 @@ cycler==0.12.1
     # via matplotlib
 decorator==5.2.1
     # via ipython
-deepdiff==6.7.1
+deepdiff==8.5.0
     # via mesop
 docstring-parser==0.16
     # via google-cloud-aiplatform
