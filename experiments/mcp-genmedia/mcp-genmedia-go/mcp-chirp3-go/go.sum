@@ -40,6 +40,8 @@ github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedi
 github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250701131840-273d5c397edd/go.mod h1:3Su/9kCrhdiArR3npuVwOF//90ZN+LW5DeLRjeiyIOY=
 github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250702201100-5df3568f6a4d h1:HNzANZuSdDb4m62Z0euaIIt9zgMtQj/A9FU+Y7ozgL0=
 github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250702201100-5df3568f6a4d/go.mod h1:gn1VXDBMRwfHKk/9u5uqdhq34mF7dX8eoXCZup/rn3A=
+github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250704122548-c2707ee09f1d h1:fIv24KPAOAfZauJQKZWPMeLkH6fJ2ts9e9BQKWkjqoY=
+github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250704122548-c2707ee09f1d/go.mod h1:gn1VXDBMRwfHKk/9u5uqdhq34mF7dX8eoXCZup/rn3A=
 github.com/cenkalti/backoff/v5 v5.0.2 h1:rIfFVxEf1QsI7E1ZHfp/B4DF/6QBAUhmgkxc0H7Zss8=
 github.com/cenkalti/backoff/v5 v5.0.2/go.mod h1:rkhZdG3JZukswDf7f0cwqPNk4K0sa+F97BxZthm/crw=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
