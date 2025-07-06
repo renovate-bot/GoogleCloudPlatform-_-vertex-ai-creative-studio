@@ -178,7 +178,7 @@ starlette==0.47.1
     # via fastapi
 typer==0.16.0
     # via fastapi-cli
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   fastapi
     #   pydantic
