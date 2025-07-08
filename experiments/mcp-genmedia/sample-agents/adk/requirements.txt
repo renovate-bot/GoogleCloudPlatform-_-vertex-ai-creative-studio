@@ -38,7 +38,7 @@ docstring-parser==0.16
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
-fastapi==0.115.14
+fastapi==0.116.0
     # via google-adk
 google-adk==1.5.0
     # via adk-genmedia-agent
