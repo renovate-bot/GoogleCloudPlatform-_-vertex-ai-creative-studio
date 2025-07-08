@@ -17,9 +17,11 @@ import base64
 import shortuuid
 import vertexai
 from google.api_core.exceptions import GoogleAPIError # Import GoogleAPIError
-from google.cloud import aiplatform, storage
+from google.cloud import aiplatform # storage import removed
+# from google.cloud import storage # No longer needed here
 
 from config.default import Default
+from common.storage import store_to_gcs # Import the common function
 
 # Initialize Configuration
 cfg = Default()
@@ -89,11 +91,11 @@ def generate_music_with_lyria(prompt: str):
         # Store on GCS
         # This function call could also raise exceptions (e.g., GCS permissions, network issues)
         destination_blob_name = store_to_gcs(
-            "music", file_name, "audio/wav", contents, True
+            "music", file_name, "audio/wav", contents, True, bucket_name=cfg.MEDIA_BUCKET
         )
 
         print(
-            f"{destination_blob_name} with contents len {len(contents)} uploaded to {cfg.MEDIA_BUCKET}."
+            f"{destination_blob_name} with contents len {len(contents)} uploaded (intended for {cfg.MEDIA_BUCKET})."
         )
 
     except GoogleAPIError as e:
@@ -117,49 +119,3 @@ def generate_music_with_lyria(prompt: str):
         raise Exception("Music generation failed, and no specific error was propagated.")
 
     return destination_blob_name
-
-
-def store_to_gcs(
-    folder: str, file_name: str, mime_type: str, contents: str, decode: bool = False
-):
-    """
-    Stores contents to GCS.
-    Raises:
-        ValueError: If GCS client cannot be initialized or bucket is not found.
-        GoogleAPIError: For GCS API errors during upload.
-        Exception: For other unexpected errors.
-    """
-    try:
-        client = storage.Client(project=cfg.PROJECT_ID)
-        bucket = client.get_bucket(cfg.MEDIA_BUCKET)
-    except Exception as e:
-        # Handle errors in initializing client or getting bucket
-        error_message = f"Failed to initialize GCS client or access bucket '{cfg.MEDIA_BUCKET}': {str(e)}"
-        print(error_message)
-        raise ValueError(error_message) from e # Raise a more specific error for config/permission issues
-
-    destination_blob_name = f"{folder}/{file_name}"
-    blob = bucket.blob(destination_blob_name)
-    
-    try:
-        if decode:
-            contents_bytes = base64.b64decode(contents) # This can raise binascii.Error if contents are not valid base64
-            blob.upload_from_string(contents_bytes, content_type=mime_type)
-        else:
-            blob.upload_from_string(contents, content_type=mime_type)
-    except base64.binascii.Error as b64_err: # More specific error for base64 decoding
-        error_message = f"Failed to decode base64 content for GCS upload ({file_name}): {str(b64_err)}"
-        print(error_message)
-        raise ValueError(error_message) from b64_err
-    except GoogleAPIError as gcs_api_err: # Catch GCS specific API errors
-        error_message = f"GCS API error during upload of {file_name}: {str(gcs_api_err)}"
-        print(error_message)
-        raise # Re-raise the GCS API error to be potentially handled upstream or logged with its specific type
-    except Exception as e:
-        # Catch other unexpected errors during upload
-        error_message = f"Unexpected error during GCS upload of {file_name}: {str(e)}"
-        print(error_message)
-        raise Exception(error_message) from e
-
-    return f"{cfg.MEDIA_BUCKET}/{destination_blob_name}"
-

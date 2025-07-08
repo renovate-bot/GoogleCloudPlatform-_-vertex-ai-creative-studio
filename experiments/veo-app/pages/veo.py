@@ -15,9 +15,10 @@
 import time
 
 import mesop as me
+import datetime # Required for timestamp
 
 from common.error_handling import GenerationError
-from common.metadata import add_video_metadata
+from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
@@ -147,20 +148,29 @@ def on_click_veo(e: me.ClickEvent):
         state.timing = f"Generation time: {round(execution_time)} seconds"
 
         try:
-            add_video_metadata(
-                gcs_uri,
-                state.veo_prompt_input,
-                state.aspect_ratio,
-                state.veo_model,
-                execution_time,
-                state.video_length,
-                state.reference_image_gcs,
-                state.auto_enhance_prompt,
-                error_message=state.error_message,
-                comment="veo default generation",
-                last_reference_image=state.last_reference_image_gcs,
+            # Determine actual model ID for Veo based on state.veo_model ("2.0" or "3.0")
+            actual_veo_model_id = config.VEO_MODEL_ID
+            if state.veo_model == "3.0":
+                actual_veo_model_id = config.VEO_EXP_MODEL_ID
+
+            item = MediaItem(
                 user_email=app_state.user_email,
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                prompt=state.veo_prompt_input,
+                original_prompt=state.original_prompt if state.original_prompt else state.veo_prompt_input, # Assuming original_prompt holds this
+                model=actual_veo_model_id,
+                mime_type="video/mp4",
+                generation_time=execution_time,
+                error_message=state.error_message if state.error_message else None,
+                gcsuri=gcs_uri if gcs_uri else None,
+                aspect=state.aspect_ratio,
+                duration=float(state.video_length),
+                reference_image=state.reference_image_gcs if state.reference_image_gcs else None,
+                last_reference_image=state.last_reference_image_gcs if state.last_reference_image_gcs else None,
+                enhanced_prompt_used=state.auto_enhance_prompt,
+                comment="veo default generation"
             )
+            add_media_item_to_firestore(item)
         except Exception as meta_err:
             print(f"CRITICAL: Failed to store metadata: {meta_err}")
             if not state.show_error_dialog:

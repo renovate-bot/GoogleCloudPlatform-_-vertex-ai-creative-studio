@@ -34,28 +34,96 @@ db = FirebaseClient(database_id=config.GENMEDIA_FIREBASE_DB).get_client()
 
 @dataclass
 class MediaItem:
-    """Represents a single media item in the library."""
+    """Represents a single media item in the library for Firestore storage and retrieval."""
 
-    id: Optional[str] = None
-    aspect: Optional[str] = None
-    gcsuri: Optional[str] = None
-    gcs_uris: list[str] = field(default_factory=list)
-    prompt: Optional[str] = None
-    generation_time: Optional[float] = None
-    timestamp: Optional[str] = None
-    reference_image: Optional[str] = None
-    last_reference_image: Optional[str] = None
-    enhanced_prompt: Optional[str] = None
-    duration: Optional[float] = None
-    error_message: Optional[str] = None
-    mime_type: Optional[str] = None
-    rewritten_prompt: Optional[str] = None
-    model: Optional[str] = None
-    raw_data: Optional[Dict] = field(
-        default_factory=dict
-    )  # To store the raw Firestore document
-    critique: Optional[str] = None
+    id: Optional[str] = None  # Firestore document ID
+    user_email: Optional[str] = None
+    timestamp: Optional[datetime.datetime] = None # Store as datetime object
 
+    # Common fields across media types
+    prompt: Optional[str] = None  # The final prompt used for generation
+    original_prompt: Optional[str] = None  # User's initial prompt if rewriting occurred
+    rewritten_prompt: Optional[str] = None  # The prompt after any rewriter (Gemini, etc.)
+    model: Optional[str] = None # Specific model ID used (e.g., "imagen-3.0-fast", "veo-2.0")
+    mime_type: Optional[str] = None # e.g., "video/mp4", "image/png", "audio/wav"
+    generation_time: Optional[float] = None  # Seconds for generation
+    error_message: Optional[str] = None # If any error occurred during generation
+
+    # URI fields
+    gcsuri: Optional[str] = None  # For single file media (video, audio) -> gs://bucket/path
+    gcs_uris: List[str] = field(default_factory=list)  # For multi-file media (e.g., multiple images) -> list of gs://bucket/path
+
+    # Video specific (some may also apply to Image/Audio)
+    aspect: Optional[str] = None  # e.g., "16:9", "1:1" (also for Image)
+    duration: Optional[float] = None  # Seconds (also for Audio)
+    reference_image: Optional[str] = None  # GCS URI for I2V
+    last_reference_image: Optional[str] = None  # GCS URI for I2V interpolation end frame
+    enhanced_prompt_used: Optional[bool] = None # For Veo's auto-enhance prompt feature
+    comment: Optional[str] = None # General comment field, e.g., for video generation type
+
+    # Image specific
+    # aspect is shared with Video
+    modifiers: List[str] = field(default_factory=list) # e.g., ["photorealistic", "wide angle"]
+    negative_prompt: Optional[str] = None
+    num_images: Optional[int] = None # Number of images generated in a batch
+    seed: Optional[int] = None # Seed used for generation (also potentially for video/audio)
+    critique: Optional[str] = None # Gemini-generated critique for images
+
+    # Music specific
+    # duration is shared with Video
+    audio_analysis: Optional[Dict] = None # Structured analysis from Gemini, stored as a map
+
+    # This field is for loading raw data from Firestore, not for writing.
+    # It helps in debugging and displaying all stored fields if needed.
+    raw_data: Optional[Dict] = field(default_factory=dict, compare=False, repr=False)
+
+
+def add_media_item_to_firestore(item: MediaItem):
+    """Adds a MediaItem to Firestore. Sets timestamp if not already present."""
+    if not db:
+        print("Firestore client (db) is not initialized. Cannot add media item.")
+        # Or raise an exception: raise ConnectionError("Firestore client not initialized")
+        return
+
+    # Prepare data for Firestore, excluding None values and raw_data
+    firestore_data = {}
+    for f in field_names(item):
+        if f == "raw_data" or f == "id":  # Exclude raw_data and id from direct storage like this
+            continue
+        value = getattr(item, f)
+        if value is not None:
+            if f == "timestamp" and isinstance(value, str): # If timestamp is already string, try to parse
+                try:
+                    firestore_data[f] = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+                except ValueError:
+                    print(f"Warning: Could not parse timestamp string '{value}' to datetime. Storing as is or consider handling.")
+                    firestore_data[f] = value # Or handle error, or ensure it's always datetime
+            else:
+                firestore_data[f] = value
+
+    # Ensure timestamp is set
+    if "timestamp" not in firestore_data or firestore_data["timestamp"] is None:
+        firestore_data["timestamp"] = datetime.datetime.now(datetime.timezone.utc)
+    elif isinstance(firestore_data["timestamp"], datetime.datetime) and firestore_data["timestamp"].tzinfo is None:
+        # If datetime is naive, assume UTC (or local, then convert to UTC)
+        # For consistency, Firestore often expects UTC.
+        firestore_data["timestamp"] = firestore_data["timestamp"].replace(tzinfo=datetime.timezone.utc)
+
+
+    try:
+        doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
+        doc_ref.set(firestore_data)
+        item.id = doc_ref.id # Set the ID back to the item
+        print(f"MediaItem data stored in Firestore with document ID: {doc_ref.id}")
+        print(f"Stored data: {firestore_data}")
+    except Exception as e:
+        print(f"Error storing MediaItem to Firestore: {e}")
+        # Optionally re-raise or handle more gracefully
+        raise
+
+def field_names(dataclass_instance):
+    """Helper to get field names of a dataclass instance."""
+    return [f.name for f in dataclass_instance.__dataclass_fields__.values()]
 
 def get_media_item_by_id(
     item_id: str,
@@ -149,132 +217,7 @@ def get_media_item_by_id(
         return None
 
 
-def add_music_metadata(
-    model: str,
-    gcsuri: str,
-    prompt: str,
-    original_prompt: str,
-    rewritten_prompt: str,
-    generation_time: float,
-    error_message: str,
-    audio_analysis: str,
-    user_email: str,
-):
-    """Add Music metadata to Firestore persistence"""
-    current_datetime = datetime.datetime.now()
-
-
-    # Store the image metadata in Firestore
-    doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
-    doc_ref.set(
-        {
-            "gcsuri": gcsuri,
-            "prompt": prompt,
-            "original_prompt": original_prompt,
-            "rewritten_prompt": rewritten_prompt,
-            # "duration"
-            "model": model,
-            # "duration": duration,
-            "generation_time": generation_time,
-            "mime_type": "audio/wav",
-            "error_message": error_message,
-            "audio_analysis": audio_analysis,
-            "user_email": user_email,
-            # "comment": comment,
-            "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
-        }
-    )
-
-    print(f"Music data stored in Firestore with document ID: {doc_ref.id}")
-
-
-def add_video_metadata(
-    gcsuri: str,
-    prompt: str,
-    aspect_ratio: str,
-    model: str,
-    generation_time: float,
-    duration: int,
-    reference_image: str,
-    rewrite_prompt: bool,
-    error_message: str,
-    comment: str,
-    last_reference_image: str,
-    user_email: str,
-):
-    """Add Video metadata to Firestore persistence"""
-
-    current_datetime = datetime.datetime.now()
-
-    veo_model = Default.VEO_MODEL_ID
-    if model == "3.0":
-        veo_model = Default.VEO_EXP_MODEL_ID
-
-    # Store the image metadata in Firestore
-    doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
-    doc_ref.set(
-        {
-            "gcsuri": gcsuri,
-            "prompt": prompt,
-            "model": veo_model,
-            "aspect": aspect_ratio,
-            "duration": duration,
-            "generation_time": generation_time,
-            "reference_image": reference_image,
-            "last_reference_image": last_reference_image,
-            "enhanced_prompt": rewrite_prompt,
-            "mime_type": "video/mp4",
-            "error_message": error_message,
-            "comment": comment,
-            "user_email": user_email,
-            "timestamp": current_datetime,  # alt: firestore.SERVER_TIMESTAMP
-        }
-    )
-
-    print(f"Video data stored in Firestore with document ID: {doc_ref.id}")
-
-def add_image_metadata(
-    gcs_uris: list[str],
-    original_prompt: str,
-    rewritten_prompt: str,
-    modifiers: list[str],
-    negative_prompt: str,
-    num_images: int,
-    seed: int,
-    critique: str,
-    model: str,
-    aspect_ratio: str,
-    generation_time: float,
-    error_message: str,
-    user_email: str,
-):
-    """Add Image metadata to Firestore persistence"""
-
-    current_datetime = datetime.datetime.now()
-
-    # Store the image metadata in Firestore
-    doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
-    doc_ref.set(
-        {
-            "gcs_uris": gcs_uris,
-            "original_prompt": original_prompt,
-            "rewritten_prompt": rewritten_prompt,
-            "modifiers": modifiers,
-            "negative_prompt": negative_prompt,
-            "num_images": num_images,
-            "seed": seed,
-            "critique": critique,
-            "model": model,
-            "aspect_ratio": aspect_ratio,
-            "generation_time": generation_time,
-            "mime_type": "image/png",
-            "error_message": error_message,
-            "user_email": user_email,
-            "timestamp": current_datetime,
-        }
-    )
-
-    print(f"Image data stored in Firestore with document ID: {doc_ref.id}")
+# Old metadata functions are removed. add_media_item_to_firestore is now the primary method.
 
 
 def get_latest_videos(limit: int = 10):
