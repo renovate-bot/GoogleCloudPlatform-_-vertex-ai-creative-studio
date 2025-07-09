@@ -14,8 +14,6 @@
 """metadata implementation"""
 
 import datetime
-
-# from models.model_setup import ModelSetup
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -25,9 +23,6 @@ from google.cloud import firestore
 from config.default import Default
 from config.firebase_config import FirebaseClient
 
-# Initialize configuration
-# client, model_id = ModelSetup.init()
-# MODEL_ID = model_id
 config = Default()
 db = FirebaseClient(database_id=config.GENMEDIA_FIREBASE_DB).get_client()
 
@@ -38,40 +33,64 @@ class MediaItem:
 
     id: Optional[str] = None  # Firestore document ID
     user_email: Optional[str] = None
-    timestamp: Optional[datetime.datetime] = None # Store as datetime object
+    timestamp: Optional[datetime.datetime] = None  # Store as datetime object
 
     # Common fields across media types
     prompt: Optional[str] = None  # The final prompt used for generation
-    original_prompt: Optional[str] = None  # User's initial prompt if rewriting occurred
-    rewritten_prompt: Optional[str] = None  # The prompt after any rewriter (Gemini, etc.)
-    model: Optional[str] = None # Specific model ID used (e.g., "imagen-3.0-fast", "veo-2.0")
-    mime_type: Optional[str] = None # e.g., "video/mp4", "image/png", "audio/wav"
+    original_prompt: Optional[str] = (
+        None  # User's initial prompt if rewriting occurred
+    )
+    rewritten_prompt: Optional[
+        str
+    ] = None  # The prompt after any rewriter (Gemini, etc.)
+    model: Optional[
+        str
+    ] = None  # Specific model ID used (e.g., "imagen-3.0-fast", "veo-2.0")
+    mime_type: Optional[
+        str
+    ] = None  # e.g., "video/mp4", "image/png", "audio/wav"
     generation_time: Optional[float] = None  # Seconds for generation
-    error_message: Optional[str] = None # If any error occurred during generation
+    error_message: Optional[str] = None  # If any error occurred during generation
 
     # URI fields
-    gcsuri: Optional[str] = None  # For single file media (video, audio) -> gs://bucket/path
-    gcs_uris: List[str] = field(default_factory=list)  # For multi-file media (e.g., multiple images) -> list of gs://bucket/path
+    gcsuri: Optional[
+        str
+    ] = None  # For single file media (video, audio) -> gs://bucket/path
+    gcs_uris: List[str] = field(
+        default_factory=list
+    )  # For multi-file media (e.g., multiple images) -> list of gs://bucket/path
 
     # Video specific (some may also apply to Image/Audio)
     aspect: Optional[str] = None  # e.g., "16:9", "1:1" (also for Image)
     duration: Optional[float] = None  # Seconds (also for Audio)
     reference_image: Optional[str] = None  # GCS URI for I2V
-    last_reference_image: Optional[str] = None  # GCS URI for I2V interpolation end frame
-    enhanced_prompt_used: Optional[bool] = None # For Veo's auto-enhance prompt feature
-    comment: Optional[str] = None # General comment field, e.g., for video generation type
+    last_reference_image: Optional[
+        str
+    ] = None  # GCS URI for I2V interpolation end frame
+    enhanced_prompt_used: Optional[
+        bool
+    ] = None  # For Veo's auto-enhance prompt feature
+    comment: Optional[
+        str
+    ] = None  # General comment field, e.g., for video generation type
 
     # Image specific
     # aspect is shared with Video
-    modifiers: List[str] = field(default_factory=list) # e.g., ["photorealistic", "wide angle"]
+    modifiers: List[str] = field(
+        default_factory=list
+    )  # e.g., ["photorealistic", "wide angle"]
     negative_prompt: Optional[str] = None
-    num_images: Optional[int] = None # Number of images generated in a batch
-    seed: Optional[int] = None # Seed used for generation (also potentially for video/audio)
-    critique: Optional[str] = None # Gemini-generated critique for images
+    num_images: Optional[int] = None  # Number of images generated in a batch
+    seed: Optional[
+        int
+    ] = None  # Seed used for generation (also potentially for video/audio)
+    critique: Optional[str] = None  # Gemini-generated critique for images
 
     # Music specific
     # duration is shared with Video
-    audio_analysis: Optional[Dict] = None # Structured analysis from Gemini, stored as a map
+    audio_analysis: Optional[
+        Dict
+    ] = None  # Structured analysis from Gemini, stored as a map
 
     # This field is for loading raw data from Firestore, not for writing.
     # It helps in debugging and displaying all stored fields if needed.
@@ -88,32 +107,46 @@ def add_media_item_to_firestore(item: MediaItem):
     # Prepare data for Firestore, excluding None values and raw_data
     firestore_data = {}
     for f in field_names(item):
-        if f == "raw_data" or f == "id":  # Exclude raw_data and id from direct storage like this
+        if (
+            f == "raw_data" or f == "id"
+        ):  # Exclude raw_data and id from direct storage like this
             continue
         value = getattr(item, f)
         if value is not None:
-            if f == "timestamp" and isinstance(value, str): # If timestamp is already string, try to parse
+            if f == "timestamp" and isinstance(
+                value, str
+            ):  # If timestamp is already string, try to parse
                 try:
-                    firestore_data[f] = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    firestore_data[f] = datetime.datetime.fromisoformat(
+                        value.replace("Z", "+00:00")
+                    )
                 except ValueError:
-                    print(f"Warning: Could not parse timestamp string '{value}' to datetime. Storing as is or consider handling.")
-                    firestore_data[f] = value # Or handle error, or ensure it's always datetime
+                    print(
+                        f"Warning: Could not parse timestamp string '{value}' to datetime. Storing as is or consider handling."
+                    )
+                    firestore_data[
+                        f
+                    ] = value  # Or handle error, or ensure it's always datetime
             else:
                 firestore_data[f] = value
 
     # Ensure timestamp is set
     if "timestamp" not in firestore_data or firestore_data["timestamp"] is None:
         firestore_data["timestamp"] = datetime.datetime.now(datetime.timezone.utc)
-    elif isinstance(firestore_data["timestamp"], datetime.datetime) and firestore_data["timestamp"].tzinfo is None:
+    elif (
+        isinstance(firestore_data["timestamp"], datetime.datetime)
+        and firestore_data["timestamp"].tzinfo is None
+    ):
         # If datetime is naive, assume UTC (or local, then convert to UTC)
         # For consistency, Firestore often expects UTC.
-        firestore_data["timestamp"] = firestore_data["timestamp"].replace(tzinfo=datetime.timezone.utc)
-
+        firestore_data["timestamp"] = firestore_data["timestamp"].replace(
+            tzinfo=datetime.timezone.utc
+        )
 
     try:
         doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
         doc_ref.set(firestore_data)
-        item.id = doc_ref.id # Set the ID back to the item
+        item.id = doc_ref.id  # Set the ID back to the item
         print(f"MediaItem data stored in Firestore with document ID: {doc_ref.id}")
         print(f"Stored data: {firestore_data}")
     except Exception as e:
@@ -121,9 +154,11 @@ def add_media_item_to_firestore(item: MediaItem):
         # Optionally re-raise or handle more gracefully
         raise
 
+
 def field_names(dataclass_instance):
     """Helper to get field names of a dataclass instance."""
     return [f.name for f in dataclass_instance.__dataclass_fields__.values()]
+
 
 def get_media_item_by_id(
     item_id: str,
@@ -193,9 +228,7 @@ def get_media_item_by_id(
                 last_reference_image=str(raw_item_data.get("last_reference_image"))
                 if raw_item_data.get("last_reference_image") is not None
                 else None,
-                enhanced_prompt=str(raw_item_data.get("enhanced_prompt"))
-                if raw_item_data.get("enhanced_prompt") is not None
-                else None,
+                enhanced_prompt_used=raw_item_data.get("enhanced_prompt_used"),
                 duration=item_duration,
                 error_message=str(raw_item_data.get("error_message"))
                 if raw_item_data.get("error_message") is not None

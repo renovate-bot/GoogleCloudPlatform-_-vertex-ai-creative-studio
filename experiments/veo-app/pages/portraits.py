@@ -18,7 +18,7 @@ from dataclasses import field
 
 import mesop as me
 import requests
-from common.metadata import add_video_metadata
+from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from common.utils import print_keys
 from components.header import header
@@ -694,20 +694,21 @@ Do not describe the frame. There should be no lip movement like speaking, but th
 
         if gcs_uri and not current_error_message:
             try:
-                add_video_metadata(
-                    gcs_uri,
-                    scene_direction_for_video,
-                    aspect_ratio,
-                    veo_model,
-                    execution_time,
-                    state.video_length,
-                    state.reference_image_gcs,
-                    rewrite_prompt,
-                    error_message="",
+                new_media_item = MediaItem(
+                    gcsuri=gcs_uri,
+                    prompt=scene_direction_for_video,
+                    aspect=aspect_ratio,
+                    model=veo_model,
+                    generation_time=execution_time,
+                    duration=state.video_length,
+                    reference_image=state.reference_image_gcs,
+                    enhanced_prompt_used=rewrite_prompt,
                     comment="motion portrait",
-                    last_reference_image=None,
                     user_email=app_state.user_email,
+                    mime_type="video/mp4",
                 )
+                add_media_item_to_firestore(new_media_item)
+
             except Exception as meta_err:
                 print(f"CRITICAL: Failed to store metadata: {meta_err}")
                 additional_meta_error = f" (Metadata storage failed: {meta_err})"
