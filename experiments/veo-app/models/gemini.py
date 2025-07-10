@@ -32,11 +32,12 @@ from config.rewriters import MAGAZINE_EDITOR_PROMPT, REWRITER_PROMPT
 from models.model_setup import (
     GeminiModelSetup,
 )
+from config.default import Default # Import Default for cfg
 
 # Initialize client and default model ID for rewriter
-# The analysis function will use its own specific model ID for now.
-client, model_id = GeminiModelSetup.init()
-REWRITER_MODEL_ID = model_id  # Use a more specific name for the rewriter's model ID
+client = GeminiModelSetup.init()
+cfg = Default() # Instantiate config
+REWRITER_MODEL_ID = cfg.MODEL_ID # Use default model from config for rewriter
 
 
 @retry(
@@ -59,10 +60,10 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
     """
 
     full_prompt = f"{rewriter_prompt} {original_prompt}"
-    print(f"Rewriter: '{full_prompt}'")
+    print(f"Rewriter: '{full_prompt}' with model {REWRITER_MODEL_ID}")
     try:
         response = client.models.generate_content(
-            model=REWRITER_MODEL_ID,
+            model=REWRITER_MODEL_ID, # Explicitly use the configured model
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT"],
@@ -98,9 +99,8 @@ def analyze_audio_with_gemini(
         f"Starting audio analysis for URI: {audio_uri} with prompt: '{music_generation_prompt}'"
     )
 
-    # Define the specific model for audio analysis (as per your sample)
-    analysis_model_id = "gemini-2.5-flash-preview-05-20"
-    analysis_model_id = "gemini-2.5-flash-preview-05-20"
+    # Use configured model for audio analysis
+    analysis_model_id = cfg.GEMINI_AUDIO_ANALYSIS_MODEL_ID
 
     # Prepare the audio part using from_uri
     try:
@@ -289,10 +289,12 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
     # Assuming it's a no-op or handled if telemetry is not configured for google-genai.
     with telemetry.tool_context_manager("creative-studio"):
         try:
-            print(f"Sending critique request to Gemini model: {model_id} with {len(contents_payload)} parts.")
+            # Use default model from config for critique, unless a specific one is configured
+            critique_model_id = cfg.MODEL_ID # Or a specific cfg.GEMINI_CRITIQUE_MODEL_ID
+            print(f"Sending critique request to Gemini model: {critique_model_id} with {len(contents_payload)} parts.")
 
             response = client.models.generate_content(
-                model=model_id, # Uses global model_id from GeminiModelSetup.init()
+                model=critique_model_id,
                 contents=contents_payload,
                 config=types.GenerateContentConfig(
                     response_modalities=["TEXT"], safety_settings=safety_settings_list, max_output_tokens=8192

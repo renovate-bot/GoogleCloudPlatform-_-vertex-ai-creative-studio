@@ -73,9 +73,15 @@ class Default:
     MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-preview-06-06"
     MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-preview-06-06"
     MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
+
+    IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get("IMAGEN_GENERATED_SUBFOLDER", "generated_images")
+    IMAGEN_EDITED_SUBFOLDER: str = os.environ.get("IMAGEN_EDITED_SUBFOLDER", "edited_images")
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
+    # Gemini settings
+    GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get("GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash-preview-05-20")
+
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",

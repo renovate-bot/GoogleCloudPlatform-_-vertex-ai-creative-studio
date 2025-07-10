@@ -223,7 +223,7 @@ def on_click_generate_images(e: me.ClickEvent):
 
 
         item = MediaItem(
-            user_email=app_state.user_email,
+            user_email=state.user_email, # Assuming PageState has user_email from AppState
             timestamp=datetime.datetime.now(datetime.timezone.utc),
             prompt=final_prompt_for_generation, # The prompt actually used
             original_prompt=media_original_prompt,
@@ -246,7 +246,7 @@ def on_click_generate_images(e: me.ClickEvent):
         # If error happens here, we should log it to MediaItem as well
         state.error_message = f"An unexpected error occurred: {str(ex)}"
         item_with_error = MediaItem(
-            user_email=app_state.user_email,
+            user_email=state.user_email,
             timestamp=datetime.datetime.now(datetime.timezone.utc),
             prompt=current_prompt, # Or state.image_prompt_input
             model=state.image_model_name,

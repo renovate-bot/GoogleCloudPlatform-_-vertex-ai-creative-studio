@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Veo mesop ui page"""
+"""Veo mesop UI page."""
+import datetime  # Required for timestamp
 import time
 
 import mesop as me
-import datetime # Required for timestamp
 
 from common.error_handling import GenerationError
-from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
+from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
@@ -31,31 +31,22 @@ from models.gemini import rewriter
 from models.model_setup import VeoModelSetup
 from models.veo import generate_video
 from state.state import AppState
+from state.veo_state import PageState
 
 config = Default()
 
 veo_model = VeoModelSetup.init()
 
 
-from state.veo_state import PageState
-
-
 def veo_content(app_state: me.state):
-    """Veo Mesop Page"""
+    """Veo Mesop Page."""
     state = me.state(PageState)
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
             header("Veo", "movie")
 
-            with me.box(
-                style=me.Style(
-                    display="flex",
-                    flex_direction="row",
-                    gap=10,
-                    height=250,
-                )
-            ):
+            with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, height=250)):
                 with me.box(
                     style=me.Style(
                         flex_basis="max(480px, calc(60% - 48px))",
@@ -86,14 +77,8 @@ def veo_content(app_state: me.state):
             me.button("Close", on_click=on_close_error_dialog, type="flat")
 
 
-
-
-
-
-
-
 def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
-    """Clear prompt and video"""
+    """Clear prompt and video."""
     state = me.state(PageState)
     state.result_video = None
     state.prompt = None
@@ -108,21 +93,32 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     yield
 
 
-
-
 def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argument
-    """ Veo custom rewriter """
+    """Veo custom rewriter."""
     state = me.state(PageState)
+    # Ensure prompt input is not empty before rewriting
+    if not state.veo_prompt_input:
+        # Optionally, set an error message or simply do nothing
+        print("Prompt is empty, skipping rewrite.")
+        yield
+        return
     rewritten_prompt = rewriter(state.veo_prompt_input, VIDEO_REWRITER)
     state.veo_prompt_input = rewritten_prompt
     state.veo_prompt_placeholder = rewritten_prompt
     yield
 
 
-def on_click_veo(e: me.ClickEvent):
-    """Veo generate request handler"""
+def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
+    """Veo generate request handler."""
     app_state = me.state(AppState)
     state = me.state(PageState)
+
+    if not state.veo_prompt_input:
+        state.error_message = "Prompt cannot be empty for VEO generation."
+        state.show_error_dialog = True
+        yield
+        return
+
     state.is_loading = True
     state.show_error_dialog = False
     state.error_message = ""
@@ -132,64 +128,70 @@ def on_click_veo(e: me.ClickEvent):
 
     start_time = time.time()
     gcs_uri = ""
+    item_to_log = MediaItem(
+        user_email=app_state.user_email,
+        timestamp=datetime.datetime.now(datetime.timezone.utc),
+        prompt=state.veo_prompt_input,
+        original_prompt=(state.original_prompt if state.original_prompt else state.veo_prompt_input),
+        model=(config.VEO_EXP_MODEL_ID if state.veo_model == "3.0" else config.VEO_MODEL_ID),
+        mime_type="video/mp4",
+        aspect=state.aspect_ratio,
+        duration=float(state.video_length),
+        reference_image=state.reference_image_gcs if state.reference_image_gcs else None,
+        last_reference_image=state.last_reference_image_gcs if state.last_reference_image_gcs else None,
+        enhanced_prompt_used=state.auto_enhance_prompt,
+        comment="veo default generation",
+    )
 
     try:
         gcs_uri = generate_video(state)
         state.result_video = gcs_uri
+        item_to_log.gcsuri = gcs_uri if gcs_uri else None
 
-    except GenerationError as e:
-        state.error_message = e.message
+    except GenerationError as ge:
+        state.error_message = ge.message
         state.show_error_dialog = True
         state.result_video = ""
+        item_to_log.error_message = ge.message
+    except Exception as ex: # Catch any other unexpected error during generation
+        state.error_message = f"An unexpected error occurred during video generation: {str(ex)}"
+        state.show_error_dialog = True
+        state.result_video = ""
+        item_to_log.error_message = state.error_message
+
 
     finally:
         end_time = time.time()
         execution_time = end_time - start_time
         state.timing = f"Generation time: {round(execution_time)} seconds"
+        item_to_log.generation_time = execution_time
 
         try:
-            # Determine actual model ID for Veo based on state.veo_model ("2.0" or "3.0")
-            actual_veo_model_id = config.VEO_MODEL_ID
-            if state.veo_model == "3.0":
-                actual_veo_model_id = config.VEO_EXP_MODEL_ID
-
-            item = MediaItem(
-                user_email=app_state.user_email,
-                timestamp=datetime.datetime.now(datetime.timezone.utc),
-                prompt=state.veo_prompt_input,
-                original_prompt=state.original_prompt if state.original_prompt else state.veo_prompt_input, # Assuming original_prompt holds this
-                model=actual_veo_model_id,
-                mime_type="video/mp4",
-                generation_time=execution_time,
-                error_message=state.error_message if state.error_message else None,
-                gcsuri=gcs_uri if gcs_uri else None,
-                aspect=state.aspect_ratio,
-                duration=float(state.video_length),
-                reference_image=state.reference_image_gcs if state.reference_image_gcs else None,
-                last_reference_image=state.last_reference_image_gcs if state.last_reference_image_gcs else None,
-                enhanced_prompt_used=state.auto_enhance_prompt,
-                comment="veo default generation"
-            )
-            add_media_item_to_firestore(item)
+            add_media_item_to_firestore(item_to_log)
         except Exception as meta_err:
             print(f"CRITICAL: Failed to store metadata: {meta_err}")
+            # If dialog isn't already shown for a generation error, show for metadata error
             if not state.show_error_dialog:
                 state.error_message = f"Failed to store video metadata: {meta_err}"
                 state.show_error_dialog = True
+            # else, the generation error message takes precedence
 
     state.is_loading = False
     yield
 
 
 def on_blur_veo_prompt(e: me.InputBlurEvent):
-    """Veo prompt blur event"""
-    me.state(PageState).veo_prompt_input = e.value
+    """Veo prompt blur event."""
+    # It's generally better to update placeholder along with input,
+    # or have a separate mechanism if they should diverge.
+    state = me.state(PageState)
+    state.veo_prompt_input = e.value
+    # state.veo_prompt_placeholder = e.value # If placeholder should mirror input
 
 
 @me.component
 def subtle_veo_input():
-    """veo input"""
-
+    """Veo input component."""
     pagestate = me.state(PageState)
 
     icon_style = me.Style(
@@ -208,11 +210,7 @@ def subtle_veo_input():
             width="100%",
         )
     ):
-        with me.box(
-            style=me.Style(
-                flex_grow=1,
-            )
-        ):
+        with me.box(style=me.Style(flex_grow=1)):
             me.native_textarea(
                 autosize=True,
                 min_rows=10,
@@ -224,51 +222,33 @@ def subtle_veo_input():
                     outline="none",
                     width="100%",
                     overflow_y="auto",
-                    border=me.Border.all(
-                        me.BorderSide(style="none"),
-                    ),
+                    border=me.Border.all(me.BorderSide(style="none")),
                     color=me.theme_var("foreground"),
                     flex_grow=1,
                 ),
                 on_blur=on_blur_veo_prompt,
-                key=str(pagestate.veo_prompt_textarea_key),
-                value=pagestate.veo_prompt_placeholder,
+                key=str(pagestate.veo_prompt_textarea_key), # Ensure key is string
+                value=pagestate.veo_prompt_input, # Bind to veo_prompt_input
             )
-        with me.box(
-            style=me.Style(
-                display="flex",
-                flex_direction="column",
-                gap=15,
-            )
-        ):
+        with me.box(style=me.Style(display="flex", flex_direction="column", gap=15)):
             # do the veo
-            with me.content_button(
-                type="icon",
-                on_click=on_click_veo,
-            ):
+            with me.content_button(type="icon", on_click=on_click_veo, disabled=pagestate.is_loading):
                 with me.box(style=icon_style):
                     me.icon("play_arrow")
                     me.text("Create")
             # invoke gemini
-            with me.content_button(
-                type="icon",
-                on_click=on_click_custom_rewriter,
-            ):
+            with me.content_button(type="icon", on_click=on_click_custom_rewriter, disabled=pagestate.is_loading):
                 with me.box(style=icon_style):
                     me.icon("auto_awesome")
                     me.text("Rewriter")
             # clear all of this
-            with me.content_button(
-                type="icon",
-                on_click=on_click_clear,
-            ):
+            with me.content_button(type="icon", on_click=on_click_clear, disabled=pagestate.is_loading):
                 with me.box(style=icon_style):
                     me.icon("clear")
                     me.text("Clear")
 
 
-
-def on_close_error_dialog(e: me.ClickEvent):
+def on_close_error_dialog(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Handler to close the error dialog."""
     state = me.state(PageState)
     state.show_error_dialog = False
