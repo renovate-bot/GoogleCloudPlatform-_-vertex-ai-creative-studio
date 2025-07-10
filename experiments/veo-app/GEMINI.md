@@ -175,6 +175,10 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 
 - **Generator Functions:** Generator functions (those that use `yield`) must have a `yield` statement after updating the state to ensure that the UI is updated.
 
+- **API Error Handling:** When an API returns an "Internal error" with an Operation ID, it signifies a server-side issue. The best course of action is to wait and retry, and if the problem persists, report the Operation ID to Google Cloud support.
+
+- **GCS URI Construction:** When working with GCS URIs, be mindful of duplicate prefixes. The `store_to_gcs` function returns a full `gs://` URI, so do not prepend the prefix again in the calling function. This applies to both creating display URLs (e.g., `https://storage.mtls.cloud.google.com/`) and passing URIs to the API.
+
 
 
 

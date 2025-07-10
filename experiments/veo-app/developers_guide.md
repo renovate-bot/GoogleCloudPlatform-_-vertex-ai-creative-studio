@@ -144,6 +144,10 @@ That's it! When you restart the application, your new page will be available at 
 
 ## Key Takeaways from the VTO Page Development
 
+- **GCS URI Handling:** This is a critical and recurring theme. The `common.storage.store_to_gcs` function returns a **full** GCS URI (e.g., `gs://your-bucket/your-object.png`). When using this value, you must be careful not to prepend the `gs://` prefix or the bucket name again. Doing so will create an invalid path and lead to "No such object" errors.
+    - **For API Calls:** Pass the GCS URI returned from `store_to_gcs` directly to the API.
+    - **For Displaying in Mesop:** To create a public URL for the `me.image` component, use the `.replace("gs://", "https://storage.mtls.cloud.google.com/")` method on the full GCS URI.
+
 - **Displaying GCS Images:** The `me.image` component requires a public HTTPS URL, not a `gs://` URI. To display images from GCS, replace `gs://` with `https://storage.mtls.cloud.google.com/`.
 
 - **State Management:** Avoid using mutable default values (like `[]`) in your state classes. Instead, use `field(default_factory=list)` to ensure that a new list is created for each user session.
