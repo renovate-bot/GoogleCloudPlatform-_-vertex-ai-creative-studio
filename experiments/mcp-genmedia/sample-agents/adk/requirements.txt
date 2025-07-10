@@ -26,28 +26,28 @@ click==8.2.1
     # via
     #   google-adk
     #   uvicorn
+cloudpickle==3.1.1
+    # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
 cryptography==45.0.5
     # via authlib
-deprecated==1.2.18
-    # via
-    #   opentelemetry-api
-    #   opentelemetry-semantic-conventions
 docstring-parser==0.16
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.116.0
     # via google-adk
-google-adk==1.5.0
+google-adk==1.6.1
     # via adk-genmedia-agent
 google-api-core==2.25.1
     # via
     #   google-api-python-client
     #   google-cloud-aiplatform
+    #   google-cloud-appengine-logging
     #   google-cloud-bigquery
     #   google-cloud-core
+    #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
     #   google-cloud-speech
@@ -61,8 +61,10 @@ google-auth==2.40.3
     #   google-api-python-client
     #   google-auth-httplib2
     #   google-cloud-aiplatform
+    #   google-cloud-appengine-logging
     #   google-cloud-bigquery
     #   google-cloud-core
+    #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
     #   google-cloud-speech
@@ -73,12 +75,19 @@ google-auth-httplib2==0.2.0
     # via google-api-python-client
 google-cloud-aiplatform==1.102.0
     # via google-adk
+google-cloud-appengine-logging==1.6.2
+    # via google-cloud-logging
+google-cloud-audit-log==0.3.2
+    # via google-cloud-logging
 google-cloud-bigquery==3.34.0
     # via google-cloud-aiplatform
 google-cloud-core==2.4.3
     # via
     #   google-cloud-bigquery
+    #   google-cloud-logging
     #   google-cloud-storage
+google-cloud-logging==3.12.1
+    # via google-cloud-aiplatform
 google-cloud-resource-manager==1.14.2
     # via google-cloud-aiplatform
 google-cloud-secret-manager==2.24.0
@@ -106,6 +115,7 @@ google-resumable-media==2.7.2
 googleapis-common-protos==1.70.0
     # via
     #   google-api-core
+    #   google-cloud-audit-log
     #   grpc-google-iam-v1
     #   grpcio-status
 graphviz==0.21
@@ -114,6 +124,7 @@ greenlet==3.2.3 ; (python_full_version < '3.14' and platform_machine == 'AMD64')
     # via sqlalchemy
 grpc-google-iam-v1==0.14.2
     # via
+    #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
 grpcio==1.73.1
@@ -154,20 +165,24 @@ numpy==2.3.1
 opentelemetry-api==1.34.1
     # via
     #   google-adk
+    #   google-cloud-logging
     #   opentelemetry-exporter-gcp-trace
     #   opentelemetry-resourcedetector-gcp
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
 opentelemetry-exporter-gcp-trace==1.9.0
-    # via google-adk
+    # via
+    #   google-adk
+    #   google-cloud-aiplatform
 opentelemetry-resourcedetector-gcp==1.9.0a0
     # via opentelemetry-exporter-gcp-trace
 opentelemetry-sdk==1.34.1
     # via
     #   google-adk
+    #   google-cloud-aiplatform
     #   opentelemetry-exporter-gcp-trace
     #   opentelemetry-resourcedetector-gcp
-opentelemetry-semantic-conventions==0.54b1
+opentelemetry-semantic-conventions==0.55b1
     # via opentelemetry-sdk
 packaging==25.0
     # via
@@ -177,6 +192,8 @@ proto-plus==1.26.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
+    #   google-cloud-appengine-logging
+    #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
     #   google-cloud-speech
@@ -185,6 +202,9 @@ protobuf==6.31.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
+    #   google-cloud-appengine-logging
+    #   google-cloud-audit-log
+    #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
     #   google-cloud-speech
@@ -253,10 +273,13 @@ starlette==0.47.1
 typing-extensions==4.14.1
     # via
     #   fastapi
+    #   google-adk
     #   google-cloud-aiplatform
     #   google-genai
+    #   opentelemetry-api
     #   opentelemetry-resourcedetector-gcp
     #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
     #   pydantic
     #   pydantic-core
     #   sqlalchemy

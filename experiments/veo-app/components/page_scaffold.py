@@ -15,7 +15,7 @@ import mesop as me
 
 from components.side_nav import sidenav
 from state.state import AppState
-from pages.styles import (
+from components.styles import (  # Updated import path
     MAIN_COLUMN_STYLE,
     PAGE_BACKGROUND_PADDING_STYLE,
     PAGE_BACKGROUND_STYLE,

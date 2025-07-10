@@ -84,8 +84,7 @@ def generate_images(model: str, prompt: str, number_of_images: int, aspect_ratio
     cfg = Default() # Instantiate Default config to access IMAGE_BUCKET
     
     # Define a GCS path for outputting generated images
-    # Using a subfolder "generated_images" within the configured IMAGE_BUCKET
-    gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/generated_images"
+    gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/{cfg.IMAGEN_GENERATED_SUBFOLDER}"
 
     try:
         print(f"models.image_models.generate_images: Requesting {number_of_images} images for model {model} with output to {gcs_output_directory}")
@@ -174,7 +173,7 @@ def edit_image(
     """Edits an image using the Google GenAI client."""
     client = ImagenModelSetup.init(model_id=model)
     cfg = Default()
-    gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/edited_images"
+    gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/{cfg.IMAGEN_EDITED_SUBFOLDER}"
 
     raw_ref_image = RawReferenceImage(
         reference_id=1,
