@@ -175,12 +175,12 @@ def edit_image(
     cfg = Default()
     gcs_output_directory = f"gs://{cfg.IMAGE_BUCKET}/{cfg.IMAGEN_EDITED_SUBFOLDER}"
 
-    raw_ref_image = RawReferenceImage(
+    raw_ref_image = types.RawReferenceImage(
         reference_id=1,
         reference_image=reference_image_bytes,
     )
 
-    mask_ref_image = MaskReferenceImage(
+    mask_ref_image = types.MaskReferenceImage(
         reference_id=2,
         config=types.MaskReferenceConfig(
             mask_mode=mask_mode,
