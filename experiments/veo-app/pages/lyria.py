@@ -415,9 +415,9 @@ def on_click_lyria(e: me.ClickEvent):
 
     try:
         destination_blob_path = generate_music_with_lyria(prompt_for_api)
-        gcs_uri_for_analysis_and_metadata = f"gs://{destination_blob_path}"
-        state.music_upload_uri = (
-            f"https://storage.mtls.cloud.google.com/{destination_blob_path}"
+        gcs_uri_for_analysis_and_metadata = destination_blob_path
+        state.music_upload_uri = destination_blob_path.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
         )
 
         print(f"Music generated: {state.music_upload_uri}")

@@ -193,7 +193,7 @@ def get_media_item_by_id(
                 last_reference_image=str(raw_item_data.get("last_reference_image"))
                 if raw_item_data.get("last_reference_image") is not None
                 else None,
-                enhanced_prompt=str(raw_item_data.get("enhanced_prompt"))
+                enhanced_prompt_used=str(raw_item_data.get("enhanced_prompt"))
                 if raw_item_data.get("enhanced_prompt") is not None
                 else None,
                 duration=item_duration,

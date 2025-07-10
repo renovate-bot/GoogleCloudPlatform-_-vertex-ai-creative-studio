@@ -38,8 +38,9 @@ class Default:
     # Gemini
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.0-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
+    GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get("GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash")
 
     # Collections
     GENMEDIA_FIREBASE_DB: str = os.environ.get("GENMEDIA_FIREBASE_DB", "(default)")
@@ -79,9 +80,7 @@ class Default:
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
-    # Gemini settings
-    GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get("GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash-preview-05-20")
-
+  
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",

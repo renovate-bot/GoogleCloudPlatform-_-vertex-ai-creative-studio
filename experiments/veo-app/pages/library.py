@@ -185,9 +185,7 @@ def get_media_for_page(
                 last_reference_image=str(raw_item_data.get("last_reference_image"))
                 if raw_item_data.get("last_reference_image") is not None
                 else None,
-                enhanced_prompt=str(raw_item_data.get("enhanced_prompt"))
-                if raw_item_data.get("enhanced_prompt") is not None
-                else None,
+                enhanced_prompt_used=raw_item_data.get("enhanced_prompt"),
                 duration=item_duration,
                 error_message=str(raw_item_data.get("error_message"))
                 if raw_item_data.get("error_message") is not None
@@ -461,10 +459,7 @@ def library_content(app_state: me.state):
                                     if m_item.duration is not None:
                                         pill(item_duration_str, "duration")
                                     pill("24 fps", "fps")
-                                    if (
-                                        m_item.enhanced_prompt
-                                        and media_type_group == "video"
-                                    ):
+                                    if m_item.enhanced_prompt_used and media_type_group == "video":
                                         with me.tooltip(message="Prompt was auto-enhanced"):
                                             me.icon(
                                                 "auto_fix_normal",
@@ -741,8 +736,8 @@ def library_content(app_state: me.state):
                         
                         if dialog_media_type_group != "image":
                             me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
-                            if item.enhanced_prompt:
-                                me.text(f'Enhanced Prompt: "{item.enhanced_prompt}"')
+                            if item.enhanced_prompt_used:
+                                me.text(f'Enhanced Prompt: "{item.enhanced_prompt_used}"')
                         
                         dialog_timestamp_str_detail = "N/A"
                         if item.timestamp:
