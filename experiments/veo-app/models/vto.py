@@ -3,11 +3,41 @@ from google.cloud import aiplatform
 from google.api_core.exceptions import GoogleAPIError
 from config.default import Default
 from common.storage import store_to_gcs
+from google import genai
+from models.model_setup import GeminiModelSetup
 
 cfg = Default()
 
+def generate_vto_image_genai(person_gcs_url: str, product_gcs_url: str, sample_count: int) -> list[str]:
+    """Generates a VTO image using the google.genai client."""
+    client = GeminiModelSetup.init()
+    model_name = f"publishers/google/models/{cfg.VTO_MODEL_ID}"
+
+    person_image_part = genai.types.Part.from_uri(
+        file_uri=person_gcs_url,
+        mime_type="image/png",
+    )
+    product_image_part = genai.types.Part.from_uri(
+        file_uri=product_gcs_url,
+        mime_type="image/png",
+    )
+
+    # Call generate_content on the client's model endpoint, not a GenerativeModel instance
+    response = client.models.generate_content(
+        model=model_name,
+        contents=[person_image_part, product_image_part],
+    )
+
+    gcs_uris = []
+    for candidate in response.candidates:
+        for part in candidate.content.parts:
+            if part.file_data:
+                gcs_uris.append(part.file_data.uri)
+
+    return gcs_uris
+
 def generate_vto_image(person_gcs_url: str, product_gcs_url: str, sample_count: int, base_steps: int) -> list[str]:
-    """Generates a VTO image."""
+    """Generates a VTO image.""" 
 
     try:
         client_options = {"api_endpoint": f"{cfg.LOCATION}-aiplatform.googleapis.com"}
@@ -19,8 +49,8 @@ def generate_vto_image(person_gcs_url: str, product_gcs_url: str, sample_count: 
     model_endpoint = f"projects/{cfg.PROJECT_ID}/locations/{cfg.LOCATION}/publishers/google/models/{cfg.VTO_MODEL_ID}"
 
     instance = {
-        "personImage": {"image": {"gcsUri": person_gcs_url.replace("https:////storage.mtls.cloud.google.com/", "gs://")}},
-        "productImages": [{"image": {"gcsUri": product_gcs_url.replace("https:////storage.mtls.cloud.google.com/", "gs://")}}],
+        "personImage": {"image": {"gcsUri": person_gcs_url.replace("https://storage.mtls.cloud.google.com/", "gs://")}},
+        "productImages": [{"image": {"gcsUri": product_gcs_url.replace("https://storage.mtls.cloud.google.com/", "gs://")}}],
     }
 
     parameters = {
@@ -51,7 +81,7 @@ def generate_vto_image(person_gcs_url: str, product_gcs_url: str, sample_count: 
                 contents=mask_bytes,
                 decode=False,
             )
-            gcs_uris.append(f"gs://{cfg.GENMEDIA_BUCKET}/{gcs_uri}")
+            gcs_uris.append(gcs_uri)
 
         return gcs_uris
 
