@@ -38,8 +38,9 @@ class Default:
     # Gemini
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
-    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.0-flash")
+    MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
+    GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get("GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash")
 
     # Collections
     GENMEDIA_FIREBASE_DB: str = os.environ.get("GENMEDIA_FIREBASE_DB", "(default)")
@@ -58,6 +59,9 @@ class Default:
 
     VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-preview")
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
+
+    # VTO
+    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-exp-05-31")
     
     # Lyria
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
@@ -73,9 +77,13 @@ class Default:
     MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-preview-06-06"
     MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-preview-06-06"
     MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
+
+    IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get("IMAGEN_GENERATED_SUBFOLDER", "generated_images")
+    IMAGEN_EDITED_SUBFOLDER: str = os.environ.get("IMAGEN_EDITED_SUBFOLDER", "edited_images")
     
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
     
+  
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",

@@ -24,17 +24,30 @@ from config.default import Default
 cfg = Default()
 
 def store_to_gcs(
-    folder: str, file_name: str, mime_type: str, contents: str, decode: bool = False
+    folder: str,
+    file_name: str,
+    mime_type: str,
+    contents: str | bytes,
+    decode: bool = False,
+    bucket_name: str | None = None,
 ):
     """store contents to GCS"""
-    print(f"store_to_gcs: {cfg.PROJECT_ID} {cfg.GENMEDIA_BUCKET}")
+    actual_bucket_name = bucket_name if bucket_name else cfg.GENMEDIA_BUCKET
+    if not actual_bucket_name:
+        raise ValueError(
+            "GCS bucket name is not configured. Please set GENMEDIA_BUCKET environment variable or provide bucket_name."
+        )
+    print(f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}")
     client = storage.Client(project=cfg.PROJECT_ID)
-    bucket = client.get_bucket(cfg.GENMEDIA_BUCKET)
+    bucket = client.get_bucket(actual_bucket_name)
     destination_blob_name = f"{folder}/{file_name}"
+    print(f"store_to_gcs: Destination {destination_blob_name}")
     blob = bucket.blob(destination_blob_name)
     if decode:
         contents_bytes = base64.b64decode(contents)
         blob.upload_from_string(contents_bytes, content_type=mime_type)
+    elif isinstance(contents, bytes):
+        blob.upload_from_string(contents, content_type=mime_type)
     else:
         blob.upload_from_string(contents, content_type=mime_type)
-    return f"{cfg.GENMEDIA_BUCKET}/{destination_blob_name}"
+    return f"gs://{actual_bucket_name}/{destination_blob_name}"  # Return full gsutil URI

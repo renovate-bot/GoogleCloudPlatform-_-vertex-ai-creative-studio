@@ -17,7 +17,7 @@ from typing import Optional
 import mesop as me
 
 from config.default import WELCOME_PAGE, Default
-from pages.styles import (
+from components.styles import (
     _FANCY_TEXT_GRADIENT,
     DEFAULT_MENU_STYLE,
     SIDENAV_MAX_WIDTH,
