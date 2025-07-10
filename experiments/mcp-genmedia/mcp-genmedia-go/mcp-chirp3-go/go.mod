@@ -9,7 +9,7 @@ require (
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250709152012-0c973bc621bc
 	github.com/mark3labs/mcp-go v0.33.0
 	github.com/rs/cors v1.11.1
-	golang.org/x/text v0.26.0
+	golang.org/x/text v0.27.0
 
 )
 
@@ -63,7 +63,7 @@ require (
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/api v0.236.0 // indirect
