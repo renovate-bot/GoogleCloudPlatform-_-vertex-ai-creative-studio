@@ -50,6 +50,12 @@ def dialog(is_open: bool, dialog_style: Optional[me.Style] = None, key: Optional
     # Properties in dialog_style will override those in base_style.
     effective_style = base_style
     if dialog_style:
+        # INFO: The style merging logic below is verbose because Mesop me.Style objects
+        # are immutable, and there isn't a direct style.override() or style.extend() method.
+        # This approach manually checks each property. For simpler customization,
+        # it's recommended that the passed 'dialog_style' primarily focuses on overriding
+        # key layout properties like width, max_width, height, etc., rather than attempting
+        # to redefine all aspects of the style.
         # Create a new style object by "merging".
         # This isn't a deep merge, but for typical overrides like width/max_width it's fine.
         # For more complex merging, a helper function might be needed.

@@ -125,9 +125,9 @@ def on_click_upload(e: me.UploadEvent):
         destination_blob_name = store_to_gcs(
             "uploads", e.file.name, e.file.mime_type, contents
         )
-        state.last_reference_image_gcs = f"gs://{destination_blob_name}"
+        state.last_reference_image_gcs = f"gs://{config.GENMEDIA_BUCKET}/{destination_blob_name}"
         state.last_reference_image_uri = (
-            f"https://storage.mtls.cloud.google.com/{destination_blob_name}"
+            f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{destination_blob_name}"
         )
     else:
         state.reference_image_file = e.file
@@ -135,9 +135,9 @@ def on_click_upload(e: me.UploadEvent):
         destination_blob_name = store_to_gcs(
             "uploads", e.file.name, e.file.mime_type, contents
         )
-        state.reference_image_gcs = f"gs://{destination_blob_name}"
+        state.reference_image_gcs = f"gs://{config.GENMEDIA_BUCKET}/{destination_blob_name}"
         state.reference_image_uri = (
-            f"https://storage.mtls.cloud.google.com/{destination_blob_name}"
+            f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{destination_blob_name}"
         )
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."

@@ -18,8 +18,9 @@ import time
 from typing import Optional
 
 import mesop as me
+import datetime # Required for timestamp
 
-from common.metadata import add_music_metadata
+from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import (
@@ -414,9 +415,9 @@ def on_click_lyria(e: me.ClickEvent):
 
     try:
         destination_blob_path = generate_music_with_lyria(prompt_for_api)
-        gcs_uri_for_analysis_and_metadata = f"gs://{destination_blob_path}"
-        state.music_upload_uri = (
-            f"https://storage.mtls.cloud.google.com/{destination_blob_path}"
+        gcs_uri_for_analysis_and_metadata = destination_blob_path
+        state.music_upload_uri = destination_blob_path.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
         )
 
         print(f"Music generated: {state.music_upload_uri}")
@@ -478,17 +479,21 @@ def on_click_lyria(e: me.ClickEvent):
         print(
             f"Logging to metadata: API Prompt='{prompt_for_api}', Original='{logged_original_prompt}', Rewritten='{logged_rewritten_prompt}'"
         )
-        add_music_metadata(
-            model=cfg.LYRIA_MODEL_VERSION,
-            gcsuri=gcs_uri_for_analysis_and_metadata if generated_successfully else "",
+        item = MediaItem(
+            user_email=app_state.user_email,
+            timestamp=datetime.datetime.now(datetime.timezone.utc),
             prompt=prompt_for_api,
             original_prompt=logged_original_prompt,
-            rewritten_prompt=logged_rewritten_prompt,
+            rewritten_prompt=logged_rewritten_prompt if logged_rewritten_prompt else None,
+            model=cfg.LYRIA_MODEL_VERSION,
+            mime_type="audio/wav", # Lyria generates WAV
             generation_time=execution_time,
-            error_message=lyria_error_message_for_metadata,
-            audio_analysis=analysis_dict_for_metadata,
-            user_email=app_state.user_email,
+            error_message=lyria_error_message_for_metadata if lyria_error_message_for_metadata else None,
+            gcsuri=gcs_uri_for_analysis_and_metadata if generated_successfully and gcs_uri_for_analysis_and_metadata else None,
+            audio_analysis=analysis_dict_for_metadata if analysis_dict_for_metadata else None,
+            # duration might be available if analysis_dict_for_metadata contains it, or if Lyria API provides it
         )
+        add_media_item_to_firestore(item)
     except Exception as meta_err:
         print(f"CRITICAL: Failed to store metadata: {meta_err}")
 

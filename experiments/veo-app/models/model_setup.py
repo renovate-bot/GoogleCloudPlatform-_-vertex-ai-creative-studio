@@ -65,23 +65,21 @@ class GeminiModelSetup:
     def init(
         project_id: Optional[str] = None,
         location: Optional[str] = None,
-        model_id: Optional[str] = None,
+        # model_id is no longer used by init, client is configured generally
     ):
-        """Init method"""
+        """Init method for Gemini client. Model is specified at call time."""
         config = Default()
-        if not project_id:
-            project_id = config.PROJECT_ID
-        if not location:
-            location = config.LOCATION
-        if not model_id:
-            model_id = config.MODEL_ID
-        if None in [project_id, location, model_id]:
-            raise ValueError("All parameters must be set.")
-        print(f"initiating genai client with {project_id} in {location}")
+        effective_project_id = project_id if project_id else config.PROJECT_ID
+        effective_location = location if location else config.LOCATION
+
+        if not effective_project_id or not effective_location:
+            raise ValueError("Project ID and Location must be set for Gemini client.")
+
+        print(f"Initiating Gemini client for project {effective_project_id} in {effective_location}")
         client = genai.Client(
-            vertexai=config.INIT_VERTEX,
-            project=project_id,
-            location=location,
+            vertexai=config.INIT_VERTEX, # This assumes vertexai backend is desired.
+            project=effective_project_id,
+            location=effective_location,
         )
-        return client, model_id
+        return client
 

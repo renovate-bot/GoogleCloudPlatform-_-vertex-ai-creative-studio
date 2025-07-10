@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Main Mesop App"""
+"""Main Mesop App."""
 
 import inspect
 import os
 
 import mesop as me
-from fastapi import APIRouter, FastAPI, Request, Response
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -32,6 +32,7 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.veo import veo_content
+from pages.vto import vto
 from state.state import AppState
 
 
@@ -49,7 +50,9 @@ app.include_router(router)
 @app.middleware("http")
 async def add_custom_header(request: Request, call_next):
     response = await call_next(request)
-    response.headers["Content-Security-Policy"] = "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self';"
+    response.headers["Content-Security-Policy"] = (
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self';"
+    )
     return response
 
 
@@ -57,7 +60,7 @@ async def add_custom_header(request: Request, call_next):
 
 
 def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
-    """On load event"""
+    """On load event."""
     s = me.state(AppState)
     if hasattr(app.state, "user_info") and app.state.user_info:
         s.user_email = app.state.user_info.email
@@ -82,7 +85,7 @@ def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
     on_load=on_load,
 )
 def home_page():
-    """Main Page"""
+    """Main Page."""
     state = me.state(AppState)
     with page_scaffold():  # pylint: disable=not-context-manager
         home_page_content(state)
@@ -94,7 +97,7 @@ def home_page():
     on_load=on_load,
 )
 def veo_page():
-    """Veo Page"""
+    """Veo Page."""
     veo_content(me.state(AppState))
 
 
@@ -104,7 +107,7 @@ def veo_page():
     on_load=on_load,
 )
 def motion_portrait_page():
-    """Motion Portrait Page"""
+    """Motion Portrait Page."""
     motion_portraits_content(me.state(AppState))
 
 
@@ -114,7 +117,7 @@ def motion_portrait_page():
     on_load=on_load,
 )
 def lyria_page():
-    """Lyria Page"""
+    """Lyria Page."""
     lyria_content(me.state(AppState))
 
 
@@ -124,7 +127,7 @@ def lyria_page():
     on_load=on_load,
 )
 def config_page():
-    """Config Page"""
+    """Config Page."""
     config_page_contents(me.state(AppState))
 
 
@@ -140,7 +143,7 @@ def config_page():
     ),
 )
 def imagen_page():
-    """Imagen Page"""
+    """Imagen Page."""
     imagen_content(me.state(AppState))
 
 
@@ -150,7 +153,7 @@ def imagen_page():
     on_load=on_load,
 )
 def library_page():
-    """Library Page"""
+    """Library Page."""
     library_content(me.state(AppState))
 
 
@@ -160,8 +163,18 @@ def library_page():
     on_load=on_load,
 )
 def edit_images_page():
-    """Edit Images Page"""
+    """Edit Images Page."""
     edit_images_content(me.state(AppState))
+
+
+@me.page(
+    path="/vto",
+    title="GenMedia Creative Studio - Virtual Try-On",
+    on_load=on_load,
+)
+def vto_page():
+    """VTO Page"""
+    vto()
 
 
 @app.get("/__/auth/")
@@ -174,11 +187,8 @@ def auth_proxy(request: Request) -> RedirectResponse:
     return RedirectResponse(url="/home")
 
 
-
-
-
 @app.get("/")
-def home() -> RedirectResponse:
+def root_redirect() -> RedirectResponse:  # Renamed for clarity from home()
     return RedirectResponse(url="/__/auth/")
 
 
@@ -186,20 +196,15 @@ def home() -> RedirectResponse:
 app.mount(
     "/static",
     StaticFiles(
-        directory=os.path.join(
-            os.path.dirname(inspect.getfile(me)), "web", "src", "app", "prod", "web_package"
-        )
+        directory=os.path.join(os.path.dirname(inspect.getfile(me)), "web", "src", "app", "prod", "web_package")
     ),
     name="static",
 )
 
 app.mount(
     "/",
-    WSGIMiddleware(
-        me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")
-    ),
+    WSGIMiddleware(me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")),
 )
-
 
 
 if __name__ == "__main__":

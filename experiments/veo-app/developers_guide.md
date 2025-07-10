@@ -30,6 +30,32 @@ Here is a breakdown of the key directories and their roles:
     *   `navigation.json`: For configuring the application's side navigation.
     *   `rewriters.py`: For storing the prompt templates used by the AI models.
 
+## Firestore Setup
+
+This application uses Firestore to store metadata for the media library. Here's how to set it up:
+
+1.  **Create a Firestore Database:** In your Google Cloud Project, create a Firestore database in Native Mode.
+
+2.  **Create a Collection:** Create a collection named `genmedia`. This is the default collection name, but it can be overridden with the `GENMEDIA_COLLECTION_NAME` environment variable.
+
+3.  **Create an Index:** Create a single-field index for the `timestamp` field with the query scope set to "Collection" and the order set to "Descending". This will allow the library to sort media by the time it was created.
+
+4.  **Set Security Rules:** To protect your data, set the following security rules in the "Rules" tab of your Firestore database:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Match any document in the 'genmedia' collection
+    match /genmedia/{docId} {
+      // Allow read and write access only if the user is authenticated
+      // and their email matches the 'user_email' field in the document.
+      allow read, write: if request.auth != null && request.auth.token.email == resource.data.user_email;
+    }
+  }
+}
+```
+
 ## How to Add a New Page
 
 Adding a new page to the application is a straightforward process. Here are the steps:
@@ -115,3 +141,13 @@ If you want to control the visibility of your new page with an environment varia
 Now, the "My New Page" link will only appear in the navigation if the `MY_NEW_PAGE_ENABLED` environment variable is set to `True` in your `.env` file.
 
 That's it! When you restart the application, your new page will be available at the route you defined and will appear in the side navigation.
+
+## Key Takeaways from the VTO Page Development
+
+- **Displaying GCS Images:** The `me.image` component requires a public HTTPS URL, not a `gs://` URI. To display images from GCS, replace `gs://` with `https://storage.mtls.cloud.google.com/`.
+
+- **State Management:** Avoid using mutable default values (like `[]`) in your state classes. Instead, use `field(default_factory=list)` to ensure that a new list is created for each user session.
+
+- **UI Components:** If a component doesn't support a specific parameter (like `label` on `me.slider`), you can often achieve the same result by wrapping it in a `me.box` and using other components (like `me.text`) to create the desired layout.
+
+- **Generator Functions:** When working with generator functions (those that use `yield`), make sure to include a `yield` statement after updating the state to ensure that the UI is updated.

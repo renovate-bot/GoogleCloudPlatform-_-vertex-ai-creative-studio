@@ -13,8 +13,9 @@
 # limitations under the License.
 import mesop as me
 
-SIDENAV_MIN_WIDTH = 76
-SIDENAV_MAX_WIDTH = 168
+# SIDENAV_MIN_WIDTH, SIDENAV_MAX_WIDTH, MAIN_COLUMN_STYLE,
+# PAGE_BACKGROUND_STYLE, PAGE_BACKGROUND_PADDING_STYLE
+# have been moved to components/styles.py
 
 DEFAULT_MENU_STYLE = me.Style(align_content="left")
 
@@ -25,26 +26,7 @@ _FANCY_TEXT_GRADIENT = me.Style(
     ),
 )
 
-MAIN_COLUMN_STYLE = me.Style(
-    display="flex",
-    flex_direction="column",
-    height="100%",
-)
-
-PAGE_BACKGROUND_STYLE = me.Style(
-    background=me.theme_var("background"),
-    height="100%",
-    overflow_y="scroll",
-    margin=me.Margin(bottom=20),
-)
-
-PAGE_BACKGROUND_PADDING_STYLE = me.Style(
-    background=me.theme_var("background"),
-    padding=me.Padding(top=24, left=24, right=24, bottom=24),
-    display="flex",
-    flex_direction="column",
-    height="inherit",
-)
+# MAIN_COLUMN_STYLE, PAGE_BACKGROUND_STYLE, PAGE_BACKGROUND_PADDING_STYLE removed
 
 _BOX_STYLE_CENTER_DISTRIBUTED = me.Style(
     flex_basis="max(480px, calc(50% - 48px))",
