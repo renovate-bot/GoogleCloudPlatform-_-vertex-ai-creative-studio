@@ -27,7 +27,7 @@ def store_to_gcs(
     folder: str,
     file_name: str,
     mime_type: str,
-    contents: str,
+    contents: str | bytes,
     decode: bool = False,
     bucket_name: str | None = None,
 ):
@@ -41,10 +41,13 @@ def store_to_gcs(
     client = storage.Client(project=cfg.PROJECT_ID)
     bucket = client.get_bucket(actual_bucket_name)
     destination_blob_name = f"{folder}/{file_name}"
+    print(f"store_to_gcs: Destination {destination_blob_name}")
     blob = bucket.blob(destination_blob_name)
     if decode:
         contents_bytes = base64.b64decode(contents)
         blob.upload_from_string(contents_bytes, content_type=mime_type)
+    elif isinstance(contents, bytes):
+        blob.upload_from_string(contents, content_type=mime_type)
     else:
         blob.upload_from_string(contents, content_type=mime_type)
     return f"gs://{actual_bucket_name}/{destination_blob_name}"  # Return full gsutil URI
