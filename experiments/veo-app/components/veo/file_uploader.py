@@ -25,17 +25,30 @@ config = Default()
 def file_uploader():
     """File uploader for I2V and interpolation"""
     state = me.state(PageState)
-    me.button_toggle(
-        value=state.veo_mode,
-        buttons=[
+
+    # Define buttons based on the selected model
+    if state.veo_model.startswith("3.0"):
+        veo_mode_buttons = [
+            me.ButtonToggleButton(label="t2v", value="t2v"),
+            me.ButtonToggleButton(label="i2v", value="i2v"),
+        ]
+        # If interpolation was selected, default to t2v for Veo 3.0
+        # as it's not a supported mode.
+        if state.veo_mode == "interpolation":
+            state.veo_mode = "t2v"
+    else:
+        veo_mode_buttons = [
             me.ButtonToggleButton(label="t2v", value="t2v"),
             me.ButtonToggleButton(label="i2v", value="i2v"),
             me.ButtonToggleButton(label="interpolation", value="interpolation"),
-        ],
+        ]
+
+    me.button_toggle(
+        value=state.veo_mode,
+        buttons=veo_mode_buttons,
         multiple=False,
         hide_selection_indicator=True,
         on_change=on_selection_change_veo_mode,
-        disabled=True if state.veo_model == "3.0" else False,
     )
     with me.box(
         style=me.Style(
@@ -125,20 +138,16 @@ def on_click_upload(e: me.UploadEvent):
         destination_blob_name = store_to_gcs(
             "uploads", e.file.name, e.file.mime_type, contents
         )
-        state.last_reference_image_gcs = f"gs://{config.GENMEDIA_BUCKET}/{destination_blob_name}"
-        state.last_reference_image_uri = (
-            f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{destination_blob_name}"
-        )
+        state.last_reference_image_gcs = destination_blob_name
+        state.last_reference_image_uri = destination_blob_name.replace("gs://", f"https://storage.mtls.cloud.google.com/")
     else:
         state.reference_image_file = e.file
         contents = e.file.getvalue()
         destination_blob_name = store_to_gcs(
             "uploads", e.file.name, e.file.mime_type, contents
         )
-        state.reference_image_gcs = f"gs://{config.GENMEDIA_BUCKET}/{destination_blob_name}"
-        state.reference_image_uri = (
-            f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{destination_blob_name}"
-        )
+        state.reference_image_gcs = destination_blob_name
+        state.reference_image_uri = destination_blob_name.replace("gs://", f"https://storage.mtls.cloud.google.com/")
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
     )

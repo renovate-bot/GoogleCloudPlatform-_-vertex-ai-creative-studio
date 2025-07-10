@@ -58,6 +58,7 @@ class Default:
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
 
     VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-preview")
+    VEO_EXP_FAST_MODEL_ID: str = os.environ.get("VEO_EXP_FAST_MODEL_ID", "veo-3.0-fast-generate-preview")
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 
     # VTO

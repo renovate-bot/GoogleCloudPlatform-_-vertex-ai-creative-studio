@@ -497,12 +497,9 @@ def on_click_upload(e: me.UploadEvent):
     destination_blob_name = store_to_gcs(
         "uploads", e.file.name, e.file.mime_type, contents
     )
-    # gcs
-    state.reference_image_gcs = f"gs://{config.GENMEDIA_BUCKET}/{destination_blob_name}"
+    state.reference_image_gcs = destination_blob_name
     # url
-    state.reference_image_uri = (
-        f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{destination_blob_name}"
-    )
+    state.reference_image_uri = destination_blob_name.replace("gs://", f"https://storage.mtls.cloud.google.com/")
     # log
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
@@ -774,6 +771,7 @@ def generate_scene_direction(
             ],
         )
         response = client.models.generate_content(
+            model=config.MODEL_ID,
             contents=contents,
             config=GenerateContentConfig(),  # Simpler config
         )

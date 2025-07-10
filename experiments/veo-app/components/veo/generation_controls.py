@@ -31,7 +31,7 @@ def generation_controls():
             ],
             value=state.aspect_ratio,
             on_selection_change=on_selection_change_aspect,
-            disabled=True if state.veo_model == "3.0" else False,  # 3.0 only does 16:9
+            disabled=True if state.veo_model.startswith("3.0") else False,
         )
         me.select(
             label="length",
@@ -46,7 +46,7 @@ def generation_controls():
             value=f"{state.video_length}",
             on_selection_change=on_selection_change_length,
             disabled=True
-            if state.veo_model == "3.0"
+            if state.veo_model.startswith("3.0")
             else False,  # 3.0 only does 8 seconds
         )
         me.checkbox(
@@ -54,7 +54,7 @@ def generation_controls():
             checked=state.auto_enhance_prompt,
             on_change=on_change_auto_enhance_prompt,
             disabled=True
-            if state.veo_model == "3.0"
+            if state.veo_model.startswith("3.0")
             else False,  # 3.0 no enhance prompt
         )
         me.select(
@@ -62,6 +62,7 @@ def generation_controls():
             options=[
                 me.SelectOption(label="Veo 2.0", value="2.0"),
                 me.SelectOption(label="Veo 3.0", value="3.0"),
+                me.SelectOption(label="Veo 3.0 Fast", value="3.0-fast"),
             ],
             appearance="outline",
             style=me.Style(),
@@ -87,15 +88,15 @@ def on_selection_change_model(e: me.SelectSelectionChangeEvent):
     state = me.state(PageState)
     state.veo_model = e.value
     # reset to veo 3 settings
-    if state.veo_model == "3.0":
+    if state.veo_model.startswith("3.0"):
         # aspect = 16x9 only
         # length = 8 seconds
-        # t2v only
         # no auto enhance
         state.aspect_ratio = "16:9"
         state.video_length = 8
-        state.veo_mode = "t2v"
         state.auto_enhance_prompt = False
+        if state.veo_mode == "interpolation":
+            state.veo_mode = "t2v"
 
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):

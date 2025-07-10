@@ -37,6 +37,10 @@ t2v_video_model_exp = f"https://us-central1-aiplatform.googleapis.com/v1/project
 t2v_prediction_endpoint_exp = f"{t2v_video_model_exp}:predictLongRunning"
 fetch_endpoint_exp = f"{t2v_video_model_exp}:fetchPredictOperation"
 
+t2v_video_model_exp_fast = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{config.VEO_EXP_PROJECT_ID}/locations/us-central1/publishers/google/models/{config.VEO_EXP_FAST_MODEL_ID}"
+t2v_prediction_endpoint_exp_fast = f"{t2v_video_model_exp_fast}:predictLongRunning"
+fetch_endpoint_exp_fast = f"{t2v_video_model_exp_fast}:fetchPredictOperation"
+
 i2v_video_model = f"https://us-central1-aiplatform.googleapis.com/v1beta1/projects/{config.VEO_PROJECT_ID}/locations/us-central1/publishers/google/models/{config.VEO_EXP_MODEL_ID}"
 i2v_prediction_endpoint = f"{i2v_video_model}:predictLongRunning"
 
@@ -132,6 +136,7 @@ def generate_video(state):
                     f"I2V invoked. I see you have an image! {state.reference_image_gcs}"
                 )
                 op = image_to_video(
+                    state.veo_model,
                     state.veo_prompt_input,
                     state.reference_image_gcs,
                     120,
@@ -220,6 +225,9 @@ def text_to_video(
     if model == "3.0":
         prediction_endpoint = t2v_prediction_endpoint_exp
         fetch_ep = fetch_endpoint_exp
+    elif model == "3.0-fast":
+        prediction_endpoint = t2v_prediction_endpoint_exp_fast
+        fetch_ep = fetch_endpoint_exp_fast
 
     resp = send_request_to_google_api(prediction_endpoint, req)
     print(resp)
@@ -227,6 +235,7 @@ def text_to_video(
 
 
 def image_to_video(
+    model,
     prompt,
     image_gcs,
     seed,
@@ -248,9 +257,17 @@ def image_to_video(
         duration_seconds,
         None,
     )
-    resp = send_request_to_google_api(t2v_prediction_endpoint, req)
+    prediction_endpoint = t2v_prediction_endpoint
+    fetch_ep = fetch_endpoint
+    if model == "3.0":
+        prediction_endpoint = t2v_prediction_endpoint_exp
+        fetch_ep = fetch_endpoint_exp
+    elif model == "3.0-fast":
+        prediction_endpoint = t2v_prediction_endpoint_exp_fast
+        fetch_ep = fetch_endpoint_exp_fast
+    resp = send_request_to_google_api(prediction_endpoint, req)
     print(resp)
-    return fetch_operation(fetch_endpoint, resp["name"])
+    return fetch_operation(fetch_ep, resp["name"])
 
 
 def images_to_video(

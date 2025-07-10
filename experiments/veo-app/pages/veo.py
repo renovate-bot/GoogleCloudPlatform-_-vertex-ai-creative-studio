@@ -90,6 +90,10 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.is_loading = False
     state.auto_enhance_prompt = False
     state.veo_model = "2.0"
+    state.reference_image_gcs = None
+    state.reference_image_uri = None
+    state.last_reference_image_gcs = None
+    state.last_reference_image_uri = None
     yield
 
 
@@ -113,7 +117,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     app_state = me.state(AppState)
     state = me.state(PageState)
 
-    if not state.veo_prompt_input:
+    if state.veo_mode == "t2v" and not state.veo_prompt_input:
         state.error_message = "Prompt cannot be empty for VEO generation."
         state.show_error_dialog = True
         yield
@@ -133,7 +137,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         prompt=state.veo_prompt_input,
         original_prompt=(state.original_prompt if state.original_prompt else state.veo_prompt_input),
-        model=(config.VEO_EXP_MODEL_ID if state.veo_model == "3.0" else config.VEO_MODEL_ID),
+        model=(config.VEO_EXP_MODEL_ID if state.veo_model == "3.0" else config.VEO_EXP_FAST_MODEL_ID if state.veo_model == "3.0-fast" else config.VEO_MODEL_ID),
         mime_type="video/mp4",
         aspect=state.aspect_ratio,
         duration=float(state.video_length),
