@@ -69,7 +69,7 @@ def on_upload_person(e: me.UploadEvent):
     state = me.state(PageState)
     state.person_image_file = e.file
     gcs_url = store_to_gcs("vto_person_images", e.file.name, e.file.mime_type, e.file.getvalue())
-    state.person_image_gcs = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{gcs_url}"
+    state.person_image_gcs = gcs_url.replace("gs://", "https://storage.mtls.cloud.google.com/")
     yield
 
 def on_upload_product(e: me.UploadEvent):
@@ -77,7 +77,7 @@ def on_upload_product(e: me.UploadEvent):
     state = me.state(PageState)
     state.product_image_file = e.file
     gcs_url = store_to_gcs("vto_product_images", e.file.name, e.file.mime_type, e.file.getvalue())
-    state.product_image_gcs = f"https://storage.mtls.cloud.google.com/{config.GENMEDIA_BUCKET}/{gcs_url}"
+    state.product_image_gcs = gcs_url.replace("gs://", "https://storage.mtls.cloud.google.com/")
     yield
 
 def on_generate(e: me.ClickEvent):
