@@ -1,26 +1,49 @@
-# Independent tests
+# Running Tests
 
-Not python tests.
+This directory contains the automated tests for the GenMedia Creative Studio application.
 
+## Running All Tests
 
-AI Platform Predict Client (not working)
-```
-export OUTPUT_GCS=gs://genai-blackbelt-fishfooding-ghchinoy/videos
-PROJECT_ID=veo-testing python veo_simple.py
-```
+To run all tests, simply execute the following command from the root of the project:
 
-or
-
-HTTP example
-
-```
-PROJECT_ID=veo-testing python generate_video.py
+```bash
+pytest
 ```
 
+## Running Individual Tests
 
+To run a specific test file, simply pass the path to the file as an argument to the `pytest` command:
 
+```bash
+pytest test/test_portraits.py
 ```
-export BEARER=$(gcloud auth print-access-token)
-export OP=projects/veo-testing/locations/us-central1/publishers/google/models/veo-2.0-generate-exp/operations/4e76caef-ddf3-4bf6-b11d-257097771e5d
-curl -H "Authorization: Bearer ${BEARER}" -H "x-goog-user-project: veo-testing" "https://us-central1-aiplatform.googleapis.com/v1beta1/${OP}:fetchPredictOperation"
+
+This is useful for focusing on a specific area of the application during development and debugging.
+
+## Integration Tests
+
+This suite includes integration tests that make real API calls to Google Cloud services. These tests are marked with the `integration` marker and are skipped by default to keep the standard test run fast and free of external dependencies.
+
+To run only the integration tests, use the `-m` flag:
+
+```bash
+pytest -m integration -v -s
 ```
+
+**Note:** These tests require valid Google Cloud authentication and will incur costs for the API calls made.
+
+## Configuring the GCS Bucket
+
+Several tests require access to Google Cloud Storage (GCS) to load test assets (e.g., images for VTO and Motion Portraits). To ensure these tests can run in different environments, the GCS bucket is configurable.
+
+You can specify the GCS bucket to use with the `--gcs-bucket` command-line option. If you do not provide this option, the tests will default to using `gs://genai-blackbelt-fishfooding-assets`.
+
+### Example
+
+To run the tests using a custom GCS bucket, use the following command:
+
+```bash
+pytest --gcs-bucket gs://your-custom-test-bucket
+```
+
+This allows developers to use their own GCS resources without modifying the test code, making collaboration easier and more reliable.

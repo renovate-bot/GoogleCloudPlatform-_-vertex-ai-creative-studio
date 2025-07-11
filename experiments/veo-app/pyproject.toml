@@ -40,3 +40,8 @@ quote-style = "double"
 indent-style = "space"
 skip-string-normalization = false
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (slow, requires network)",
+]
