@@ -56,6 +56,52 @@ service cloud.firestore {
 }
 ```
 
+## Configuration-Driven Architecture
+
+A key architectural principle in this project is the use of centralized, type-safe configuration to drive the behavior of the UI and backend logic. This approach makes the application more robust, easier to maintain, and less prone to bugs.
+
+A prime example of this is the handling of the VEO and Imagen models. Instead of hardcoding model names, capabilities, and constraints throughout the application, we define them in a single location:
+
+-   **`config/veo_models.py`**
+-   **`config/imagen_models.py`**
+
+These files contain `dataclass` definitions that serve as a **single source of truth** for each model's properties, such as:
+
+-   Supported aspect ratios
+-   Valid video durations (min, max, and default)
+-   Maximum number of samples
+-   Supported generation modes (e.g., `t2v`, `i2v`, `interpolation`)
+
+The UI components then read from these configuration objects to dynamically build the user interface. For example, the model selection dropdowns, sliders, and feature toggles are all populated and configured based on the capabilities of the currently selected model. This means that to add a new model or update an existing one, you only need to modify the relevant configuration file, and the entire application will adapt automatically.
+
+This pattern is the preferred way to manage model capabilities and other complex configurations in this project.
+
+## Testing Strategy
+
+This project uses a combination of unit tests and integration tests to ensure code quality and reliability. The tests are located in the `test/` directory and are built using the `pytest` framework.
+
+### Unit Tests
+
+Unit tests are used to verify the internal logic of individual functions and components in isolation. They are fast, reliable, and do not depend on external services. We use mocking to simulate the behavior of external APIs, allowing us to test our code's logic without making real network calls.
+
+### Integration Tests
+
+Integration tests are used to verify the interaction between our application and live Google Cloud services. These tests make real API calls and are essential for confirming that our code can successfully communicate with the VEO and Imagen APIs.
+
+-   **Marker:** Integration tests are marked with the `@pytest.mark.integration` decorator.
+-   **Execution:** These tests are skipped by default. To run them, use the `-m` flag:
+    ```bash
+    pytest -m integration -v -s
+    ```
+
+### Component-Level Tests
+
+For testing the data flow within our components (e.g., from a successful API call to the Firestore logging), we use component-level integration tests. These tests mock the external API calls but let the internal data handling and state management logic run as it normally would. This is a powerful way to catch bugs in our data mapping and event handling logic.
+
+### Test Configuration
+
+Tests that require access to Google Cloud Storage can be configured to use a custom GCS bucket via the `--gcs-bucket` command-line option. See the `test/README.md` file for more details.
+
 ## How to Add a New Page
 
 Adding a new page to the application is a straightforward process. Here are the steps:

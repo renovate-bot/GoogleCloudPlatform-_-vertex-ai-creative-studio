@@ -2,17 +2,7 @@ from dataclasses import dataclass, field
 
 import mesop as me
 
-from config.default import (
-    Default,
-    ImageModel,
-)
-
-app_config_instance = Default()
-
-def _get_default_image_models() -> list[ImageModel]:
-    """Helper function for PageState default_factory."""
-    # Ensure app_config_instance.display_image_models provides a list of ImageModel compatible dicts or objects
-    return app_config_instance.display_image_models.copy()
+from config.imagen_models import IMAGEN_MODELS
 
 
 @dataclass
@@ -21,10 +11,9 @@ class PageState:
     """Local Page State"""
 
     # Image generation model selection and output
-    image_models: list[ImageModel] = field(default_factory=_get_default_image_models)
     image_output: list[str] = field(default_factory=list)
     image_commentary: str = ""
-    image_model_name: str = app_config_instance.MODEL_IMAGEN4_FAST
+    image_model_name: str = "imagen-4.0-generate-preview-06-06"
 
     # General UI state
     is_loading: bool = False

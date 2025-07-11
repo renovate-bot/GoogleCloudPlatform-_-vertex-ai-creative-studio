@@ -17,31 +17,25 @@ import mesop as me
 from state.veo_state import PageState
 from common.storage import store_to_gcs
 from config.default import Default
+from config.veo_models import get_veo_model_config
 
 config = Default()
 
 
 @me.component
 def file_uploader():
-    """File uploader for I2V and interpolation"""
+    """File uploader for I2V and interpolation, driven by model configuration."""
     state = me.state(PageState)
+    selected_config = get_veo_model_config(state.veo_model)
 
-    # Define buttons based on the selected model
-    if state.veo_model.startswith("3.0"):
-        veo_mode_buttons = [
-            me.ButtonToggleButton(label="t2v", value="t2v"),
-            me.ButtonToggleButton(label="i2v", value="i2v"),
-        ]
-        # If interpolation was selected, default to t2v for Veo 3.0
-        # as it's not a supported mode.
-        if state.veo_mode == "interpolation":
-            state.veo_mode = "t2v"
-    else:
-        veo_mode_buttons = [
-            me.ButtonToggleButton(label="t2v", value="t2v"),
-            me.ButtonToggleButton(label="i2v", value="i2v"),
-            me.ButtonToggleButton(label="interpolation", value="interpolation"),
-        ]
+    if not selected_config:
+        return
+
+    # Dynamically create the buttons based on the supported modes for the selected model.
+    veo_mode_buttons = [
+        me.ButtonToggleButton(label=mode, value=mode)
+        for mode in selected_config.supported_modes
+    ]
 
     me.button_toggle(
         value=state.veo_mode,
