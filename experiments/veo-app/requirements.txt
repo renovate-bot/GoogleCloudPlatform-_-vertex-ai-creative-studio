@@ -107,7 +107,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.20.0
+google-genai==1.25.0
     # via
     #   google-cloud-aiplatform
     #   veo-app
@@ -294,7 +294,7 @@ requests==2.32.4
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.12.2
+ruff==0.12.3
     # via veo-app
 shapely==2.1.1
     # via google-cloud-aiplatform
