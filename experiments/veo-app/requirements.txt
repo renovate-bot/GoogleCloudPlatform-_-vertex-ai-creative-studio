@@ -52,7 +52,7 @@ docstring-parser==0.16
     # via google-cloud-aiplatform
 executing==2.2.0
     # via stack-data
-fastapi==0.116.0
+fastapi==0.116.1
     # via veo-app
 firebase-admin==6.9.0
     # via veo-app
