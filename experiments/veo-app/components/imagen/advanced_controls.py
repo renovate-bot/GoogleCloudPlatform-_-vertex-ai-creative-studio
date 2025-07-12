@@ -15,12 +15,18 @@
 import mesop as me
 
 from state.imagen_state import PageState
+from config.imagen_models import get_imagen_model_config
 
 
 @me.component
 def advanced_controls():
-    """Advanced image generation controls"""
+    """Advanced image generation controls, driven by the selected model's configuration."""
     state = me.state(PageState)
+    selected_config = get_imagen_model_config(state.image_model_name)
+
+    if not selected_config:
+        return
+
     with me.box(style=_BOX_STYLE):
         with me.box(
             style=me.Style(
@@ -63,10 +69,8 @@ def advanced_controls():
                     label="Number of images",
                     value=str(state.imagen_image_count),
                     options=[
-                        me.SelectOption(label="1", value="1"),
-                        me.SelectOption(label="2", value="2"),
-                        me.SelectOption(label="3", value="3"),
-                        me.SelectOption(label="4", value="4"),
+                        me.SelectOption(label=str(i), value=str(i))
+                        for i in range(1, selected_config.max_samples + 1)
                     ],
                     on_selection_change=on_select_image_count,
                     style=me.Style(min_width="155px", flex_grow=1),

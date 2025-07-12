@@ -15,54 +15,61 @@
 import mesop as me
 
 from state.veo_state import PageState
+from config.veo_models import VEO_MODELS, get_veo_model_config
 
 
 @me.component
 def generation_controls():
-    """Video generation controls"""
+    """Video generation controls, driven by the selected model's configuration."""
     state = me.state(PageState)
+    selected_config = get_veo_model_config(state.veo_model)
+
+    if not selected_config:
+        me.text("Error: No model configuration found.")
+        return
+
     with me.box(style=me.Style(display="flex", flex_basis="row", gap=5)):
+        # Aspect Ratio Selector
         me.select(
             label="aspect",
             appearance="outline",
             options=[
-                me.SelectOption(label="16:9 widescreen", value="16:9"),
-                me.SelectOption(label="9:16 portrait", value="9:16"),
+                me.SelectOption(label=f"{ratio} {'widescreen' if ratio == '16:9' else 'portrait'}", value=ratio)
+                for ratio in selected_config.supported_aspect_ratios
             ],
             value=state.aspect_ratio,
             on_selection_change=on_selection_change_aspect,
-            disabled=True if state.veo_model.startswith("3.0") else False,
+            disabled=len(selected_config.supported_aspect_ratios) <= 1,
         )
+
+        # Video Length Selector
         me.select(
             label="length",
             options=[
-                me.SelectOption(label="5 seconds", value="5"),
-                me.SelectOption(label="6 seconds", value="6"),
-                me.SelectOption(label="7 seconds", value="7"),
-                me.SelectOption(label="8 seconds", value="8"),
+                me.SelectOption(label=f"{i} seconds", value=str(i))
+                for i in range(selected_config.min_duration, selected_config.max_duration + 1)
             ],
             appearance="outline",
             style=me.Style(),
-            value=f"{state.video_length}",
+            value=str(state.video_length),
             on_selection_change=on_selection_change_length,
-            disabled=True
-            if state.veo_model.startswith("3.0")
-            else False,  # 3.0 only does 8 seconds
+            disabled=selected_config.min_duration == selected_config.max_duration,
         )
+
+        # Prompt Enhancement Checkbox
         me.checkbox(
             label="auto-enhance prompt",
             checked=state.auto_enhance_prompt,
             on_change=on_change_auto_enhance_prompt,
-            disabled=True
-            if state.veo_model.startswith("3.0")
-            else False,  # 3.0 no enhance prompt
+            disabled=not selected_config.supports_prompt_enhancement,
         )
+
+        # Model Selector
         me.select(
             label="model",
             options=[
-                me.SelectOption(label="Veo 2.0", value="2.0"),
-                me.SelectOption(label="Veo 3.0", value="3.0"),
-                me.SelectOption(label="Veo 3.0 Fast", value="3.0-fast"),
+                me.SelectOption(label=model.display_name, value=model.version_id)
+                for model in VEO_MODELS
             ],
             appearance="outline",
             style=me.Style(),
@@ -84,19 +91,20 @@ def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
 
 
 def on_selection_change_model(e: me.SelectSelectionChangeEvent):
-    """Adjust model based on user event."""
+    """Adjust model based on user event and apply its constraints."""
     state = me.state(PageState)
     state.veo_model = e.value
-    # reset to veo 3 settings
-    if state.veo_model.startswith("3.0"):
-        # aspect = 16x9 only
-        # length = 8 seconds
-        # no auto enhance
-        state.aspect_ratio = "16:9"
-        state.video_length = 8
-        state.auto_enhance_prompt = False
-        if state.veo_mode == "interpolation":
-            state.veo_mode = "t2v"
+    
+    new_config = get_veo_model_config(e.value)
+    if new_config:
+        # Apply the default settings and constraints from the new model's config
+        state.aspect_ratio = new_config.supported_aspect_ratios[0]
+        state.video_length = new_config.default_duration
+        state.auto_enhance_prompt = new_config.supports_prompt_enhancement
+        
+        # If the current mode is no longer supported, default to the first supported mode.
+        if state.veo_mode not in new_config.supported_modes:
+            state.veo_mode = new_config.supported_modes[0]
 
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):

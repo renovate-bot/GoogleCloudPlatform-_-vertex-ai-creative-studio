@@ -21,6 +21,7 @@ import datetime # Required for timestamp
 
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
 from config.default import Default
+from config.imagen_models import IMAGEN_MODELS, get_imagen_model_config
 from models.gemini import generate_compliment, rewrite_prompt_with_gemini
 from models.image_models import generate_images_from_prompt
 from state.state import AppState
@@ -32,21 +33,22 @@ app_config_instance = Default()
 
 @me.component
 def generation_controls():
-    """Image generation controls"""
+    """Image generation controls, driven by the selected model's configuration."""
     state = me.state(PageState)
+    selected_config = get_imagen_model_config(state.image_model_name)
+
+    if not selected_config:
+        me.text("Error: No model configuration found.")
+        return
+
     with me.box(style=_BOX_STYLE):
         with me.box(style=me.Style(display="flex", justify_content="end")):
-            image_model_options = []
-            for c in state.image_models:
-                image_model_options.append(
-                    me.SelectOption(
-                        label=c.get("display_name", c.get("display")),
-                        value=c.get("model_name"),
-                    )
-                )
             me.select(
                 label="Imagen version",
-                options=image_model_options,
+                options=[
+                    me.SelectOption(label=model.display_name, value=model.model_name)
+                    for model in IMAGEN_MODELS
+                ],
                 on_selection_change=on_selection_change_image_model,
                 value=state.image_model_name,
             )
@@ -122,6 +124,11 @@ def on_selection_change_image_model(e: me.SelectSelectionChangeEvent):
     """Handles selection change for the image model."""
     state = me.state(PageState)
     state.image_model_name = e.value
+    
+    new_config = get_imagen_model_config(e.value)
+    if new_config:
+        state.image_aspect_ratio = new_config.supported_aspect_ratios[0]
+        state.imagen_image_count = new_config.default_samples
 
 
 def on_click_generate_images(e: me.ClickEvent):
@@ -155,26 +162,12 @@ def on_click_generate_images(e: me.ClickEvent):
     start_time = time.time()
 
     try:
-        # Phase 1: Generate Images
-        print(f"Starting image generation for prompt: '{current_prompt}'")
-        modifiers = []
-        if hasattr(app_config_instance, "image_modifiers"):
-            for mod_key_suffix in app_config_instance.image_modifiers:
-                state_attr_name = f"image_{mod_key_suffix}"
-                if mod_key_suffix != "aspect_ratio":  # Aspect ratio passed separately
-                    modifier_value = getattr(state, state_attr_name, "None")
-                    if (
-                        modifier_value and modifier_value != "None"
-                    ):  # Ensure not None before appending
-                        modifiers.append(modifier_value)
-        prompt_modifiers_segment = ", ".join(modifiers)
-
         new_image_uris = generate_images_from_prompt(
             input_txt=current_prompt,
             current_model_name=state.image_model_name,
             image_count=int(state.imagen_image_count),
             negative_prompt=state.image_negative_prompt_input,
-            prompt_modifiers_segment=prompt_modifiers_segment,
+            prompt_modifiers_segment="",  # This is now handled by the prompt itself
             aspect_ratio=state.image_aspect_ratio,
         )
         state.image_output = new_image_uris
@@ -223,7 +216,7 @@ def on_click_generate_images(e: me.ClickEvent):
 
 
         item = MediaItem(
-            user_email=state.user_email, # Assuming PageState has user_email from AppState
+            user_email=app_state.user_email or "local_user@example.com",
             timestamp=datetime.datetime.now(datetime.timezone.utc),
             prompt=final_prompt_for_generation, # The prompt actually used
             original_prompt=media_original_prompt,
@@ -234,7 +227,6 @@ def on_click_generate_images(e: me.ClickEvent):
             error_message="", # Or actual error if one occurred before this block
             gcs_uris=state.image_output,
             aspect=state.image_aspect_ratio,
-            modifiers=modifiers,
             negative_prompt=state.image_negative_prompt_input if state.image_negative_prompt_input else None,
             num_images=int(state.imagen_image_count),
             seed=int(state.imagen_seed),
@@ -246,7 +238,7 @@ def on_click_generate_images(e: me.ClickEvent):
         # If error happens here, we should log it to MediaItem as well
         state.error_message = f"An unexpected error occurred: {str(ex)}"
         item_with_error = MediaItem(
-            user_email=state.user_email,
+            user_email=app_state.user_email or "local_user@example.com",
             timestamp=datetime.datetime.now(datetime.timezone.utc),
             prompt=current_prompt, # Or state.image_prompt_input
             model=state.image_model_name,

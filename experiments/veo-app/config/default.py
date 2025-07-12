@@ -95,49 +95,7 @@ class Default:
         ]
     )
     
-    display_image_models: list[ImageModel] = field(
-        default_factory=lambda: Default._get_display_image_models()
-    )
-
-    @staticmethod
-    def _get_display_image_models() -> list[ImageModel]:
-        imagen_models_override_str = os.environ.get("IMAGEN_MODELS")
-        if imagen_models_override_str:
-            try:
-                parsed_models = json.loads(imagen_models_override_str)
-                if isinstance(parsed_models, list) and all(
-                    isinstance(item, dict) and "display" in item and "model_name" in item
-                    for item in parsed_models
-                ):
-                    print(f"Using IMAGEN_MODELS override from environment: {parsed_models}")
-                    return parsed_models # type: ignore
-                else:
-                    print(
-                        "Warning: IMAGEN_MODELS environment variable has invalid format. "
-                        "Expected a JSON list of {'display': str, 'model_name': str}. "
-                        "Falling back to default models."
-                    )
-            except json.JSONDecodeError:
-                print(
-                    "Warning: IMAGEN_MODELS environment variable is not valid JSON. "
-                    "Falling back to default models."
-                )
-            except Exception as e:
-                print(
-                    f"Warning: Error processing IMAGEN_MODELS environment variable: {e}. "
-                    "Falling back to default models."
-                )
-        
-        # Default models if override is not present or invalid
-        return [
-            {"display": "Imagen 3 Fast", "model_name": Default.MODEL_IMAGEN_FAST},
-            {"display": "Imagen 3", "model_name": Default.MODEL_IMAGEN},
-            {"display": "Imagen 4 Fast (preview)", "model_name": Default.MODEL_IMAGEN4_FAST},
-            {"display": "Imagen 4 (preview)", "model_name": Default.MODEL_IMAGEN4},
-            {"display": "Imagen 4 Ultra (preview)", "model_name": Default.MODEL_IMAGEN4_ULTRA},
-            # Example: to include Nano by default if not overridden:
-            # {"display": "Imagen Nano", "model_name": Default.MODEL_IMAGEN_NANO},
-        ]
+    
 
 
 def load_welcome_page_config():
