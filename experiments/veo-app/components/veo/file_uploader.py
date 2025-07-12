@@ -15,15 +15,10 @@
 import mesop as me
 
 from state.veo_state import PageState
-from common.storage import store_to_gcs
-from config.default import Default
 from config.veo_models import get_veo_model_config
 
-config = Default()
-
-
 @me.component
-def file_uploader():
+def file_uploader(on_upload_image, on_upload_last_image):
     """File uploader for I2V and interpolation, driven by model configuration."""
     state = me.state(PageState)
     selected_config = get_veo_model_config(state.veo_model)
@@ -56,13 +51,13 @@ def file_uploader():
         if state.veo_mode == "t2v":
             me.image(src=None, style=me.Style(height=250))
         elif state.veo_mode == "i2v":
-            _image_uploader(last_image=False)
+            _image_uploader(last_image=False, on_upload_image=on_upload_image, on_upload_last_image=on_upload_last_image)
         elif state.veo_mode == "interpolation":
-            _image_uploader(last_image=True)
+            _image_uploader(last_image=True, on_upload_image=on_upload_image, on_upload_last_image=on_upload_last_image)
 
 
 @me.component
-def _image_uploader(last_image: bool):
+def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image):
     state = me.state(PageState)
     if state.reference_image_uri:
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
@@ -90,7 +85,7 @@ def _image_uploader(last_image: bool):
             me.uploader(
                 label="Upload first",
                 accepted_file_types=["image/jpeg", "image/png"],
-                on_upload=on_click_upload,
+                on_upload=on_upload_image,
                 type="raised",
                 color="primary",
                 style=me.Style(font_weight="bold"),
@@ -99,7 +94,7 @@ def _image_uploader(last_image: bool):
                 label="Upload last",
                 key="last",
                 accepted_file_types=["image/jpeg", "image/png"],
-                on_upload=on_click_upload,
+                on_upload=on_upload_last_image,
                 type="raised",
                 color="primary",
                 style=me.Style(font_weight="bold"),
@@ -108,7 +103,7 @@ def _image_uploader(last_image: bool):
             me.uploader(
                 label="Upload",
                 accepted_file_types=["image/jpeg", "image/png"],
-                on_upload=on_click_upload,
+                on_upload=on_upload_image,
                 type="raised",
                 color="primary",
                 style=me.Style(font_weight="bold"),
@@ -120,31 +115,6 @@ def on_selection_change_veo_mode(e: me.ButtonToggleChangeEvent):
     """toggle veo mode"""
     state = me.state(PageState)
     state.veo_mode = e.value
-
-
-def on_click_upload(e: me.UploadEvent):
-    """Upload image to GCS"""
-    state = me.state(PageState)
-    if e.key == "last":
-        print("Interpolation: adding last image")
-        state.last_reference_image_file = e.file
-        contents = e.file.getvalue()
-        destination_blob_name = store_to_gcs(
-            "uploads", e.file.name, e.file.mime_type, contents
-        )
-        state.last_reference_image_gcs = destination_blob_name
-        state.last_reference_image_uri = destination_blob_name.replace("gs://", f"https://storage.mtls.cloud.google.com/")
-    else:
-        state.reference_image_file = e.file
-        contents = e.file.getvalue()
-        destination_blob_name = store_to_gcs(
-            "uploads", e.file.name, e.file.mime_type, contents
-        )
-        state.reference_image_gcs = destination_blob_name
-        state.reference_image_uri = destination_blob_name.replace("gs://", f"https://storage.mtls.cloud.google.com/")
-    print(
-        f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
-    )
 
 
 def on_click_clear_reference_image(e: me.ClickEvent):

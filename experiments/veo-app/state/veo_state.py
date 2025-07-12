@@ -23,12 +23,14 @@ class PageState:
     reference_image_file_key: int = 0
     reference_image_gcs: str
     reference_image_uri: str
+    reference_image_mime_type: str
 
     # Interpolation last reference image
     last_reference_image_file: me.UploadedFile = None
     last_reference_image_file_key: int = 0
     last_reference_image_gcs: str
     last_reference_image_uri: str
+    last_reference_image_mime_type: str
 
     # extend
     video_extend_length: int = 0  # 4-7

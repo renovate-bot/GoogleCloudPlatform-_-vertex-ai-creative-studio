@@ -180,8 +180,6 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 - **GCS URI Construction:** When working with GCS URIs, be mindful of duplicate prefixes. The `store_to_gcs` function returns a full `gs://` URI, so do not prepend the prefix again in the calling function. This applies to both creating display URLs (e.g., `https://storage.mtls.cloud.google.com/`) and passing URIs to the API.
 
 
-
-
 ### 1. Initial Scaffolding and Page Creation
 
 - **File Structure:** Following the existing architecture, we created three new files:
@@ -215,6 +213,59 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 - **Mutable Default Values:** We encountered a `TypeError` because we were using a mutable default value (`[]`) for the `result_images` list in our state class. We resolved this by using `field(default_factory=list)` instead.
 - **Slider Component:** We encountered an `Unexpected keyword argument` error when using the `label` parameter on the `me.slider` component. We resolved this by wrapping the slider in a `me.box` and using a `me.text` component as the label.
 - **Generator Functions:** We learned that generator functions (those that use `yield`) must have a `yield` statement after updating the state to ensure that the UI is updated.
+
+## Veo Model Interaction: Lessons Learned
+
+- **SDK Type Specificity:** The `google-genai` SDK requires different `types` for different kinds of image-based video generation. Using the wrong type will result in a Pydantic validation error. The key is to be precise:
+    - For a standard **Image-to-Video** call (one input image), the image must be wrapped in `types.Image(gcs_uri=..., mime_type=...)`.
+    - For **Interpolation** (a first and last frame), both images must also be wrapped in `types.Image(gcs_uri=..., mime_type=...)`. The first frame is passed as the main `image` parameter, and the last frame is passed as the `last_frame` parameter inside the `GenerateVideosConfig`.
+
+- **Configuration-Driven Lookups:** When a feature (like the Motion Portraits page) needs to get configuration for a model, it's crucial to use the correct key. Our `config/veo_models.py` uses a short version string (e.g., `"2.0"`) as the key, not the full model ID (e.g., `"veo-2.0-generate-001"`). Passing the wrong identifier will lead to an "Unsupported model" error. Always ensure the UI state provides the simple version string for lookups.
+
+- **Isolating and Removing Legacy Code:** A major source of our errors was the presence of an old, non-SDK-based function (`generate_video_aiplatform`) that was still being called by one of the pages. This highlights the importance of completely removing obsolete code after a refactor to prevent it from being used accidentally. A single, unified function (`generate_video`) that handles all generation paths is much easier to maintain and debug.
+
+- **Enhanced Error Logging:** When polling a long-running operation from the `google-genai` SDK, the `operation.error` attribute contains a detailed error message if the operation fails. It is critical to log this specific message in the exception handler. Relying on a generic error message hides the root cause and makes debugging significantly harder.
+
+
+# More Lessons Learned
+
+Fact: When working with the Mesop framework, access shared or global state within an event handler by calling app_state = me.state(AppState) inside that handler. Do not pass state objects directly as parameters to  components, as this will cause a Pydantic validation error.
+
+1. Prioritize Compatibility Over Premature Optimization: My first error was introducing an ImportError with CountAggregation. While the intention was to make counting faster, it relied on a newer version of the  google-cloud-firestore library than was installed in the project. The lesson is to always work within the  constraints of the project's existing dependencies. A slightly less performant but working solution is always  better than a broken one.
+
+
+2. Refactoring Requires Thoroughness (Read and Write): When we changed the MediaItem dataclass (renaming  enhanced_prompt to enhanced_prompt_used), I initially only fixed where the data was written. This led to the AttributeError because I didn't fix all the places where the data was read (like the library page). The lesson is that refactoring a data structure requires a global search to update every single point of access.
+
+
+3. Understand Framework-Specific State Management: This was the most important lesson. My final two errors were  caused by misunderstanding Mesop's state management pattern.
+    * The Error: I tried to "push" the global AppState into a component as a parameter  (generation_controls(app_state=...)).
+    * The Mesop Way: Components should be self-contained. The correct pattern is for an event handler (like  on_click_generate_images) to "pull" the state it needs when it's triggered, by calling me.state(AppState)  within the function itself.
+
+
+# Refactoring Checklist
+
+When refactoring code, follow these steps to avoid common errors:
+
+1.  **Find all uses of the code being changed.** Use `search_file_content` to find all instances of the code you are changing. This will help you to avoid missing any instances of the code that need to be updated.
+2.  **Pay close attention to data models.** When changing a data model, make sure to update all code that uses that data model. This includes code that reads from and writes to the data model.
+3.  **Run tests after making changes.** This will help you to catch any errors that you may have introduced.
+
+# Data Consistency
+
+When working with Firestore, it is important to keep the data in Firestore consistent with the data models in the code. This can be done by:
+
+*   **Using a single source of truth for your data models.** This will help to ensure that all code is using the same data models.
+*   **Using a data migration tool to update your data in Firestore when you change your data models.** This will help to ensure that your data in Firestore is always consistent with your data models.
+
+# Working with GCS URIs
+
+When working with GCS URIs, it is important to construct them correctly. The correct way to construct a GCS URI is to use the following format:
+
+```
+gs://<bucket-name>/<object-name>
+```
+
+When constructing a GCS URI, make sure to not include the `gs://` prefix more than once.
 
 
 # More Lessons Learned
