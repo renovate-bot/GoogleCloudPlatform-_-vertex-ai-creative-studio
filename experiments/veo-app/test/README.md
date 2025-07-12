@@ -47,3 +47,12 @@ pytest --gcs-bucket gs://your-custom-test-bucket
 ```
 
 This allows developers to use their own GCS resources without modifying the test code, making collaboration easier and more reliable.
+
+## Standalone Tests
+
+In addition to the `pytest` suite, this directory also contains standalone scripts for direct, simple testing of the VEO models:
+
+-   `veo2_simple.py`: A script for testing the core functionalities of the Veo 2 model.
+-   `veo3_simple.py`: A script for testing the core functionalities of the Veo 3 model.
+
+These scripts can be run directly from the command line and are useful for quick, ad-hoc testing of the models without the overhead of the full test suite.

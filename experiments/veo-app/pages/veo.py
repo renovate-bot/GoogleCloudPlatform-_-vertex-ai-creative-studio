@@ -19,6 +19,7 @@ import mesop as me
 
 from common.error_handling import GenerationError
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
+from common.storage import store_to_gcs
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
@@ -60,7 +61,7 @@ def veo_content(app_state: me.state):
                     subtle_veo_input()
                     generation_controls()
 
-                file_uploader()
+                file_uploader(on_upload_image, on_upload_last_image)
 
             me.box(style=me.Style(height=50))
 
@@ -256,4 +257,63 @@ def on_close_error_dialog(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Handler to close the error dialog."""
     state = me.state(PageState)
     state.show_error_dialog = False
+    yield
+
+def on_upload_image(e: me.UploadEvent):
+    """Upload image to GCS and update state."""
+    state = me.state(PageState)
+    try:
+        # Store the uploaded file to GCS
+        gcs_path = store_to_gcs(
+            "uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+        )
+        # Update the state with the new image details
+        state.reference_image_gcs = gcs_path
+        state.reference_image_uri = gcs_path.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
+        )
+        state.reference_image_mime_type = e.file.mime_type
+        print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
+    except Exception as ex:
+        state.error_message = f"Failed to upload image: {ex}"
+        state.show_error_dialog = True
+    yield
+
+def on_upload_last_image(e: me.UploadEvent):
+    """Upload last image to GCS and update state."""
+    state = me.state(PageState)
+    try:
+        # Store the uploaded file to GCS
+        gcs_path = store_to_gcs(
+            "uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+        )
+        # Update the state with the new image details
+        state.last_reference_image_gcs = gcs_path
+        state.last_reference_image_uri = gcs_path.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
+        )
+        state.last_reference_image_mime_type = e.file.mime_type
+    except Exception as ex:
+        state.error_message = f"Failed to upload image: {ex}"
+        state.show_error_dialog = True
+    yield
+
+def on_upload_image(e: me.UploadEvent):
+    """Upload image to GCS and update state."""
+    state = me.state(PageState)
+    try:
+        # Store the uploaded file to GCS
+        gcs_path = store_to_gcs(
+            "uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+        )
+        # Update the state with the new image details
+        state.reference_image_gcs = gcs_path
+        state.reference_image_uri = gcs_path.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
+        )
+        state.reference_image_mime_type = e.file.mime_type
+        print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
+    except Exception as ex:
+        state.error_message = f"Failed to upload image: {ex}"
+        state.show_error_dialog = True
     yield

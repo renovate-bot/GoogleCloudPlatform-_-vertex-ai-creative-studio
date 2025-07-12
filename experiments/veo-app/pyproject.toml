@@ -38,7 +38,7 @@ ignore = ["E501"] # Ignore line too long for now, can be addressed later
 # Use black-compatible formatting
 quote-style = "double"
 indent-style = "space"
-skip-string-normalization = false
+#skip-string-normalization = false
 line-ending = "auto"
 
 [tool.pytest.ini_options]
