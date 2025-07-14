@@ -1,3 +1,9 @@
+"""
+This module is responsible for selecting the best generated image.
+
+It compares the generated images with the original input images to ensure
+character consistency and selects the one with the highest likeness.
+"""
 from google.genai import Client, types
 from pydantic import BaseModel
 from typing import List
@@ -12,7 +18,11 @@ class BestImage(BaseModel):
     reasoning: str
 
 def select_best_image(real_image_paths: List[str], generated_image_paths: List[str]) -> BestImage:
-    """Selects the best generated image based on similarity to the real images."""
+    """Selects the best generated image by comparing it against a set of real
+    images. This function uses a multimodal model to analyze the images and
+    determine which generated image has the highest character likeness to the
+    person in the real photos.
+    """
     model = "gemini-2.5-pro"
     config = types.GenerateContentConfig(
         thinking_config=types.ThinkingConfig(thinking_budget=-1),

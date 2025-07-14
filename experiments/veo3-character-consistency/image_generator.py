@@ -17,8 +17,9 @@ edit_model = config.IMAGEN_MODEL_NAME
 
 def _get_description_for_image(image_path: str) -> str:
     """
-    Analyzes a single image to extract a facial profile and then generates
-    a natural language description from that profile.
+    Analyzes a single image to extract a detailed facial profile and then
+    generates a natural language description from that profile. This is the
+    first step in creating a consistent character representation.
     """
     model_name = "gemini-2.5-pro"
     
@@ -56,7 +57,9 @@ def _get_description_for_image(image_path: str) -> str:
 
 def _generate_final_scene_prompt(base_description: str, user_prompt: str) -> GeneratedPrompts:
     """
-    Generates a photorealistic prompt to place a described person in a novel scene.
+    Generates a detailed, photorealistic prompt to place a described person
+    in a novel scene. It combines the character's description with the user's
+    desired scenario to create a prompt suitable for Imagen.
     """
     model_name = "gemini-2.5-pro"
     config = GenerateContentConfig(
@@ -90,6 +93,12 @@ def _generate_final_scene_prompt(base_description: str, user_prompt: str) -> Gen
     return GeneratedPrompts.model_validate_json(response.text)
 
 def generate_images_and_select_best(image_paths: List[str], prompt: str) -> tuple[str, str, List[str]]:
+    """
+    The core function of the image generation step. It takes the reference
+    images and a scenario, generates a new set of images, selects the best one
+    for character consistency, and then out-paints it to create the final
+    scene for video generation.
+    """
     output_dir = config.OUTPUT_DIR
     os.makedirs(output_dir, exist_ok=True)
 

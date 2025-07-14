@@ -87,14 +87,10 @@ def pad_image_and_mask(
 
 def outpaint_image(image_path: str, prompt: str) -> str:
     """
-    Performs outpainting on an image to a 16:9 aspect ratio.
-
-    Args:
-        image_path: The path to the best-selected image.
-        prompt: The original user prompt to guide the outpainting.
-
-    Returns:
-        The path to the newly created outpainted image.
+    Performs outpainting on an image to a 16:9 aspect ratio. This function
+    takes the best-selected image and expands it to create a wider scene,
+    which is more suitable for video generation. This helps to create a more
+    dynamic and visually appealing video.
     """
     initial_image = PIL_Image.open(image_path)
     

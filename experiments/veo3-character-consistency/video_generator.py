@@ -7,13 +7,18 @@ from prompts import VEO_PROMPT
 import config
 
 def initialize_clients():
-    """Initializes and returns clients for Gemini and VEO."""
+    """Initializes and returns clients for Gemini and VEO, which are used
+    for prompt generation and video generation respectively.
+    """
     gemini_client = genai.Client(vertexai=True, project=config.PROJECT_ID, location=config.GEMINI_LOCATION)
     veo_client = genai.Client(vertexai=True, project=config.PROJECT_ID, location=config.VEO_LOCATION)
     return gemini_client, veo_client
 
 def generate_video(gemini_client, veo_client, image_path, output_dir):
-    """Generates and saves a single video based on a reference image."""
+    """Generates and saves a single video based on a reference image. This
+    function uses Gemini to generate a creative prompt and then uses Veo to
+    generate the video.
+    """
     try:
         image_filename = os.path.basename(image_path)
         pil_image = Image.open(image_path)
@@ -67,7 +72,9 @@ def generate_video(gemini_client, veo_client, image_path, output_dir):
         return None
 
 def generate_video_from_best_image(output_path: str, best_image_path: str) -> str | None:
-    """Generates a single video from the selected best image."""
+    """Generates a single video from the selected best image. This is the final
+    step in the workflow, creating the video from the outpainted image.
+    """
     gemini_client, veo_client = initialize_clients()
     os.makedirs(output_path, exist_ok=True)
 
