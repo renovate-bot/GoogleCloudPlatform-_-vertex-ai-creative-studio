@@ -1,3 +1,17 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 IMAGE_DESCRIPTION_PROMPT = "Provide a two-line description for this person, focusing on their key visual features: clothes and detailed physical and facial traits."
 
 IMAGE_GENERATION_PROMPT = "Based on the following images and their two-line descriptions, create a single, detailed, and artistic prompt for a text-to-image AI. The prompt should aim for a photorealistic image showcasing the person in the situation that follows. Make sure to adhere with the following situation when generating the text to image prompt."
