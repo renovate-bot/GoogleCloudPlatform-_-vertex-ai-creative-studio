@@ -154,6 +154,24 @@ def generate_images_from_prompt(
     return generated_uris
 
 
+def generate_image_for_vto(prompt: str) -> bytes:
+    """Generates a single image and returns the image bytes."""
+    cfg = Default()
+    client = ImagenModelSetup.init(model_id=cfg.MODEL_IMAGEN4_FAST)
+    response = client.models.generate_images(
+        model=cfg.MODEL_IMAGEN4_FAST,
+        prompt=prompt,
+        config=types.GenerateImagesConfig(
+            number_of_images=1,
+            aspect_ratio="1:1",
+        ),
+    )
+    if response.generated_images and response.generated_images[0].image.image_bytes:
+        return response.generated_images[0].image.image_bytes
+    else:
+        raise ValueError("Image generation failed or returned no data.")
+
+
 @retry(
     wait=wait_exponential(
         multiplier=1, min=1, max=10
