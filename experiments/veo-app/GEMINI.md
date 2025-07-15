@@ -250,12 +250,16 @@ When refactoring code, follow these steps to avoid common errors:
 2.  **Pay close attention to data models.** When changing a data model, make sure to update all code that uses that data model. This includes code that reads from and writes to the data model.
 3.  **Run tests after making changes.** This will help you to catch any errors that you may have introduced.
 
+## Code Quality and Style
+After any code modification, ensure the changes adhere to the project's established style guide (e.g., Google Python Style Guide for this project). Proactively run any configured linters or formatters to verify compliance before considering a task complete. This ensures consistency and maintainability.
+
 # Data Consistency
 
 When working with Firestore, it is important to keep the data in Firestore consistent with the data models in the code. This can be done by:
 
 *   **Using a single source of truth for your data models.** This will help to ensure that all code is using the same data models.
 *   **Using a data migration tool to update your data in Firestore when you change your data models.** This will help to ensure that your data in Firestore is always consistent with your data models.
+*   **When checking field values from external data sources like Firestore, prefer containment checks (e.g., `if 'substring' in value:`) over exact equality checks (`if value == 'exact_string'`) for identifiers that might have variations. This makes the code more robust. Also, always use the `.get('key', default_value)` method to access dictionary keys safely.**
 
 # Working with GCS URIs
 
@@ -266,6 +270,9 @@ gs://<bucket-name>/<object-name>
 ```
 
 When constructing a GCS URI, make sure to not include the `gs://` prefix more than once.
+
+## VTO Page Lessons Learned: Creating the Virtual Try-On (VTO) Page
+VTO-generated items stored in Firestore can be identified by checking if the `model` field in their `raw_data` contains the string `'virtual-try-on'`. The original input images are available in the `raw_data` under the keys `person_image_gcs` and `product_image_gcs`.
 
 
 # More Lessons Learned
