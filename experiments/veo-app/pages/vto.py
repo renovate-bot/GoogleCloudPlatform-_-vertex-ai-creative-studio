@@ -13,16 +13,33 @@
 # limitations under the License.
 
 import mesop as me
+
+from common.metadata import add_vto_metadata
+from common.storage import store_to_gcs
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
-from state.vto_state import PageState
-from common.storage import store_to_gcs
-from models.vto import generate_vto_image
-from common.metadata import add_vto_metadata
-from state.state import AppState
 from config.default import Default
+from models.image_models import generate_image_for_vto
+from models.vto import generate_vto_image
+from state.state import AppState
+from state.vto_state import PageState
 
 config = Default()
+
+IMAGE_BOX_STYLE = me.Style(
+    width=400,
+    height=400,
+    border=me.Border.all(
+        me.BorderSide(width=2, style="dashed", color=me.theme_var("outline-variant"))
+    ),
+    border_radius=12,
+    display="flex",
+    align_items="center",
+    justify_content="center",
+    flex_direction="column",
+    gap=8,
+    margin=me.Margin(top=16),
+)
 
 
 @me.page(path="/vto")
@@ -34,6 +51,7 @@ def vto():
             header("Virtual Try-On", "checkroom")
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+                # Person Image Section
                 with me.box(
                     style=me.Style(
                         width="calc(50% - 8px)",
@@ -42,22 +60,41 @@ def vto():
                         align_items="center",
                     )
                 ):
-                    me.uploader(
-                        label="Upload Person Image",
-                        on_upload=lambda e: on_upload_person(e),
-                        style=me.Style(width="100%"),
-                        key="person_uploader",
-                    )
-                    if state.person_image_gcs:
-                        me.image(
-                            src=state.person_image_gcs,
-                            style=me.Style(
-                                width="400px",
-                                margin=me.Margin(top=16),
-                                border_radius=12,
-                            ),
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=8,
+                            align_items="center",
                         )
+                    ):
+                        me.uploader(
+                            label="Upload Person Image",
+                            on_upload=lambda e: on_upload_person(e),
+                            style=me.Style(width="100%"),
+                            key="person_uploader",
+                        )
+                        me.button(
+                            "Create Virtual Model",
+                            on_click=on_click_generate_person,
+                        )
+                    with me.box(style=IMAGE_BOX_STYLE):
+                        if state.is_generating_person_image:
+                            me.progress_spinner()
+                        elif state.person_image_gcs:
+                            me.image(
+                                src=state.person_image_gcs,
+                                style=me.Style(
+                                    max_width="100%",
+                                    max_height="100%",
+                                    border_radius=12,
+                                ),
+                            )
+                        else:
+                            me.icon("upload_file", style=me.Style(font_size=48))
+                            me.text("Upload a person image")
 
+                # Product Image Section
                 with me.box(
                     style=me.Style(
                         width="calc(50% - 8px)",
@@ -72,42 +109,56 @@ def vto():
                         style=me.Style(width="100%"),
                         key="product_uploader",
                     )
-                    if state.product_image_gcs:
-                        me.image(
-                            src=state.product_image_gcs,
-                            style=me.Style(
-                                width="400px",
-                                margin=me.Margin(top=16),
-                                border_radius=12,
-                            ),
-                        )
+                    with me.box(style=IMAGE_BOX_STYLE):
+                        if state.product_image_gcs:
+                            me.image(
+                                src=state.product_image_gcs,
+                                style=me.Style(
+                                    max_width="100%",
+                                    max_height="100%",
+                                    border_radius=12,
+                                ),
+                            )
+                        else:
+                            me.icon("upload_file", style=me.Style(font_size=48))
+                            me.text("Upload a product image")
 
-            with me.box(style=me.Style(width="400px", margin=me.Margin(top=16))):
-                with me.box(
-                    style=me.Style(display="flex", justify_content="space-between"),
-                ):
-                    me.text(f"Number of images: {state.vto_sample_count}")
-                me.slider(
-                    min=1,
-                    max=4,
-                    step=1,
-                    value=state.vto_sample_count,
-                    on_value_change=on_sample_count_change,
-                )
+            me.box(style=me.Style(height=36))
 
             with me.box(
                 style=me.Style(
                     display="flex",
                     flex_direction="row",
-                    gap=16,
-                    margin=me.Margin(top=16),
+                    gap=10,
+                    align_items="center",
+                    justify_content="center",
                 )
             ):
-                me.button("Generate", on_click=on_generate)
+                with me.box(style=me.Style(margin=me.Margin(top=16))):
+                    with me.box(
+                        style=me.Style(display="flex", justify_content="space-between"),
+                    ):
+                        me.text(f"Number of images: {state.vto_sample_count}")
+                    me.slider(
+                        min=1,
+                        max=4,
+                        step=1,
+                        value=state.vto_sample_count,
+                        on_value_change=on_sample_count_change,
+                    )
+
+                me.box(style=me.Style(width=36))
+
+                me.button("Generate", on_click=on_generate, type="flat")
                 me.button("Clear", on_click=on_clear, type="stroked")
 
             if state.is_loading:
-                me.progress_spinner()
+                with me.box(
+                    style=me.Style(
+                        display="flex", align_items="center", justify_content="center"
+                    )
+                ):
+                    me.progress_spinner()
 
             if state.result_images:
                 print(f"Images: {state.result_images}")
@@ -117,6 +168,7 @@ def vto():
                         flex_wrap="wrap",
                         gap=16,
                         margin=me.Margin(top=16),
+                        justify_content="center",
                     )
                 ):
                     for image in state.result_images:
@@ -149,6 +201,33 @@ def on_upload_product(e: me.UploadEvent):
         "gs://", "https://storage.mtls.cloud.google.com/"
     )
     yield
+
+
+def on_click_generate_person(e: me.ClickEvent):
+    """Generate person image handler"""
+    state = me.state(PageState)
+    state.is_generating_person_image = True
+    yield
+
+    try:
+        prompt = "A full-length studio shot of a model standing against a neutral seamless background, posed for virtual try-on application. Lighting is bright and even, highlighting the model's form without harsh shadows. The model is facing forward with a natural, relaxed posture and a neutral expression. The focus is sharp and clear, capturing the details of clothing textures and fit, suitable for e-commerce apparel display."
+        image_bytes = generate_image_for_vto(prompt)
+        gcs_url = store_to_gcs(
+            "vto_person_images",
+            "generated_person.png",
+            "image/png",
+            image_bytes,
+            decode=False,
+        )
+        state.person_image_gcs = gcs_url.replace(
+            "gs://", "https://storage.mtls.cloud.google.com/"
+        )
+    except Exception as e:
+        state.error_message = str(e)
+        state.show_error_dialog = True
+    finally:
+        state.is_generating_person_image = False
+        yield
 
 
 def on_generate(e: me.ClickEvent):
