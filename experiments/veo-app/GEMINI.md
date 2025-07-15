@@ -12,6 +12,7 @@ See also AGENTS.md for more information.
 # Mesop Hints and Lessons Learned
 
 - The `mesop` library was updated, and `me.yield_value(...)` was removed. It should be replaced with `yield`.
+- The function directly assigned to an event handler (e.g., `on_value_change`, `on_click`) must be the generator function that `yield`s. Using a `lambda` to call another generator function will break the UI update chain, and the component will not refresh.
 
 ## Interacting with Generative AI Models
 
@@ -38,6 +39,7 @@ Here are some key architectural lessons learned when integrating Mesop with Gene
 *   **Avoid `max_width` for expanding content:** If you want a component to fill the available space in its container, avoid using the `max_width` style property. This will allow the component to expand as expected.
 
 *   **Use `me.Style(margin=me.Margin(top=...))` for spacing:** To add spacing between components, use the `margin` property in the `me.Style` class. This is the correct way to add padding and margins to components.
+*   **Placeholders for Conditional Content:** For components that display conditionally loaded content (like an uploaded image), use a permanently styled container (`me.box`). Render content *inside* this container based on the current state (e.g., a placeholder icon, a loading spinner, or the final content). This prevents layout shifts and creates a more polished user experience.
 
 
 ## Best Practices for Using Mesop with FastAPI
@@ -144,7 +146,7 @@ def on_click_my_button(e: me.ClickEvent):
 
 **The Problem:** The application's navigation menu is hardcoded as a list of dictionaries in a Python file, making it difficult to manage.
 
-**The Best Practice:** For data that is essentially static configuration, such as navigation links or dropdown options, it is better to store it in a dedicated data file (e.g., JSON or YAML) rather than embedding it in Python code. This separates the application's configuration from its logic.
+**The Best Practice:** For data that is essentially static configuration, such as navigation links or dropdown options, it is better to store it in a dedicated data file (e.g., JSON or YAML) rather than embedding it in Python code. This separates the application's configuration from its logic. Always source configuration values like model names, API endpoints, or bucket names from the `config/default.py` file. Avoid hardcoding these 'magic strings' directly in component or model logic to improve maintainability and prevent errors.
 
 **The Solution:**
 1.  Create a `config/navigation.json` file to define the navigation structure.
@@ -165,6 +167,12 @@ This approach makes the configuration easier to read, modify (even for non-devel
 ```
 web: gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 -k uvicorn.workers.UvicornWorker main:app
 ```
+
+## Backend and Frontend Consistency
+Ensure that parameters used in backend API calls (e.g., `models.image_models.generate_image_for_vto`) match the expectations of the frontend UI components that will display the result. For example, if a UI container is styled to be square (`1:1`), the corresponding API call to generate an image for that container should request a `1:1` aspect ratio. Mismatches will lead to distorted or improperly fitted media.
+
+## File and Storage Management
+*   **Ensure Unique Filenames:** When saving dynamically generated content (like images, videos, or audio files) to a shared storage system like Google Cloud Storage, always generate a unique filename for each asset. This prevents files from being overwritten. A good practice is to use Python's `uuid` module (e.g., `f"my_file_{uuid.uuid4()}.png"`) to create a universally unique identifier for each file.
 
 ## VTO Page Lessons Learned: Creating the Virtual Try-On (VTO) Page
 

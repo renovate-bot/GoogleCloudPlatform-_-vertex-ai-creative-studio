@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
+
 import mesop as me
 
 from common.metadata import add_vto_metadata
@@ -212,9 +214,10 @@ def on_click_generate_person(e: me.ClickEvent):
     try:
         prompt = "A full-length studio shot of a model standing against a neutral seamless background, posed for virtual try-on application. Lighting is bright and even, highlighting the model's form without harsh shadows. The model is facing forward with a natural, relaxed posture and a neutral expression. The focus is sharp and clear, capturing the details of clothing textures and fit, suitable for e-commerce apparel display."
         image_bytes = generate_image_for_vto(prompt)
+        file_name = f"generated_person_{uuid.uuid4()}.png"
         gcs_url = store_to_gcs(
             "vto_person_images",
-            "generated_person.png",
+            file_name,
             "image/png",
             image_bytes,
             decode=False,
