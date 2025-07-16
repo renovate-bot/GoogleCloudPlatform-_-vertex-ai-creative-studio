@@ -134,7 +134,7 @@ def vto():
                     gap=10,
                     align_items="center",
                     justify_content="center",
-                )
+                ),
             ):
                 with me.box(style=me.Style(margin=me.Margin(top=16))):
                     with me.box(
@@ -157,7 +157,7 @@ def vto():
             if state.is_loading:
                 with me.box(
                     style=me.Style(
-                        display="flex", align_items="center", justify_content="center"
+                        display="flex", align_items="center", justify_content="center",
                     )
                 ):
                     me.progress_spinner()

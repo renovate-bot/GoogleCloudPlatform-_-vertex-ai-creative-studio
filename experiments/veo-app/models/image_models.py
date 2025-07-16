@@ -176,7 +176,7 @@ def generate_image_for_vto(prompt: str) -> bytes:
         raise ValueError("Image generation failed or returned no data.")
 
 
-def recontextualize_product_in_scene(image_uris_list: list[str], prompt: str) -> list[str]:
+def recontextualize_product_in_scene(image_uris_list: list[str], prompt: str, sample_count: int) -> list[str]:
     """Recontextualizes a product in a scene and returns a list of GCS URIs."""
     cfg = Default()
     client_options = {"api_endpoint": f"{cfg.LOCATION}-aiplatform.googleapis.com"}
@@ -192,7 +192,7 @@ def recontextualize_product_in_scene(image_uris_list: list[str], prompt: str) ->
     if prompt:
         instance["prompt"] = prompt
 
-    parameters = {"sampleCount": 1}
+    parameters = {"sampleCount": sample_count}
 
     response = client.predict(
         endpoint=model_endpoint, instances=[instance], parameters=parameters
