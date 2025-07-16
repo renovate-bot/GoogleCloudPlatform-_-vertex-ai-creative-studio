@@ -88,7 +88,7 @@ google-auth-httplib2==0.2.0
     # via google-api-python-client
 google-cloud-aiplatform==1.103.0
     # via veo-app
-google-cloud-bigquery==3.34.0
+google-cloud-bigquery==3.35.0
     # via google-cloud-aiplatform
 google-cloud-core==2.4.3
     # via
