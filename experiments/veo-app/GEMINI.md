@@ -13,6 +13,7 @@ See also AGENTS.md for more information.
 
 - The `mesop` library was updated, and `me.yield_value(...)` was removed. It should be replaced with `yield`.
 - The function directly assigned to an event handler (e.g., `on_value_change`, `on_click`) must be the generator function that `yield`s. Using a `lambda` to call another generator function will break the UI update chain, and the component will not refresh.
+- **Building Custom Components from Primitives:** When a specific component like `me.icon_button` or a specific type hint like `me.EventHandler` does not exist and causes an `AttributeError`, do not assume the library is deficient. Instead, build the desired functionality from more primitive, guaranteed components. For example, a clickable icon can be reliably constructed using a `me.box` with an `on_click` handler that contains a `me.icon`. This approach is more robust and avoids API-related errors.
 
 ## Interacting with Generative AI Models
 
@@ -122,7 +123,15 @@ async def add_custom_header(request: Request, call_next):
 
 ## Application Architecture and State Management
 
-### 1. Accessing Global State in Event Handlers
+### 1. Co-locating Page State
+
+**The Problem:** A page fails to load and throws a `NameError: name 'PageState' is not defined`.
+
+**The Cause:** The page-specific state class (`@me.stateclass`) was defined in a separate `state/` directory, but the page's rendering function and event handlers in the `pages/` directory could not find it in their scope during execution.
+
+**The Solution:** Adhere to the project's established convention. For state that is specific to a single page, the `@me.stateclass` definition must be in the *same file* as the `@me.page` function and its associated event handlers. This ensures that the state class is always in the correct scope. Only the global `AppState` should be in its own file.
+
+### 2. Accessing Global State in Event Handlers
 
 **The Problem:** An event handler (e.g., `on_click`) throws a `NameError` because it cannot access the global `AppState`.
 
@@ -142,7 +151,7 @@ def on_click_my_button(e: me.ClickEvent):
     print(f"The current user is: {app_state.user_email}")
 ```
 
-### 2. Separating Configuration from Code
+### 3. Separating Configuration from Code
 
 **The Problem:** The application's navigation menu is hardcoded as a list of dictionaries in a Python file, making it difficult to manage.
 
@@ -155,7 +164,7 @@ def on_click_my_button(e: me.ClickEvent):
 
 This approach makes the configuration easier to read, modify (even for non-developers), and validate.
 
-### 3. Deploying with Gunicorn and Uvicorn
+### 4. Deploying with Gunicorn and Uvicorn
 
 **The Problem:** When deploying to a service like Cloud Run, the application fails to start, or authentication routes do not work.
 
@@ -257,6 +266,7 @@ When refactoring code, follow these steps to avoid common errors:
 1.  **Find all uses of the code being changed.** Use `search_file_content` to find all instances of the code you are changing. This will help you to avoid missing any instances of the code that need to be updated.
 2.  **Pay close attention to data models.** When changing a data model, make sure to update all code that uses that data model. This includes code that reads from and writes to the data model.
 3.  **Run tests after making changes.** This will help you to catch any errors that you may have introduced.
+4.  **Favor Flexible Generalization Over Brittle Replacement:** When refactoring, favor generalization and flexibility over replacement. Instead of removing a specialized function, adapt the new, more general function to handle the specialized cases by accepting more flexible arguments (like `**kwargs`). This ensures no data is lost and the system can be extended more easily in the future.
 
 ## Code Quality and Style
 After any code modification, ensure the changes adhere to the project's established style guide (e.g., Google Python Style Guide for this project). Proactively run any configured linters or formatters to verify compliance before considering a task complete. This ensures consistency and maintainability.

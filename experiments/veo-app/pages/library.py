@@ -171,6 +171,7 @@ def get_media_for_page(
                 if raw_item_data.get("gcsuri") is not None
                 else None,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
+                source_images_gcs=raw_item_data.get("source_images_gcs", []),
                 prompt=str(raw_item_data.get("prompt"))
                 if raw_item_data.get("prompt") is not None
                 else None,
@@ -189,6 +190,9 @@ def get_media_for_page(
                 else None,
                 rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
                 if raw_item_data.get("rewritten_prompt") is not None
+                else None,
+                comment=str(raw_item_data.get("comment"))
+                if raw_item_data.get("comment") is not None
                 else None,
                 raw_data=raw_item_data,
             )

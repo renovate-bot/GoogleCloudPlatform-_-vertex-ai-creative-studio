@@ -64,6 +64,13 @@
       "group": "workflows"
     },
     {
+      "id": 43,
+      "display": "Product in Scene",
+      "icon": "scene_based_layout",
+      "route": "/recontextualize",
+      "group": "workflows"
+    },
+    {
       "id": 50,
       "display": "Library",
       "icon": "perm_media",

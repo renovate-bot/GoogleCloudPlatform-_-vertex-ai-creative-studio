@@ -30,6 +30,39 @@ Here is a breakdown of the key directories and their roles:
     *   `navigation.json`: For configuring the application's side navigation.
     *   `rewriters.py`: For storing the prompt templates used by the AI models.
 
+## Core Development Patterns and Lessons Learned
+
+This section outlines the key architectural patterns and best practices that are essential for extending this application. Adhering to these conventions will help you avoid common errors and build features that are consistent with the existing codebase.
+
+### Mesop UI and State Management
+
+1.  **Co-locating Page State:**
+    *   **Problem:** A page fails to load and throws a `NameError: name 'PageState' is not defined`.
+    *   **Solution:** For state that is specific to a single page, the `@me.stateclass` definition **must** be in the same file as the `@me.page` function and its associated event handlers. This ensures that the state class is always in the correct scope. Only the global `AppState` should be in its own file (`state/state.py`).
+
+2.  **Correctly Handling Event Handlers:**
+    *   **Problem:** A UI element, like a slider or button, does not update the UI when interacted with.
+    *   **Solution:** The function directly assigned to an event handler (e.g., `on_value_change`, `on_click`) must be the generator function that `yield`s. Using a `lambda` to call another generator function will break the UI update chain, and the component will not refresh.
+
+3.  **Building Custom Components from Primitives:**
+    *   **Problem:** The application crashes with an `AttributeError`, indicating that a Mesop component or type (e.g., `me.icon_button`, `me.EventHandler`) does not exist.
+    *   **Solution:** Do not assume a component or type exists. When an `AttributeError` occurs, build the desired functionality from more primitive, guaranteed components. For example, a clickable icon can be reliably constructed using a `me.box` with an `on_click` handler that contains a `me.icon`.
+
+### Data and Metadata Handling
+
+1.  **Favor Flexible Generalization Over Brittle Replacement:**
+    *   **Problem:** When refactoring, a specialized function (e.g., `add_vto_metadata`) is replaced by a generic one, but this new function loses the ability to handle the specific data fields of the original.
+    *   **Solution:** When refactoring, favor generalization and flexibility. Instead of removing a specialized function, adapt the new, more general function to handle the specialized cases by accepting more flexible arguments (like `**kwargs`). This ensures no data is lost and the system can be extended more easily in the future.
+
+2.  **Ensure Unique Filenames:**
+    *   **Problem:** Generated files in Google Cloud Storage are being overwritten.
+    *   **Solution:** When saving dynamically generated content (like images, videos, or audio files), always generate a unique filename for each asset. A good practice is to use Python's `uuid` module (e.g., `f"my_file_{uuid.uuid4()}.png"`) to create a universally unique identifier for each file.
+
+### Backend and Frontend Consistency
+
+*   **Problem:** A generated image appears stretched or improperly fitted in its UI container.
+*   **Solution:** Ensure that parameters used in backend API calls (e.g., `models.image_models.generate_image_for_vto`) match the expectations of the frontend UI components that will display the result. For example, if a UI container is styled to be square (`1:1`), the corresponding API call to generate an image for that container should request a `1:1` aspect ratio. Mismatches will lead to distorted or improperly fitted media.
+
 ## Firestore Setup
 
 This application uses Firestore to store metadata for the media library. Here's how to set it up:

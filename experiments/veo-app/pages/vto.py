@@ -16,7 +16,7 @@ import uuid
 
 import mesop as me
 
-from common.metadata import add_vto_metadata
+from common.metadata import add_media_item
 from common.storage import store_to_gcs
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
@@ -252,11 +252,13 @@ def on_generate(e: me.ClickEvent):
             uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
             for uri in result_gcs_uris
         ]
-        add_vto_metadata(
+        add_media_item(
+            user_email=app_state.user_email,
+            model=config.VTO_MODEL_ID,
+            mime_type="image/png",
+            gcs_uris=result_gcs_uris,
             person_image_gcs=state.person_image_gcs,
             product_image_gcs=state.product_image_gcs,
-            result_image_gcs=result_gcs_uris,
-            user_email=app_state.user_email,
         )
     except Exception as e:
         state.error_message = str(e)
