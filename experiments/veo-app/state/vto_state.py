@@ -9,7 +9,7 @@ class PageState:
     person_image_gcs: str = ""
     product_image_file: me.UploadedFile = None
     product_image_gcs: str = ""
-    result_images: list[str] = field(default_factory=list)
+    result_images: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     vto_sample_count: int = 4
     vto_base_steps: int = 0
     is_loading: bool = False

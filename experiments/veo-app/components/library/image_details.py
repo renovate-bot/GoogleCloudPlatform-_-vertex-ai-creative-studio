@@ -162,3 +162,26 @@ def image_details(item: MediaItem) -> None:
                                 width="200px", height="auto", border_radius="8px"
                             ),
                         )
+    if item.comment == "product recontext":
+        with me.box(style=me.Style(margin=me.Margin(top=16))):
+            me.text(
+                "Source Images",
+                style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)),
+            )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=16,
+                    justify_content="center",
+                )
+            ):
+                for uri in item.source_images_gcs:
+                    me.image(
+                        src=uri.replace(
+                            "gs://", "https://storage.mtls.cloud.google.com/"
+                        ),
+                        style=me.Style(
+                            width="100px", height="auto", border_radius="8px"
+                        ),
+                    )

@@ -34,6 +34,10 @@ from typing import Optional
 from dotenv import load_dotenv
 from google import genai
 from config.default import Default
+from common.storage import store_to_gcs
+import uuid
+import base64
+from google.cloud import aiplatform
 
 
 # class ImageModel(TypedDict): # Remove this definition
@@ -170,6 +174,46 @@ def generate_image_for_vto(prompt: str) -> bytes:
         return response.generated_images[0].image.image_bytes
     else:
         raise ValueError("Image generation failed or returned no data.")
+
+
+def recontextualize_product_in_scene(image_uris_list: list[str], prompt: str) -> list[str]:
+    """Recontextualizes a product in a scene and returns a list of GCS URIs."""
+    cfg = Default()
+    client_options = {"api_endpoint": f"{cfg.LOCATION}-aiplatform.googleapis.com"}
+    client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
+
+    model_endpoint = f"projects/{cfg.PROJECT_ID}/locations/{cfg.LOCATION}/publishers/google/models/{cfg.MODEL_IMAGEN_PRODUCT_RECONTEXT}"
+
+    instance = {"productImages": []}
+    for product_image_uri in image_uris_list:
+        product_image = {"image": {"gcsUri": product_image_uri}}
+        instance["productImages"].append(product_image)
+
+    if prompt:
+        instance["prompt"] = prompt
+
+    parameters = {"sampleCount": 1}
+
+    response = client.predict(
+        endpoint=model_endpoint, instances=[instance], parameters=parameters
+    )
+
+    gcs_uris = []
+    for prediction in response.predictions:
+        if prediction.get("bytesBase64Encoded"):
+            encoded_mask_string = prediction["bytesBase64Encoded"]
+            mask_bytes = base64.b64decode(encoded_mask_string)
+
+            gcs_uri = store_to_gcs(
+                folder="recontext_results",
+                file_name=f"recontext_result_{uuid.uuid4()}.png",
+                mime_type="image/png",
+                contents=mask_bytes,
+                decode=False,
+            )
+            gcs_uris.append(gcs_uri)
+
+    return gcs_uris
 
 
 @retry(

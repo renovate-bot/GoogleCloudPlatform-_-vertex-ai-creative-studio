@@ -52,6 +52,7 @@ class MediaItem:
     # URI fields
     gcsuri: Optional[str] = None  # For single file media (video, audio) -> gs://bucket/path
     gcs_uris: List[str] = field(default_factory=list)  # For multi-file media (e.g., multiple images) -> list of gs://bucket/path
+    source_images_gcs: List[str] = field(default_factory=list) # For multi-file input media (e.g., recontext) -> list of gs://bucket/path
 
     # Video specific (some may also apply to Image/Audio)
     aspect: Optional[str] = None  # e.g., "16:9", "1:1" (also for Image)
@@ -217,32 +218,24 @@ def get_media_item_by_id(
         return None
 
 
-# Old metadata functions are removed. add_media_item_to_firestore is now the primary method.
+def add_media_item(user_email: str, **kwargs):
+    """Add a media item to Firestore persistence"""
 
-def add_vto_metadata(
-    person_image_gcs: str,
-    product_image_gcs: str,
-    result_image_gcs: list[str],
-    user_email: str,
-):
-    """Add VTO metadata to Firestore persistence"""
+    current_datetime = datetime.datetime.now(datetime.timezone.utc)
 
-    current_datetime = datetime.datetime.now()
+    # Prepare data for Firestore
+    firestore_data = {
+        "user_email": user_email,
+        "timestamp": current_datetime,
+    }
+
+    # Merge kwargs into firestore_data
+    firestore_data.update(kwargs)
 
     doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
-    doc_ref.set(
-        {
-            "person_image_gcs": person_image_gcs,
-            "product_image_gcs": product_image_gcs,
-            "gcs_uris": result_image_gcs,
-            "mime_type": "image/png",
-            "user_email": user_email,
-            "timestamp": current_datetime,
-            "model": config.VTO_MODEL_ID,
-        }
-    )
+    doc_ref.set(firestore_data)
 
-    print(f"VTO data stored in Firestore with document ID: {doc_ref.id}")
+    print(f"Media data stored in Firestore with document ID: {doc_ref.id}")
 
 
 def get_latest_videos(limit: int = 10):

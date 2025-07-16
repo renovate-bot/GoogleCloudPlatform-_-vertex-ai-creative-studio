@@ -31,6 +31,7 @@ from pages.imagen import imagen_content
 from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
+from pages.recontextualize import recontextualize
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState
@@ -175,6 +176,16 @@ def edit_images_page():
 def vto_page():
     """VTO Page"""
     vto()
+
+
+@me.page(
+    path="/recontextualize",
+    title="GenMedia Creative Studio - Product in Scene",
+    on_load=on_load,
+)
+def recontextualize_page():
+    """Recontextualize Page"""
+    recontextualize()
 
 
 @app.get("/__/auth/")

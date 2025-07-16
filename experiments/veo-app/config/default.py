@@ -78,6 +78,7 @@ class Default:
     MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-preview-06-06"
     MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-preview-06-06"
     MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
+    MODEL_IMAGEN_PRODUCT_RECONTEXT: str = os.environ.get("MODEL_IMAGEN_PRODUCT_RECONTEXT", "imagen-product-recontext-preview-06-30")
 
     IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get("IMAGEN_GENERATED_SUBFOLDER", "generated_images")
     IMAGEN_EDITED_SUBFOLDER: str = os.environ.get("IMAGEN_EDITED_SUBFOLDER", "edited_images")
