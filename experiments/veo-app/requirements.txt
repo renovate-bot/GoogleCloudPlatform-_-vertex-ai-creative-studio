@@ -17,7 +17,7 @@ blinker==1.9.0
     # via flask
 cachecontrol==0.14.3
     # via firebase-admin
-cachetools==5.5.2
+cachetools==6.1.0
     # via google-auth
 certifi==2025.7.14
     # via
@@ -46,7 +46,7 @@ cycler==0.12.1
     # via matplotlib
 decorator==5.2.1
     # via ipython
-deepdiff==6.7.1
+deepdiff==8.5.0
     # via mesop
 docstring-parser==0.16
     # via google-cloud-aiplatform
@@ -58,7 +58,7 @@ firebase-admin==6.9.0
     # via veo-app
 flask==3.1.1
     # via mesop
-fonttools==4.58.5
+fonttools==4.59.0
     # via matplotlib
 google-api-core==2.25.1
     # via
@@ -99,7 +99,7 @@ google-cloud-firestore==2.21.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
 google-cloud-resource-manager==1.14.2
     # via google-cloud-aiplatform
-google-cloud-storage==2.19.0
+google-cloud-storage==3.2.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
@@ -107,7 +107,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.20.0
+google-genai==1.25.0
     # via
     #   google-cloud-aiplatform
     #   veo-app
@@ -261,7 +261,7 @@ pydantic==2.11.7
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.33.2
+pydantic-core==2.35.2
     # via pydantic
 pygments==2.19.2
     # via

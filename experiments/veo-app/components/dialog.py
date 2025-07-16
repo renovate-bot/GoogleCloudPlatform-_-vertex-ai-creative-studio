@@ -20,7 +20,7 @@ import mesop as me
 
 @me.content_component
 def dialog(is_open: bool, dialog_style: Optional[me.Style] = None, key: Optional[str] = None):
-    """Renders a dialog component.
+    """Render a dialog component.
 
     The design of the dialog borrows from the Angular component dialog. So basically
     rounded corners and some box shadow.

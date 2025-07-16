@@ -298,22 +298,22 @@ def on_upload_last_image(e: me.UploadEvent):
         state.show_error_dialog = True
     yield
 
-def on_upload_image(e: me.UploadEvent):
-    """Upload image to GCS and update state."""
-    state = me.state(PageState)
-    try:
-        # Store the uploaded file to GCS
-        gcs_path = store_to_gcs(
-            "uploads", e.file.name, e.file.mime_type, e.file.getvalue()
-        )
-        # Update the state with the new image details
-        state.reference_image_gcs = gcs_path
-        state.reference_image_uri = gcs_path.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
-        state.reference_image_mime_type = e.file.mime_type
-        print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
-    except Exception as ex:
-        state.error_message = f"Failed to upload image: {ex}"
-        state.show_error_dialog = True
-    yield
+# def on_upload_image(e: me.UploadEvent):
+#     """Upload image to GCS and update state."""
+#     state = me.state(PageState)
+#     try:
+#         # Store the uploaded file to GCS
+#         gcs_path = store_to_gcs(
+#             "uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+#         )
+#         # Update the state with the new image details
+#         state.reference_image_gcs = gcs_path
+#         state.reference_image_uri = gcs_path.replace(
+#             "gs://", "https://storage.mtls.cloud.google.com/"
+#         )
+#         state.reference_image_mime_type = e.file.mime_type
+#         print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
+#     except Exception as ex:
+#         state.error_message = f"Failed to upload image: {ex}"
+#         state.show_error_dialog = True
+#     yield
