@@ -48,6 +48,10 @@ This section outlines the key architectural patterns and best practices that are
     *   **Problem:** The application crashes with an `AttributeError`, indicating that a Mesop component or type (e.g., `me.icon_button`, `me.EventHandler`) does not exist.
     *   **Solution:** Do not assume a component or type exists. When an `AttributeError` occurs, build the desired functionality from more primitive, guaranteed components. For example, a clickable icon can be reliably constructed using a `me.box` with an `on_click` handler that contains a `me.icon`.
 
+4.  **Introspecting Custom Components:**
+    *   **Problem:** The application crashes with a `TypeError` about an unexpected keyword argument when using a component from the `components/` directory (e.g., `components/dialog.py`).
+    *   **Solution:** This project contains custom components. Unlike standard Mesop components, their specific API (the parameters they accept) is defined within this project. If you encounter a `TypeError` when using a custom component, do not guess its parameters. **Read the component's source file** to understand its exact function signature and use it accordingly.
+
 ### Data and Metadata Handling
 
 1.  **Favor Flexible Generalization Over Brittle Replacement:**
