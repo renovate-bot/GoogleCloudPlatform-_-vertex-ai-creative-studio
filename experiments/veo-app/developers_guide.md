@@ -52,6 +52,10 @@ This section outlines the key architectural patterns and best practices that are
     *   **Problem:** The application crashes with a `TypeError` about an unexpected keyword argument when using a component from the `components/` directory (e.g., `components/dialog.py`).
     *   **Solution:** This project contains custom components. Unlike standard Mesop components, their specific API (the parameters they accept) is defined within this project. If you encounter a `TypeError` when using a custom component, do not guess its parameters. **Read the component's source file** to understand its exact function signature and use it accordingly.
 
+5.  **Passing Data from Loops to Event Handlers:**
+    *   **Problem:** An event handler for an item in a list always receives data from the *last* item in the list, regardless of which item was clicked.
+    *   **Solution:** When creating a list of clickable components inside a `for` loop, you often need to know which specific item was clicked. The standard Mesop pattern for this is to pass the unique identifier of the item (e.g., its ID or a GCS URI) to the `key` property of the clickable component (like `me.box`). The event handler function will then receive this identifier in the `e.key` attribute of the event object.
+
 ### Data and Metadata Handling
 
 1.  **Favor Flexible Generalization Over Brittle Replacement:**
@@ -224,6 +228,31 @@ If you want to control the visibility of your new page with an environment varia
 Now, the "My New Page" link will only appear in the navigation if the `MY_NEW_PAGE_ENABLED` environment variable is set to `True` in your `.env` file.
 
 That's it! When you restart the application, your new page will be available at the route you defined and will appear in the side navigation.
+
+### How to Use the `library_chooser_button` Component
+
+The `library_chooser_button` is a reusable component that allows users to select an image from the library as an input. Here is how to use it on a page:
+
+1.  **Import the component:**
+    ```python
+    from components.library.library_chooser_button import library_chooser_button
+    ```
+
+2.  **Define a callback handler:** Create a generator function on your page to handle the selection event. This function will receive the GCS URI of the selected image and is responsible for updating your page's state.
+    ```python
+    def on_image_select(uri: str):
+        state = me.state(YourPageState)
+        state.your_image_field = uri
+        yield
+    ```
+
+3.  **Instantiate the component:** Call the component in your page's UI logic, passing the callback handler to the `on_library_select` prop. You can also provide an optional `button_label`.
+    ```python
+    library_chooser_button(
+        on_library_select=on_image_select,
+        button_label="Select from Library"
+    )
+    ```
 
 ## Key Takeaways from the VTO Page Development
 
