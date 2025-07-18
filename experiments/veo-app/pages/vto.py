@@ -193,7 +193,7 @@ def vto():
                             flex_direction="row",
                             gap=8,
                             align_items="center",
-                        )
+                        ),
                     ):
                         me.uploader(
                             label="Upload Person Image",
@@ -236,17 +236,25 @@ def vto():
                         align_items="center",
                     )
                 ):
-                    me.uploader(
-                        label="Upload Product Image",
-                        on_upload=on_upload_product,
-                        style=me.Style(width="100%"),
-                        key="product_uploader",
-                    )
-                    library_chooser_button(
-                        key="product_library_chooser",
-                        on_library_select=on_library_chooser,
-                        button_label="Add from Library",
-                    )
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=8,
+                            align_items="center",
+                        ),
+                    ):
+                        me.uploader(
+                            label="Upload Product Image",
+                            on_upload=on_upload_product,
+                            style=me.Style(width="100%"),
+                            key="product_uploader",
+                        )
+                        library_chooser_button(
+                            key="product_library_chooser",
+                            on_library_select=on_library_chooser,
+                            button_label="Add from Library",
+                        )
                     with me.box(style=IMAGE_BOX_STYLE):
                         if state.product_image_gcs:
                             me.image(
