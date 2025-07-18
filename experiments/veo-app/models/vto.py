@@ -32,6 +32,7 @@ def generate_vto_image_genai(person_gcs_url: str, product_gcs_url: str, sample_c
     for candidate in response.candidates:
         for part in candidate.content.parts:
             if part.file_data:
+                print(f"{part.file_data.uri}")
                 gcs_uris.append(part.file_data.uri)
 
     return gcs_uris

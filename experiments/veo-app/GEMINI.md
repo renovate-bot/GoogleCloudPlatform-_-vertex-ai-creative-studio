@@ -9,11 +9,16 @@ It provides a coherent Library that displays metadata of the generative media ge
 See also AGENTS.md for more information.
 
 
+# Critical Mesop Patterns
+
+- **NEVER use `me.EventHandler` as a type hint.** It does not exist in the Mesop API and will cause an `AttributeError`. The correct type hint for event handler callbacks is `typing.Callable`.
+- **The `key` parameter is for native Mesop components ONLY.** Do not add a `key` parameter to custom `@me.component` functions unless you have specifically programmed them to accept and use it. To differentiate between multiple instances of a custom component, pass a unique identifier to a *different*, dedicated prop (e.g., `component_id: str`) if needed. For event differentiation, the `key` should be placed on the clickable native component *inside* your custom component.
+
 # Mesop Hints and Lessons Learned
 
 - The `mesop` library was updated, and `me.yield_value(...)` was removed. It should be replaced with `yield`.
 - The function directly assigned to an event handler (e.g., `on_value_change`, `on_click`) must be the generator function that `yield`s. Using a `lambda` to call another generator function will break the UI update chain, and the component will not refresh.
-- **Building Custom Components from Primitives:** When a specific component like `me.icon_button` or a specific type hint like `me.EventHandler` does not exist and causes an `AttributeError`, do not assume the library is deficient. Instead, build the desired functionality from more primitive, guaranteed components. For example, a clickable icon can be reliably constructed using a `me.box` with an `on_click` handler that contains a `me.icon`. This approach is more robust and avoids API-related errors.
+- **Building Custom Components from Primitives:** When a specific component like `me.icon_button` does not exist and causes an `AttributeError`, do not assume the library is deficient. Instead, build the desired functionality from more primitive, guaranteed components. For example, a clickable icon can be reliably constructed using a `me.box` with an `on_click` handler that contains a `me.icon`. This approach is more robust and avoids API-related errors.
 - **Lambda Scope in Loops:** When creating event handlers inside a loop (e.g., for a list of items), be aware of Python's late binding in closures. A `lambda` function will capture the variable from the loop, not its value at each iteration. By the time the event is triggered, the variable will hold the value from the *last* iteration. The correct pattern is to use a dedicated event handler function and pass the necessary data through the component's `key` property. Alternatively, if a `lambda` is necessary, use a default argument to capture the value at definition time: `on_click=lambda e, my_value=item.value: handle_click(my_value)`.
 
 ## Interacting with Generative AI Models

@@ -17,32 +17,35 @@ from dataclasses import field
 import mesop as me
 
 from common.storage import store_to_gcs
+from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 
 
 @me.stateclass
 class PageState:
-    selected_gcs_uri: str = ""
+    """Local component page state."""
+
+    selected_gcs_uri_A: str = ""
+    selected_gcs_uri_B: str = ""
 
 
 @me.page(path="/test_uploader")
 def test_uploader_page():
+    """Test page for determining uploader component capabilities."""
     state = me.state(PageState)
 
-    def on_test_upload(e: me.UploadEvent):
-        gcs_url = store_to_gcs(
-            "test_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+    def on_test_library_select(e: LibrarySelectionChangeEvent):
+        print(
+            f"Test Uploader Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}"
         )
-        state.selected_gcs_uri = gcs_url.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
-        yield
-
-    def on_test_library_select(uri: str):
-        print(f"Test Uploader Page: Received URI from library: {uri}")
-        state.selected_gcs_uri = uri.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/"
-        )
+        if e.chooser_id == "chooser_A":
+            state.selected_gcs_uri_A = e.gcs_uri.replace(
+                "gs://", "https://storage.mtls.cloud.google.com/"
+            )
+        elif e.chooser_id == "chooser_B":
+            state.selected_gcs_uri_B = e.gcs_uri.replace(
+                "gs://", "https://storage.mtls.cloud.google.com/"
+            )
         yield
 
     with me.box(
@@ -54,45 +57,35 @@ def test_uploader_page():
 
         me.divider()
 
-        me.text("Example 1: Standard Uploader Only")
-        me.uploader(label="Upload a file", on_upload=on_test_upload)
-
-        me.divider()
-
-        me.text("Example 2: Library Chooser (Icon and Text)")
-        library_chooser_button(
-            button_label="Add from Library", on_library_select=on_test_library_select
-        )
-
-        me.divider()
-
-        me.text("Example 3: Library Chooser (Icon Only)")
-        library_chooser_button(on_library_select=on_test_library_select)
-
-        me.divider()
-
-        me.text("Example 4: Composed Together")
-        with me.box(
-            style=me.Style(
-                display="flex", flex_direction="row", gap=8, align_items="center"
-            )
-        ):
-            me.uploader(
-                label="Upload a file",
-                on_upload=on_test_upload,
-                style=me.Style(flex_grow=1),
+        me.text("Example 5: Test Independent State with Keys")
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+            library_chooser_button(
+                key="chooser_A",
+                on_library_select=on_test_library_select,
+                button_label="Chooser A",
             )
             library_chooser_button(
-                button_label="Add from Library",
+                key="chooser_B",
                 on_library_select=on_test_library_select,
+                button_label="Chooser B",
             )
 
-        me.divider()
-
-        if state.selected_gcs_uri:
-            with me.box(style=me.Style(margin=me.Margin(top=24))):
-                me.text("Selected Image:")
-                me.image(
-                    src=state.selected_gcs_uri,
-                    style=me.Style(width="300px", border_radius=8),
-                )
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=16, margin=me.Margin(top=24)
+            )
+        ):
+            if state.selected_gcs_uri_A:
+                with me.box():
+                    me.text("Selected Image A:")
+                    me.image(
+                        src=state.selected_gcs_uri_A,
+                        style=me.Style(width="300px", border_radius=8),
+                    )
+            if state.selected_gcs_uri_B:
+                with me.box():
+                    me.text("Selected Image B:")
+                    me.image(
+                        src=state.selected_gcs_uri_B,
+                        style=me.Style(width="300px", border_radius=8),
+                    )

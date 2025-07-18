@@ -29,6 +29,12 @@ The goal is to create a reusable `library_chooser_button` component that can be 
 - [x] **Testing Checkpoint:**
     - [x] **(Completed)** Test the standard upload functionality.
     - [x] **(Completed)** Test the "Add from Library" functionality.
+        - **Bug:** Dialog was empty. **Fix:** Corrected the data loading pattern in `library_image_selector.py`.
+        - **Bug:** Dialog was uncloseable. **Fix:** Added a "Cancel" button.
+        - **Bug:** Dialog was too small. **Fix:** Increased dialog dimensions.
+        - **Bug:** Callback to parent page was not working. **Fix:** Corrected the event handler to `yield from` the parent's callback.
+        - **Bug:** All images in the dialog returned the same URI. **Fix:** Corrected the `lambda` scope issue by switching to a dedicated event handler with a `key`.
+        - **Bug:** Multiple instances of the component on the same page had state collisions. **Fix:** Added a `key` to the `library_chooser_button` component and used it to differentiate between instances in the test page's event handler.
 
 ### Phase 4: Code Quality and Refinement
 

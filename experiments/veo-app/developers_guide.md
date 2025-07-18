@@ -233,22 +233,38 @@ That's it! When you restart the application, your new page will be available at 
 
 The `library_chooser_button` is a reusable component that allows users to select an image from the library as an input. Here is how to use it on a page:
 
-1.  **Import the component:**
+1.  **Import the component and its event type:**
     ```python
     from components.library.library_chooser_button import library_chooser_button
+    from components.library.events import LibrarySelectionChangeEvent
     ```
 
-2.  **Define a callback handler:** Create a generator function on your page to handle the selection event. This function will receive the GCS URI of the selected image and is responsible for updating your page's state.
-    ```python
-    def on_image_select(uri: str):
-        state = me.state(YourPageState)
-        state.your_image_field = uri
-        yield
-    ```
+2.  **Define a callback handler:** Create a generator function on your page to handle the selection event. This function will receive the `LibrarySelectionChangeEvent` object, which contains the `gcs_uri` of the selected image and the `chooser_id` of the button that was clicked.
 
-3.  **Instantiate the component:** Call the component in your page's UI logic, passing the callback handler to the `on_library_select` prop. You can also provide an optional `button_label`.
+    *   **For a single chooser button on a page:**
+        ```python
+        def on_image_select(e: LibrarySelectionChangeEvent):
+            state = me.state(YourPageState)
+            state.your_image_field = e.gcs_uri
+            yield
+        ```
+
+    *   **For multiple chooser buttons on the same page:**
+        ```python
+        def on_image_select(e: LibrarySelectionChangeEvent):
+            state = me.state(YourPageState)
+            if e.chooser_id == "person_chooser":
+                state.person_image_gcs = e.gcs_uri
+            elif e.chooser_id == "product_chooser":
+                state.product_image_gcs = e.gcs_uri
+            yield
+        ```
+
+3.  **Instantiate the component:** Call the component in your page's UI logic, passing the callback handler to the `on_library_select` prop. You must provide a unique `key` if you have multiple choosers on the same page.
     ```python
+    # For a single chooser
     library_chooser_button(
+        key="my_unique_chooser_key",
         on_library_select=on_image_select,
         button_label="Select from Library"
     )

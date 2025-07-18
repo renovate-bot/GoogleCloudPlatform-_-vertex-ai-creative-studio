@@ -1,23 +1,10 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from dataclasses import field
 from typing import Callable
 
 import mesop as me
 
 from pages.library import MediaItem, get_media_for_page
+from .events import LibrarySelectionChangeEvent
 
 
 @me.stateclass
@@ -26,19 +13,15 @@ class State:
     is_loading: bool = True
 
 
-def on_image_click(e: me.ClickEvent, on_select: Callable[[str], None]):
-    """Handles the click event on an image in the grid."""
-    # Log the URI received from the click event's key.
-    print(f"Image Clicked. URI from key: {e.key}")
-    # We must `yield from` the on_select callback, because it is a generator.
-    # This ensures the parent's event handler is fully executed.
-    yield from on_select(e.key)
-
-
 @me.component
-def library_image_selector(on_select: Callable[[str], None]):
+def library_image_selector(on_select: Callable[[LibrarySelectionChangeEvent], None]):
     """A component that displays a grid of recent images from the library."""
     state = me.state(State)
+
+    def on_image_click(e: me.ClickEvent):
+        """Handles the click event on an image in the grid."""
+        print(f"Image Clicked. URI from key: {e.key}")
+        yield from on_select(LibrarySelectionChangeEvent(gcs_uri=e.key))
 
     # This pattern ensures that we only fetch data from Firestore one time,
     # when the component is first loaded. The `is_loading` flag prevents
@@ -68,7 +51,7 @@ def library_image_selector(on_select: Callable[[str], None]):
 
                 if image_uri_to_display:
                     with me.box(
-                        on_click=lambda e: on_image_click(e, on_select),
+                        on_click=on_image_click,
                         key=image_uri_to_display,
                         style=me.Style(cursor="pointer"),
                     ):
@@ -77,8 +60,6 @@ def library_image_selector(on_select: Callable[[str], None]):
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             ),
                             style=me.Style(
-                                width="100%",
-                                border_radius=8,
-                                object_fit="cover",
+                                width="100%", border_radius=8, object_fit="cover",
                             ),
                         )

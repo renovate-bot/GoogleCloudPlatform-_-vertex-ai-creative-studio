@@ -36,6 +36,8 @@ from tenacity import (
 from config.default import Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import generate_video
+from components.library.library_chooser_button import library_chooser_button
+from components.library.events import LibrarySelectionChangeEvent
 from state.state import AppState
 from pages.styles import (
     _BOX_STYLE_CENTER_DISTRIBUTED,
@@ -155,6 +157,7 @@ def motion_portraits_content(app_state: me.state):
                             color="primary",
                             style=me.Style(font_weight="bold"),
                         )
+                        library_chooser_button(on_library_select=on_portrait_image_from_library, button_type="icon", key="portrait_library_chooser")
                         me.button(
                             label="Clear",
                             on_click=on_click_clear_reference_image,
@@ -444,6 +447,13 @@ def on_click_upload(e: me.UploadEvent):
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
     )
+
+def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
+    """Portrait image from library handler."""
+    state = me.state(PageState)
+    state.reference_image_gcs = e.gcs_uri
+    state.reference_image_uri = e.gcs_uri.replace("gs://", f"https://storage.mtls.cloud.google.com/")
+    yield
 
 
 def on_click_clear_reference_image(e: me.ClickEvent):
