@@ -41,7 +41,7 @@ def library_image_selector(on_select: Callable[[LibrarySelectionChangeEvent], No
     # when the component is first loaded. The `is_loading` flag prevents
     # subsequent re-renders from re-fetching the data.
     if state.is_loading:
-        state.media_items = get_media_for_page(1, 20, ["images"])
+        state.media_items = get_media_for_page(1, 20, ["images"], sort_by_timestamp=True)
         state.is_loading = False
         # NOTE: There is no `yield` here. This is critical.
         # The function continues to the rendering part of the code in the same pass.

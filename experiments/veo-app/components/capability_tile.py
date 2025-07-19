@@ -38,8 +38,8 @@ def media_tile(label: str, icon: str, route: Optional[str]):
             me.BorderSide(style="solid", color=me.theme_var("tertiary-fixed-variant"))
         ),
         border_radius=12,
-        height=200,
-        width=200,
+        height=160,
+        width=160,
         justify_content="center",
         background=me.theme_var("secondary-container"),
         cursor="pointer",
@@ -68,8 +68,8 @@ def media_tile(label: str, icon: str, route: Optional[str]):
             me.icon(
                 icon,
                 style=me.Style(
-                    font_size="48pt",
-                    width="70px",
+                    font_size="38pt",
+                    width="50px",
                     height="60px",
                     color=me.theme_var("on-surface"),
                 ),

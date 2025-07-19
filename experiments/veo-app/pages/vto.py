@@ -218,13 +218,14 @@ def vto():
                                 src=state.person_image_gcs,
                                 key="person_image",
                                 style=me.Style(
-                                    max_width="100%",
-                                    max_height="100%",
+                                    width=400,
+                                    height=400,
                                     border_radius=12,
+                                    object_fit="contain",
                                 ),
                             )
                         else:
-                            me.icon("upload_file", style=me.Style(font_size=48))
+                            me.icon("person_outline", style=me.Style(font_size=32, width="50px", height="60px"))
                             me.text("Upload a person image")
 
                 # Product Image Section
@@ -261,13 +262,14 @@ def vto():
                                 src=state.product_image_gcs,
                                 key="product_image",
                                 style=me.Style(
-                                    max_width="100%",
-                                    max_height="100%",
+                                    width=400,
+                                    height=400,
                                     border_radius=12,
+                                    object_fit="contain",
                                 ),
                             )
                         else:
-                            me.icon("upload_file", style=me.Style(font_size=48))
+                            me.icon("backpack", style=me.Style(font_size=32, width="50px", height="60px"))
                             me.text("Upload a product image")
 
             me.box(style=me.Style(height=36))
