@@ -26,6 +26,7 @@ from components.page_scaffold import page_frame, page_scaffold
 from components.veo.file_uploader import file_uploader
 from components.veo.generation_controls import generation_controls
 from components.veo.video_display import video_display
+from components.library.events import LibrarySelectionChangeEvent
 from config.default import Default
 from config.rewriters import VIDEO_REWRITER
 from models.gemini import rewriter
@@ -61,7 +62,7 @@ def veo_content(app_state: me.state):
                     subtle_veo_input()
                     generation_controls()
 
-                file_uploader(on_upload_image, on_upload_last_image)
+                file_uploader(on_upload_image, on_upload_last_image, on_veo_image_from_library)
 
             me.box(style=me.Style(height=50))
 
@@ -296,6 +297,17 @@ def on_upload_last_image(e: me.UploadEvent):
     except Exception as ex:
         state.error_message = f"Failed to upload image: {ex}"
         state.show_error_dialog = True
+    yield
+
+def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
+    """VEO image from library handler."""
+    state = me.state(PageState)
+    if e.chooser_id == "i2v_library_chooser" or e.chooser_id == "first_frame_library_chooser":
+        state.reference_image_gcs = e.gcs_uri
+        state.reference_image_uri = e.gcs_uri.replace("gs://", f"https://storage.mtls.cloud.google.com/")
+    elif e.chooser_id == "last_frame_library_chooser":
+        state.last_reference_image_gcs = e.gcs_uri
+        state.last_reference_image_uri = e.gcs_uri.replace("gs://", f"https://storage.mtls.cloud.google.com/")
     yield
 
 # def on_upload_image(e: me.UploadEvent):

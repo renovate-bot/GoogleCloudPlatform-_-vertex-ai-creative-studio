@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 import mesop as me
 
 from state.veo_state import PageState
+from components.library.library_chooser_button import library_chooser_button
 from config.veo_models import get_veo_model_config
 
 @me.component
-def file_uploader(on_upload_image, on_upload_last_image):
+def file_uploader(on_upload_image, on_upload_last_image, on_library_select):
     """File uploader for I2V and interpolation, driven by model configuration."""
     state = me.state(PageState)
     selected_config = get_veo_model_config(state.veo_model)
@@ -51,13 +54,13 @@ def file_uploader(on_upload_image, on_upload_last_image):
         if state.veo_mode == "t2v":
             me.image(src=None, style=me.Style(height=250))
         elif state.veo_mode == "i2v":
-            _image_uploader(last_image=False, on_upload_image=on_upload_image, on_upload_last_image=on_upload_last_image)
+            _image_uploader(last_image=False, on_upload_image=on_upload_image, on_upload_last_image=on_upload_last_image, on_library_select=on_library_select)
         elif state.veo_mode == "interpolation":
-            _image_uploader(last_image=True, on_upload_image=on_upload_image, on_upload_last_image=on_upload_last_image)
+            _image_uploader(last_image=True, on_upload_image=on_upload_image, on_upload_last_image=on_upload_last_image, on_library_select=on_library_select)
 
 
 @me.component
-def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image):
+def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image, on_library_select):
     state = me.state(PageState)
     if state.reference_image_uri:
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
@@ -90,6 +93,7 @@ def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image):
                 color="primary",
                 style=me.Style(font_weight="bold"),
             )
+            library_chooser_button(key="first_frame_library_chooser", on_library_select=on_library_select, button_type="icon")
             me.uploader(
                 label="Upload last",
                 key="last",
@@ -99,6 +103,7 @@ def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image):
                 color="primary",
                 style=me.Style(font_weight="bold"),
             )
+            library_chooser_button(key="last_frame_library_chooser", on_library_select=on_library_select, button_type="icon")
         else:
             me.uploader(
                 label="Upload",
@@ -108,6 +113,7 @@ def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image):
                 color="primary",
                 style=me.Style(font_weight="bold"),
             )
+            library_chooser_button(key="i2v_library_chooser", on_library_select=on_library_select, button_type="icon")
         me.button(label="Clear", on_click=on_click_clear_reference_image)
 
 

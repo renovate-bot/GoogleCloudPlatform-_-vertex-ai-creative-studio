@@ -32,6 +32,7 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
+from pages.test_uploader import test_uploader_page
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState
