@@ -14,16 +14,10 @@ The server exposes the following tools:
     *   `prompt` (string, required): Text prompt for video generation.
     *   `bucket` (string, optional): Google Cloud Storage bucket where the API will save the generated video(s) (e.g., "your-bucket/output-folder" or "gs://your-bucket/output-folder"). If not provided, and `GENMEDIA_BUCKET` env var is set, `gs://<GENMEDIA_BUCKET>/veo_outputs/` will be used. One of these (param or env var) is effectively required.
     *   `output_directory` (string, optional): If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically.
-    *   `model` (string, optional): Model to use for video generation (e.g., "veo-2.0-generate-001", "veo-3.0-generate-preview").
-        *   Default: `"veo-2.0-generate-001"`
-    *   `num_videos` (number, optional): Number of videos to generate (1-4).
-        *   Default: `1`
-        *   Min: `1`, Max: `4`
-    *   `aspect_ratio` (string, optional): Aspect ratio of the generated videos (e.g., "16:9", "9:16", "widescreen", "portrait").
-        *   Default: `"16:9"`
-    *   `duration` (number, optional): Duration of the generated video in seconds (integer values 5-8).
-        *   Default: `5`
-        *   Min: `5`, Max: `8`
+    *   `model` (string, optional): Model to use for video generation. Can be a full model ID or a common alias. See the `mcp-common/models.go` file for a complete list of supported models and aliases.
+    *   `num_videos` (number, optional): Number of videos to generate. Note: the maximum is model-dependent.
+    *   `aspect_ratio` (string, optional): Aspect ratio of the generated videos. Note: supported aspect ratios are model-dependent.
+    *   `duration` (number, optional): Duration of the generated video in seconds. Note: the supported duration range is model-dependent.
 
 ### 2. `veo_i2v` (Image-to-Video)
 
