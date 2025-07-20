@@ -38,7 +38,7 @@ dotenv==0.9.9
     # via adk-genmedia-agent
 fastapi==0.116.1
     # via google-adk
-google-adk==1.6.1
+google-adk==1.7.0
     # via adk-genmedia-agent
 google-api-core==2.25.1
     # via
@@ -104,7 +104,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.25.0
+google-genai==1.26.0
     # via
     #   google-adk
     #   google-cloud-aiplatform

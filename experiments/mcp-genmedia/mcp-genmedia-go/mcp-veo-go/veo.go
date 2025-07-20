@@ -39,7 +39,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.6.0" // Version increment for OTel instrumentation
+	version     = "1.7.0" // Add model alias support and dynamic constraints
 )
 
 // init handles command-line flags and initial logging setup.
@@ -107,23 +107,19 @@ func main() {
 		),
 		mcp.WithString("model",
 			mcp.DefaultString("veo-2.0-generate-001"),
-			mcp.Description("Model to use for video generation (e.g., veo-2.0-generate-001, veo-3.0-generate-preview)."),
+			mcp.Description(common.BuildVeoModelDescription()),
 		),
 		mcp.WithNumber("num_videos",
 			mcp.DefaultNumber(1),
-			mcp.Min(1),
-			mcp.Max(4),
-			mcp.Description("Number of videos to generate (1-4)."),
+			mcp.Description("Number of videos to generate. Note: the maximum is model-dependent."),
 		),
 		mcp.WithString("aspect_ratio",
 			mcp.DefaultString("16:9"),
-			mcp.Description("Aspect ratio of the generated videos (e.g., 16:9, 9:16, widescreen, portrait)."),
+			mcp.Description("Aspect ratio of the generated videos. Note: supported aspect ratios are model-dependent."),
 		),
 		mcp.WithNumber("duration",
 			mcp.DefaultNumber(5),
-			mcp.Min(5),
-			mcp.Max(8),
-			mcp.Description("Duration of the generated video in seconds (integer values 5-8)."),
+			mcp.Description("Duration of the generated video in seconds. Note: the supported duration range is model-dependent."),
 		),
 	}
 

@@ -9,11 +9,31 @@ The `config.go` file provides a way to load configuration from environment varia
 * `ProjectID`: The Google Cloud project ID.
 * `Location`: The Google Cloud location.
 * `GenmediaBucket`: The Google Cloud Storage bucket for general media.
-* `LyriaLocation`: The Google Cloud location for Lyria.
-* `LyriaModelPublisher`: The model publisher for Lyria.
-* `DefaultLyriaModelID`: The default model ID for Lyria.
 
-The `GetEnv` function is a helper function that gets an environment variable or returns a fallback value if the environment variable is not set.
+## Model Configuration
+
+The `models.go` file provides a centralized, configuration-driven system for managing model-specific parameters and constraints for the various generative media tools.
+
+### Overview
+
+This system allows for easy maintenance and ensures consistency across all MCP servers. When a tool supports different models (e.g., `Imagen 3` vs. `Imagen 4`), the specific constraints for each model (like max image count, supported aspect ratios, etc.) are defined in this package.
+
+### Key Components
+
+*   **`...ModelInfo` Structs**: Data structures (`ImagenModelInfo`, `VeoModelInfo`) that define the unique constraints for each model family.
+*   **`Supported...Models` Maps**: A map for each model family (`SupportedImagenModels`, `SupportedVeoModels`) that holds the specific constraint values for every supported model and its aliases.
+*   **Helper Functions**:
+    *   `Resolve...Model`: Finds the canonical model name from a user-provided name or alias (e.g., `ResolveImagenModel`).
+    *   `Build...ModelDescription`: Generates a formatted string of all supported models and their constraints, suitable for use in an MCP tool's parameter description.
+
+### Usage
+
+When developing an MCP server that uses different models, you should:
+
+1.  Define the model's properties in the appropriate `Supported...Models` map in `models.go`.
+2.  Use the `Build...ModelDescription` function to dynamically create the `description` for the `model` parameter in your tool definition.
+3.  In your tool's handler, use the `Resolve...Model` function to get the canonical model name and then retrieve its constraints from the map.
+4.  Use these constraints to validate and adjust user input.
 
 ## File Utilities
 

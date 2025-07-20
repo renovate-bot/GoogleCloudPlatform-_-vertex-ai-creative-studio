@@ -71,8 +71,9 @@ def get_media_for_page(
     media_per_page: int,
     type_filters: Optional[List[str]] = None,
     error_filter: str = "all",  # "all", "no_errors", "only_errors"
+    sort_by_timestamp: bool = False,
 ) -> List[MediaItem]:
-    """ Fetches a paginated and filtered list of media items from Firestore.
+    """Fetches a paginated and filtered list of media items from Firestore.
 
     NOTE: This implementation currently fetches a larger batch of items (up to 'fetch_limit')
     and then performs filtering and pagination client-side (in Python). For very large datasets
@@ -93,9 +94,9 @@ def get_media_for_page(
     fetch_limit = 1000  # Max items to fetch for client-side filtering/pagination
 
     try:
-        query = db.collection(config.GENMEDIA_COLLECTION_NAME).order_by(
-            "timestamp", direction=firestore.Query.DESCENDING
-        )
+        query = db.collection(config.GENMEDIA_COLLECTION_NAME)
+        if sort_by_timestamp:
+            query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
 
         all_fetched_items: List[MediaItem] = []
         for doc in query.limit(fetch_limit).stream():
@@ -143,6 +144,8 @@ def get_media_for_page(
                 timestamp_iso_str = raw_timestamp  # Assuming it's already ISO format
             elif hasattr(raw_timestamp, "isoformat"):  # For Firestore Timestamp objects
                 timestamp_iso_str = raw_timestamp.isoformat()
+
+            print(f"DEBUG: Fetched item with timestamp: {timestamp_iso_str}")
 
             try:
                 gen_time = (
@@ -227,6 +230,7 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         media_per_page=1000,  # Effectively fetch all matching items up to the internal limit
         type_filters=pagestate.selected_values,
         error_filter=pagestate.error_filter_value,
+        sort_by_timestamp=True,
     )
     pagestate.total_media = len(all_matching_items)
 
@@ -236,6 +240,7 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         pagestate.media_per_page,
         pagestate.selected_values,
         pagestate.error_filter_value,
+        sort_by_timestamp=True,
     )
     pagestate.key += 1  # Force re-render of the grid
 
@@ -1022,6 +1027,7 @@ def handle_page_change(e: me.ClickEvent):
             pagestate.media_per_page,
             pagestate.selected_values,
             pagestate.error_filter_value,
+            sort_by_timestamp=True,
         )
         pagestate.key += 1  # Refresh grid
         pagestate.url_item_not_found_message = None

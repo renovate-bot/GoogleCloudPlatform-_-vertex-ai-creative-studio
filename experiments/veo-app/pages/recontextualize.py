@@ -20,6 +20,8 @@ from common.metadata import add_media_item
 from common.storage import store_to_gcs
 from components.dialog import dialog
 from components.header import header
+from components.library.events import LibrarySelectionChangeEvent
+from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.recontext.image_thumbnail import image_thumbnail
 from config.default import Default
@@ -28,17 +30,20 @@ from state.state import AppState
 
 config = Default()
 
+
 @me.stateclass
 class PageState:
     """Recontext Page State"""
-    uploaded_images: list[me.UploadedFile] = field(default_factory=list) # pylint: disable=invalid-field-call
-    uploaded_image_gcs_uris: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
+
+    uploaded_images: list[me.UploadedFile] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
-    result_images: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
-    recontext_sample_count: int = 1
+    result_images: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    recontext_sample_count: int = 4
     is_loading: bool = False
     error_message: str = ""
     show_error_dialog: bool = False
+
 
 @me.page(path="/recontextualize")
 def recontextualize():
@@ -49,15 +54,25 @@ def recontextualize():
         with page_frame():  # pylint: disable=not-context-manager
             header("Product in Scene", "scene_based_layout")
 
-            with me.box(style=me.Style(display="flex", flex_direction="column", gap=16)):
+            with me.box(
+                style=me.Style(display="flex", flex_direction="column", gap=16),
+            ):
                 if len(state.uploaded_image_gcs_uris) < 3:
-                    me.uploader(
-                        label="Upload Product Images (1-3)",
-                        on_upload=on_upload,
-                        style=me.Style(width="100%"),
-                        key="product_uploader",
-                        multiple=True,
-                    )
+                    with me.box(
+                        style=me.Style(display="flex", flex_direction="row", gap=16, justify_content="center"),
+                    ):
+                        me.uploader(
+                            label="Upload Product Images",
+                            on_upload=on_upload,
+                            #style=me.Style(width="100%"),
+                            key="product_uploader",
+                            multiple=True,
+                        )
+                        library_chooser_button(
+                            button_label="Choose Image from Library",
+                            on_library_select=on_library_choice,
+                            button_type="raised",
+                        )
                 else:
                     me.text(
                         "Maximum of 3 images uploaded.",
@@ -70,9 +85,13 @@ def recontextualize():
                     )
 
                 if state.uploaded_image_gcs_uris:
-                    with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=16)):
+                    with me.box(
+                        style=me.Style(display="flex", flex_wrap="wrap", gap=16)
+                    ):
                         for i, uri in enumerate(state.uploaded_image_gcs_uris):
-                            image_thumbnail(image_uri=uri, index=i, on_remove=on_remove_image)
+                            image_thumbnail(
+                                image_uri=uri, index=i, on_remove=on_remove_image
+                            )
 
                 me.input(
                     label="Scene Prompt",
@@ -89,8 +108,14 @@ def recontextualize():
                         justify_content="center",
                     ),
                 ):
-                    with me.box(style=me.Style(width="400px", margin=me.Margin(top=16))):
-                        with me.box(style=me.Style(display="flex", justify_content="space-between")):
+                    with me.box(
+                        style=me.Style(width="400px", margin=me.Margin(top=16))
+                    ):
+                        with me.box(
+                            style=me.Style(
+                                display="flex", justify_content="space-between"
+                            )
+                        ):
                             me.text(f"Number of images: {state.recontext_sample_count}")
                         me.slider(
                             min=1,
@@ -100,22 +125,35 @@ def recontextualize():
                             on_value_change=on_sample_count_change,
                         )
 
-                    #with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+                    # with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                     me.button("Generate", on_click=on_generate, type="flat")
                     me.button("Clear", on_click=on_clear, type="stroked")
 
                 if state.is_loading:
                     with me.box(
                         style=me.Style(
-                            display="flex", align_items="center", justify_content="center",
+                            display="flex",
+                            align_items="center",
+                            justify_content="center",
                         )
                     ):
                         me.progress_spinner()
 
                 if state.result_images:
-                    with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=16, justify_content="center", margin=me.Margin(top=16))):
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_wrap="wrap",
+                            gap=16,
+                            justify_content="center",
+                            margin=me.Margin(top=16),
+                        )
+                    ):
                         for image in state.result_images:
-                            me.image(src=image, style=me.Style(width="400px", border_radius=12))
+                            me.image(
+                                src=image,
+                                style=me.Style(width="400px", border_radius=12),
+                            )
 
             with dialog(is_open=state.show_error_dialog):  # pylint: disable=not-context-manager
                 me.text("Generation Failed", style=me.Style(font_weight="bold"))
@@ -123,17 +161,30 @@ def recontextualize():
                 with me.box(style=me.Style(margin=me.Margin(top=16))):
                     me.button("Close", on_click=on_close_error_dialog, type="stroked")
 
+
+def on_library_choice(e: LibrarySelectionChangeEvent):
+    """Add from library."""
+    state = me.state(PageState)
+    state.uploaded_image_gcs_uris.append(e.gcs_uri)
+    yield
+
+
 def on_upload(e: me.UploadEvent):
+    """Handle uploade event."""
     state = me.state(PageState)
     for file in e.files:
-        gcs_url = store_to_gcs("recontext_sources", file.name, file.mime_type, file.getvalue())
+        gcs_url = store_to_gcs(
+            "recontext_sources", file.name, file.mime_type, file.getvalue(),
+        )
         state.uploaded_image_gcs_uris.append(gcs_url)
     yield
+
 
 def on_input_prompt(value: str):
     state = me.state(PageState)
     state.prompt = value
     yield
+
 
 def on_sample_count_change(e: me.SliderValueChangeEvent):
     state = me.state(PageState)
@@ -156,8 +207,13 @@ def on_generate(e: me.ClickEvent):
 
     print(f"Generating recontext image with sources: {state.uploaded_image_gcs_uris}")
     try:
-        result_gcs_uris = recontextualize_product_in_scene(state.uploaded_image_gcs_uris, state.prompt, state.recontext_sample_count)
-        state.result_images = [uri.replace("gs://", "https://storage.mtls.cloud.google.com/") for uri in result_gcs_uris]
+        result_gcs_uris = recontextualize_product_in_scene(
+            state.uploaded_image_gcs_uris, state.prompt, state.recontext_sample_count
+        )
+        state.result_images = [
+            uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+            for uri in result_gcs_uris
+        ]
         add_media_item(
             user_email=app_state.user_email,
             model=config.MODEL_IMAGEN_PRODUCT_RECONTEXT,
@@ -174,11 +230,13 @@ def on_generate(e: me.ClickEvent):
         state.is_loading = False
         yield
 
+
 def on_clear(e: me.ClickEvent):
     state = me.state(PageState)
     state.uploaded_image_gcs_uris = []
     state.result_images = []
     yield
+
 
 def on_close_error_dialog(e: me.ClickEvent):
     state = me.state(PageState)
