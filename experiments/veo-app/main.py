@@ -15,6 +15,7 @@
 
 import inspect
 import os
+import uuid
 
 import mesop as me
 from fastapi import APIRouter, FastAPI, Request
@@ -23,6 +24,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from common.auth import set_user_identity_and_session
 from components.page_scaffold import page_scaffold
 from pages.config import config_page_contents
 from pages.edit_images import content as edit_images_content
@@ -64,12 +66,14 @@ async def add_custom_header(request: Request, call_next):
 def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
     """On load event."""
     s = me.state(AppState)
-    if hasattr(app.state, "user_info") and app.state.user_info:
-        s.user_email = app.state.user_info.email
-        s.user_agent = app.state.user_info.agent
+    if hasattr(app, "state") and hasattr(app.state, "user_email"):
+        s.user_email = app.state.user_email
+        s.session_id = app.state.session_id
+        print(f"DEBUG: User Email = {s.user_email}, Session ID = {s.session_id}")
     else:
-        s.user_email = ""
-        s.user_agent = ""
+        # Fallback if middleware hasn't run (e.g., direct page load in dev)
+        s.user_email = "anonymous@google.com"
+        s.session_id = ""
 
     if s.theme_mode:
         if s.theme_mode == "light":
@@ -189,18 +193,32 @@ def recontextualize_page():
     recontextualize()
 
 
+from common.storage import get_or_create_session
+
+
 @app.get("/__/auth/")
 def auth_proxy(request: Request) -> RedirectResponse:
-    user_agent = request.headers.get("user-agent")
-    user_email_header = request.headers.get("X-Goog-Authenticated-User-Email", "")
-    # The header is in the format "accounts.google.com:user@example.com"
-    user_email = user_email_header.split(":")[-1]
-    app.state.user_info = UserInfo(email=user_email, agent=user_agent)
-    return RedirectResponse(url="/home")
+    print(f"DEBUG: Cookies received in auth_proxy: {request.cookies}")
+    user_email = request.headers.get("X-Goog-Authenticated-User-Email", "anonymous@google.com")
+    if ":" in user_email:
+        user_email = user_email.split(":")[-1]
+
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+
+    get_or_create_session(session_id, user_email)
+
+    app.state.user_email = user_email
+    app.state.session_id = session_id
+
+    response = RedirectResponse(url="/home")
+    response.set_cookie(key="session_id", value=session_id, httponly=True, samesite='Lax')
+    return response
 
 
 @app.get("/")
-def root_redirect() -> RedirectResponse:  # Renamed for clarity from home()
+def root_redirect() -> RedirectResponse:
     return RedirectResponse(url="/__/auth/")
 
 

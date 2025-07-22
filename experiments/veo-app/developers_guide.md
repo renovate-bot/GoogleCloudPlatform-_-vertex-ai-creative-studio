@@ -73,15 +73,17 @@ This section outlines the key architectural patterns and best practices that are
 
 ## Firestore Setup
 
-This application uses Firestore to store metadata for the media library. Here's how to set it up:
+This application uses Firestore to store metadata for the media library and user sessions. Here's how to set it up:
 
 1.  **Create a Firestore Database:** In your Google Cloud Project, create a Firestore database in Native Mode.
 
-2.  **Create a Collection:** Create a collection named `genmedia`. This is the default collection name, but it can be overridden with the `GENMEDIA_COLLECTION_NAME` environment variable.
+2.  **Create Collections:**
+    *   Create a collection named `genmedia` (or as configured by `GENMEDIA_COLLECTION_NAME`).
+    *   Create a collection named `sessions` (or as configured by `SESSIONS_COLLECTION_NAME`).
 
-3.  **Create an Index:** Create a single-field index for the `timestamp` field with the query scope set to "Collection" and the order set to "Descending". This will allow the library to sort media by the time it was created.
+3.  **Create an Index:** For the `genmedia` collection, create a single-field index for the `timestamp` field with the query scope set to "Collection" and the order set to "Descending". This will allow the library to sort media by the time it was created. The `sessions` collection does not require a custom index for its default functionality.
 
-4.  **Set Security Rules:** To protect your data, set the following security rules in the "Rules" tab of your Firestore database:
+4.  **Set Security Rules:** To protect your data, set the following security rules in the "Rules" tab of your Firestore database. These rules ensure that users can only access their own media and session data.
 
 ```
 rules_version = '2';
@@ -93,9 +95,38 @@ service cloud.firestore {
       // and their email matches the 'user_email' field in the document.
       allow read, write: if request.auth != null && request.auth.token.email == resource.data.user_email;
     }
+
+    // Match any document in the 'sessions' collection
+    match /sessions/{sessionId} {
+      // Allow read and write access only if the user is authenticated
+      // and their email matches the 'user_email' field in the document.
+      allow read, write: if request.auth != null && request.auth.token.email == resource.data.user_email;
+    }
   }
 }
 ```
+
+## Authentication and Session Management
+
+A critical architectural challenge in this application is bridging the context gap between the FastAPI backend and the Mesop UI framework. A direct middleware approach to authentication fails because the middleware runs outside the Mesop application context, leading to runtime errors.
+
+To solve this, we use a **redirect-based authentication pattern**. This ensures that user and session information is correctly established before any Mesop page is rendered.
+
+Here is the flow:
+
+1.  **Root Redirect:** The FastAPI route for `/` redirects all initial traffic to a dedicated authentication endpoint, `/__/auth/`.
+
+2.  **Authentication Endpoint (`/__/auth/`):** This FastAPI endpoint is responsible for:
+    *   Reading the user's identity from the `X-Goog-Authenticated-User-Email` header.
+    *   Retrieving a unique `session_id` from the request's cookies. If no cookie is present, a new `session_id` is generated.
+    *   Persisting the session data (user email and session ID) to the `sessions` collection in Firestore.
+    *   Storing the `user_email` and `session_id` on the global `app.state` object. This object serves as the critical bridge between the FastAPI context and the Mesop context.
+
+3.  **Redirect to Home:** The `/__/auth/` endpoint then issues a `RedirectResponse` to the application's home page (`/home`). Crucially, it also sets the `session_id` cookie on this response, ensuring it will be available for all subsequent requests.
+
+4.  **Mesop State Hydration (`on_load`):** When the Mesop page loads, its `on_load` event handler reads the `user_email` and `session_id` from the global `app.state` and uses them to populate the Mesop-specific `AppState`. This correctly "hydrates" the UI with the authenticated user and session information.
+
+This pattern is the established and correct way to handle authentication in this application. It is robust, scalable, and correctly separates the concerns of the two frameworks.
 
 ## Configuration-Driven Architecture
 

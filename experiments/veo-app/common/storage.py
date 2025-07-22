@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import base64
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from functools import lru_cache
 
 from google.cloud import aiplatform
@@ -20,8 +22,42 @@ from google.cloud import storage
 import vertexai
 
 from config.default import Default
+from config.firebase_config import FirebaseClient
+
 
 cfg = Default()
+
+db = FirebaseClient(cfg.GENMEDIA_FIREBASE_DB).get_client()
+
+
+@dataclass
+class Session:
+    """Represents a user session."""
+
+    id: str
+    user_email: str
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    last_accessed_at: datetime = field(default_factory=datetime.utcnow)
+
+
+def get_or_create_session(session_id: str, user_email: str) -> Session:
+    """
+    Retrieves a session from Firestore or creates a new one if it doesn't exist.
+    """
+    session_ref = db.collection(cfg.SESSIONS_COLLECTION_NAME).document(session_id)
+    session_doc = session_ref.get()
+
+    if session_doc.exists:
+        session = Session(**session_doc.to_dict())
+        # Update last accessed time
+        session.last_accessed_at = datetime.utcnow()
+        session_ref.update({"last_accessed_at": session.last_accessed_at})
+        return session
+    else:
+        session = Session(id=session_id, user_email=user_email)
+        session_ref.set(asdict(session))
+        return session
+
 
 def store_to_gcs(
     folder: str,
