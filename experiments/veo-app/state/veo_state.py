@@ -30,6 +30,7 @@ class PageState:
     original_prompt: str
 
     aspect_ratio: str = "16:9"
+    resolution: str = "720p"
     video_length: int = 5  # 5-8
 
     # I2V reference Image

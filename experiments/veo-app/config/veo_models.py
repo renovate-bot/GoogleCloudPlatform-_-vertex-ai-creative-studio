@@ -23,6 +23,7 @@ class VeoModelConfig:
     display_name: str
     supported_modes: List[str]
     supported_aspect_ratios: List[str]
+    resolutions: List[str]
     min_duration: int
     max_duration: int
     default_duration: int
@@ -38,6 +39,7 @@ VEO_MODELS: List[VeoModelConfig] = [
         display_name="Veo 2.0",
         supported_modes=["t2v", "i2v", "interpolation"],
         supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["720p"],
         min_duration=5,
         max_duration=8,
         default_duration=5,
@@ -51,6 +53,7 @@ VEO_MODELS: List[VeoModelConfig] = [
         display_name="Veo 3.0",
         supported_modes=["t2v", "i2v"],
         supported_aspect_ratios=["16:9"],
+        resolutions=["720p", "1080p"],
         min_duration=8,
         max_duration=8,
         default_duration=8,
@@ -64,6 +67,7 @@ VEO_MODELS: List[VeoModelConfig] = [
         display_name="Veo 3.0 Fast",
         supported_modes=["t2v", "i2v"],
         supported_aspect_ratios=["16:9"],
+        resolutions=["720p", "1080p"],
         min_duration=8,
         max_duration=8,
         default_duration=8,

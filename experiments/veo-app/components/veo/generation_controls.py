@@ -56,6 +56,20 @@ def generation_controls():
             disabled=selected_config.min_duration == selected_config.max_duration,
         )
 
+        # Resolution Selector
+        me.select(
+            label="resolution",
+            options=[
+                me.SelectOption(label=res, value=res)
+                for res in selected_config.resolutions
+            ],
+            appearance="outline",
+            style=me.Style(),
+            value=state.resolution,
+            on_selection_change=on_selection_change_resolution,
+            disabled=len(selected_config.resolutions) <= 1,
+        )
+
         # Prompt Enhancement Checkbox
         me.checkbox(
             label="auto-enhance prompt",
@@ -90,6 +104,12 @@ def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
     state.aspect_ratio = e.value
 
 
+def on_selection_change_resolution(e: me.SelectSelectionChangeEvent):
+    """Adjust resolution based on user event."""
+    state = me.state(PageState)
+    state.resolution = e.value
+
+
 def on_selection_change_model(e: me.SelectSelectionChangeEvent):
     """Adjust model based on user event and apply its constraints."""
     state = me.state(PageState)
@@ -101,6 +121,7 @@ def on_selection_change_model(e: me.SelectSelectionChangeEvent):
         state.aspect_ratio = new_config.supported_aspect_ratios[0]
         state.video_length = new_config.default_duration
         state.auto_enhance_prompt = new_config.supports_prompt_enhancement
+        state.resolution = new_config.resolutions[0]
         
         # If the current mode is no longer supported, default to the first supported mode.
         if state.veo_mode not in new_config.supported_modes:
@@ -111,3 +132,4 @@ def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
     """Toggle auto-enhance prompt"""
     state = me.state(PageState)
     state.auto_enhance_prompt = e.checked
+''
