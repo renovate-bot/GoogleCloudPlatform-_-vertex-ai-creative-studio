@@ -47,6 +47,9 @@ class Default:
     GENMEDIA_COLLECTION_NAME: str = os.environ.get(
         "GENMEDIA_COLLECTION_NAME", "genmedia"
     )
+    SESSIONS_COLLECTION_NAME: str = os.environ.get(
+        "SESSIONS_COLLECTION_NAME", "sessions"
+    )
 
     # storage
     GENMEDIA_BUCKET: str = os.environ.get("GENMEDIA_BUCKET", f"{PROJECT_ID}-assets")
