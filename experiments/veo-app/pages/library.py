@@ -145,7 +145,7 @@ def get_media_for_page(
             elif hasattr(raw_timestamp, "isoformat"):  # For Firestore Timestamp objects
                 timestamp_iso_str = raw_timestamp.isoformat()
 
-            print(f"DEBUG: Fetched item with timestamp: {timestamp_iso_str}")
+            # print(f"DEBUG: Fetched item with timestamp: {timestamp_iso_str}")
 
             try:
                 gen_time = (
