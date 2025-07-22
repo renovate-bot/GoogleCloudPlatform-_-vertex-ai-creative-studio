@@ -197,6 +197,9 @@ def get_media_for_page(
                 comment=str(raw_item_data.get("comment"))
                 if raw_item_data.get("comment") is not None
                 else None,
+                resolution=str(raw_item_data.get("resolution"))
+                if raw_item_data.get("resolution") is not None
+                else None,
                 raw_data=raw_item_data,
             )
             all_fetched_items.append(media_item)
@@ -489,6 +492,8 @@ def library_content(app_state: me.state):
                                         pill(m_item.aspect, "aspect")
                                     if m_item.duration is not None:
                                         pill(item_duration_str, "duration")
+                                    if m_item.resolution:
+                                        pill(m_item.resolution, "resolution")
                                     pill("24 fps", "fps")
                                     if (
                                         m_item.enhanced_prompt_used
@@ -834,6 +839,9 @@ def library_content(app_state: me.state):
                         ):
                             if item.duration is not None:
                                 me.text(f"Duration: {item.duration} seconds")
+
+                        if dialog_media_type_group == "video":
+                            me.text(f"Resolution: {item.resolution or '720p'}")
 
                         if dialog_media_type_group == "video":
                             if item.reference_image:

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import os
+import time
 
 from dotenv import load_dotenv
 from google import genai
@@ -22,6 +22,7 @@ from google.genai import types
 from common.error_handling import GenerationError
 from config.default import Default
 from config.veo_models import get_veo_model_config
+from models.requests import VideoGenerationRequest
 
 config = Default()
 
@@ -29,54 +30,51 @@ config = Default()
 load_dotenv(override=True)
 
 client = genai.Client(
-    vertexai=True, project=config.VEO_PROJECT_ID, location=config.LOCATION
+    vertexai=True, project=config.VEO_PROJECT_ID, location=config.LOCATION,
 )
 
-def generate_video(state):
+
+def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
+    """Generate a video based on a request object using the genai SDK.
+    This function handles text-to-video, image-to-video, and interpolation.
     """
-    Generates a video based on the current state using the genai SDK.
-    This function handles text-to-video, image-to-video, and interpolation by
-    using the correct types.Image constructor with the gcs_uri parameter.
-    """
-    model_config = get_veo_model_config(state.veo_model)
+    model_config = get_veo_model_config(request.model_version_id)
     if not model_config:
-        raise GenerationError(f"Unsupported VEO model version: {state.veo_model}")
+        raise GenerationError(f"Unsupported VEO model version: {request.model_version_id}")
 
     # --- Prepare Generation Configuration ---
-    enhance_prompt = (
-        True if state.veo_model.startswith("3.") else state.auto_enhance_prompt
+    enhance_prompt_for_api = (
+        True if request.model_version_id.startswith("3.") else request.enhance_prompt
     )
-
     gen_config_args = {
-        "aspect_ratio": state.aspect_ratio,
+        "aspect_ratio": request.aspect_ratio,
         "number_of_videos": 1,
-        "duration_seconds": state.video_length,
-        "enhance_prompt": enhance_prompt,
+        "duration_seconds": request.duration_seconds,
+        "enhance_prompt": enhance_prompt_for_api,
         "output_gcs_uri": f"gs://{config.VIDEO_BUCKET}",
+        "resolution": request.resolution,
     }
 
     # --- Prepare Image and Video Inputs ---
     image_input = None
     # Check for interpolation (first and last frame)
-    if getattr(state, "reference_image_gcs", None) and getattr(
-        state, "last_reference_image_gcs", None
-    ):
+    if request.reference_image_gcs and request.last_reference_image_gcs:
         print("Mode: Interpolation")
         image_input = types.Image(
-            gcs_uri=state.reference_image_gcs,
-            mime_type=state.reference_image_mime_type,
+            gcs_uri=request.reference_image_gcs,
+            mime_type=request.reference_image_mime_type,
         )
         gen_config_args["last_frame"] = types.Image(
-            gcs_uri=state.last_reference_image_gcs,
-            mime_type=state.last_reference_image_mime_type,
+            gcs_uri=request.last_reference_image_gcs,
+            mime_type=request.last_reference_image_mime_type,
         )
 
     # Check for standard image-to-video
-    elif getattr(state, "reference_image_gcs", None):
+    elif request.reference_image_gcs:
         print("Mode: Image-to-Video")
         image_input = types.Image(
-            gcs_uri=state.reference_image_gcs,
-            mime_type=state.reference_image_mime_type,
+            gcs_uri=request.reference_image_gcs,
+            mime_type=request.reference_image_mime_type,
         )
     else:
         print("Mode: Text-to-Video")
@@ -87,7 +85,7 @@ def generate_video(state):
     try:
         operation = client.models.generate_videos(
             model=model_config.model_name,
-            prompt=state.veo_prompt_input,
+            prompt=request.prompt,
             config=gen_config,
             image=image_input,
         )
@@ -117,7 +115,7 @@ def generate_video(state):
             ):
                 video_uri = operation.result.generated_videos[0].video.uri
                 print(f"Successfully generated video: {video_uri}")
-                return video_uri
+                return video_uri, request.resolution
             else:
                 raise GenerationError(
                     "API reported success but no video URI was found in the response."

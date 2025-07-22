@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Veo mesop UI page."""
+
 import datetime  # Required for timestamp
 import time
 
@@ -22,16 +23,16 @@ from common.metadata import MediaItem, add_media_item_to_firestore  # Updated im
 from common.storage import store_to_gcs
 from components.dialog import dialog, dialog_actions
 from components.header import header
+from components.library.events import LibrarySelectionChangeEvent
 from components.page_scaffold import page_frame, page_scaffold
 from components.veo.file_uploader import file_uploader
 from components.veo.generation_controls import generation_controls
 from components.veo.video_display import video_display
-from components.library.events import LibrarySelectionChangeEvent
 from config.default import Default
 from config.rewriters import VIDEO_REWRITER
 from models.gemini import rewriter
 from models.model_setup import VeoModelSetup
-from models.veo import generate_video
+from models.veo import generate_video, VideoGenerationRequest
 from state.state import AppState
 from state.veo_state import PageState
 
@@ -48,7 +49,9 @@ def veo_content(app_state: me.state):
         with page_frame():  # pylint: disable=not-context-manager
             header("Veo", "movie")
 
-            with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, height=250)):
+            with me.box(
+                style=me.Style(display="flex", flex_direction="row", gap=10, height=250)
+            ):
                 with me.box(
                     style=me.Style(
                         flex_basis="max(480px, calc(60% - 48px))",
@@ -62,7 +65,9 @@ def veo_content(app_state: me.state):
                     subtle_veo_input()
                     generation_controls()
 
-                file_uploader(on_upload_image, on_upload_last_image, on_veo_image_from_library)
+                file_uploader(
+                    on_upload_image, on_upload_last_image, on_veo_image_from_library,
+                )
 
             me.box(style=me.Style(height=50))
 
@@ -133,38 +138,61 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     yield
 
     start_time = time.time()
-    gcs_uri = ""
+
+    request = VideoGenerationRequest(
+        prompt=state.veo_prompt_input,
+        duration_seconds=state.video_length,
+        aspect_ratio=state.aspect_ratio,
+        resolution=state.resolution,
+        enhance_prompt=state.auto_enhance_prompt,
+        model_version_id=state.veo_model,
+        reference_image_gcs=state.reference_image_gcs,
+        last_reference_image_gcs=state.last_reference_image_gcs,
+        reference_image_mime_type=state.reference_image_mime_type,
+        last_reference_image_mime_type=state.last_reference_image_mime_type,
+    )
+
     item_to_log = MediaItem(
         user_email=app_state.user_email,
         timestamp=datetime.datetime.now(datetime.timezone.utc),
-        prompt=state.veo_prompt_input,
-        original_prompt=(state.original_prompt if state.original_prompt else state.veo_prompt_input),
-        model=(config.VEO_EXP_MODEL_ID if state.veo_model == "3.0" else config.VEO_EXP_FAST_MODEL_ID if state.veo_model == "3.0-fast" else config.VEO_MODEL_ID),
+        prompt=request.prompt,
+        original_prompt=(
+            state.original_prompt if state.original_prompt else request.prompt
+        ),
+        model=(
+            config.VEO_EXP_MODEL_ID
+            if request.model_version_id == "3.0"
+            else config.VEO_EXP_FAST_MODEL_ID
+            if request.model_version_id == "3.0-fast"
+            else config.VEO_MODEL_ID
+        ),
         mime_type="video/mp4",
-        aspect=state.aspect_ratio,
-        duration=float(state.video_length),
-        reference_image=state.reference_image_gcs if state.reference_image_gcs else None,
-        last_reference_image=state.last_reference_image_gcs if state.last_reference_image_gcs else None,
-        enhanced_prompt_used=state.auto_enhance_prompt,
+        aspect=request.aspect_ratio,
+        duration=float(request.duration_seconds),
+        reference_image=request.reference_image_gcs,
+        last_reference_image=request.last_reference_image_gcs,
+        enhanced_prompt_used=request.enhance_prompt,
         comment="veo default generation",
     )
 
     try:
-        gcs_uri = generate_video(state)
+        gcs_uri, resolution = generate_video(request)
         state.result_video = gcs_uri
-        item_to_log.gcsuri = gcs_uri if gcs_uri else None
+        item_to_log.gcsuri = gcs_uri
+        item_to_log.resolution = resolution
 
     except GenerationError as ge:
         state.error_message = ge.message
         state.show_error_dialog = True
         state.result_video = ""
         item_to_log.error_message = ge.message
-    except Exception as ex: # Catch any other unexpected error during generation
-        state.error_message = f"An unexpected error occurred during video generation: {str(ex)}"
+    except Exception as ex:  # Catch any other unexpected error during generation
+        state.error_message = (
+            f"An unexpected error occurred during video generation: {str(ex)}"
+        )
         state.show_error_dialog = True
         state.result_video = ""
         item_to_log.error_message = state.error_message
-
 
     finally:
         end_time = time.time()
@@ -233,22 +261,30 @@ def subtle_veo_input():
                     flex_grow=1,
                 ),
                 on_blur=on_blur_veo_prompt,
-                key=str(pagestate.veo_prompt_textarea_key), # Ensure key is string
-                value=pagestate.veo_prompt_input, # Bind to veo_prompt_input
+                key=str(pagestate.veo_prompt_textarea_key),  # Ensure key is string
+                value=pagestate.veo_prompt_input,  # Bind to veo_prompt_input
             )
         with me.box(style=me.Style(display="flex", flex_direction="column", gap=15)):
             # do the veo
-            with me.content_button(type="icon", on_click=on_click_veo, disabled=pagestate.is_loading):
+            with me.content_button(
+                type="icon", on_click=on_click_veo, disabled=pagestate.is_loading
+            ):
                 with me.box(style=icon_style):
                     me.icon("play_arrow")
                     me.text("Create")
             # invoke gemini
-            with me.content_button(type="icon", on_click=on_click_custom_rewriter, disabled=pagestate.is_loading):
+            with me.content_button(
+                type="icon",
+                on_click=on_click_custom_rewriter,
+                disabled=pagestate.is_loading,
+            ):
                 with me.box(style=icon_style):
                     me.icon("auto_awesome")
                     me.text("Rewriter")
             # clear all of this
-            with me.content_button(type="icon", on_click=on_click_clear, disabled=pagestate.is_loading):
+            with me.content_button(
+                type="icon", on_click=on_click_clear, disabled=pagestate.is_loading
+            ):
                 with me.box(style=icon_style):
                     me.icon("clear")
                     me.text("Clear")
@@ -259,6 +295,7 @@ def on_close_error_dialog(e: me.ClickEvent):  # pylint: disable=unused-argument
     state = me.state(PageState)
     state.show_error_dialog = False
     yield
+
 
 def on_upload_image(e: me.UploadEvent):
     """Upload image to GCS and update state."""
@@ -280,6 +317,7 @@ def on_upload_image(e: me.UploadEvent):
         state.show_error_dialog = True
     yield
 
+
 def on_upload_last_image(e: me.UploadEvent):
     """Upload last image to GCS and update state."""
     state = me.state(PageState)
@@ -299,16 +337,25 @@ def on_upload_last_image(e: me.UploadEvent):
         state.show_error_dialog = True
     yield
 
+
 def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     """VEO image from library handler."""
     state = me.state(PageState)
-    if e.chooser_id == "i2v_library_chooser" or e.chooser_id == "first_frame_library_chooser":
+    if (
+        e.chooser_id == "i2v_library_chooser"
+        or e.chooser_id == "first_frame_library_chooser"
+    ):
         state.reference_image_gcs = e.gcs_uri
-        state.reference_image_uri = e.gcs_uri.replace("gs://", f"https://storage.mtls.cloud.google.com/")
+        state.reference_image_uri = e.gcs_uri.replace(
+            "gs://", f"https://storage.mtls.cloud.google.com/"
+        )
     elif e.chooser_id == "last_frame_library_chooser":
         state.last_reference_image_gcs = e.gcs_uri
-        state.last_reference_image_uri = e.gcs_uri.replace("gs://", f"https://storage.mtls.cloud.google.com/")
+        state.last_reference_image_uri = e.gcs_uri.replace(
+            "gs://", f"https://storage.mtls.cloud.google.com/"
+        )
     yield
+
 
 # def on_upload_image(e: me.UploadEvent):
 #     """Upload image to GCS and update state."""

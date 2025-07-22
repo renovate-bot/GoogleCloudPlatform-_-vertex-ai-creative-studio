@@ -56,6 +56,7 @@ class MediaItem:
 
     # Video specific (some may also apply to Image/Audio)
     aspect: Optional[str] = None  # e.g., "16:9", "1:1" (also for Image)
+    resolution: Optional[str] = None # e.g., "720p", "1080p"
     duration: Optional[float] = None  # Seconds (also for Audio)
     reference_image: Optional[str] = None  # GCS URI for I2V
     last_reference_image: Optional[str] = None  # GCS URI for I2V interpolation end frame
@@ -86,10 +87,10 @@ def add_media_item_to_firestore(item: MediaItem):
         # Or raise an exception: raise ConnectionError("Firestore client not initialized")
         return
 
-    # Prepare data for Firestore, excluding None values and raw_data
+    # Prepare data for Firestore, excluding None values and the 'id' field
     firestore_data = {}
     for f in field_names(item):
-        if f == "raw_data" or f == "id":  # Exclude raw_data and id from direct storage like this
+        if f == "id":  # Exclude id from direct storage
             continue
         value = getattr(item, f)
         if value is not None:
@@ -206,6 +207,9 @@ def get_media_item_by_id(
                 else None,
                 critique=str(raw_item_data.get("critique"))
                 if raw_item_data.get("critique") is not None
+                else None,
+                resolution=str(raw_item_data.get("resolution"))
+                if raw_item_data.get("resolution") is not None
                 else None,
                 raw_data=raw_item_data,
             )
