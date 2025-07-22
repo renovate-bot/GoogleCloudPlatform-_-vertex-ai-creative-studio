@@ -32,7 +32,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
     # via click
 cryptography==45.0.5
     # via authlib
-docstring-parser==0.16
+docstring-parser==0.17.0
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
