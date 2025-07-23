@@ -2,21 +2,33 @@
 
 __Welcome to the Experimental folder!__
 
-The experimental folder contains features not yet ready for inclusion into the main app, stand-alone applications, and other interesting clever features. 
+The experimental folder contains amazing stand-alone applications and features not yet ready for inclusion into the main app.
 
 We'd love to hear your feedback on these!
 
-Table of Contents
+## Table of Contents
 
+**Combined Workflows**
+
+* [Genmedia Creative Studio v.Next](#genmedia-creative-studio-vnext) - v.next of Genmedia creative studio
 * [Creative GenMedia Workflow](#creative-genmedia-workflow) - a Creative GenMedia workflow which takes various inputs to create prompts for Veo 3, plus allows a showcase of output videos.
+
+**Veo related**
 * [Veo Genetic Prompt Optimizer](#veo-genetic-prompt-optimizer) - an automated system that uses a genetic algorithm to evolve and refine high-level "metaprompts," that guides Gemini to generate superior, task-specific prompts for Google's Veo video generation model.
 * [Veo 3 Character Consistency](#veo-3-character-consistency) - a workflow for generating a video of a person in a new scene while maintaining character consistency.
+* [Veo 3 Item Consistency](#veo-3-item-consistency) - a workflow for generating a video of an item in a new scene while maintaining item consistency.
 * [VeoStart](#veostart) - a prompt creator assistant for Veo 2 & Veo 3
+
+**MCP Tools for Genmedia**
 * [MCP Tools for Genmedia](#mcp-tools-for-genmedia) - MCP Servers for Genmedia services
-* [Genmedia Creative Studio v.Next](#genmedia-creative-studio-vnext) - v.next of Genmedia creative studio
+
+**Audio**
 * [Creative Podcast Assistant](#creative-podcast-assistant) - a notebook example to create a podcast with genmedia services
-* [Arena](#arena---rate-images) - rate your images with in a visual arena
 * [Babel](#babel---chirp-3-hd-voices) - experiment with Chirp 3 HD voices
+
+**Image Comparison**
+* [Arena](#arena---rate-images) - rate your images with in a visual arena
+
 
 ## Creative GenMedia Workflow
 
@@ -37,6 +49,12 @@ See [Veo Genetic Prompt Optimizer](./veo-genetic-prompt-optimizer/)
 This application demonstrates a workflow for generating a video of a person in a new scene while maintaining character consistency. It uses a series of Google AI models to analyze input images, generate a new scene with the person, and then create a video from that scene.
 
 See [Veo 3 Character Consistency](./veo3-character-consistency/)
+
+## Veo 3 Item Consistency
+
+This application demonstrates a workflow for generating a video of an item in a new scene while maintaining item consistency. It uses a series of Google AI models to analyze input images, generate a new scene with the item, and then create a video from that scene.
+
+See [Veo 3 Item Consistency](./veo3-item-consistency/)
 
 ## VeoStart
 
