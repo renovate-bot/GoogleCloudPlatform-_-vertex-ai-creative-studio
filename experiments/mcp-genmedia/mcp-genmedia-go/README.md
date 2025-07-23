@@ -147,6 +147,25 @@ export PROJECT_ID="your-google-cloud-project-id"
 export LOCATION="us-central1"
 ```
 
+### Local Development & OpenTelemetry
+
+When running the MCP servers locally, you may want to connect to a local OpenTelemetry (OTel) collector for tracing. By default, the servers attempt a secure (TLS) connection. If your local collector is running in insecure mode, you will need to set the following environment variable to disable TLS:
+
+```bash
+# This tells the application to use an insecure connection for the OTLP exporter.
+export OTEL_EXPORTER_OTLP_INSECURE=true
+```
+
+When deploying the application to a production environment (like GKE, Cloud Run, etc.), you should **not** set this variable. The application will correctly default to requiring a secure TLS connection to the OTel collector.
+
+You can also specify the OTel collector endpoint using an environment variable:
+
+```bash
+# Example for a local collector
+export OTEL_EXPORTER_OTLP_ENDPOINT="localhost:4317"
+```
+If `OTEL_EXPORTER_OTLP_ENDPOINT` is not set, it will default to `localhost:4317`.
+
 Please refer to the `README.md` file within each server's subdirectory for detailed information on its specific tools, parameters, environment variables, and usage examples.
 
 ## Developing MCP Servers for Genmedia

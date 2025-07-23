@@ -66,6 +66,31 @@ A `sample_settings.json` is provided for your convenience.
 
 Please note, you can add `"trust": true` to any of the MCP Servers to allow trusting the MCP server and its tools to bypass confirmations. See the [Configuration docs](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md).
 
+### Local Development and Tracing
+
+If you are running a local OpenTelemetry (OTel) collector for tracing, you may need to configure the MCP servers to send traces to it using an insecure connection. You can do this by adding the `OTEL_EXPORTER_OTLP_INSECURE` environment variable to your `mcpServers` configuration in `settings.json` or your `gemini-extension.json` file.
+
+Here is an example of how to configure the `veo` server to use an insecure connection:
+
+```json
+{
+  "mcpServers": {
+    "veo": {
+      "command": "mcp-veo-go",
+      "env": {
+        "OTEL_EXPORTER_OTLP_INSECURE": "true",
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+      }
+    }
+  }
+}
+```
+
+When this variable is set to `"true"`, the MCP server will connect to the OTel collector without using TLS. This is useful for local development, but should not be used in production.
+
 
 ## .gemini/extensions/google-genmedia Extension
 
