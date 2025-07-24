@@ -272,55 +272,6 @@ When refactoring code, follow these steps to avoid common errors:
 1.  **Find all uses of the code being changed.** Use `search_file_content` to find all instances of the code you are changing. This will help you to avoid missing any instances of the code that need to be updated.
 2.  **Pay close attention to data models.** When changing a data model, make sure to update all code that uses that data model. This includes code that reads from and writes to the data model.
 3.  **Run tests after making changes.** This will help you to catch any errors that you may have introduced.
-4.  **Favor Flexible Generalization Over Brittle Replacement:** When refactoring, favor generalization and flexibility over replacement. Instead of removing a specialized function, adapt the new, more general function to handle the specialized cases by accepting more flexible arguments (like `**kwargs`). This ensures no data is lost and the system can be extended more easily in the future.
-
-## Code Quality and Style
-After any code modification, ensure the changes adhere to the project's established style guide (e.g., Google Python Style Guide for this project). Proactively run any configured linters or formatters to verify compliance before considering a task complete. This ensures consistency and maintainability.
-
-# Data Consistency
-
-When working with Firestore, it is important to keep the data in Firestore consistent with the data models in the code. This can be done by:
-
-*   **Using a single source of truth for your data models.** This will help to ensure that all code is using the same data models.
-*   **Using a data migration tool to update your data in Firestore when you change your data models.** This will help to ensure that your data in Firestore is always consistent with your data models.
-*   **When checking field values from external data sources like Firestore, prefer containment checks (e.g., `if 'substring' in value:`) over exact equality checks (`if value == 'exact_string'`) for identifiers that might have variations. This makes the code more robust. Also, always use the `.get('key', default_value)` method to access dictionary keys safely.**
-
-# Working with GCS URIs
-
-When working with GCS URIs, it is important to construct them correctly. The correct way to construct a GCS URI is to use the following format:
-
-```
-gs://<bucket-name>/<object-name>
-```
-
-When constructing a GCS URI, make sure to not include the `gs://` prefix more than once.
-
-## VTO Page Lessons Learned: Creating the Virtual Try-On (VTO) Page
-VTO-generated items stored in Firestore can be identified by checking if the `model` field in their `raw_data` contains the string `'virtual-try-on'`. The original input images are available in the `raw_data` under the keys `person_image_gcs` and `product_image_gcs`.
-
-
-# More Lessons Learned
-
-Fact: When working with the Mesop framework, access shared or global state within an event handler by calling app_state = me.state(AppState) inside that handler. Do not pass state objects directly as parameters to  components, as this will cause a Pydantic validation error.
-
-1. Prioritize Compatibility Over Premature Optimization: My first error was introducing an ImportError with CountAggregation. While the intention was to make counting faster, it relied on a newer version of the  google-cloud-firestore library than was installed in the project. The lesson is to always work within the  constraints of the project's existing dependencies. A slightly less performant but working solution is always  better than a broken one.
-
-
-2. Refactoring Requires Thoroughness (Read and Write): When we changed the MediaItem dataclass (renaming  enhanced_prompt to enhanced_prompt_used), I initially only fixed where the data was written. This led to the AttributeError because I didn't fix all the places where the data was read (like the library page). The lesson is that refactoring a data structure requires a global search to update every single point of access.
-
-
-3. Understand Framework-Specific State Management: This was the most important lesson. My final two errors were  caused by misunderstanding Mesop's state management pattern.
-    * The Error: I tried to "push" the global AppState into a component as a parameter  (generation_controls(app_state=...)).
-    * The Mesop Way: Components should be self-contained. The correct pattern is for an event handler (like  on_click_generate_images) to "pull" the state it needs when it's triggered, by calling me.state(AppState)  within the function itself.
-
-
-# Refactoring Checklist
-
-When refactoring code, follow these steps to avoid common errors:
-
-1.  **Find all uses of the code being changed.** Use `search_file_content` to find all instances of the code you are changing. This will help you to avoid missing any instances of the code that need to be updated.
-2.  **Pay close attention to data models.** When changing a data model, make sure to update all code that uses that data model. This includes code that reads from and writes to the data model.
-3.  **Run tests after making changes.** This will help you to catch any errors that you may have introduced.
 
 # Data Consistency
 
