@@ -35,7 +35,7 @@ from tenacity import (
 
 from config.default import Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
-from models.veo import generate_video
+from models.veo import generate_video, VideoGenerationRequest
 from components.library.library_chooser_button import library_chooser_button
 from components.library.events import LibrarySelectionChangeEvent
 from state.state import AppState
@@ -95,8 +95,8 @@ def motion_portraits_content(app_state: me.state):
 
     state = me.state(PageState)
 
-    with page_scaffold():
-        with page_frame():
+    with page_scaffold():  # pylint: disable=not-context-manager
+        with page_frame():  # pylint: disable=not-context-manager
             header("Motion Portraits", "portrait")
 
             with me.box(
@@ -537,7 +537,18 @@ Do not describe the frame. There should be no lip movement like speaking, but th
         print("Lights, camera, action!")
         start_time = time.time()
 
-        gcs_uri = generate_video(state)
+        request = VideoGenerationRequest(
+            prompt=scene_direction_for_video,
+            duration_seconds=state.video_length,
+            aspect_ratio=state.aspect_ratio,
+            resolution="720p",  # Motion portraits default to 720p
+            enhance_prompt=state.auto_enhance_prompt,
+            model_version_id=state.veo_model,
+            reference_image_gcs=state.reference_image_gcs,
+            reference_image_mime_type=state.reference_image_mime_type,
+        )
+
+        gcs_uri, _ = generate_video(request)
 
         end_time = time.time()
         execution_time = end_time - start_time
