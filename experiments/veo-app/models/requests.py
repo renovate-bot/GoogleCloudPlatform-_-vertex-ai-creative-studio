@@ -30,6 +30,7 @@ class VideoGenerationRequest(BaseModel):
     resolution: str
     enhance_prompt: bool
     model_version_id: str
+    negative_prompt: Optional[str] = None
     reference_image_gcs: Optional[str] = None
     last_reference_image_gcs: Optional[str] = None
     reference_image_mime_type: Optional[str] = None

@@ -338,3 +338,16 @@ gs://<bucket-name>/<object-name>
 ```
 
 When constructing a GCS URI, make sure to not include the `gs://` prefix more than once.
+
+# Feature Implementation: The Full Data Lifecycle Checklist
+
+When adding a new data field (e.g., a prompt, parameter, or setting) to a feature, you must trace and modify its entire lifecycle. Before marking the task as complete, verify each of the following steps:
+
+1.  **State:** Has the field been added to the appropriate state class in `state/`?
+2.  **UI Input:** Has the UI component for user input been added or modified in `pages/`?
+3.  **Request Schema:** Has the data contract in `models/requests.py` been updated?
+4.  **Model Logic:** Has the core generation function in `models/` been updated to use the field?
+5.  **Persistence (Write):** Has the `MediaItem` in `common/metadata.py` been updated, AND is the field being saved correctly from the page's `on_click` handler?
+6.  **Persistence (Read):** Has the data loading function (`get_media_for_page` in `pages/library.py`) been updated to read the field from Firestore into the `MediaItem` object?
+7.  **UI Display:** Is the field now displayed correctly in all relevant views (e.g., the library details dialog)?
+8.  **Edge Cases:** Have all related user actions, like "Clear" or "Reset" buttons, been updated to handle the new field?

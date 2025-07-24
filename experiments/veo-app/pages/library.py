@@ -186,6 +186,9 @@ def get_media_for_page(
                 last_reference_image=str(raw_item_data.get("last_reference_image"))
                 if raw_item_data.get("last_reference_image") is not None
                 else None,
+                negative_prompt=str(raw_item_data.get("negative_prompt"))
+                if raw_item_data.get("negative_prompt") is not None
+                else None,
                 enhanced_prompt_used=raw_item_data.get("enhanced_prompt"),
                 duration=item_duration,
                 error_message=str(raw_item_data.get("error_message"))
@@ -799,6 +802,8 @@ def library_content(app_state: me.state):
 
                         if dialog_media_type_group != "image":
                             me.text(f'Prompt: "{item.prompt or "N/A"}"')
+                            if item.negative_prompt:
+                                me.text(f'Negative Prompt: "{item.negative_prompt}"')
                             if item.enhanced_prompt_used:
                                 me.text(
                                     f'Enhanced Prompt: "{item.enhanced_prompt_used}"'
