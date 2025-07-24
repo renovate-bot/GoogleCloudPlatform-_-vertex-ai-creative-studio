@@ -58,9 +58,10 @@ class MediaItem:
     aspect: Optional[str] = None  # e.g., "16:9", "1:1" (also for Image)
     resolution: Optional[str] = None # e.g., "720p", "1080p"
     duration: Optional[float] = None  # Seconds (also for Audio)
-    reference_image: Optional[str] = None  # GCS URI for I2V
-    last_reference_image: Optional[str] = None  # GCS URI for I2V interpolation end frame
-    enhanced_prompt_used: Optional[bool] = None # For Veo's auto-enhance prompt feature
+    reference_image: Optional[str] = None
+    last_reference_image: Optional[str] = None
+    negative_prompt: Optional[str] = None
+    enhanced_prompt_used: bool = False
     comment: Optional[str] = None # General comment field, e.g., for video generation type
 
     # Image specific
@@ -195,9 +196,10 @@ def get_media_item_by_id(
                 last_reference_image=str(raw_item_data.get("last_reference_image"))
                 if raw_item_data.get("last_reference_image") is not None
                 else None,
-                enhanced_prompt_used=str(raw_item_data.get("enhanced_prompt"))
-                if raw_item_data.get("enhanced_prompt") is not None
+                negative_prompt=str(raw_item_data.get("negative_prompt"))
+                if raw_item_data.get("negative_prompt") is not None
                 else None,
+                enhanced_prompt_used=raw_item_data.get("enhanced_prompt_used", False),
                 duration=item_duration,
                 error_message=str(raw_item_data.get("error_message"))
                 if raw_item_data.get("error_message") is not None

@@ -40,7 +40,16 @@ def video_display():
                     "https://storage.mtls.cloud.google.com/",
                 )
                 print(f"video_url: {video_url}")
-                me.video(src=video_url, style=me.Style(border_radius=6))
+                me.video(
+                    src=video_url,
+                    style=me.Style(
+                        border_radius=12,
+                        width="100%",  # Ensures the video scales to the container width
+                        max_width="90vh",  # Prevents the video from becoming excessively large on wide screens
+                        display="block",  # Ensures proper block-level layout
+                        margin=me.Margin(left="auto", right="auto"), # Centers the video horizontally
+                    ),
+                )
                 with me.box(
                     style=me.Style(
                         display="flex",

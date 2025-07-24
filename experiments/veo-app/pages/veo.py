@@ -50,7 +50,7 @@ def veo_content(app_state: me.state):
             header("Veo", "movie")
 
             with me.box(
-                style=me.Style(display="flex", flex_direction="row", gap=10, height=250)
+                style=me.Style(display="flex", flex_direction="row", gap=10)
             ):
                 with me.box(
                     style=me.Style(
@@ -62,8 +62,38 @@ def veo_content(app_state: me.state):
                         gap=10,
                     )
                 ):
+                    # Renders the action buttons (e.g. create, rewrite, clear)
                     subtle_veo_input()
+                    with me.box(
+                        style=me.Style(
+                            border_radius=16,
+                            padding=me.Padding.all(8),
+                            background=me.theme_var("secondary-container"),
+                            display="flex",
+                            width="100%",
+                        )
+                    ):
+                        with me.box(style=me.Style(flex_grow=1)):
+                            me.native_textarea(
+                                placeholder="Enter concepts to avoid (negative prompt)",
+                                on_blur=on_blur_negative_prompt,
+                                value=state.negative_prompt,
+                                autosize=True,
+                                min_rows=1,
+                                max_rows=3,
+                                style=me.Style(
+                                    background="transparent",
+                                    outline="none",
+                                    width="100%",
+                                    border=me.Border.all(me.BorderSide(style="none")),
+                                    color=me.theme_var("foreground"),
+                                ),
+                            )
+
+                    # Renders the generation quality controls (e.g., aspect ratio, length)
                     generation_controls()
+
+    
 
                 file_uploader(
                     on_upload_image, on_upload_last_image, on_veo_image_from_library,
@@ -84,11 +114,22 @@ def veo_content(app_state: me.state):
             me.button("Close", on_click=on_close_error_dialog, type="flat")
 
 
+def on_input_prompt(e: me.InputEvent):
+    state = me.state(PageState)
+    state.prompt = e.value
+    yield
+
+def on_blur_negative_prompt(e: me.InputBlurEvent):
+    state = me.state(PageState)
+    state.negative_prompt = e.value
+    yield
+
 def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clear prompt and video."""
     state = me.state(PageState)
     state.result_video = None
     state.prompt = None
+    state.negative_prompt = ""
     state.veo_prompt_input = None
     state.original_prompt = None
     state.veo_prompt_textarea_key += 1
@@ -141,6 +182,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
 
     request = VideoGenerationRequest(
         prompt=state.veo_prompt_input,
+        negative_prompt=state.negative_prompt,
         duration_seconds=state.video_length,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
@@ -171,6 +213,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         duration=float(request.duration_seconds),
         reference_image=request.reference_image_gcs,
         last_reference_image=request.last_reference_image_gcs,
+        negative_prompt=request.negative_prompt,
         enhanced_prompt_used=request.enhance_prompt,
         comment="veo default generation",
     )

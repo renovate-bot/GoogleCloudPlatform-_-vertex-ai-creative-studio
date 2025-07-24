@@ -100,7 +100,9 @@ def image_details(item: MediaItem) -> None:
     if item.rewritten_prompt:
         me.text(f'Rewritten Prompt: "{item.rewritten_prompt}"')
     else:
-        me.text(f"Prompt: \"{item.prompt or 'N/A'}\"")
+        me.text(f"Prompt: '{item.prompt or 'N/A'}'")
+    if item.negative_prompt:
+        me.text(f"Negative Prompt: '{item.negative_prompt}'")
     if item.critique:
         me.text(f"Critique: {item.critique}")
 

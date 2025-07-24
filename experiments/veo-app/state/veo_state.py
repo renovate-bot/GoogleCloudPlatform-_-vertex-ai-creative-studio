@@ -26,7 +26,11 @@ class PageState:
 
     veo_mode: str = "t2v"
 
-    prompt: str
+    # The user's main prompt for video generation.
+    prompt: str = "A cinematic shot of a baby raccoon wearing an intricate italian mafioso suit, sitting at a table in a bar, with a dark background."
+    # The user's negative prompt to steer the model away from certain concepts.
+    negative_prompt: str = ""
+
     original_prompt: str
 
     aspect_ratio: str = "16:9"

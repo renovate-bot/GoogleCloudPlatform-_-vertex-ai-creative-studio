@@ -54,6 +54,8 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         "output_gcs_uri": f"gs://{config.VIDEO_BUCKET}",
         "resolution": request.resolution,
     }
+    if request.negative_prompt:
+        gen_config_args["negative_prompt"] = request.negative_prompt
 
     # --- Prepare Image and Video Inputs ---
     image_input = None

@@ -326,3 +326,22 @@ The `library_chooser_button` is a reusable component that allows users to select
 - **Isolating and Removing Legacy Code:** A major source of our errors was the presence of an old, non-SDK-based function (`generate_video_aiplatform`) that was still being called by one of the pages. This highlights the importance of completely removing obsolete code after a refactor to prevent it from being used accidentally. A single, unified function (`generate_video`) that handles all generation paths is much easier to maintain and debug.
 
 - **Enhanced Error Logging:** When polling a long-running operation from the `google-genai` SDK, the `operation.error` attribute contains a detailed error message if the operation fails. It is critical to log this specific message in the exception handler. Relying on a generic error message hides the root cause and makes debugging significantly harder.
+
+### Adding a New Field to a Generation Page
+
+Adding a new parameter or field (like a negative prompt or a quality setting) to a generation page (e.g., Imagen, Veo) requires touching multiple files across the application stack. This guide outlines the data lifecycle you must consider.
+
+Follow this checklist to ensure your feature is fully integrated:
+
+1.  **State (`state/`):** Add your new field to the appropriate state class (e.g., `VeoState`). This is where the UI will store the user's input.
+2.  **UI (`pages/`):** Add the UI control (e.g., `me.textarea`, `me.slider`) to the main page file (e.g., `pages/veo.py`) and create its corresponding event handler.
+3.  **Request Schema (`models/requests.py`):** Update the request class (e.g., `VideoGenerationRequest`) to include your new field. This creates a clean data contract for the model layer.
+4.  **Model Logic (`models/`):** Update the core generation function (e.g., `models/veo.py`) to use the new field from the request object and pass it to the underlying generative API.
+5.  **Save to Firestore (`common/metadata.py` & `pages/`):**
+    *   First, add the field to the `MediaItem` dataclass in `common/metadata.py`.
+    *   Then, in the page's `on_click` handler (e.g., `on_click_veo`), ensure you populate this new field when creating the `MediaItem` to be logged.
+6.  **Load from Firestore (`pages/library.py`):**
+    *   This is a critical and easily missed step. In `pages/library.py`, find the `get_media_for_page` function.
+    *   Update the `MediaItem` constructor inside this function to read your new field from the `raw_item_data` dictionary.
+7.  **Display in Library (`pages/library.py`):** Update the details dialog within the library page to display the new field from the `MediaItem` object.
+8.  **Handle Edge Cases:** Remember to update any related functionality. For example, does the "Clear" button on the page need to reset your new field?
