@@ -190,7 +190,7 @@ msgpack==1.1.1
     #   mesop
 mypy-extensions==1.1.0
     # via black
-numpy==2.3.1
+numpy==2.3.2
     # via
     #   contourpy
     #   matplotlib
