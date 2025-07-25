@@ -3,5 +3,9 @@ venv
 local/
 .env
 .DS_Store
+.venv
+node_modules
+dist
+local/  
 
 .aider*
