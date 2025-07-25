@@ -74,4 +74,4 @@ def media_tile(label: str, icon: str, route: Optional[str]):
                     color=me.theme_var("on-surface"),
                 ),
             )
-            me.text(label, style=me.Style(font_weight="medium"))
+            me.text(label, style=me.Style(font_weight="medium", text_align="center"))

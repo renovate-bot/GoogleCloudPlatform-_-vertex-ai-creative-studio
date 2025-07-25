@@ -33,6 +33,7 @@ from models.model_setup import (
     GeminiModelSetup,
 )
 from config.default import Default # Import Default for cfg
+from models.character_consistency_models import FacialCompositeProfile, GeneratedPrompts, BestImage
 
 # Initialize client and default model ID for rewriter
 client = GeminiModelSetup.init()
@@ -380,3 +381,142 @@ def generate_compliment(generation_instruction: str, image_output):
 
     print("Critique generation function finished.")
     return critique_text
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def get_facial_composite_profile(image_bytes: bytes) -> FacialCompositeProfile:
+    """Analyzes an image and returns a structured facial profile."""
+    model_name = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+
+    profile_config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=FacialCompositeProfile.model_json_schema(),
+        temperature=cfg.TEMP_FORENSIC_ANALYSIS,
+    )
+    profile_prompt_parts = [
+        "You are a forensic analyst. Analyze the following image and extract a detailed, structured facial profile.",
+        types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+    ]
+    response = client.models.generate_content(
+        model=model_name, contents=profile_prompt_parts, config=profile_config
+    )
+    return FacialCompositeProfile.model_validate_json(response.text)
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def get_natural_language_description(profile: FacialCompositeProfile) -> str:
+    """Generates a natural language description from a facial profile."""
+    model_name = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+
+    description_config = types.GenerateContentConfig(temperature=cfg.TEMP_DESCRIPTION_TRANSLATION)
+    description_prompt = f"""
+    Based on the following structured JSON data of a person's facial features, write a concise, natural language description suitable for an image generation model. Focus on key physical traits.
+
+    JSON Profile:
+    {profile.model_dump_json(indent=2)}
+    """
+    response = client.models.generate_content(
+        model=model_name, contents=[description_prompt], config=description_config
+    )
+    return response.text.strip()
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def generate_final_scene_prompt(
+    base_description: str, user_prompt: str
+) -> GeneratedPrompts:
+    """
+    Generates a detailed, photorealistic prompt to place a described person
+    in a novel scene.
+    """
+    model_name = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=GeneratedPrompts.model_json_schema(),
+        temperature=cfg.TEMP_SCENE_GENERATION,
+    )
+
+    meta_prompt = f"""
+    You are an expert prompt engineer for a text-to-image generation model.
+    Your task is to create a detailed, photorealistic prompt that places a specific person into a new scene.
+
+    **Person Description:**
+    {base_description}
+
+    **User's Desired Scene:**
+    {user_prompt}
+
+    **Instructions:**
+    1.  Combine the person's description with the user's scene to create a single, coherent, and highly detailed prompt.
+    2.  The final image should be photorealistic. Add photography keywords like lens type (e.g., 85mm), lighting (e.g., cinematic lighting, soft light), and composition.
+    3.  Ensure the final prompt clearly describes the person performing the action or being in the scene requested by the user.
+    4.  Generate a standard negative prompt to avoid common artistic flaws.
+    """
+
+    response = client.models.generate_content(
+        model=model_name, contents=[meta_prompt], config=config
+    )
+    return GeneratedPrompts.model_validate_json(response.text)
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def select_best_image(
+    real_image_bytes_list: list[bytes],
+    generated_image_bytes_list: list[bytes],
+    generated_image_gcs_uris: list[str],
+) -> BestImage:
+    """Selects the best generated image by comparing it against a set of real
+    images.
+    """
+    model = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=-1),
+        response_mime_type="application/json",
+        response_schema=BestImage.model_json_schema(),
+        temperature=cfg.TEMP_BEST_IMAGE_SELECTION,
+    )
+
+    prompt_parts = [
+        "Please analyze the following images. The first set of images are real photos of a person. The second set of images are AI-generated.",
+        "Your task is to select the generated image that best represents the person from the real photos, focusing on facial and physical traits, not clothing or style.",
+        "Provide the path of the best image and your reasoning.",
+        "\n--- REAL IMAGES ---",
+    ]
+
+    for image_bytes in real_image_bytes_list:
+        prompt_parts.append(
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        )
+
+    prompt_parts.append("\n--- GENERATED IMAGES ---")
+
+    for i, image_bytes in enumerate(generated_image_bytes_list):
+        prompt_parts.append(f"Image path: {generated_image_gcs_uris[i]}")
+        prompt_parts.append(
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        )
+
+    response = client.models.generate_content(
+        model=model, contents=prompt_parts, config=config
+    )
+    return BestImage.model_validate_json(response.text)

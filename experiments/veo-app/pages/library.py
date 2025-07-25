@@ -203,6 +203,28 @@ def get_media_for_page(
                 resolution=str(raw_item_data.get("resolution"))
                 if raw_item_data.get("resolution") is not None
                 else None,
+                media_type=str(raw_item_data.get("media_type"))
+                if raw_item_data.get("media_type") is not None
+                else None,
+                source_character_images=raw_item_data.get(
+                    "source_character_images", []
+                ),
+                character_description=str(raw_item_data.get("character_description"))
+                if raw_item_data.get("character_description") is not None
+                else None,
+                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
+                if raw_item_data.get("imagen_prompt") is not None
+                else None,
+                veo_prompt=str(raw_item_data.get("veo_prompt"))
+                if raw_item_data.get("veo_prompt") is not None
+                else None,
+                candidate_images=raw_item_data.get("candidate_images", []),
+                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
+                if raw_item_data.get("best_candidate_image") is not None
+                else None,
+                outpainted_image=str(raw_item_data.get("outpainted_image"))
+                if raw_item_data.get("outpainted_image") is not None
+                else None,
                 raw_data=raw_item_data,
             )
             all_fetched_items.append(media_item)
@@ -757,7 +779,40 @@ def library_content(app_state: me.state):
                                 else ""
                             )
                         )
-                        if dialog_media_type_group == "image":
+                        if (
+                            item.media_type == "character_consistency"
+                            and item.best_candidate_image
+                        ):
+                            me.video(
+                                src=item_display_url,
+                                style=me.Style(
+                                    width="100%",
+                                    max_height="40vh",
+                                    border_radius=8,
+                                    background="#000",
+                                    display="block",
+                                    margin=me.Margin(bottom=16),
+                                ),
+                            )
+                            best_candidate_url = item.best_candidate_image.replace(
+                                "gs://", "https://storage.mtls.cloud.google.com/"
+                            )
+                            me.text(
+                                "Best Candidate Image:",
+                                style=me.Style(
+                                    font_weight="500", margin=me.Margin(top=8)
+                                ),
+                            )
+                            me.image(
+                                src=best_candidate_url,
+                                style=me.Style(
+                                    max_width="250px",
+                                    height="auto",
+                                    border_radius=6,
+                                    margin=me.Margin(top=4),
+                                ),
+                            )
+                        elif dialog_media_type_group == "image":
                             image_details(item)
                         elif (
                             dialog_media_type_group == "video"
@@ -890,6 +945,57 @@ def library_content(app_state: me.state):
                                         margin=me.Margin(top=4),
                                     ),
                                 )
+                        elif (
+                            item.media_type == "character_consistency"
+                            and item.best_candidate_image
+                        ):
+                            print("I'm in character consistency")
+                            best_candidate_url = item.best_candidate_image.replace(
+                                "gs://", "https://storage.mtls.cloud.google.com/"
+                            )
+                            me.text(
+                                "Best Candidate Image:",
+                                style=me.Style(
+                                    font_weight="500", margin=me.Margin(top=8)
+                                ),
+                            )
+                            me.image(
+                                src=best_candidate_url,
+                                style=me.Style(
+                                    max_width="250px",
+                                    height="auto",
+                                    border_radius=6,
+                                    margin=me.Margin(top=4),
+                                ),
+                            )
+                            if item.source_character_images:
+                                me.text(
+                                    "Source Images:",
+                                    style=me.Style(
+                                        font_weight="500", margin=me.Margin(top=8)
+                                    ),
+                                )
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex", flex_direction="row", gap=10
+                                    )
+                                ):
+                                    for src_image_uri in item.source_character_images[
+                                        :3
+                                    ]:
+                                        src_url = src_image_uri.replace(
+                                            "gs://",
+                                            "https://storage.mtls.cloud.google.com/",
+                                        )
+                                        me.image(
+                                            src=src_url,
+                                            style=me.Style(
+                                                max_width="150px",
+                                                height="auto",
+                                                border_radius=6,
+                                                margin=me.Margin(top=4),
+                                            ),
+                                        )
 
                         with me.content_button(
                             on_click=on_click_set_permalink,

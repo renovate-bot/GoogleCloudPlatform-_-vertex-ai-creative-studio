@@ -122,13 +122,13 @@ googleapis-common-protos==1.70.0
     #   grpcio-status
 grpc-google-iam-v1==0.14.2
     # via google-cloud-resource-manager
-grpcio==1.73.1
+grpcio==1.74.0
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.73.1
+grpcio-status==1.74.0
     # via google-api-core
 gunicorn==23.0.0
     # via veo-app
@@ -190,7 +190,7 @@ msgpack==1.1.1
     #   mesop
 mypy-extensions==1.1.0
     # via black
-numpy==2.3.1
+numpy==2.3.2
     # via
     #   contourpy
     #   matplotlib

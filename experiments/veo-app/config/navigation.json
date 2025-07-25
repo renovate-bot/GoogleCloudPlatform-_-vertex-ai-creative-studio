@@ -14,6 +14,14 @@
       "group": "foundation"
     },
     {
+      "id": 8,
+      "display": "Edit Images",
+      "icon": "edit",
+      "route": "/edit_images",
+      "group": "foundation",
+      "feature_flag": "EDIT_IMAGES_ENABLED"
+    },
+    {
       "id": 10,
       "display": "Veo",
       "icon": "movie_filter",
@@ -36,28 +44,15 @@
     },
     {
       "id": 30,
-      "display": "Lyria",
-      "icon": "music_note",
-      "group": "foundation",
-      "feature_flag_not": "LYRIA_PROJECT_ID"
-    },
-    {
-      "id": 40,
-      "display": "Edit Images",
-      "icon": "edit",
-      "route": "/edit_images",
-      "group": "workflows",
-      "feature_flag": "EDIT_IMAGES_ENABLED"
-    },
-    {
-      "id": 41,
       "display": "Virtual Try-On",
       "icon": "checkroom",
       "route": "/vto",
-      "group": "foundation"
+      "group": "foundation",
+      "align": "bottom"
     },
+
     {
-      "id": 42,
+      "id": 40,
       "display": "Product in Scene",
       "icon": "scene_based_layout",
       "route": "/recontextualize",
@@ -68,6 +63,13 @@
       "display": "Motion Portraits",
       "icon": "portrait",
       "route": "/motion_portraits",
+      "group": "workflows"
+    },
+    {
+      "id": 55,
+      "display": "Character Consistency",
+      "icon": "person",
+      "route": "/character_consistency",
       "group": "workflows"
     },
     {

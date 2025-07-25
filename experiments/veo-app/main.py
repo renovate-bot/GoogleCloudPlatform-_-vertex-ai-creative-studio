@@ -26,6 +26,7 @@ from pydantic import BaseModel
 
 from common.auth import set_user_identity_and_session
 from components.page_scaffold import page_scaffold
+from pages.character_consistency import character_consistency_page_content
 from pages.config import config_page_contents
 from pages.edit_images import content as edit_images_content
 from pages.home import home_page_content
@@ -193,13 +194,25 @@ def recontextualize_page():
     recontextualize()
 
 
+@me.page(
+    path="/character_consistency",
+    title="GenMedia Creative Studio - Character Consistency",
+    on_load=on_load,
+)
+def character_consistency_page():
+    """Character Consistency Page"""
+    character_consistency_page_content()
+
+
 from common.storage import get_or_create_session
 
 
 @app.get("/__/auth/")
 def auth_proxy(request: Request) -> RedirectResponse:
     print(f"DEBUG: Cookies received in auth_proxy: {request.cookies}")
-    user_email = request.headers.get("X-Goog-Authenticated-User-Email", "anonymous@google.com")
+    user_email = request.headers.get(
+        "X-Goog-Authenticated-User-Email", "anonymous@google.com"
+    )
     if ":" in user_email:
         user_email = user_email.split(":")[-1]
 
@@ -213,7 +226,9 @@ def auth_proxy(request: Request) -> RedirectResponse:
     app.state.session_id = session_id
 
     response = RedirectResponse(url="/home")
-    response.set_cookie(key="session_id", value=session_id, httponly=True, samesite='Lax')
+    response.set_cookie(
+        key="session_id", value=session_id, httponly=True, samesite="Lax"
+    )
     return response
 
 
@@ -226,14 +241,23 @@ def root_redirect() -> RedirectResponse:
 app.mount(
     "/static",
     StaticFiles(
-        directory=os.path.join(os.path.dirname(inspect.getfile(me)), "web", "src", "app", "prod", "web_package")
+        directory=os.path.join(
+            os.path.dirname(inspect.getfile(me)),
+            "web",
+            "src",
+            "app",
+            "prod",
+            "web_package",
+        )
     ),
     name="static",
 )
 
 app.mount(
     "/",
-    WSGIMiddleware(me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")),
+    WSGIMiddleware(
+        me.create_wsgi_app(debug_mode=os.environ.get("DEBUG_MODE", "") == "true")
+    ),
 )
 
 

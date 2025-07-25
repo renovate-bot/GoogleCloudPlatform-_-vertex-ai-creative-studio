@@ -87,3 +87,9 @@ def store_to_gcs(
     else:
         blob.upload_from_string(contents, content_type=mime_type)
     return f"gs://{actual_bucket_name}/{destination_blob_name}"  # Return full gsutil URI
+
+def download_from_gcs(gcs_uri: str) -> bytes:
+    """Downloads a file from a GCS URI and returns its content as bytes."""
+    client = storage.Client(project=cfg.PROJECT_ID)
+    blob = storage.Blob.from_string(gcs_uri, client=client)
+    return blob.download_as_bytes()

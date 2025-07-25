@@ -80,6 +80,16 @@ class MediaItem:
     # It helps in debugging and displaying all stored fields if needed.
     raw_data: Optional[Dict] = field(default_factory=dict, compare=False, repr=False)
 
+    # Character Consistency specific fields
+    media_type: Optional[str] = None
+    source_character_images: List[str] = field(default_factory=list)
+    character_description: Optional[str] = None
+    imagen_prompt: Optional[str] = None
+    veo_prompt: Optional[str] = None
+    candidate_images: List[str] = field(default_factory=list)
+    best_candidate_image: Optional[str] = None
+    outpainted_image: Optional[str] = None
+
 
 def add_media_item_to_firestore(item: MediaItem):
     """Adds a MediaItem to Firestore. Sets timestamp if not already present."""
@@ -146,13 +156,9 @@ def get_media_item_by_id(
 
             timestamp_iso_str: Optional[str] = None
             raw_timestamp = raw_item_data.get("timestamp")
-            if isinstance(raw_timestamp, datetime):
-                timestamp_iso_str = raw_timestamp.isoformat()
-            elif isinstance(raw_timestamp, str):
+            if isinstance(raw_timestamp, str):
                 timestamp_iso_str = raw_timestamp
-            elif hasattr(
-                raw_timestamp, "isoformat"
-            ):  # Handle Firestore Timestamp objects
+            elif hasattr(raw_timestamp, "isoformat"):  # Handles both datetime and firestore.Timestamp
                 timestamp_iso_str = raw_timestamp.isoformat()
 
             try:
@@ -212,6 +218,26 @@ def get_media_item_by_id(
                 else None,
                 resolution=str(raw_item_data.get("resolution"))
                 if raw_item_data.get("resolution") is not None
+                else None,
+                media_type=str(raw_item_data.get("media_type"))
+                if raw_item_data.get("media_type") is not None
+                else None,
+                source_character_images=raw_item_data.get("source_character_images", []),
+                character_description=str(raw_item_data.get("character_description"))
+                if raw_item_data.get("character_description") is not None
+                else None,
+                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
+                if raw_item_data.get("imagen_prompt") is not None
+                else None,
+                veo_prompt=str(raw_item_data.get("veo_prompt"))
+                if raw_item_data.get("veo_prompt") is not None
+                else None,
+                candidate_images=raw_item_data.get("candidate_images", []),
+                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
+                if raw_item_data.get("best_candidate_image") is not None
+                else None,
+                outpainted_image=str(raw_item_data.get("outpainted_image"))
+                if raw_item_data.get("outpainted_image") is not None
                 else None,
                 raw_data=raw_item_data,
             )

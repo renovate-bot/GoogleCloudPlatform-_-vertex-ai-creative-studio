@@ -66,6 +66,21 @@ class Default:
 
     # VTO
     VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-exp-05-31")
+
+    # Temperatures for Character Consistency Workflow
+    # Low temp for factual, structured output. Increasing may break JSON parsing.
+    TEMP_FORENSIC_ANALYSIS: float = 0.1
+    # Low temp for direct, non-creative translation of data to text.
+    TEMP_DESCRIPTION_TRANSLATION: float = 0.1
+    # Mid-range temp for creative but controlled prompt engineering.
+    TEMP_SCENE_GENERATION: float = 0.3
+    # Low temp for analytical comparison and structured JSON output.
+    TEMP_BEST_IMAGE_SELECTION: float = 0.2
+
+    # Character Consistency
+    CHARACTER_CONSISTENCY_GEMINI_MODEL: str = "gemini-2.5-pro"
+    CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
+    CHARACTER_CONSISTENCY_VEO_MODEL: str = "veo-3.0-generate-preview"
     
     # Lyria
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
