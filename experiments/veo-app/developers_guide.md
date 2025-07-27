@@ -174,6 +174,56 @@ For testing the data flow within our components (e.g., from a successful API cal
 
 Tests that require access to Google Cloud Storage can be configured to use a custom GCS bucket via the `--gcs-bucket` command-line option. See the `test/README.md` file for more details.
 
+## UI Navigation and Homepage
+
+The application's navigation, including the side navigation and the categorized tiles on the homepage, is generated through a data-driven process that ensures consistency and makes modifications easy.
+
+### How It Works: A Three-Step Process
+
+1.  **`config/navigation.json` (The Data Source)**
+    *   This file is the **single source of truth** for all possible navigation items.
+    *   Each item in the `pages` list defines a page with properties like `id` (for sorting), `display` (the user-facing name), `icon`, `route`, and `group`.
+    *   The **`group`** key is what defines the categories on the homepage (e.g., "foundation", "workflows", "app").
+
+2.  **`config/default.py` (The Configuration Loader & Processor)**
+    *   This file reads `navigation.json` and processes it using the `load_welcome_page_config` function.
+    *   **Validation:** It uses Pydantic models (`NavItem`, `NavConfig`) to validate the JSON structure, preventing errors from malformed data.
+    *   **Filtering:** It checks for a `feature_flag` on each item. A page will only be included if its corresponding feature flag is enabled in the environment configuration. This allows you to toggle navigation links on or off.
+    *   **Sorting:** It sorts the final list of pages by their `id`.
+    *   The processed list is stored in the `WELCOME_PAGE` constant, ready for the UI to consume.
+
+3.  **`pages/home.py` (The Presentation Layer)**
+    *   This file renders the homepage tiles.
+    *   It defines a **`GROUP_ORDER`** list (e.g., `["foundation", "workflows", "app"]`) which explicitly controls the display order of the categories.
+    *   It groups the items from `WELCOME_PAGE` by their `group` key and then renders each group's title and tiles in the sequence defined by `GROUP_ORDER`.
+
+This system makes the navigation highly configurable and easy to manage.
+
+#### Homepage vs. Side Navigation Rendering
+
+It is critical to understand that different UI components use different keys from `navigation.json` to render their content. This separation of concerns allows for independent control over the homepage layout and the side navigation menu.
+
+-   **`group`**: This key is used exclusively by the **homepage** (`pages/home.py`) to create the categorized tiles (e.g., "Foundation", "Workflows"). It has no effect on the side navigation.
+-   **`align`**: This key is used exclusively by the **side navigation** (`components/side_nav.py`) to separate the main links from the utility links. An item with `"align": "bottom"` will be rendered in the lower section of the navigation bar. It has no effect on the homepage.
+
+This allows for a fully data-driven approach to managing the UI. To change the layout of the homepage, you modify the `group` property. To change the layout of the side navigation, you modify the `align` property.
+
+### The "About" Page and Cloud-Native Asset Hosting
+
+Similar to the navigation, the content of the "About" page is managed by a structured data file. However, to support a scalable, production-ready deployment on Cloud Run, the media assets (images, videos) for this page are hosted on Google Cloud Storage (GCS) rather than being checked into the Git repository.
+
+-   **Content Definition:** `config/about_content.json`. This file defines the text and the *relative paths* to the media assets.
+-   **Asset Hosting:** A public Google Cloud Storage bucket is used to store the actual image and video files.
+-   **Configuration:** The name of the GCS bucket is specified by the `GCS_ASSETS_BUCKET` environment variable.
+-   **Rendering Logic:** The `config/default.py` file reads the bucket name from the environment, dynamically constructs the full public URLs for the assets, and makes them available to `pages/about.py` for rendering.
+
+To modify the "About" page, you will need to:
+1.  Update the text or asset paths in `config/about_content.json`.
+2.  Upload the corresponding media files to the correct path in your configured GCS bucket.
+
+For local development, if you do not set the `GCS_ASSETS_BUCKET` variable, the page will use local paths. To make this work, you can temporarily add a `StaticFiles` mount to `main.py`:
+`app.mount("/assets", StaticFiles(directory="assets"), name="assets")`
+
 ## How to Add a New Page
 
 Adding a new page to the application is a straightforward process. Here are the steps:

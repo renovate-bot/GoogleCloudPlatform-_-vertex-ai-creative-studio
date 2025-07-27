@@ -38,6 +38,7 @@ from pages.recontextualize import recontextualize
 from pages.test_uploader import test_uploader_page
 from pages.veo import veo_content
 from pages.vto import vto
+from pages.about import about_page_content
 from state.state import AppState
 
 
@@ -202,6 +203,16 @@ def recontextualize_page():
 def character_consistency_page():
     """Character Consistency Page"""
     character_consistency_page_content()
+
+
+@me.page(
+    path="/about",
+    title="About - GenMedia Creative Studio",
+    on_load=on_load,
+)
+def about_page():
+    """About Page"""
+    about_page_content()
 
 
 from common.storage import get_or_create_session
