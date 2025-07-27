@@ -11,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import mesop as me
 import typing
+
+import mesop as me
+
 
 @me.component
 def header(
@@ -21,16 +23,18 @@ def header(
     show_info_button: bool = False,
     on_info_click: typing.Callable[..., None] | None = None,
 ):
-    """Header component"""
+    """Header component."""
     with me.box(
         style=me.Style(
             display="flex",
             justify_content="space-between",
             align_items="center",
-        )
+        ),
     ):
         with me.box(
-            style=me.Style(display="flex", flex_direction="row", gap=5, align_items="center")
+            style=me.Style(
+                display="flex", flex_direction="row", gap=5, align_items="baseline",
+            ),
         ):
             me.icon(icon=icon)
             me.text(
@@ -38,12 +42,11 @@ def header(
                 type="headline-5",
                 style=me.Style(font_family="Google Sans"),
             )
-        
+
         if show_info_button and on_info_click:
             with me.content_button(
                 type="icon",
                 on_click=on_info_click,
-                style=me.Style(margin=me.Margin(left="auto"))
-            ):
-                with me.tooltip(message="About this page"):
-                    me.icon(icon="info_outline")
+                style=me.Style(margin=me.Margin(left="auto")),
+            ), me.tooltip(message="About this page"):
+                me.icon(icon="info_outline")

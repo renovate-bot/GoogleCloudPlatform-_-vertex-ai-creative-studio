@@ -172,7 +172,7 @@ def menu_item(
                 ),
             ):
                 me.icon(icon=icon)
-                me.text(text)
+                me.text(text, style=me.Style(text_align="left"))
 
 
 def toggle_theme(e: me.ClickEvent):  # pylint: disable=unused-argument
