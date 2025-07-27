@@ -27,8 +27,6 @@ from state.state import AppState
 
 cfg = Default()
 
-page_json = WELCOME_PAGE
-
 
 def on_sidenav_menu_click(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Side navigation menu click handler"""
@@ -49,27 +47,14 @@ def navigate_to(e: me.ClickEvent):
     yield
 
 
-def get_page_by_id(page_id):
-    """Gets the page object with the given ID.
-
-    Args:
-      page_json: A list of page objects (dictionaries).
-      page_id: The ID of the page to retrieve.
-
-    Returns:
-      The page object (dictionary) if found, or None if not found.
-    """
-    for page in page_json:
-        if page["id"] == page_id:
-            return page
-    return None
-
-
 @me.component
 def sidenav(current_page: Optional[str]):
     """Render side navigation"""
     app_state = me.state(AppState)
-    # print(f"received current page: {current_page}")
+
+    # Partition the list based on the 'align' key
+    top_nav_items = [p for p in WELCOME_PAGE if p.get("route") and p.get("align") != "bottom"]
+    bottom_nav_items = [p for p in WELCOME_PAGE if p.get("route") and p.get("align") == "bottom"]
 
     with me.sidenav(
         opened=True,
@@ -85,6 +70,7 @@ def sidenav(current_page: Optional[str]):
                 display="flex",
                 flex_direction="column",
                 gap=5,
+                height="calc(100% - 32px)", # Adjust height for margin
             ),
         ):
             with me.box(
@@ -104,24 +90,21 @@ def sidenav(current_page: Optional[str]):
                             me.icon(icon="menu")
                 if app_state.sidenav_open:
                     me.text("GENMEDIA STUDIO", style=_FANCY_TEXT_GRADIENT)
-            # spacer
-            me.box(style=me.Style(height=16))
+            
+            me.box(style=me.Style(height=16)) # spacer
 
-            # Standard pages from WELCOME_PAGE
-            for page in page_json:
-                if "align" not in page:  # ignore pages with alignment, handle elsewhere
-                    route = page.get("route")
-                    item_id = f"{page.get('id', '')}_{page.get('display').lower().replace(' ', '_')}"
-                    # idx = page["id"]
+            # Render top navigation items
+            for page in top_nav_items:
+                item_id = f"{page.get('id', '')}_{page.get('display').lower().replace(' ', '_')}"
+                menu_item(
+                    item_id=item_id,
+                    icon=page.get("icon"),
+                    text=page.get("display"),
+                    route=page.get("route"),
+                    minimized=not app_state.sidenav_open,
+                )
 
-                    menu_item(
-                        item_id=item_id,
-                        icon=page.get("icon"),
-                        text=page.get("display"),
-                        route=route,
-                        minimized=not app_state.sidenav_open,
-                    )
-            # settings & theme toggle
+            # Bottom section
             with me.box(style=MENU_BOTTOM):
                 theme_toggle_icon(
                     9,
@@ -129,17 +112,19 @@ def sidenav(current_page: Optional[str]):
                     "Theme",
                     not app_state.sidenav_open,
                 )
-                menu_item(
-                    item_id=item_id,
-                    icon="settings",
-                    text="Settings",
-                    minimized=not app_state.sidenav_open,
-                    route="/config",
-                )
+                # Render bottom navigation items
+                for page in bottom_nav_items:
+                    item_id = f"{page.get('id', '')}_{page.get('display').lower().replace(' ', '_')}"
+                    menu_item(
+                        item_id=item_id,
+                        icon=page.get("icon"),
+                        text=page.get("display"),
+                        route=page.get("route"),
+                        minimized=not app_state.sidenav_open,
+                    )
 
 
 def menu_item(
-    # key: int,
     item_id: str,
     icon: str,
     text: str,
@@ -162,7 +147,7 @@ def menu_item(
             ),
         ):
             with me.content_button(
-                key=button_key,  # str(key),
+                key=button_key,
                 on_click=navigate_to if is_clickable else None,
                 style=content_style,
                 type="icon",
@@ -173,7 +158,7 @@ def menu_item(
 
     else:  # expanded
         with me.content_button(
-            key=button_key,  # str(key),
+            key=button_key,
             on_click=navigate_to,
             style=content_style,
             disabled=not is_clickable,
@@ -203,7 +188,6 @@ def toggle_theme(e: me.ClickEvent):  # pylint: disable=unused-argument
 
 def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
     """Theme toggle icon"""
-    # THEME_TOGGLE_STYLE = me.Style(position="absolute", bottom=50, align_content="left")
     if min:  # minimized
         with me.box(
             style=me.Style(
@@ -216,7 +200,6 @@ def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
             with me.content_button(
                 key=str(key),
                 on_click=toggle_theme,
-                # style=THEME_TOGGLE_STYLE,
                 type="icon",
             ):
                 with me.tooltip(message=text):
@@ -228,7 +211,6 @@ def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
         with me.content_button(
             key=str(key),
             on_click=toggle_theme,
-            # style=THEME_TOGGLE_STYLE,
         ):
             with me.box(
                 style=me.Style(
@@ -247,9 +229,6 @@ def theme_toggle_icon(key: int, icon: str, text: str, min: bool = True):
 
 
 MENU_BOTTOM = me.Style(
-    display="flex",
-    flex_direction="column",
-    position="absolute",
-    bottom=8,
-    align_content="left",
+    margin=me.Margin(top="auto"), # Pushes the container to the bottom
+    padding=me.Padding(bottom=12),
 )

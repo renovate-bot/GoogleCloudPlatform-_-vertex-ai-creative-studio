@@ -24,7 +24,7 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.recontext.image_thumbnail import image_thumbnail
-from config.default import Default
+from config.default import Default, ABOUT_PAGE_CONTENT
 from models.image_models import recontextualize_product_in_scene
 from state.state import AppState
 
@@ -44,15 +44,29 @@ class PageState:
     error_message: str = ""
     show_error_dialog: bool = False
 
+    info_dialog_open: bool = False
+
 
 @me.page(path="/recontextualize")
 def recontextualize():
     """Imagen Product Recontext page"""
     state = me.state(PageState)
 
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text("About Product in Scene", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][4]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Product Images: {state.uploaded_image_gcs_uris}")
+            me.text(f"Prompt: {state.prompt}")
+            me.text(f"Model: {config.MODEL_IMAGEN_PRODUCT_RECONTEXT}")
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="stroked")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Product in Scene", "scene_based_layout")
+            header("Product in Scene", "scene_based_layout", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(
                 style=me.Style(display="flex", flex_direction="column", gap=16),
@@ -241,4 +255,16 @@ def on_clear(e: me.ClickEvent):
 def on_close_error_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.show_error_dialog = False
+    yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield
