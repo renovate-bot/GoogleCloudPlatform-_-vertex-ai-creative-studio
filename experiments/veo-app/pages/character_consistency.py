@@ -23,6 +23,8 @@ from components.page_scaffold import page_frame, page_scaffold
 from models.character_consistency import generate_character_video
 from state.character_consistency_state import CharacterConsistencyState
 from state.state import AppState
+from config.default import ABOUT_PAGE_CONTENT
+from components.dialog import dialog
 
 
 @me.stateclass
@@ -39,14 +41,26 @@ class PageState:
     is_generating: bool = False
     total_generation_time: float = 0.0
 
+    info_dialog_open: bool = False
+
 
 def character_consistency_page_content():
     """UI for the Character Consistency page."""
     state = me.state(PageState)
 
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text("About Character Consistency", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][6]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Scene Prompt: {state.scene_prompt}")
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Character Consistency", "person")
+            header("Character Consistency", "person", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(style=me.Style(margin=me.Margin.symmetric(vertical=20))):
                 me.uploader(
@@ -217,4 +231,16 @@ def on_clear(e: me.ClickEvent):
     state.status_message = "Ready."
     state.is_generating = False
     state.total_generation_time = 0.0
+    yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield

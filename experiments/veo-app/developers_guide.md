@@ -206,7 +206,19 @@ It is critical to understand that different UI components use different keys fro
 -   **`group`**: This key is used exclusively by the **homepage** (`pages/home.py`) to create the categorized tiles (e.g., "Foundation", "Workflows"). It has no effect on the side navigation.
 -   **`align`**: This key is used exclusively by the **side navigation** (`components/side_nav.py`) to separate the main links from the utility links. An item with `"align": "bottom"` will be rendered in the lower section of the navigation bar. It has no effect on the homepage.
 
-This allows for a fully data-driven approach to managing the UI. To change the layout of the homepage, you modify the `group` property. To change the layout of the side navigation, you modify the `align` property.
+This allows for a fully data-driven approach to managing the side navigation links. To move a link from the top to the bottom, you only need to add the `align` property in `config/navigation.json`.
+
+### Creating Page-Specific Dialogs
+
+This application uses a reusable pattern to provide page-specific information or settings in a dialog, triggered by an icon in the header. This pattern keeps the header and dialog components generic while giving each page full control over the content it displays.
+
+**Control Flow:**
+1.  A page (e.g., `pages/portraits.py`) renders the `header` component, passing `show_info_button=True` and an `on_info_click` callback function.
+2.  When the user clicks the info icon, the header calls the provided function.
+3.  The function, defined in the page file, updates the page's state to open the dialog (e.g., `state.info_dialog_open = True`).
+4.  The page's render function detects the state change and renders a generic `dialog` component, populating it with page-specific content (e.g., descriptions from `about_content.json` and current settings from the page state).
+
+To add a settings/info dialog to a page, follow the implementation in `pages/portraits.py` as a template.
 
 ### The "About" Page and Cloud-Native Asset Hosting
 

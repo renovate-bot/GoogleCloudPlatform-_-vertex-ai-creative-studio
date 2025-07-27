@@ -1,7 +1,7 @@
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
+# you mayn# you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
@@ -12,19 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import mesop as me
-
+import typing
 
 @me.component
-def header(title: str, icon: str):
+def header(
+    title: str,
+    icon: str,
+    show_info_button: bool = False,
+    on_info_click: typing.Callable[..., None] | None = None,
+):
     """Header component"""
     with me.box(
         style=me.Style(
             display="flex",
             justify_content="space-between",
+            align_items="center",
         )
     ):
         with me.box(
-            style=me.Style(display="flex", flex_direction="row", gap=5)
+            style=me.Style(display="flex", flex_direction="row", gap=5, align_items="center")
         ):
             me.icon(icon=icon)
             me.text(
@@ -32,3 +38,12 @@ def header(title: str, icon: str):
                 type="headline-5",
                 style=me.Style(font_family="Google Sans"),
             )
+        
+        if show_info_button and on_info_click:
+            with me.content_button(
+                type="icon",
+                on_click=on_info_click,
+                style=me.Style(margin=me.Margin(left="auto"))
+            ):
+                with me.tooltip(message="About this page"):
+                    me.icon(icon="info_outline")

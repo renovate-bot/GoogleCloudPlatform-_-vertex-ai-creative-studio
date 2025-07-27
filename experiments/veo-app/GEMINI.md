@@ -11,6 +11,7 @@ See also AGENTS.md for more information.
 
 # Critical Mesop Patterns
 
+- **CRITICAL: READ, DON'T ASSUME, CUSTOM COMPONENT APIs.** This project contains many custom components in the `components/` directory. Their function signatures (the parameters they accept) are defined *within this project* and may not match your assumptions or standard Mesop patterns. Before using a custom component, you **MUST** read its source file to understand its exact API. Failure to do so will lead to `TypeError` exceptions (e.g., "unexpected keyword argument"). This is the most common and avoidable source of errors.
 - **NEVER use `me.EventHandler` as a type hint.** It does not exist in the Mesop API and will cause an `AttributeError`. The correct type hint for event handler callbacks is `typing.Callable`.
 - **The `key` parameter is for native Mesop components ONLY.** Do not add a `key` parameter to custom `@me.component` functions unless you have specifically programmed them to accept and use it. To differentiate between multiple instances of a custom component, pass a unique identifier to a *different*, dedicated prop (e.g., `component_id: str`) if needed. For event differentiation, the `key` should be placed on the clickable native component *inside* your custom component.
 
@@ -41,6 +42,7 @@ Here are some key architectural lessons learned when integrating Mesop with Gene
 
 ## Component Layout and Styling
 
+- **Debugging Visual and Layout Issues:** If you encounter visual artifacts (like extra scrollbars) or layout problems (like broken alignment), the issue is almost always in a `me.Style()` block. Carefully review the `display`, `height`, `margin`, and `padding` properties of the affected component and its parent. Use your browser's developer tools to inspect the generated HTML and CSS to understand the layout issue.
 *   **Use `dialog_actions` for button rows:** When you want to display a row of buttons in a dialog, wrap them in the `dialog_actions` component. This will ensure they are laid out correctly.
 
 *   **Avoid `max_width` for expanding content:** If you want a component to fill the available space in its container, avoid using the `max_width` style property. This will allow the component to expand as expected.
