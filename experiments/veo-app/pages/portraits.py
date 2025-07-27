@@ -29,6 +29,8 @@ from tenacity import (
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from components.header import header
+from components.dialog import dialog
+from config.default import ABOUT_PAGE_CONTENT
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import (
@@ -81,6 +83,8 @@ class PageState:
     modifier_array: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     modifier_selected_states: dict[str, bool] = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
+    info_dialog_open: bool = False
+
 
 modifier_options = [
     {"label": "motion", "key": "motion"},
@@ -95,9 +99,20 @@ def motion_portraits_content(app_state: me.state):
 
     state = me.state(PageState)
 
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text("About Motion Portraits", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][5]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"VEO Model: {state.veo_model}")
+            me.text(f"Prompt used: {state.veo_prompt_input}")
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Motion Portraits", "portrait")
+            header("Motion Portraits", "portrait", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(
                 style=me.Style(
@@ -674,4 +689,16 @@ def on_click_close_error_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.show_error_dialog = False
     state.error_message = ""
+    yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield

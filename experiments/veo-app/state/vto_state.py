@@ -30,5 +30,7 @@ class PageState:
     vto_base_steps: int = 0
     is_loading: bool = False
     is_generating_person_image: bool = False
-    error_message: str = ""
     show_error_dialog: bool = False
+    error_message: str = ""
+
+    info_dialog_open: bool = False

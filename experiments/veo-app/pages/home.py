@@ -22,7 +22,7 @@ from components.capability_tile import media_tile
 from components.header import header
 from config.default import WELCOME_PAGE
 
-GROUP_ORDER = ["foundation", "workflows", "app"]
+GROUP_ORDER = ["foundation", "workflows", "studio"]
 
 
 def home_page_content(app_state: me.state):  # pylint: disable=unused-argument

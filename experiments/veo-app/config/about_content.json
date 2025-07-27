@@ -1,0 +1,57 @@
+{
+  "header": {
+    "title": "About GenMedia Creative Studio",
+    "introduction": "Welcome to the GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our powerful APIs for image, video, and music generation."
+  },
+  "sections": [
+    {
+      "id": "imagen",
+      "title": "Imagen",
+      "description": "The **Imagen** page allows you to generate images from text prompts. You can control various parameters like aspect ratio, style, and content type.\n\n**Available Models:**\n*   Imagen 3 Fast\n*   Imagen 3\n*   Imagen 4\n*   Imagen 4 Ultra\n\n[Learn more about Imagen on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview)",
+      "image": "assets/about/imagen_demo.png",
+      "video": null
+    },
+    {
+      "id": "veo",
+      "title": "Veo",
+      "description": "The **Veo** page is for video generation. You can create videos from a text prompt (text-to-video) or animate an existing image (image-to-video).\n\n**Available Models:**\n*   Veo 2\n*   Veo 3\n*   Veo 3 Fast\n\n[Learn more about Veo on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/video/overview)",
+      "image": null,
+      "video": "assets/about/veo_demo.mp4"
+    },
+    {
+      "id": "lyria",
+      "title": "Lyria",
+      "description": "The **Lyria** page lets you generate musical scores. Provide a prompt describing the mood, genre, or instruments you want to hear.\n\n**Available Models:**\n*   Lyria\n\n[Learn more about Lyria on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/audio/overview)",
+      "image": "assets/about/lyria_demo.png",
+      "video": null
+    },
+    {
+      "id": "vto",
+      "title": "Virtual Try-On",
+      "description": "This workflow allows you to see how a piece of clothing looks on a person. You provide an image of a person and an image of a garment, and the model generates a new image of the person wearing the item.",
+      "image": "assets/about/vto_demo.png",
+      "video": null
+    },
+    {
+      "id": "recontextualize",
+      "title": "Product in Scene",
+      "description": "This workflow, also known as Product Recontextualization, allows you to take a product image and place it in a new scene. You provide an image of the product and a text prompt describing the new scene, and the model generates a new image of the product in that scene.",
+      "image": "assets/about/recontextualize_demo.png",
+      "video": null
+    },
+    {
+      "id": "motion_portraits",
+      "title": "Motion Portraits",
+      "description": "This workflow allows you to animate a still image of a person. You provide an image of a person and a text prompt describing the desired motion, and the model generates a short video of the person moving.",
+      "image": null,
+      "video": "assets/about/motion_portraits_demo.mp4"
+    },
+    {
+      "id": "character_consistency",
+      "title": "Character Consistency",
+      "description": "This workflow allows you to generate a consistent character across multiple images. You provide a text prompt describing the character, and the model generates a series of images of that character in different poses and settings.",
+      "image": null,
+      "video": "assets/about/character_consistency_demo.mp4"
+    }
+  ]
+}

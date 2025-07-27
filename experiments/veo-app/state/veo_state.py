@@ -49,7 +49,9 @@ class PageState:
     last_reference_image_file_key: int = 0
     last_reference_image_gcs: str
     last_reference_image_uri: str
-    last_reference_image_mime_type: str
+    last_reference_image_mime_type: str = ""
+
+    info_dialog_open: bool = False
 
     # extend
     video_extend_length: int = 0  # 4-7

@@ -36,6 +36,8 @@ class PageState:
     show_dialog: bool = False
     dialog_message: str = ""
 
+    info_dialog_open: bool = False
+
     # Image prompt and related settings
     image_prompt_input: str = ""
     image_prompt_placeholder: str = ""

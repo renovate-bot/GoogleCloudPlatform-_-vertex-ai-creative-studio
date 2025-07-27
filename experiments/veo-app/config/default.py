@@ -55,6 +55,7 @@ class Default:
     GENMEDIA_BUCKET: str = os.environ.get("GENMEDIA_BUCKET", f"{PROJECT_ID}-assets")
     VIDEO_BUCKET: str = os.environ.get("VIDEO_BUCKET", f"{PROJECT_ID}-assets/videos")
     IMAGE_BUCKET: str = os.environ.get("IMAGE_BUCKET", f"{PROJECT_ID}-assets/images")
+    GCS_ASSETS_BUCKET: str = os.environ.get("GCS_ASSETS_BUCKET")
 
     # Veo
     VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-2.0-generate-001")
@@ -136,3 +137,26 @@ def load_welcome_page_config():
     return sorted(filtered_pages, key=lambda x: x['id'])
 
 WELCOME_PAGE = load_welcome_page_config()
+
+def load_about_page_config():
+    try:
+        with open('config/about_content.json', 'r') as f:
+            content = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+    bucket_name = Default.GCS_ASSETS_BUCKET
+    if not bucket_name:
+        return content # Return content with local paths if bucket is not set
+
+    base_url = f"https://storage.googleapis.com/{bucket_name}"
+
+    for section in content.get("sections", []):
+        if section.get("image"):
+            section["image"] = f"{base_url}/{section['image']}"
+        if section.get("video"):
+            section["video"] = f"{base_url}/{section['video']}"
+            
+    return content
+
+ABOUT_PAGE_CONTENT = load_about_page_config()

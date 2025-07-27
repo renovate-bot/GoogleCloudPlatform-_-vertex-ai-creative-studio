@@ -35,6 +35,7 @@ from models.model_setup import VeoModelSetup
 from models.veo import generate_video, VideoGenerationRequest
 from state.state import AppState
 from state.veo_state import PageState
+from config.default import ABOUT_PAGE_CONTENT
 
 config = Default()
 
@@ -45,9 +46,23 @@ def veo_content(app_state: me.state):
     """Veo Mesop Page."""
     state = me.state(PageState)
 
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text("About Veo", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][1]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Prompt: {state.veo_prompt_input}")
+            me.text(f"Negative Prompt: {state.negative_prompt}")
+            me.text(f"Model: {state.veo_model}")
+            me.text(f"Duration: {state.video_length}s")
+            me.text(f"Input Image: {state.reference_image_gcs}")
+            with dialog_actions():
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Veo", "movie")
+            header("Veo", "movie", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(
                 style=me.Style(display="flex", flex_direction="row", gap=10)
@@ -338,6 +353,18 @@ def on_close_error_dialog(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Handler to close the error dialog."""
     state = me.state(PageState)
     state.show_error_dialog = False
+    yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield
 
 

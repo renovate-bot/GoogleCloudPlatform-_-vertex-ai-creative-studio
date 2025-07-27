@@ -27,6 +27,8 @@ from models.image_models import generate_image_for_vto
 from models.vto import generate_vto_image
 from state.state import AppState
 from state.vto_state import PageState
+from config.default import ABOUT_PAGE_CONTENT
+from components.dialog import dialog
 
 config = Default()
 
@@ -168,14 +170,38 @@ def on_clear(e: me.ClickEvent):
     state.result_images = []
     yield
 
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
+    yield
+
 
 @me.page(path="/vto")
 def vto():
     state = me.state(PageState)
 
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text("About Virtual Try-On", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][3]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Person Image: {state.person_image_gcs}")
+            me.text(f"Garment Image: {state.product_image_gcs}")
+            me.text(f"VTO Model: {config.VTO_MODEL_ID}")
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Virtual Try-On", "checkroom")
+            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Person Image Section

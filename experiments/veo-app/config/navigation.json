@@ -47,8 +47,7 @@
       "display": "Virtual Try-On",
       "icon": "checkroom",
       "route": "/vto",
-      "group": "foundation",
-      "align": "bottom"
+      "group": "foundation"
     },
 
     {
@@ -77,7 +76,15 @@
       "display": "Library",
       "icon": "perm_media",
       "route": "/library",
-      "group": "app"
+      "group": "studio"
+    },
+    {
+      "id": 65,
+      "display": "About",
+      "icon": "info",
+      "route": "/about",
+      "align": "bottom",
+      "group": "studio"
     },
     {
       "id": 100,
@@ -85,7 +92,7 @@
       "icon": "settings",
       "route": "/config",
       "align": "bottom",
-      "group": "app"
+      "group": "studio"
     }
   ]
 }
