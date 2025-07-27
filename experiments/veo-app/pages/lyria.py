@@ -33,6 +33,7 @@ from config.rewriters import MUSIC_REWRITER
 from models.gemini import analyze_audio_with_gemini, rewriter
 from models.lyria import generate_music_with_lyria
 from state.state import AppState
+from config.default import ABOUT_PAGE_CONTENT
 
 cfg = Default()
 
@@ -59,6 +60,8 @@ class PageState:
 
     audio_analysis_result_json: Optional[str] = None
     analysis_error_message: str = ""
+
+    info_dialog_open: bool = False
 
 
 # Original box style
@@ -98,9 +101,19 @@ def lyria_content(app_state: me.state):
     """Lyria Mesop Page"""
     pagestate = me.state(PageState)
 
+    if pagestate.info_dialog_open:
+        with dialog(is_open=pagestate.info_dialog_open):
+            me.text("About Lyria", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][2]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Prompt: {pagestate.music_prompt_input}")
+            with dialog_actions():
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Lyria", "music_note")
+            header("Lyria", "music_note", show_info_button=True, on_info_click=open_info_dialog)
 
             with me.box(style=_BOX_STYLE):
                 me.text(
@@ -520,4 +533,16 @@ def on_close_error_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.show_error_dialog = False
     state.error_message = ""
+    yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield

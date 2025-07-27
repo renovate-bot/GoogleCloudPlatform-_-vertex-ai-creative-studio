@@ -22,15 +22,29 @@ from components.imagen.image_output import image_output
 from components.imagen.modifier_controls import modifier_controls
 from components.page_scaffold import page_frame, page_scaffold
 from state.imagen_state import PageState
+from config.default import ABOUT_PAGE_CONTENT
 
 
 def imagen_content(app_state: me.state):
     """Imagen Mesop Page"""
     state = me.state(PageState)
 
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text("About Imagen Creative Studio", type="headline-6")
+            me.markdown(ABOUT_PAGE_CONTENT["sections"][0]["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Prompt: {state.image_prompt_input}")
+            me.text(f"Negative Prompt: {state.image_negative_prompt_input}")
+            me.text(f"Model: {state.image_model_name}")
+            me.text(f"Aspect Ratio: {state.image_aspect_ratio}")
+            with dialog_actions():
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Imagen Creative Studio", "image")
+            header("Imagen Creative Studio", "image", show_info_button=True, on_info_click=open_info_dialog)
 
             generation_controls()
             modifier_controls()
@@ -52,4 +66,16 @@ def on_close_dialog(e: me.ClickEvent):
     """Handler to close the dialog."""
     state = me.state(PageState)
     state.show_dialog = False
+    yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
     yield
