@@ -320,3 +320,176 @@ def add_vto_metadata(
     )
 
     print(f"VTO data stored in Firestore with document ID: {doc_ref.id}")
+
+def get_media_for_page(
+    page: int,
+    media_per_page: int,
+    type_filters: Optional[List[str]] = None,
+    error_filter: str = "all",  # "all", "no_errors", "only_errors"
+    sort_by_timestamp: bool = False,
+) -> List[MediaItem]:
+    """Fetches a paginated and filtered list of media items from Firestore.
+
+    NOTE: This implementation currently fetches a larger batch of items (up to 'fetch_limit')
+    and then performs filtering and pagination client-side (in Python). For very large datasets
+    in Firestore (e.g., many thousands of media items), this approach might become inefficient
+    in terms of data transfer and memory usage. A more scalable long-term solution would involve
+    server-side pagination and filtering directly using Firestore query cursors (`start_after`)
+    and more complex `where` clauses if feasible, potentially via dedicated API endpoints.
+
+    Args:
+        page: The page number to fetch.
+        media_per_page: The number of media items to fetch per page.
+        type_filters: A list of media types to filter by.
+        error_filter: The error filter to apply.
+
+    Returns:
+        A list of MediaItem objects.
+    """
+    fetch_limit = 1000  # Max items to fetch for client-side filtering/pagination
+
+    try:
+        query = db.collection(config.GENMEDIA_COLLECTION_NAME)
+        if sort_by_timestamp:
+            query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
+
+        all_fetched_items: List[MediaItem] = []
+        for doc in query.limit(fetch_limit).stream():
+            raw_item_data = doc.to_dict()
+            if raw_item_data is None:
+                print(f"Warning: doc.to_dict() returned None for doc ID: {doc.id}")
+                continue
+
+            mime_type = raw_item_data.get("mime_type", "")
+            error_message_present = bool(raw_item_data.get("error_message"))
+
+            # Apply type filters
+            passes_type_filter = False
+            if not type_filters or "all" in type_filters:
+                passes_type_filter = True
+            else:
+                if "videos" in type_filters and mime_type.startswith("video/"):
+                    passes_type_filter = True
+                elif "images" in type_filters and mime_type.startswith("image/"):
+                    passes_type_filter = True
+                elif "music" in type_filters and mime_type.startswith("audio/"):
+                    passes_type_filter = True
+
+            if not passes_type_filter:
+                continue
+
+            # Apply error filter
+            passes_error_filter = False
+            if error_filter == "all":
+                passes_error_filter = True
+            elif error_filter == "no_errors" and not error_message_present:
+                passes_error_filter = True
+            elif error_filter == "only_errors" and error_message_present:
+                passes_error_filter = True
+
+            if not passes_error_filter:
+                continue
+
+            # Construct MediaItem if all filters pass
+            timestamp_iso_str: Optional[str] = None
+            raw_timestamp = raw_item_data.get("timestamp")
+            if isinstance(raw_timestamp, datetime.datetime):
+                timestamp_iso_str = raw_timestamp.isoformat()
+            elif isinstance(raw_timestamp, str):
+                timestamp_iso_str = raw_timestamp  # Assuming it's already ISO format
+            elif hasattr(raw_timestamp, "isoformat"):  # For Firestore Timestamp objects
+                timestamp_iso_str = raw_timestamp.isoformat()
+
+            # print(f"DEBUG: Fetched item with timestamp: {timestamp_iso_str}")
+
+            try:
+                gen_time = (
+                    float(raw_item_data.get("generation_time"))
+                    if raw_item_data.get("generation_time") is not None
+                    else None
+                )
+            except (ValueError, TypeError):
+                gen_time = None
+
+            try:
+                item_duration = (
+                    float(raw_item_data.get("duration"))
+                    if raw_item_data.get("duration") is not None
+                    else None
+                )
+            except (ValueError, TypeError):
+                item_duration = None
+
+            media_item = MediaItem(
+                id=doc.id,
+                aspect=str(raw_item_data.get("aspect"))
+                if raw_item_data.get("aspect") is not None
+                else None,
+                gcsuri=str(raw_item_data.get("gcsuri"))
+                if raw_item_data.get("gcsuri") is not None
+                else None,
+                gcs_uris=raw_item_data.get("gcs_uris", []),
+                source_images_gcs=raw_item_data.get("source_images_gcs", []),
+                prompt=str(raw_item_data.get("prompt"))
+                if raw_item_data.get("prompt") is not None
+                else None,
+                generation_time=gen_time,
+                timestamp=timestamp_iso_str,
+                reference_image=str(raw_item_data.get("reference_image"))
+                if raw_item_data.get("reference_image") is not None
+                else None,
+                last_reference_image=str(raw_item_data.get("last_reference_image"))
+                if raw_item_data.get("last_reference_image") is not None
+                else None,
+                negative_prompt=str(raw_item_data.get("negative_prompt"))
+                if raw_item_data.get("negative_prompt") is not None
+                else None,
+                enhanced_prompt_used=raw_item_data.get("enhanced_prompt"),
+                duration=item_duration,
+                error_message=str(raw_item_data.get("error_message"))
+                if raw_item_data.get("error_message") is not None
+                else None,
+                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
+                if raw_item_data.get("rewritten_prompt") is not None
+                else None,
+                comment=str(raw_item_data.get("comment"))
+                if raw_item_data.get("comment") is not None
+                else None,
+                resolution=str(raw_item_data.get("resolution"))
+                if raw_item_data.get("resolution") is not None
+                else None,
+                media_type=str(raw_item_data.get("media_type"))
+                if raw_item_data.get("media_type") is not None
+                else None,
+                source_character_images=raw_item_data.get(
+                    "source_character_images", []
+                ),
+                character_description=str(raw_item_data.get("character_description"))
+                if raw_item_data.get("character_description") is not None
+                else None,
+                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
+                if raw_item_data.get("imagen_prompt") is not None
+                else None,
+                veo_prompt=str(raw_item_data.get("veo_prompt"))
+                if raw_item_data.get("veo_prompt") is not None
+                else None,
+                candidate_images=raw_item_data.get("candidate_images", []),
+                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
+                if raw_item_data.get("best_candidate_image") is not None
+                else None,
+                outpainted_image=str(raw_item_data.get("outpainted_image"))
+                if raw_item_data.get("outpainted_image") is not None
+                else None,
+                raw_data=raw_item_data,
+            )
+            all_fetched_items.append(media_item)
+
+        # For pagination, slice the fully filtered list
+        start_slice = (page - 1) * media_per_page
+        end_slice = start_slice + media_per_page
+        return all_fetched_items[start_slice:end_slice]
+
+    except Exception as e:
+        print(f"Error fetching media from Firestore: {e}")
+        # Optionally, you could re-raise or handle more gracefully
+        return []

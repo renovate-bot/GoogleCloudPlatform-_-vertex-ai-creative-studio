@@ -12,22 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 import mesop as me
-from components.library.events import LibrarySelectionChangeEvent
 
+from common.metadata import MediaItem, get_media_for_page
 from components.dialog import dialog
+from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_image_selector import library_image_selector
 
 
 @me.stateclass
 class State:
-    """Local mesop state."""
+    """Local mesop state for the library chooser button."""
 
     show_library_dialog: bool = False
     active_chooser_key: str = ""
+    is_loading: bool = False
+    media_items: list[MediaItem] = field(default_factory=list)
 
 
 @me.component
@@ -41,20 +44,24 @@ def library_chooser_button(
     state = me.state(State)
 
     def open_dialog(e: me.ClickEvent):
-        """Dedicated click handler for opening the dialog."""
+        """Dedicated click handler for opening the dialog and fetching data."""
         print(f"CLICK on library_chooser_button with key: '{e.key}'")
         state.active_chooser_key = e.key
         state.show_library_dialog = True
+        state.is_loading = True
+        yield
+
+        # Fetch fresh data every time the dialog is opened
+        state.media_items = get_media_for_page(
+            1, 20, ["images"], sort_by_timestamp=True
+        )
+        state.is_loading = False
         yield
 
     def on_select_from_library(e: LibrarySelectionChangeEvent):
         """Callback to handle image selection from the library dialog."""
-        # Populate the chooser_id with the key of this button instance.
         e.chooser_id = state.active_chooser_key
-
-        # Pass the completed event to the parent's handler.
         yield from on_library_select(e)
-
         state.show_library_dialog = False
         yield
 
@@ -78,13 +85,27 @@ def library_chooser_button(
         flex_direction="column",
     )
 
-    with dialog(is_open=state.show_library_dialog, dialog_style=dialog_style):  # pylint: disable=not-context-manager
+    with dialog(is_open=state.show_library_dialog, dialog_style=dialog_style):
         with me.box(
             style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
         ):
             me.text("Select an Image from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
-                library_image_selector(on_select=on_select_from_library)
+                if state.is_loading:
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            justify_content="center",
+                            align_items="center",
+                            height="100%",
+                        )
+                    ):
+                        me.progress_spinner()
+                else:
+                    library_image_selector(
+                        on_select=on_select_from_library,
+                        media_items=state.media_items,
+                    )
             with me.box(
                 style=me.Style(
                     display="flex", justify_content="flex-end", margin=me.Margin(top=24)
