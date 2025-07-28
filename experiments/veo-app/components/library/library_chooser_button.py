@@ -30,7 +30,7 @@ class State:
     show_library_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)
+    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701
 
 
 @me.component
@@ -85,7 +85,7 @@ def library_chooser_button(
         flex_direction="column",
     )
 
-    with dialog(is_open=state.show_library_dialog, dialog_style=dialog_style):
+    with dialog(is_open=state.show_library_dialog, dialog_style=dialog_style):  # pylint: disable=E1129
         with me.box(
             style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
         ):
