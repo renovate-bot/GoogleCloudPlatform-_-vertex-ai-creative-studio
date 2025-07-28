@@ -13,7 +13,7 @@ cffi==1.17.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.2
 click==8.2.1
 colorama==0.4.6 ; sys_platform == 'win32'
-cramjam==2.10.0
+cramjam==2.11.0
 cryptography==45.0.5
 deepdiff==8.5.0
 docstring-parser==0.17.0
