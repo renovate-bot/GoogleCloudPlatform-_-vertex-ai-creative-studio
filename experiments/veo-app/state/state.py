@@ -25,4 +25,3 @@ class AppState:
 
     user_email: str
     session_id: str
-

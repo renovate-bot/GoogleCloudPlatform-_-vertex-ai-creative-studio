@@ -24,6 +24,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from app_factory import app, on_load
 from common.auth import set_user_identity_and_session
 from components.page_scaffold import page_scaffold
 from pages.character_consistency import character_consistency_page_content
@@ -36,6 +37,7 @@ from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
 from pages.test_uploader import test_uploader_page
+from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.veo import veo_content
 from pages.vto import vto
 from pages.about import about_page_content
@@ -48,7 +50,6 @@ class UserInfo(BaseModel):
 
 
 # FastAPI server with Mesop
-app = FastAPI()
 router = APIRouter()
 app.include_router(router)
 
@@ -57,34 +58,12 @@ app.include_router(router)
 async def add_custom_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self';"
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; object-src 'none'; base-uri 'self';"
     )
     return response
 
 
 # from pages.gemini2 import gemini_page_content
-
-
-def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
-    """On load event."""
-    s = me.state(AppState)
-    if hasattr(app, "state") and hasattr(app.state, "user_email"):
-        s.user_email = app.state.user_email
-        s.session_id = app.state.session_id
-        print(f"DEBUG: User Email = {s.user_email}, Session ID = {s.session_id}")
-    else:
-        # Fallback if middleware hasn't run (e.g., direct page load in dev)
-        s.user_email = "anonymous@google.com"
-        s.session_id = ""
-
-    if s.theme_mode:
-        if s.theme_mode == "light":
-            me.set_theme_mode("light")
-        elif s.theme_mode == "dark":
-            me.set_theme_mode("dark")
-    else:
-        me.set_theme_mode("system")
-        s.theme_mode = me.theme_brightness()
 
 
 @me.page(
@@ -249,6 +228,11 @@ def root_redirect() -> RedirectResponse:
 
 
 # Use this to mount the static files for the Mesop app
+app.mount(
+    "/__web-components-module__",
+    StaticFiles(directory="."),
+    name="web_components",
+)
 app.mount(
     "/static",
     StaticFiles(
