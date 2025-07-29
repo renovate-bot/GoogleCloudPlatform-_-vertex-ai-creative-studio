@@ -18,7 +18,7 @@ from components.page_scaffold import page_frame, page_scaffold
 from config.default import ABOUT_PAGE_CONTENT
 
 def render_section(section_data: dict):
-    """Renders a single section with text and media."""
+    """Render a single section with text and media."""
     with me.box(style=me.Style(
         display="flex",
         flex_direction="row",
@@ -42,8 +42,9 @@ def render_section(section_data: dict):
                 me.video(src=section_data["video"], style=me.Style(width="100%", border_radius=8))
 
 def about_page_content():
-    with page_scaffold():
-        with page_frame():
+    """About page."""
+    with page_scaffold():  # pylint: disable=not-context-manager
+        with page_frame():  # pylint: disable=not-context-manager
             header("About This Application", "info")
             
             if ABOUT_PAGE_CONTENT:
