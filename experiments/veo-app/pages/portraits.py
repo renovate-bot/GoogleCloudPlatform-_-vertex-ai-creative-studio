@@ -28,16 +28,15 @@ from tenacity import (
 
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
-from components.header import header
 from components.dialog import dialog
-from config.default import ABOUT_PAGE_CONTENT
+from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-from config.default import Default
+from config.default import ABOUT_PAGE_CONTENT, Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import VideoGenerationRequest, generate_video
 from pages.styles import (
@@ -100,7 +99,7 @@ def motion_portraits_content(app_state: me.state):
     state = me.state(PageState)
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Motion Portraits", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][5]["description"])
             me.divider()
@@ -112,7 +111,12 @@ def motion_portraits_content(app_state: me.state):
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Motion Portraits", "portrait", show_info_button=True, on_info_click=open_info_dialog)
+            header(
+                "Motion Portraits",
+                "portrait",
+                show_info_button=True,
+                on_info_click=open_info_dialog,
+            )
 
             with me.box(
                 style=me.Style(
@@ -144,15 +148,15 @@ def motion_portraits_content(app_state: me.state):
                                 align_items="center",
                                 justify_content="center",
                                 background=me.theme_var(
-                                    "sys-color-surface-container-highest"
+                                    "sys-color-surface-container-highest",
                                 ),
                                 border_radius=12,
                                 border=me.Border.all(
                                     me.BorderSide(
-                                        color=me.theme_var("sys-color-outline")
-                                    )
+                                        color=me.theme_var("sys-color-outline"),
+                                    ),
                                 ),
-                            )
+                            ),
                         )
 
                     # uploader controls
@@ -172,7 +176,11 @@ def motion_portraits_content(app_state: me.state):
                             color="primary",
                             style=me.Style(font_weight="bold"),
                         )
-                        library_chooser_button(on_library_select=on_portrait_image_from_library, button_type="icon", key="portrait_library_chooser")
+                        library_chooser_button(
+                            on_library_select=on_portrait_image_from_library,
+                            button_type="icon",
+                            key="portrait_library_chooser",
+                        )
                         me.button(
                             label="Clear",
                             on_click=on_click_clear_reference_image,
@@ -457,17 +465,22 @@ def on_click_upload(e: me.UploadEvent):
     )
     state.reference_image_gcs = destination_blob_name
     # url
-    state.reference_image_uri = destination_blob_name.replace("gs://", f"https://storage.mtls.cloud.google.com/")
+    state.reference_image_uri = destination_blob_name.replace(
+        "gs://", f"https://storage.mtls.cloud.google.com/"
+    )
     # log
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
     )
 
+
 def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
     """Portrait image from library handler."""
     state = me.state(PageState)
     state.reference_image_gcs = e.gcs_uri
-    state.reference_image_uri = e.gcs_uri.replace("gs://", f"https://storage.mtls.cloud.google.com/")
+    state.reference_image_uri = e.gcs_uri.replace(
+        "gs://", f"https://storage.mtls.cloud.google.com/"
+    )
     yield
 
 
@@ -515,7 +528,7 @@ def on_click_motion_portraits(e: me.ClickEvent):
     state.generated_scene_direction = ""
     yield
 
-    base_prompt = f'''Scene direction for a motion portrait for an approximately {state.video_length} second scene.
+    base_prompt = f"""Scene direction for a motion portrait for an approximately {state.video_length} second scene.
 
 Expand the given direction to include more facial engagement, as if the subject is looking out of the image and interested in the world outside.
 
@@ -523,7 +536,7 @@ Examine the picture provided to improve the scene direction.
 
 Optionally, include is waving of hands and if necessary, and physical motion outside the frame.
 
-Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty.'''
+Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty."""
 
     final_prompt_for_llm = base_prompt
     if state.modifier_array:
@@ -538,7 +551,9 @@ Do not describe the frame. There should be no lip movement like speaking, but th
     execution_time = 0
 
     try:
-        print(f"Generating scene direction for {state.reference_image_gcs} with prompt:\n{final_prompt_for_llm}")
+        print(
+            f"Generating scene direction for {state.reference_image_gcs} with prompt:\n{final_prompt_for_llm}"
+        )
         scene_direction_for_video = generate_scene_direction(
             final_prompt_for_llm,
             state.reference_image_gcs,
@@ -577,7 +592,9 @@ Do not describe the frame. There should be no lip movement like speaking, but th
             current_error_message = "Video generation failed to return a GCS URI."
 
     except Exception as err:
-        print(f"Exception during motion portrait generation: {type(err).__name__}: {err}")
+        print(
+            f"Exception during motion portrait generation: {type(err).__name__}: {err}"
+        )
         current_error_message = f"An unexpected error occurred: {err}"
 
     if current_error_message:
@@ -607,10 +624,15 @@ Do not describe the frame. There should be no lip movement like speaking, but th
         except Exception as meta_err:
             print(f"CRITICAL: Failed to store metadata: {meta_err}")
             additional_meta_error = f" (Metadata storage failed: {meta_err})"
-            state.error_message = (state.error_message or "Video generated but metadata failed.") + additional_meta_error
+            state.error_message = (
+                state.error_message or "Video generated but metadata failed."
+            ) + additional_meta_error
             state.show_error_dialog = True
     elif not gcs_uri and not current_error_message:
-        state.error_message = (state.error_message or "Video generation completed without error, but no video was produced.")
+        state.error_message = (
+            state.error_message
+            or "Video generation completed without error, but no video was produced."
+        )
         state.show_error_dialog = True
 
     state.is_loading = False
@@ -691,11 +713,13 @@ def on_click_close_error_dialog(e: me.ClickEvent):
     state.error_message = ""
     yield
 
+
 def open_info_dialog(e: me.ClickEvent):
     """Open the info dialog."""
     state = me.state(PageState)
     state.info_dialog_open = True
     yield
+
 
 def close_info_dialog(e: me.ClickEvent):
     """Close the info dialog."""
