@@ -45,10 +45,10 @@ class Default:
     # Collections
     GENMEDIA_FIREBASE_DB: str = os.environ.get("GENMEDIA_FIREBASE_DB", "(default)")
     GENMEDIA_COLLECTION_NAME: str = os.environ.get(
-        "GENMEDIA_COLLECTION_NAME", "genmedia"
+        "GENMEDIA_COLLECTION_NAME", "genmedia",
     )
     SESSIONS_COLLECTION_NAME: str = os.environ.get(
-        "SESSIONS_COLLECTION_NAME", "sessions"
+        "SESSIONS_COLLECTION_NAME", "sessions",
     )
 
     # storage
@@ -61,8 +61,8 @@ class Default:
     VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-2.0-generate-001")
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
 
-    VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-preview")
-    VEO_EXP_FAST_MODEL_ID: str = os.environ.get("VEO_EXP_FAST_MODEL_ID", "veo-3.0-fast-generate-preview")
+    VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-001")
+    VEO_EXP_FAST_MODEL_ID: str = os.environ.get("VEO_EXP_FAST_MODEL_ID", "veo-3.0-fast-generate-001")
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 
     # VTO
@@ -118,7 +118,7 @@ class Default:
     
 
 
-def load_welcome_page_config():
+def get_welcome_page_config():
     with open('config/navigation.json', 'r') as f:
         data = json.load(f)
 
@@ -136,7 +136,7 @@ def load_welcome_page_config():
 
     return sorted(filtered_pages, key=lambda x: x['id'])
 
-WELCOME_PAGE = load_welcome_page_config()
+
 
 def load_about_page_config():
     try:

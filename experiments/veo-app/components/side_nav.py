@@ -16,7 +16,7 @@ from typing import Optional
 
 import mesop as me
 
-from config.default import WELCOME_PAGE, Default
+from config.default import get_welcome_page_config, Default
 from components.styles import (
     _FANCY_TEXT_GRADIENT,
     DEFAULT_MENU_STYLE,
@@ -52,6 +52,7 @@ def sidenav(current_page: Optional[str]):
     """Render side navigation"""
     app_state = me.state(AppState)
 
+    WELCOME_PAGE = get_welcome_page_config()
     # Partition the list based on the 'align' key
     top_nav_items = [p for p in WELCOME_PAGE if p.get("route") and p.get("align") != "bottom"]
     bottom_nav_items = [p for p in WELCOME_PAGE if p.get("route") and p.get("align") == "bottom"]

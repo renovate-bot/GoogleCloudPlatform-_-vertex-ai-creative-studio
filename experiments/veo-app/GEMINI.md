@@ -189,6 +189,19 @@ This approach makes the configuration easier to read, modify (even for non-devel
 web: gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 -k uvicorn.workers.UvicornWorker main:app
 ```
 
+### 5. Avoiding Circular Imports and Import-Time Side Effects
+
+**The Problem:** The application fails to start or crashes during navigation with a `NameError: name 'AppState' is not defined`, even though the import statement for `AppState` appears correct.
+
+**The Cause:** This is a classic symptom of a **circular import dependency** or an **import-time side effect**.
+*   **Circular Import:** `main.py` imports a page (e.g., `pages/home.py`), which in turn imports a component (e.g., `components/my_component.py`) that then imports something from `main.py`. This creates a loop that Python cannot resolve, leading to partially loaded modules.
+*   **Import-Time Side Effect:** A module that is imported at startup (e.g., `config/default.py`) executes code that performs I/O operations (like reading a file) or other complex logic *at the module level*. This can interfere with the Mesop runtime's own module loading and initialization process, especially when using a development server with a file reloader.
+
+**The Solution:**
+1.  **One-Way Dependency:** Your `main.py` file should be the root of your application's dependency tree. It can import from any other module, but **no other module should ever import from `main.py`**.
+2.  **Centralize State:** The global `AppState` should be defined in a single, dedicated file (e.g., `state/state.py`). All other modules that need access to the global state should import it from this file.
+3.  **Defer Execution:** Avoid running complex code or I/O operations at the module level in configuration files. Instead of setting a global variable directly (`MY_CONFIG = load_config_from_file()`), wrap the logic in a function (`def get_my_config(): return load_config_from_file()`). Call this function only when the configuration is actually needed within a component or page function. This ensures that such side effects only occur during the rendering process, not during the sensitive module import phase.
+
 ## Backend and Frontend Consistency
 Ensure that parameters used in backend API calls (e.g., `models.image_models.generate_image_for_vto`) match the expectations of the frontend UI components that will display the result. For example, if a UI container is styled to be square (`1:1`), the corresponding API call to generate an image for that container should request a `1:1` aspect ratio. Mismatches will lead to distorted or improperly fitted media.
 

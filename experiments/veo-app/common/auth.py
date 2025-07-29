@@ -17,9 +17,9 @@ async def set_user_identity_and_session(request: Request, call_next):
     if not session_id:
         session_id = str(uuid.uuid4())
 
-    # Attach user and session info to the global app state
-    request.app.state.user_email = user_email
-    request.app.state.session_id = session_id
+    # Attach user and session info to the request state
+    request.state.user_email = user_email
+    request.state.session_id = session_id
 
     # Ensure session exists in Firestore
     get_or_create_session(session_id, user_email)

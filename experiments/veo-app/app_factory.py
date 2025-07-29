@@ -7,14 +7,17 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is an "AS IS" BASIS,
+# distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Application factory for creating the FastAPI app and on_load handler."""
 
+from typing import Callable, Generator
+
 import mesop as me
 from fastapi import FastAPI
+from mesop.events import LoadEvent
 
 from state.state import AppState
 
@@ -25,20 +28,16 @@ def create_app():
     return app
 
 
-def create_on_load_handler(app: FastAPI):
+def create_on_load_handler(
+    user_email: str, session_id: str
+) -> Callable[[LoadEvent], Generator[None, None, None] | None]:
     """Create the on_load event handler."""
 
-    def on_load(e: me.LoadEvent):  # pylint: disable=unused-argument
+    def on_load(e: LoadEvent) -> Generator[None, None, None] | None:
         """On load event."""
         s = me.state(AppState)
-        if hasattr(app, "state") and hasattr(app.state, "user_email"):
-            s.user_email = app.state.user_email
-            s.session_id = app.state.session_id
-            print(f"DEBUG: User Email = {s.user_email}, Session ID = {s.session_id}")
-        else:
-            # Fallback if middleware hasn't run (e.g., direct page load in dev)
-            s.user_email = "anonymous@google.com"
-            s.session_id = ""
+        s.user_email = user_email
+        s.session_id = session_id
 
         if s.theme_mode:
             if s.theme_mode == "light":
@@ -48,9 +47,9 @@ def create_on_load_handler(app: FastAPI):
         else:
             me.set_theme_mode("system")
             s.theme_mode = me.theme_brightness()
+        yield
 
     return on_load
 
 
 app = create_app()
-on_load = create_on_load_handler(app)
