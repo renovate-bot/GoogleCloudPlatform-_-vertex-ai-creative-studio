@@ -28,7 +28,10 @@ class AppState:
     def __init__(self):
         """Initializes the AppState, reading user info from the request context."""
         if "HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL" in request.environ:
-            self.user_email = request.environ["HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL"]
+            user_email = request.environ["HTTP_X_GOOG_AUTHENTICATED_USER_EMAIL"]
+            if user_email.startswith("accounts.google.com:"):
+                user_email = user_email.split(":")[-1]
+            self.user_email = user_email
             self.session_id = request.environ.get("MESOP_SESSION_ID", "")
         elif "MESOP_USER_EMAIL" in request.environ:
             self.user_email = request.environ["MESOP_USER_EMAIL"]
