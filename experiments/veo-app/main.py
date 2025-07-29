@@ -24,8 +24,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app_factory import app, on_load
-from common.auth import set_user_identity_and_session
+from app_factory import app
 from components.page_scaffold import page_scaffold
 from pages.character_consistency import character_consistency_page_content
 from pages.config import config_page_contents
@@ -55,21 +54,38 @@ app.include_router(router)
 
 
 @app.middleware("http")
-async def add_custom_header(request: Request, call_next):
+async def set_request_context(request: Request, call_next):
+    """
+    Sets request-scoped context for both FastAPI and Mesop.
+    
+    This middleware performs the following actions:
+    1.  Retrieves the user's email from the 'X-Goog-Authenticated-User-Email' header,
+        with a fallback for local development.
+    2.  Retrieves the session ID from the 'session_id' cookie or creates a new one.
+    3.  Stores the user email and session ID in 'request.scope' for the WSGI middleware
+        to pass to the Mesop application.
+    """
+    user_email = request.headers.get("X-Goog-Authenticated-User-Email")
+    if not user_email:
+        user_email = "anonymous@google.com"
+    if user_email.startswith("accounts.google.com:"):
+        user_email = user_email.split(":")[-1]
+
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+
+    request.scope["MESOP_USER_EMAIL"] = user_email
+    request.scope["MESOP_SESSION_ID"] = session_id
+
     response = await call_next(request)
-    response.headers["Content-Security-Policy"] = (
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; object-src 'none'; base-uri 'self';"
-    )
+    response.set_cookie(key="session_id", value=session_id, httponly=True, samesite='Lax')
     return response
-
-
-# from pages.gemini2 import gemini_page_content
 
 
 @me.page(
     path="/home",
     title="GenMedia Creative Studio - v.next",
-    on_load=on_load,
 )
 def home_page():
     """Main Page."""
@@ -81,7 +97,6 @@ def home_page():
 @me.page(
     path="/veo",
     title="Veo - GenMedia Creative Studio",
-    on_load=on_load,
 )
 def veo_page():
     """Veo Page."""
@@ -91,7 +106,6 @@ def veo_page():
 @me.page(
     path="/motion_portraits",
     title="Motion Portraits - GenMedia Creative Studio",
-    on_load=on_load,
 )
 def motion_portrait_page():
     """Motion Portrait Page."""
@@ -101,7 +115,6 @@ def motion_portrait_page():
 @me.page(
     path="/lyria",
     title="Lyria - GenMedia Creative Studio",
-    on_load=on_load,
 )
 def lyria_page():
     """Lyria Page."""
@@ -111,7 +124,6 @@ def lyria_page():
 @me.page(
     path="/config",
     title="GenMedia Creative Studio - Config",
-    on_load=on_load,
 )
 def config_page():
     """Config Page."""
@@ -121,7 +133,6 @@ def config_page():
 @me.page(
     path="/imagen",
     title="GenMedia Creative Studio - Imagen",
-    on_load=on_load,
     security_policy=me.SecurityPolicy(
         allowed_script_srcs=[
             "https://cdn.jsdelivr.net",
@@ -137,7 +148,6 @@ def imagen_page():
 @me.page(
     path="/library",
     title="GenMedia Creative Studio - Library",
-    on_load=on_load,
 )
 def library_page():
     """Library Page."""
@@ -147,7 +157,6 @@ def library_page():
 @me.page(
     path="/edit_images",
     title="GenMedia Creative Studio - Edit Images",
-    on_load=on_load,
 )
 def edit_images_page():
     """Edit Images Page."""
@@ -157,7 +166,6 @@ def edit_images_page():
 @me.page(
     path="/vto",
     title="GenMedia Creative Studio - Virtual Try-On",
-    on_load=on_load,
 )
 def vto_page():
     """VTO Page"""
@@ -167,7 +175,6 @@ def vto_page():
 @me.page(
     path="/recontextualize",
     title="GenMedia Creative Studio - Product in Scene",
-    on_load=on_load,
 )
 def recontextualize_page():
     """Recontextualize Page"""
@@ -177,7 +184,6 @@ def recontextualize_page():
 @me.page(
     path="/character_consistency",
     title="GenMedia Creative Studio - Character Consistency",
-    on_load=on_load,
 )
 def character_consistency_page():
     """Character Consistency Page"""
@@ -187,44 +193,15 @@ def character_consistency_page():
 @me.page(
     path="/about",
     title="About - GenMedia Creative Studio",
-    on_load=on_load,
 )
 def about_page():
     """About Page"""
     about_page_content()
 
 
-from common.storage import get_or_create_session
-
-
-@app.get("/__/auth/")
-def auth_proxy(request: Request) -> RedirectResponse:
-    print(f"DEBUG: Cookies received in auth_proxy: {request.cookies}")
-    user_email = request.headers.get(
-        "X-Goog-Authenticated-User-Email", "anonymous@google.com"
-    )
-    if ":" in user_email:
-        user_email = user_email.split(":")[-1]
-
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        session_id = str(uuid.uuid4())
-
-    get_or_create_session(session_id, user_email)
-
-    app.state.user_email = user_email
-    app.state.session_id = session_id
-
-    response = RedirectResponse(url="/home")
-    response.set_cookie(
-        key="session_id", value=session_id, httponly=True, samesite="Lax"
-    )
-    return response
-
-
 @app.get("/")
 def root_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/__/auth/")
+    return RedirectResponse(url="/home")
 
 
 # Use this to mount the static files for the Mesop app

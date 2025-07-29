@@ -49,7 +49,7 @@ VEO_MODELS: List[VeoModelConfig] = [
     ),
     VeoModelConfig(
         version_id="3.0",
-        model_name="veo-3.0-generate-preview",
+        model_name="veo-3.0-generate-001",
         display_name="Veo 3.0",
         supported_modes=["t2v", "i2v"],
         supported_aspect_ratios=["16:9"],
@@ -63,7 +63,7 @@ VEO_MODELS: List[VeoModelConfig] = [
     ),
     VeoModelConfig(
         version_id="3.0-fast",
-        model_name="veo-3.0-fast-generate-preview",
+        model_name="veo-3.0-fast-generate-001",
         display_name="Veo 3.0 Fast",
         supported_modes=["t2v", "i2v"],
         supported_aspect_ratios=["16:9"],

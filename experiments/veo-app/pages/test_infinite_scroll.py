@@ -14,7 +14,7 @@
 
 import mesop as me
 
-from app_factory import on_load
+
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.infinite_scroll_chooser_button import (
     infinite_scroll_chooser_button,
@@ -29,7 +29,7 @@ class PageState:
     selected_gcs_uri: str = ""
 
 
-@me.page(path="/test_infinite_scroll", on_load=on_load)
+@me.page(path="/test_infinite_scroll")
 def test_infinite_scroll_page():
     """Test page for the infinite scroll library chooser."""
     state = me.state(PageState)
