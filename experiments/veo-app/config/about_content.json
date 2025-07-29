@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "About GenMedia Creative Studio",
-    "introduction": "Welcome to the GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our powerful APIs for image, video, and music generation."
+    "introduction": "Welcome to GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our powerful APIs for image, video, and music generation.\n\nGenMedia Creative Studio is available on our [Vertex AI Creative Studio github repo](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/veo-app) for you and customers to install."
   },
   "sections": [
     {
@@ -16,7 +16,7 @@
       "title": "Veo",
       "description": "The **Veo** page is for video generation. You can create videos from a text prompt (text-to-video) or animate an existing image (image-to-video).\n\n**Available Models:**\n*   Veo 2\n*   Veo 3\n*   Veo 3 Fast\n\n[Learn more about Veo on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/video/overview)",
       "image": null,
-      "video": "assets/about/veo_demo.mp4"
+      "video": "https://youtu.be/y6FgrKFVj1k?si=cGXYvFPBIDxPeKms"
     },
     {
       "id": "lyria",
@@ -52,6 +52,11 @@
       "description": "This workflow allows you to generate a consistent character across multiple images. You provide a text prompt describing the character, and the model generates a series of images of that character in different poses and settings.",
       "image": null,
       "video": "assets/about/character_consistency_demo.mp4"
+    },
+    {
+      "id": "feedback",
+      "title": "Feedback",
+      "description": "We're always looking for feedback, comments, and feature requests, please [fill out this form](https://docs.google.com/forms/d/e/1FAIpQLSeGyKL468Eam3PUfyV8R5I0g3iGc7_zuL87eimw4HITUYlUrw/viewform?usp=sharing)."
     }
   ]
 }
