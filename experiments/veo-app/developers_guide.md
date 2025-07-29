@@ -106,87 +106,37 @@ service cloud.firestore {
 }
 ```
 
+
+
 ## Authentication and Session Management
 
-A critical architectural challenge in this application is bridging the context gap between the FastAPI backend and the Mesop UI framework. A direct middleware approach to authentication fails because the middleware runs outside the Mesop application context, leading to runtime errors.
-
-To solve this, we use a **redirect-based authentication pattern**. This ensures that user and session information is correctly established before any Mesop page is rendered.
+This application uses a FastAPI middleware to handle user authentication and session management in a way that is compatible with the Mesop UI framework. This approach ensures that user information is correctly and securely passed to the Mesop application on every request.
 
 Here is the flow:
 
-1.  **Root Redirect:** The FastAPI route for `/` redirects all initial traffic to a dedicated authentication endpoint, `/__/auth/`.
+1.  **FastAPI Middleware:** A middleware function, `set_request_context` in `main.py`, runs for every incoming HTTP request. It is responsible for:
+    *   Reading the user's identity from the `X-Goog-Authenticated-User-Email` header (for deployed environments) or falling back to an anonymous user (for local development).
+    *   Retrieving a unique `session_id` from the request's cookies or creating a new one.
+    *   Placing the `user_email` and `session_id` into the `request.scope` dictionary. The `request.scope` is a standard ASGI feature for passing request-scoped data.
 
-2.  **Authentication Endpoint (`/__/auth/`):** This FastAPI endpoint is responsible for:
-    *   Reading the user's identity from the `X-Goog-Authenticated-User-Email` header.
-    *   Retrieving a unique `session_id` from the request's cookies. If no cookie is present, a new `session_id` is generated.
-    *   Persisting the session data (user email and session ID) to the `sessions` collection in Firestore.
-    *   Storing the `user_email` and `session_id` on the global `app.state` object. This object serves as the critical bridge between the FastAPI context and the Mesop context.
+2.  **WSGI Bridge:** The `WSGIMiddleware` that wraps the Mesop application automatically copies the data from the ASGI `request.scope` into the WSGI `request.environ` dictionary. This is the standard mechanism for bridging the two web server protocols.
 
-3.  **Redirect to Home:** The `/__/auth/` endpoint then issues a `RedirectResponse` to the application's home page (`/home`). Crucially, it also sets the `session_id` cookie on this response, ensuring it will be available for all subsequent requests.
+3.  **Mesop State Initialization:** The `AppState` class in `state/state.py` has a custom `__init__` method. When Mesop creates a new user session, this method is called. It reads the user information directly from the `request.environ` dictionary, correctly initializing the state for the current user.
 
-4.  **Mesop State Hydration (`on_load`):** When the Mesop page loads, its `on_load` event handler reads the `user_email` and `session_id` from the global `app.state` and uses them to populate the Mesop-specific `AppState`. This correctly "hydrates" the UI with the authenticated user and session information.
+This pattern is robust, secure, and correctly separates the concerns of the FastAPI server and the Mesop UI framework.
 
-This pattern is the established and correct way to handle authentication in this application. It is robust, scalable, and correctly separates the concerns of the two frameworks.
+### Avoiding Circular Imports and Import-Time Side Effects
 
-### The `app_factory.py` Pattern and Circular Dependencies
+**The Problem:** The application fails to start or crashes during navigation with a `NameError: name 'AppState' is not defined`, even though the import statement for `AppState` appears correct.
 
-A critical architectural pattern emerged to solve a `Circular Import` error. This problem occurs when two or more modules depend on each other. In our case:
-- `main.py` needs to import page modules (e.g., `pages/my_page.py`) to register their routes.
-- A page module might need to import a shared function from `main.py` (like the global `on_load` handler).
+**The Cause:** This is a classic symptom of a **circular import dependency** or an **import-time side effect**.
+*   **Circular Import:** `main.py` imports a page (e.g., `pages/home.py`), which in turn imports a component (e.g., `components/my_component.py`) that then imports something from `main.py`. This creates a loop that Python cannot resolve, leading to partially loaded modules.
+*   **Import-Time Side Effect:** A module that is imported at startup (e.g., `config/default.py`) executes code that performs I/O operations (like reading a file) or other complex logic *at the module level*. This can interfere with the Mesop runtime's own module loading and initialization process, especially when using a development server with a file reloader.
 
-This creates a loop: `main.py` -> `my_page.py` -> `main.py`.
-
-**The Solution: The Application Factory Pattern**
-
-To break this dependency cycle, we use an application factory.
-
-- **`app_factory.py`:** A new, foundational file was created. Its sole purpose is to create and configure the core, shared application objects:
-    1.  The FastAPI `app` instance.
-    2.  The global `on_load` handler function, which depends on the `app` instance.
-
-- **Decoupled `main.py`:** The `main.py` file is now much simpler. It **imports** the `app` and `on_load` objects from `app_factory.py`. Its role is now purely to be an "assembler"—it imports all the page modules and attaches them to the `app`.
-
-- **Safe Imports:** Any page can now safely import the global `on_load` handler from `app_factory.py` without creating a circular dependency.
-
-This pattern is essential for maintaining a scalable and robust application structure. It ensures a clear, one-way flow of dependencies where foundational objects are created in one place and used by others.
-
-#### Using and Extending the Global `on_load` Handler
-
-The global `on_load` handler in `app_factory.py` ensures that every page has consistent, baseline behavior (e.g., theme and session initialization). You can, and should, extend this for pages that require their own specific setup logic.
-
-**The Pattern: Composition**
-
-The `@me.page` decorator expects a single function for its `on_load` argument. To add page-specific logic, you create a new handler for your page that calls the global one first.
-
-**Example:**
-
-Imagine a new page needs to fetch special data from an API when it loads. Here is the correct pattern:
-
-**`pages/my_special_page.py`**
-```python
-import mesop as me
-# 1. Import the global handler with an alias for clarity.
-from app_factory import on_load as global_on_load
-from .state import MySpecialPageState # Your page-specific state
-
-# 2. Define your page-specific on_load handler.
-def on_load_my_special_page(e: me.LoadEvent):
-  # 3. ALWAYS call the global handler first.
-  yield from global_on_load(e)
-
-  # 4. Add your custom, page-specific logic here.
-  print("Fetching special data for this page...")
-  state = me.state(MySpecialPageState)
-  state.special_data = "... some data from an API ..."
-  yield
-
-# 5. Use your new, composite handler in the page decorator.
-@me.page(path="/my_special_page", on_load=on_load_my_special_page)
-def my_special_page():
-  # ... your page UI ...
-```
-
-This compositional approach allows you to build on top of the global setup routine without duplicating code or breaking the core application initialization.
+**The Solution:**
+1.  **One-Way Dependency:** Your `main.py` file should be the root of your application's dependency tree. It can import from any other module, but **no other module should ever import from `main.py`**.
+2.  **Centralize State:** The global `AppState` should be defined in a single, dedicated file (e.g., `state/state.py`). All other modules that need access to the global state should import it from this file.
+3.  **Defer Execution:** Avoid running complex code or I/O operations at the module level in configuration files. Instead of setting a global variable directly (`MY_CONFIG = load_config_from_file()`), wrap the logic in a function (`def get_my_config(): return load_config_from_file()`). Call this function only when the configuration is actually needed within a component or page function. This ensures that such side effects only occur during the rendering process, not during the sensitive module import phase.
 
 ## Configuration-Driven Architecture
 

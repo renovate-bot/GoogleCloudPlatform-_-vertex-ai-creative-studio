@@ -20,7 +20,8 @@ import mesop as me
 
 from components.capability_tile import media_tile
 from components.header import header
-from config.default import WELCOME_PAGE
+from config.default import get_welcome_page_config
+from state.state import AppState
 
 GROUP_ORDER = ["foundation", "workflows", "studio"]
 
@@ -52,18 +53,6 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
             ):
                 header("GenMedia Creative Studio", "home")
 
-                # me.text(
-                #     "GenMedia Creative Studio",
-                #     style=me.Style(
-                #         color="transparent",
-                #         font_size="2.5rem",
-                #         font_weight="bold",
-                #         background=(
-                #             "linear-gradient(90deg, rgb(0, 44, 112) 0%, rgb(7, 110, 255) 100%)"
-                #             "text"
-                #         ),
-                #     ),
-                # )
                 me.text(
                     "Welcome to the v.next of Vertex AI GenMedia Creative Studio"
                 )
@@ -71,7 +60,7 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                 # Group pages by the "group" key
                 grouped_pages: Dict[str, List[Dict]] = defaultdict(list)
                 pages_to_display = [
-                    page for page in WELCOME_PAGE if page.get("display") != "Home"
+                    page for page in get_welcome_page_config() if page.get("display") != "Home"
                 ]
 
                 for page_data in pages_to_display:
