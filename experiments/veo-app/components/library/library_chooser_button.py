@@ -79,8 +79,8 @@ def library_chooser_button(
                 me.text(button_label)
 
     dialog_style = me.Style(
-        width="80vw",
-        height="80vh",
+        width="65vw",
+        height="35vh",
         display="flex",
         flex_direction="column",
     )
