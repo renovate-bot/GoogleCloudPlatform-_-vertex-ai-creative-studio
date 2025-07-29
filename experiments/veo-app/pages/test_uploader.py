@@ -36,7 +36,7 @@ def test_uploader_page():
 
     def on_test_library_select(e: LibrarySelectionChangeEvent):
         print(
-            f"Test Uploader Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}"
+            f"Test Uploader Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}",
         )
         if e.chooser_id == "chooser_A":
             state.selected_gcs_uri_A = e.gcs_uri.replace(
@@ -50,7 +50,7 @@ def test_uploader_page():
 
     with me.box(
         style=me.Style(
-            padding=me.Padding.all(24), display="flex", flex_direction="column", gap=16
+            padding=me.Padding.all(24), display="flex", flex_direction="column", gap=16,
         )
     ):
         me.text("Test Uploader Components", type="headline-5")

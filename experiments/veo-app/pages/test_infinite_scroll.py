@@ -15,12 +15,11 @@
 import mesop as me
 
 from app_factory import on_load
-
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.infinite_scroll_chooser_button import (
     infinite_scroll_chooser_button,
 )
-from components.page_scaffold import page_scaffold, page_frame
+from components.page_scaffold import page_frame, page_scaffold
 
 
 @me.stateclass
@@ -37,9 +36,12 @@ def test_infinite_scroll_page():
 
     def on_test_library_select(e: LibrarySelectionChangeEvent):
         """Select event."""
-        print(f"Test Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}")
+        print(
+            f"Test Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}",
+        )
         state.selected_gcs_uri = e.gcs_uri.replace(
-            "gs://", "https://storage.mtls.cloud.google.com/",
+            "gs://",
+            "https://storage.mtls.cloud.google.com/",
         )
         yield
 
@@ -47,8 +49,11 @@ def test_infinite_scroll_page():
         with page_frame():  # pylint: disable = E1129:not-context-manager
             with me.box(
                 style=me.Style(
-                    padding=me.Padding.all(24), display="flex", flex_direction="column", gap=16
-                )
+                    padding=me.Padding.all(24),
+                    display="flex",
+                    flex_direction="column",
+                    gap=16,
+                ),
             ):
                 me.text("Test Infinite Scroll Library Chooser", type="headline-5")
 
