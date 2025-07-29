@@ -12,39 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import field
-from typing import Callable
+from typing import Callable, List
 
 import mesop as me
 
+from common.metadata import MediaItem
 from components.library.events import LibrarySelectionChangeEvent
-from pages.library import MediaItem, get_media_for_page
-
-
-@me.stateclass
-class State:
-    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=invalid-field-call
-    is_loading: bool = True
 
 
 @me.component
-def library_image_selector(on_select: Callable[[LibrarySelectionChangeEvent], None]):
+def library_image_selector(
+    on_select: Callable[[LibrarySelectionChangeEvent], None],
+    media_items: List[MediaItem],
+):
     """A component that displays a grid of recent images from the library."""
-    state = me.state(State)
 
     def on_image_click(e: me.ClickEvent):
         """Handles the click event on an image in the grid."""
         print(f"Image Clicked. URI from key: {e.key}")
         yield from on_select(LibrarySelectionChangeEvent(gcs_uri=e.key))
-
-    # This pattern ensures that we only fetch data from Firestore one time,
-    # when the component is first loaded. The `is_loading` flag prevents
-    # subsequent re-renders from re-fetching the data.
-    if state.is_loading:
-        state.media_items = get_media_for_page(1, 20, ["images"], sort_by_timestamp=True)
-        state.is_loading = False
-        # NOTE: There is no `yield` here. This is critical.
-        # The function continues to the rendering part of the code in the same pass.
 
     with me.box(
         style=me.Style(
@@ -53,24 +39,35 @@ def library_image_selector(on_select: Callable[[LibrarySelectionChangeEvent], No
             gap="16px",
         )
     ):
-        if not state.media_items:
+        if not media_items:
             me.text("No recent images found in the library.")
         else:
-            for item in state.media_items:
-                image_uri_to_display = ""
+            for item in media_items:
                 if item.gcs_uris:
-                    image_uri_to_display = item.gcs_uris[0]
+                    for image_uri in item.gcs_uris:
+                        with me.box(
+                            on_click=on_image_click,
+                            key=image_uri,
+                            style=me.Style(cursor="pointer"),
+                        ):
+                            me.image(
+                                src=image_uri.replace(
+                                    "gs://", "https://storage.mtls.cloud.google.com/"
+                                ),
+                                style=me.Style(
+                                    width="100%",
+                                    border_radius=8,
+                                    object_fit="cover",
+                                ),
+                            )
                 elif item.gcsuri:
-                    image_uri_to_display = item.gcsuri
-
-                if image_uri_to_display:
                     with me.box(
                         on_click=on_image_click,
-                        key=image_uri_to_display,
+                        key=item.gcsuri,
                         style=me.Style(cursor="pointer"),
                     ):
                         me.image(
-                            src=image_uri_to_display.replace(
+                            src=item.gcsuri.replace(
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             ),
                             style=me.Style(

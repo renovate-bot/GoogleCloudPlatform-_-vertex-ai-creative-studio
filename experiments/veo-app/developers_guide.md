@@ -128,6 +128,66 @@ Here is the flow:
 
 This pattern is the established and correct way to handle authentication in this application. It is robust, scalable, and correctly separates the concerns of the two frameworks.
 
+### The `app_factory.py` Pattern and Circular Dependencies
+
+A critical architectural pattern emerged to solve a `Circular Import` error. This problem occurs when two or more modules depend on each other. In our case:
+- `main.py` needs to import page modules (e.g., `pages/my_page.py`) to register their routes.
+- A page module might need to import a shared function from `main.py` (like the global `on_load` handler).
+
+This creates a loop: `main.py` -> `my_page.py` -> `main.py`.
+
+**The Solution: The Application Factory Pattern**
+
+To break this dependency cycle, we use an application factory.
+
+- **`app_factory.py`:** A new, foundational file was created. Its sole purpose is to create and configure the core, shared application objects:
+    1.  The FastAPI `app` instance.
+    2.  The global `on_load` handler function, which depends on the `app` instance.
+
+- **Decoupled `main.py`:** The `main.py` file is now much simpler. It **imports** the `app` and `on_load` objects from `app_factory.py`. Its role is now purely to be an "assembler"—it imports all the page modules and attaches them to the `app`.
+
+- **Safe Imports:** Any page can now safely import the global `on_load` handler from `app_factory.py` without creating a circular dependency.
+
+This pattern is essential for maintaining a scalable and robust application structure. It ensures a clear, one-way flow of dependencies where foundational objects are created in one place and used by others.
+
+#### Using and Extending the Global `on_load` Handler
+
+The global `on_load` handler in `app_factory.py` ensures that every page has consistent, baseline behavior (e.g., theme and session initialization). You can, and should, extend this for pages that require their own specific setup logic.
+
+**The Pattern: Composition**
+
+The `@me.page` decorator expects a single function for its `on_load` argument. To add page-specific logic, you create a new handler for your page that calls the global one first.
+
+**Example:**
+
+Imagine a new page needs to fetch special data from an API when it loads. Here is the correct pattern:
+
+**`pages/my_special_page.py`**
+```python
+import mesop as me
+# 1. Import the global handler with an alias for clarity.
+from app_factory import on_load as global_on_load
+from .state import MySpecialPageState # Your page-specific state
+
+# 2. Define your page-specific on_load handler.
+def on_load_my_special_page(e: me.LoadEvent):
+  # 3. ALWAYS call the global handler first.
+  yield from global_on_load(e)
+
+  # 4. Add your custom, page-specific logic here.
+  print("Fetching special data for this page...")
+  state = me.state(MySpecialPageState)
+  state.special_data = "... some data from an API ..."
+  yield
+
+# 5. Use your new, composite handler in the page decorator.
+@me.page(path="/my_special_page", on_load=on_load_my_special_page)
+def my_special_page():
+  # ... your page UI ...
+```
+
+This compositional approach allows you to build on top of the global setup routine without duplicating code or breaking the core application initialization.
+
 ## Configuration-Driven Architecture
 
 A key architectural principle in this project is the use of centralized, type-safe configuration to drive the behavior of the UI and backend logic. This approach makes the application more robust, easier to maintain, and less prone to bugs.
@@ -322,7 +382,16 @@ Now, the "My New Page" link will only appear in the navigation if the `MY_NEW_PA
 
 That's it! When you restart the application, your new page will be available at the route you defined and will appear in the side navigation.
 
-### How to Use the `library_chooser_button` Component
+### Choosing an Image from the Library
+
+This application provides two different components for selecting an image from the library. You should choose the one that best fits your needs.
+
+-   **`library_chooser_button` (Basic):** This is a simple, pure-Mesop component. It is reliable but loads a single, fixed page of recent images. It is suitable for simple use cases.
+-   **`infinite_scroll_chooser_button` (Advanced, Recommended):** This is a more advanced component that uses a Lit-based Web Component to provide an "infinite scroll" experience. It offers a much better user experience for large libraries but is currently considered experimental.
+
+Both components are documented below.
+
+### How to Use the `library_chooser_button` Component (Basic)
 
 The `library_chooser_button` is a reusable component that allows users to select an image from the library as an input. Here is how to use it on a page:
 
@@ -358,6 +427,38 @@ The `library_chooser_button` is a reusable component that allows users to select
     # For a single chooser
     library_chooser_button(
         key="my_unique_chooser_key",
+        on_library_select=on_image_select,
+        button_label="Select from Library"
+    )
+    ```
+
+    )
+
+### How to Use the `infinite_scroll_chooser_button` Component (Advanced, Recommended)
+
+The `infinite_scroll_chooser_button` is the new, recommended component for selecting an image from the library. It provides a much better user experience for large libraries by loading images dynamically as the user scrolls.
+
+Here is how to use it on a page:
+
+1.  **Import the component and its event type:**
+    ```python
+    from components.library.infinite_scroll_chooser_button import infinite_scroll_chooser_button
+    from components.library.events import LibrarySelectionChangeEvent
+    ```
+
+2.  **Define a callback handler:** Create a generator function on your page to handle the selection event. This function will receive the `LibrarySelectionChangeEvent` object, which contains the `gcs_uri` of the selected image.
+
+    ```python
+    def on_image_select(e: LibrarySelectionChangeEvent):
+        state = me.state(YourPageState)
+        state.your_image_field = e.gcs_uri
+        yield
+    ```
+
+3.  **Instantiate the component:** Call the component in your page's UI logic, passing the callback handler to the `on_library_select` prop.
+
+    ```python
+    infinite_scroll_chooser_button(
         on_library_select=on_image_select,
         button_label="Select from Library"
     )
