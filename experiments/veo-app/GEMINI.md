@@ -14,6 +14,10 @@ See also AGENTS.md for more information.
 - **CRITICAL: READ, DON'T ASSUME, CUSTOM COMPONENT APIs.** This project contains many custom components in the `components/` directory. Their function signatures (the parameters they accept) are defined *within this project* and may not match your assumptions or standard Mesop patterns. Before using a custom component, you **MUST** read its source file to understand its exact API. Failure to do so will lead to `TypeError` exceptions (e.g., "unexpected keyword argument"). This is the most common and avoidable source of errors.
 - **NEVER use `me.EventHandler` as a type hint.** It does not exist in the Mesop API and will cause an `AttributeError`. The correct type hint for event handler callbacks is `typing.Callable`.
 - **The `key` parameter is for native Mesop components ONLY.** Do not add a `key` parameter to custom `@me.component` functions unless you have specifically programmed them to accept and use it. To differentiate between multiple instances of a custom component, pass a unique identifier to a *different*, dedicated prop (e.g., `component_id: str`) if needed. For event differentiation, the `key` should be placed on the clickable native component *inside* your custom component.
+- **`me.Style` has no `combine` method.** Mesop `Style` objects are immutable and do not have a built-in merge or combine function. To override default styles, you must manually construct a new `me.Style` object, property by property, giving precedence to the custom styles.
+- **`@me.content_component` must always render `me.slot()`**. A function decorated with `@me.content_component` must have a code path that calls `me.slot()`. Do not use an early `return` to control visibility. Instead, the component should always render, and its visibility should be controlled by the `display` property in its style (e.g., `display="block" if is_open else "none"`).
+- **Components must be theme-aware.** Do not hardcode colors like `background="#fff"`. Instead, use `me.theme_var()` (e.g., `me.theme_var("surface")`) to ensure components adapt to the current light or dark theme.
+- **Handle content overflow.** For container components like dialogs, always include `overflow_y="auto"` in the style to ensure that long content is scrollable and does not break the layout.
 
 # Mesop Hints and Lessons Learned
 
@@ -236,7 +240,7 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 
 - **Mutable Default Values:** We encountered a `TypeError` because we were using a mutable default value (`[]`) for the `result_images` list in our state class. We resolved this by using `field(default_factory=list)` instead.
 - **Slider Component:** We encountered an `Unexpected keyword argument` error when using the `label` parameter on the `me.slider` component. We resolved this by wrapping the slider in a `me.box` and using a `me.text` component as the label.
-- **Generator Functions:** We learned that generator functions (those that use `yield`) must have a `yield` statement after updating the state to ensure that the UI is updated.
+- **Generator Functions:** Generator functions (those that use `yield`) must have a `yield` statement after updating the state to ensure that the UI is updated.
 
 ## Library and Data Flow Lessons
 

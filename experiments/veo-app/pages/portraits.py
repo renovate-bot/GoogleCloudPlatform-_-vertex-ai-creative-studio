@@ -339,13 +339,23 @@ def motion_portraits_content(app_state: me.state):
             ):
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN):
                     if state.is_loading:
-                        me.text(
-                            "Generating your moving portrait, please wait...",
+                        with me.box(
                             style=me.Style(
-                                font_size="1.1em", margin=me.Margin(bottom=10)
-                            ),
-                        )
-                        me.progress_spinner(diameter=40)
+                                display="flex",
+                                flex_direction="column",
+                                justify_content="center",  # Horizontal center
+                                align_items="center",      # Vertical center
+                                height=350,                # Give it a height to center within
+                                width="100%",
+                            )
+                        ):
+                            me.text(
+                                "Generating your moving portrait, please wait...",
+                                style=me.Style(
+                                    font_size="1.1em", margin=me.Margin(bottom=16),
+                                ),
+                            )
+                            me.progress_spinner(diameter=40)
                     elif state.result_video:
                         me.text(
                             "Motion Portrait",
