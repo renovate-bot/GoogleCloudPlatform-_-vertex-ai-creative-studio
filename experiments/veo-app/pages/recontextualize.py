@@ -53,7 +53,7 @@ def recontextualize():
     state = me.state(PageState)
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Product in Scene", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][4]["description"])
             me.divider()

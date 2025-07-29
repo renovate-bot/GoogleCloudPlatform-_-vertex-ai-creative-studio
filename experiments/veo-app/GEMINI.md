@@ -204,7 +204,6 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 
 - **GCS URI Construction:** When working with GCS URIs, be mindful of duplicate prefixes. The `store_to_gcs` function returns a full `gs://` URI, so do not prepend the prefix again in the calling function. This applies to both creating display URLs (e.g., `https://storage.mtls.cloud.google.com/`) and passing URIs to the API.
 
-
 ### 1. Initial Scaffolding and Page Creation
 
 - **File Structure:** Following the existing architecture, we created three new files:
@@ -238,6 +237,14 @@ This section summarizes the process of creating the Virtual Try-On (VTO) page, i
 - **Mutable Default Values:** We encountered a `TypeError` because we were using a mutable default value (`[]`) for the `result_images` list in our state class. We resolved this by using `field(default_factory=list)` instead.
 - **Slider Component:** We encountered an `Unexpected keyword argument` error when using the `label` parameter on the `me.slider` component. We resolved this by wrapping the slider in a `me.box` and using a `me.text` component as the label.
 - **Generator Functions:** We learned that generator functions (those that use `yield`) must have a `yield` statement after updating the state to ensure that the UI is updated.
+
+## Library and Data Flow Lessons
+
+- **`on_load` is for Pages, Not Components:** The `on_load` event handler should only be used in the `@me.page` decorator. It fires once when the page is first loaded in the browser. It is not a general-purpose component lifecycle hook and will cause an `Unexpected keyword argument` error if used on a standard component like `me.box`.
+- **Top-Down Data Flow is Key:** The correct way to manage dynamic data is for parent components to own the data-fetching logic. The parent should fetch the data and then pass it down to child components as parameters. Child components should be as "presentational" as possible.
+- **Triggering Refreshes via State:** To make a component re-fetch its data, you must trigger a change in its state. The most reliable way to do this from a parent component is to have the parent manage the data directly and simply re-render the child with the new data.
+- **Unpacking Lists in UI:** When displaying data from a list within a list (like the `gcs_uris` in a `MediaItem`), you must use nested loops in the rendering logic to ensure every item is displayed.
+- **Centralize Data Access:** Data access logic (like Firestore queries) should be centralized in a dedicated data layer (e.g., `common/metadata.py`) rather than being co-located with UI components in the `pages/` directory. This improves architecture and maintainability.
 
 ## Veo Model Interaction: Lessons Learned
 
