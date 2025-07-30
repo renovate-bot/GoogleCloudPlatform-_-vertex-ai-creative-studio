@@ -246,4 +246,5 @@ if __name__ == "__main__":
         reload=True,
         reload_includes=["*.py", "*.js"],
         timeout_graceful_shutdown=0,
+        proxy_headers=True,
     )
