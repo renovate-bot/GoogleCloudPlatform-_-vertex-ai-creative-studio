@@ -162,7 +162,7 @@ mcp==1.12.1
     # via google-adk
 numpy==2.3.1
     # via shapely
-opentelemetry-api==1.35.0
+opentelemetry-api==1.36.0
     # via
     #   google-adk
     #   google-cloud-logging
@@ -176,7 +176,7 @@ opentelemetry-exporter-gcp-trace==1.9.0
     #   google-cloud-aiplatform
 opentelemetry-resourcedetector-gcp==1.9.0a0
     # via opentelemetry-exporter-gcp-trace
-opentelemetry-sdk==1.35.0
+opentelemetry-sdk==1.36.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
