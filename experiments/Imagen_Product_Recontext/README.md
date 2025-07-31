@@ -1,4 +1,4 @@
-# Authors: Layolin Jesudhass & Isidro De Loera
+## Authors: Layolin Jesudhass & Isidro De Loera
 
 # Imagen Product Recontextualization at Scale
 
