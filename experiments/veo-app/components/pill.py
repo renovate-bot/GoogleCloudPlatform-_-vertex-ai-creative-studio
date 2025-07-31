@@ -44,6 +44,9 @@ def pill(label: str, pill_type: str):
     elif pill_type == "genre":
         background_color = me.theme_var("secondary-container")
         text_color = me.theme_var("on-scecondary-container")
+    elif pill_type == "stage":
+        background_color = me.theme_var("secondary-container")
+        text_color = me.theme_var("on-scecondary-container")
     
 
     me.text(
