@@ -14,7 +14,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "2.0.0" // Version bump for refactoring
+	version     = "2.1.0" // Add prompt support
 )
 
 var transport = flag.String("transport", "stdio", "Transport type (stdio, sse, or http)")
