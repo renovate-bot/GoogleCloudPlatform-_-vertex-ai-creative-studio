@@ -90,6 +90,33 @@ Either of these should result in a JSON response with a list of tools, similar t
 }
 ```
 
+## Using Prompts
+
+In addition to tools, the MCP servers now support prompts, providing a more interactive and user-friendly way to access their core functionality. Prompts guide the user through a task, asking for required information if it's not provided.
+
+### Listing and Using Prompts
+
+You can list the available prompts for a server using the `prompts/list` method:
+
+```bash
+echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | mcp-imagen-go | jq .
+```
+
+To use a prompt, you call the `prompts/get` method with the prompt's name and any required arguments. If you omit a required argument, the server will respond with a message asking for it.
+
+**Example: Using the `generate-image` prompt with `mcp-imagen-go`**
+
+```bash
+# Call the prompt with a required argument
+export PROJECT_ID=$(gcloud config get project)
+echo '{"jsonrpc":"2.0","method":"prompts/get","id":2,"params":{"name":"generate-image","arguments":{"prompt":"a futuristic cityscape at sunset"}}}' | mcp-imagen-go | jq .
+
+# Call the prompt without a required argument
+echo '{"jsonrpc":"2.0","method":"prompts/get","id":3,"params":{"name":"generate-image"}}' | mcp-imagen-go | jq .
+```
+
+This will result in a more conversational interaction, making the servers easier to use for interactive clients.
+
 ## Client Configurations
 
 The MCP servers can be used with various clients and hosts. A sample MCP configuration JSON can be found at [genmedia-config.json](../sample-agents/mcp-inspector/genmedia-config.json).
