@@ -26,6 +26,9 @@ We'd love to hear your feedback on these!
 * [Creative Podcast Assistant](#creative-podcast-assistant) - a notebook example to create a podcast with genmedia services
 * [Babel](#babel---chirp-3-hd-voices) - experiment with Chirp 3 HD voices
 
+**Image**
+* [Imagen Product Recontextualization at Scale](#imagen-product-recontextualization-at-scale) - a set of notebooks for the Imagen Product Recontext model to run at scale.
+
 **Image Comparison**
 * [Arena](#arena---rate-images) - rate your images with in a visual arena
 
@@ -87,6 +90,12 @@ See [v.Next UI](./veo-app/)
 A stand-alone application to rate Model Garden image generation models, including Imagen 2, 3 and others!
 
 ![arena experimental app ui](assets/arena.png)
+
+## Imagen Product Recontextualization at Scale
+
+This repository contains Jupyter notebooks and tools to perform large-scale product image recontextualization using Google's Gemini and Imagen Product Recontext models. It includes both the generation pipeline and an evaluation framework.
+
+See [Imagen Product Recontextualization at Scale](./Imagen_Product_Recontext/)
 
 
 ## Babel - Chirp 3: HD Voices
