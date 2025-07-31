@@ -1,8 +1,9 @@
-### Authors: Layolin Jesudhass & Isidro De Loera
 
 # Imagen Product Recontextualization at Scale
 
 This repository contains Jupyter notebooks and tools to perform large-scale product image recontextualization using Google's Gemini and Imagen Product Recontext models. It includes both the generation pipeline and an evaluation framework.
+
+**Authors**: Layolin Jesudhass & Isidro De Loera
 
 ## Contents
 
