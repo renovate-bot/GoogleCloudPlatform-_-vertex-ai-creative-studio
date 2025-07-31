@@ -1088,6 +1088,50 @@ func addLayerAudioTool(s *server.MCPServer, cfg *common.Config) {
 	s.AddTool(tool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return ffmpegLayerAudioHandler(ctx, request, cfg)
 	})
+
+	s.AddPrompt(mcp.NewPrompt("create-gif",
+		mcp.WithPromptDescription("Creates a GIF from a video file."),
+		mcp.WithArgument("input_video_uri", mcp.ArgumentDescription("The URI of the video file to convert."), mcp.RequiredArgument()),
+		mcp.WithArgument("fps", mcp.ArgumentDescription("Frames per second for the output GIF.")),
+		mcp.WithArgument("scale_width_factor", mcp.ArgumentDescription("Factor to scale the input video's width by.")),
+	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		inputURI, ok := request.Params.Arguments["input_video_uri"]
+		if !ok || strings.TrimSpace(inputURI) == "" {
+			return mcp.NewGetPromptResult(
+				"Missing Input URI",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What video file (local path or gs:// URI) would you like to convert to a GIF?")),
+				},
+			), nil
+		}
+
+		// Call the existing handler logic
+		args := make(map[string]interface{}, len(request.Params.Arguments))
+		for k, v := range request.Params.Arguments {
+			args[k] = v
+		}
+		toolRequest := mcp.CallToolRequest{
+			Params:   mcp.CallToolParams{Arguments: args},
+		}
+		result, err := ffmpegVideoToGifHandler(ctx, toolRequest, cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		var responseText string
+		for _, content := range result.Content {
+			if textContent, ok := content.(mcp.TextContent); ok {
+				responseText += textContent.Text + "\n"
+			}
+		}
+
+		return mcp.NewGetPromptResult(
+			"GIF Creation Result",
+			[]mcp.PromptMessage{
+				mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent(strings.TrimSpace(responseText))),
+			},
+		), nil
+	})
 }
 
 // ffmpegLayerAudioHandler is the handler for the audio layering tool.

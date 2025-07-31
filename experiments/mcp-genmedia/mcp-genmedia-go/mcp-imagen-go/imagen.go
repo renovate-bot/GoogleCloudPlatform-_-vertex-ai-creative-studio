@@ -44,7 +44,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "1.8.0" // Add model alias support and dynamic constraints
+	version     = "1.9.0" // Add prompt support
 )
 
 func init() {
@@ -114,7 +114,52 @@ func main() {
 	handlerWithClient := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return imagenGenerationHandler(genAIClient, ctx, request)
 	}
-	s.AddTool(tool, handlerWithClient)
+		s.AddTool(tool, handlerWithClient)
+
+	s.AddPrompt(mcp.NewPrompt("generate-image",
+		mcp.WithPromptDescription("Generates an image from a text prompt."),
+		mcp.WithArgument("prompt", mcp.ArgumentDescription("The text prompt to generate an image from."), mcp.RequiredArgument()),
+		mcp.WithArgument("model", mcp.ArgumentDescription("The model to use for generation.")),
+		mcp.WithArgument("num_images", mcp.ArgumentDescription("The number of images to generate.")),
+		mcp.WithArgument("aspect_ratio", mcp.ArgumentDescription("The aspect ratio of the generated images.")),
+	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		prompt, ok := request.Params.Arguments["prompt"]
+		if !ok || strings.TrimSpace(prompt) == "" {
+			return mcp.NewGetPromptResult(
+				"Missing Prompt",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What would you like to create an image of?")),
+				},
+			), nil
+		}
+
+		// Call the existing handler logic
+		args := make(map[string]interface{}, len(request.Params.Arguments))
+		for k, v := range request.Params.Arguments {
+			args[k] = v
+		}
+		toolRequest := mcp.CallToolRequest{
+			Params:   mcp.CallToolParams{Arguments: args},
+		}
+		result, err := imagenGenerationHandler(genAIClient, ctx, toolRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		var responseText string
+		for _, content := range result.Content {
+			if textContent, ok := content.(mcp.TextContent); ok {
+				responseText += textContent.Text + "\n"
+			}
+		}
+
+		return mcp.NewGetPromptResult(
+			"Image Generation Result",
+			[]mcp.PromptMessage{
+				mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent(strings.TrimSpace(responseText))),
+			},
+		), nil
+	})
 
 	log.Printf("Starting Imagen MCP Server (Version: %s, Transport: %s)", version, transport)
 
