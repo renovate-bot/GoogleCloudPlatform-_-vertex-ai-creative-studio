@@ -68,6 +68,9 @@ Use uv to sync the prerequisites, activate the Python virtual environment, and s
 uv sync
 source .venv/bin/activate
 uv run main.py
+#mesop main.py
 ```
+
+If you get an error that `/` is not found, navigate to `/home`
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>

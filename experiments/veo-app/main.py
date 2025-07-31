@@ -19,6 +19,8 @@ import uuid
 
 import mesop as me
 from fastapi import APIRouter, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,6 +28,7 @@ from pydantic import BaseModel
 
 from app_factory import app
 from components.page_scaffold import page_scaffold
+from pages.about import about_page_content
 from pages.character_consistency import character_consistency_page_content
 from pages.config import config_page_contents
 from pages.edit_images import content as edit_images_content
@@ -35,11 +38,10 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
-from pages.test_uploader import test_uploader_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
+from pages.test_uploader import test_uploader_page
 from pages.veo import veo_content
 from pages.vto import vto
-from pages.about import about_page_content
 from state.state import AppState
 
 
@@ -52,19 +54,19 @@ class UserInfo(BaseModel):
 router = APIRouter()
 app.include_router(router)
 
+# Define allowed origins for CORS
+# This is necessary to allow the Cloud Shell proxy to communicate with the app.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https://.*\.cloudshell\.dev|http://localhost:8080",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.middleware("http")
 async def set_request_context(request: Request, call_next):
-    """
-    Sets request-scoped context for both FastAPI and Mesop.
-    
-    This middleware performs the following actions:
-    1.  Retrieves the user's email from the 'X-Goog-Authenticated-User-Email' header,
-        with a fallback for local development.
-    2.  Retrieves the session ID from the 'session_id' cookie or creates a new one.
-    3.  Stores the user email and session ID in 'request.scope' for the WSGI middleware
-        to pass to the Mesop application.
-    """
     user_email = request.headers.get("X-Goog-Authenticated-User-Email")
     if not user_email:
         user_email = "anonymous@google.com"
@@ -79,13 +81,18 @@ async def set_request_context(request: Request, call_next):
     request.scope["MESOP_SESSION_ID"] = session_id
 
     response = await call_next(request)
-    response.set_cookie(key="session_id", value=session_id, httponly=True, samesite='Lax')
+    response.set_cookie(
+        key="session_id", value=session_id, httponly=True, samesite="Lax"
+    )
     return response
 
 
 @me.page(
     path="/home",
     title="GenMedia Creative Studio - v.next",
+    security_policy=me.SecurityPolicy(
+        dangerously_disable_trusted_types=True,
+    ),
 )
 def home_page():
     """Main Page."""
