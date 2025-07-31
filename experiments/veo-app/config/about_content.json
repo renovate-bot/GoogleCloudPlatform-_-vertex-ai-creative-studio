@@ -16,7 +16,7 @@
       "title": "Veo",
       "description": "The **Veo** page is for video generation. You can create videos from a text prompt (text-to-video) or animate an existing image (image-to-video).\n\n**Available Models:**\n*   Veo 2\n*   Veo 3\n*   Veo 3 Fast\n\n[Learn more about Veo on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/video/overview)",
       "image": null,
-      "video": "https://youtu.be/y6FgrKFVj1k?si=cGXYvFPBIDxPeKms"
+      "video": null
     },
     {
       "id": "lyria",
@@ -28,14 +28,15 @@
     {
       "id": "vto",
       "title": "Virtual Try-On",
-      "description": "This workflow allows you to see how a piece of clothing looks on a person. You provide an image of a person and an image of a garment, and the model generates a new image of the person wearing the item.",
+      "stage": "experimental",
+      "description": "Virtual Try-On is a fully managed Vertex AI service to generate images of persons modeling fashion products.\n\n**Virtual Try-On** brings Google's advanced image generation technology to developers and retail customers in the fashion industry. This experimental service provides an easy-to-use API and cutting edge quality for generating shots of models trying-on products.\n\nWith Virtual Try-On, you can create high quality listing photos with just an image of a person and a product to try on. Supported products are:\n * Tops: shirts, hoodies sweaters, tank tops, blouses\n* Bottoms: Pants, leggings, shorts, skirts\n* Footwear: Sneakers, boots, sandals, flats, heels, formal shoes\n\nThis workflow allows you to see how a piece of clothing looks on a person. You provide an image of a person and an image of a garment, and the model generates a new image of the person wearing the item.",
       "image": "assets/about/vto_demo.png",
       "video": null
     },
     {
       "id": "recontextualize",
       "title": "Product in Scene",
-      "description": "This workflow, also known as Product Recontextualization, allows you to take a product image and place it in a new scene. You provide an image of the product and a text prompt describing the new scene, and the model generates a new image of the product in that scene.",
+      "description": "**Imagen Product Recontext** brings Google's advanced image generation technology to developers and retailers for generating product images. This service provides an easy-to-use API and cutting edge quality for generating shots of products in new scenes and contexts.\n\nWith Product Recontext, you can create high quality listing photos with just an image of a product and an optional text prompt. Supported product categories are:\n* Appliances\n* Business and industrial\n* Clothing\n* Electronics\n* Furniture\n* Garden and yard\n* Hardware\n* Health and beauty\n* Jewelry\n* Pets\n* Shoes\n* Sporting goods\n* Toys and games\n* Vehicle\n\nThis workflow, also known as Product Recontextualization, allows you to take a product image and place it in a new scene. You provide an image of the product and a text prompt describing the new scene, and the model generates a new image of the product in that scene.",
       "image": "assets/about/recontextualize_demo.png",
       "video": null
     },
@@ -44,14 +45,14 @@
       "title": "Motion Portraits",
       "description": "This workflow allows you to animate a still image of a person. You provide an image of a person and a text prompt describing the desired motion, and the model generates a short video of the person moving.",
       "image": null,
-      "video": "assets/about/motion_portraits_demo.mp4"
+      "video": null
     },
     {
       "id": "character_consistency",
       "title": "Character Consistency",
       "description": "This workflow allows you to generate a consistent character across multiple images. You provide a text prompt describing the character, and the model generates a series of images of that character in different poses and settings.",
       "image": null,
-      "video": "assets/about/character_consistency_demo.mp4"
+      "video": null
     },
     {
       "id": "feedback",
