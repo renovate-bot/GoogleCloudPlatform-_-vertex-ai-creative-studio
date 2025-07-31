@@ -1,5 +1,17 @@
 # Changelog
 
+## 2025-07-31
+
+*   **Feat:** Added prompt support to all MCP servers to eliminate the `prompts not supported` error.
+*   **Feat:** Implemented a `list-voices` prompt in `mcp-chirp3-go` that lists available voices and can be filtered by language.
+*   **Feat:** Added a `chirp://language_codes` resource to `mcp-chirp3-go` to expose the supported language codes.
+*   **Feat:** Implemented a `generate-image` prompt in `mcp-imagen-go` that wraps the `imagen_t2i` tool.
+*   **Feat:** Implemented a `generate-video` prompt in `mcp-veo-go` that wraps the `veo_t2v` tool.
+*   **Feat:** Implemented a `generate-music` prompt in `mcp-lyria-go` that wraps the `lyria_generate_music` tool.
+*   **Feat:** Implemented a `create-gif` prompt in `mcp-avtool-go` that wraps the `ffmpeg_video_to_gif` tool.
+*   **Refactor:** Refactored the voice listing logic in `mcp-chirp3-go` into a reusable helper function.
+*   **Chore:** Incremented the version number for all MCP servers.
+
 ## 2025-07-19
 
 *   **Feat:** Implemented dynamic, model-specific constraints for `mcp-imagen-go` and `mcp-veo-go`. This includes support for model aliases (e.g., "Imagen 4", "Veo 3") and validation of parameters like image count, video duration, and aspect ratios based on the selected model.

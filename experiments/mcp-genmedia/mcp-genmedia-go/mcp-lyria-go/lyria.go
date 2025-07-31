@@ -52,7 +52,7 @@ var (
 
 const (
 	serviceName                 = "mcp-lyria-go"
-	version                     = "1.2.0" // Version increment for OTel instrumentation
+	version                     = "1.3.0" // Add prompt support
 	defaultPublisher            = "google"
 	defaultLyriaModelID         = "lyria-002"
 	defaultSampleCount          = 1
@@ -138,7 +138,50 @@ func main() {
 	}
 
 	lyriaTool := mcp.NewTool("lyria_generate_music", lyriaToolParams...)
-	s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
+		s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
+
+	s.AddPrompt(mcp.NewPrompt("generate-music",
+		mcp.WithPromptDescription("Generates music from a text prompt."),
+		mcp.WithArgument("prompt", mcp.ArgumentDescription("The text prompt to generate music from."), mcp.RequiredArgument()),
+		mcp.WithArgument("negative_prompt", mcp.ArgumentDescription("A negative prompt to instruct the model to avoid certain characteristics.")),
+	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		prompt, ok := request.Params.Arguments["prompt"]
+		if !ok || strings.TrimSpace(prompt) == "" {
+			return mcp.NewGetPromptResult(
+				"Missing Prompt",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What kind of music should I create for you?")),
+				},
+			), nil
+		}
+
+		// Call the existing handler logic
+		args := make(map[string]interface{}, len(request.Params.Arguments))
+		for k, v := range request.Params.Arguments {
+			args[k] = v
+		}
+		toolRequest := mcp.CallToolRequest{
+			Params:   mcp.CallToolParams{Arguments: args},
+		}
+		result, err := lyriaGenerateMusicHandler(ctx, toolRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		var responseText string
+		for _, content := range result.Content {
+			if textContent, ok := content.(mcp.TextContent); ok {
+				responseText += textContent.Text + "\n"
+			}
+		}
+
+		return mcp.NewGetPromptResult(
+			"Music Generation Result",
+			[]mcp.PromptMessage{
+				mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent(strings.TrimSpace(responseText))),
+			},
+		), nil
+	})
 
 	log.Printf("Starting Lyria MCP Server (Version: %s, Transport: %s)", version, transport)
 

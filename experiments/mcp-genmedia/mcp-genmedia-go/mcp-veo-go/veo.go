@@ -21,6 +21,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
@@ -39,7 +40,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.7.0" // Add model alias support and dynamic constraints
+	version     = "1.8.0" // Add prompt support
 )
 
 // init handles command-line flags and initial logging setup.
@@ -161,6 +162,51 @@ func main() {
 	)
 	s.AddTool(imageToVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return veoImageToVideoHandler(genAIClient, ctx, request)
+	})
+
+	s.AddPrompt(mcp.NewPrompt("generate-video",
+		mcp.WithPromptDescription("Generates a video from a text prompt."),
+		mcp.WithArgument("prompt", mcp.ArgumentDescription("The text prompt to generate a video from."), mcp.RequiredArgument()),
+		mcp.WithArgument("duration", mcp.ArgumentDescription("The duration of the video in seconds.")),
+		mcp.WithArgument("aspect_ratio", mcp.ArgumentDescription("The aspect ratio of the generated video.")),
+		mcp.WithArgument("model", mcp.ArgumentDescription("The model to use for generation.")),
+	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		prompt, ok := request.Params.Arguments["prompt"]
+		if !ok || strings.TrimSpace(prompt) == "" {
+			return mcp.NewGetPromptResult(
+				"Missing Prompt",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What video would you like me to generate?")),
+				},
+			), nil
+		}
+
+		// Call the existing handler logic
+		args := make(map[string]interface{}, len(request.Params.Arguments))
+		for k, v := range request.Params.Arguments {
+			args[k] = v
+		}
+		toolRequest := mcp.CallToolRequest{
+			Params:   mcp.CallToolParams{Arguments: args},
+		}
+		result, err := veoTextToVideoHandler(genAIClient, ctx, toolRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		var responseText string
+		for _, content := range result.Content {
+			if textContent, ok := content.(mcp.TextContent); ok {
+				responseText += textContent.Text + "\n"
+			}
+		}
+
+		return mcp.NewGetPromptResult(
+			"Video Generation Result",
+			[]mcp.PromptMessage{
+				mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent(strings.TrimSpace(responseText))),
+			},
+		), nil
 	})
 
 	log.Printf("Starting Veo MCP Server (Version: %s, Transport: %s)", version, transport)

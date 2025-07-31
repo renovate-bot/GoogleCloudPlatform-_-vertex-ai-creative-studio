@@ -31,7 +31,7 @@ var (
 	availableVoices     []*texttospeechpb.Voice
 	transport           string
 	port                string
-	version             = "0.0.1"
+	version             = "0.1.0" // Add prompt support
 )
 
 const (
@@ -76,8 +76,6 @@ var LanguageNameToCodeMap = map[string]string{
 
 // OriginalLanguageNames is used to get the original casing for display in disambiguation messages.
 var OriginalLanguageNames = make(map[string]string) // map[lowercase_name]Original_Cased_Name
-
-
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -268,6 +266,71 @@ func main() {
 		),
 	)
 	s.AddTool(listVoicesTool, listChirpVoicesHandler)
+
+	// Add the new list-voices prompt
+	s.AddPrompt(mcp.NewPrompt("list-voices",
+		mcp.WithPromptDescription("Lists available Chirp3-HD voices, with an option to filter by language."),
+		mcp.WithArgument("language",
+			mcp.ArgumentDescription("Optional. The language to filter voices by (e.g., 'English (United States)', 'en-US')."),
+		),
+	), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		languageParam, langProvided := request.Params.Arguments["language"]
+		if !langProvided || strings.TrimSpace(languageParam) == "" {
+			// If no language is provided, ask the user to specify one.
+			return mcp.NewGetPromptResult(
+				"Specify Language",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(
+						mcp.RoleAssistant,
+						mcp.NewTextContent("What language would you like to list the voices for? You can see available languages by using the resource 'chirp://language_codes'"),
+					),
+				},
+			), nil
+		}
+
+		summary, jsonData, err := getFilteredVoices(languageParam)
+		if err != nil {
+			return mcp.NewGetPromptResult(
+				"Error",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(
+						mcp.RoleAssistant,
+						mcp.NewTextContent(err.Error()),
+					),
+				},
+			), nil
+		}
+
+		return mcp.NewGetPromptResult(
+			"Voice List",
+			[]mcp.PromptMessage{
+				mcp.NewPromptMessage(
+					mcp.RoleAssistant,
+					mcp.NewTextContent(summary+"\n"+jsonData),
+				),
+			},
+		), nil
+	})
+
+	// Add the language codes resource
+	s.AddResource(mcp.NewResource(
+		"chirp://language_codes",
+		"Chirp Language Codes",
+		mcp.WithResourceDescription("A list of supported languages and their BCP-47 codes."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		jsonData, err := json.MarshalIndent(LanguageNameToCodeMap, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal language codes: %w", err)
+		}
+		return []mcp.ResourceContents{
+			mcp.TextResourceContents{
+				URI:      "chirp://language_codes",
+				MIMEType: "application/json",
+				Text:     string(jsonData),
+			},
+		}, nil
+	})
 
 	userSetPort := false
 	flag.Visit(func(f *flag.Flag) {
@@ -542,25 +605,12 @@ type VoiceInfo struct {
 	Gender       string `json:"gender"`
 }
 
-// listChirpVoicesHandler handles requests for the 'list_chirp_voices' tool.
-// It filters the cached list of Chirp3-HD voices based on a provided language query.
-// The query can be a descriptive name (e.g., "English (United States)") or a BCP-47 code.
-// The function returns a JSON array of matching voices and a human-readable summary.
-func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	if err := ctx.Err(); err != nil {
-		log.Printf("listChirpVoicesHandler: Incoming context (ctx) is already canceled or has an error upon entry: %v. Attempting to proceed with listing.", err)
-	} else {
-		log.Printf("listChirpVoicesHandler: Incoming context (ctx) is active upon entry.")
-	}
-	log.Println("Handling list_chirp_voices request.")
-
-	languageParam, langProvided := request.GetArguments()["language"].(string)
-	if !langProvided || strings.TrimSpace(languageParam) == "" {
-		return mcp.NewToolResultError("'language' parameter must be provided and non-empty."), nil
+func getFilteredVoices(languageQuery string) (string, string, error) {
+	if strings.TrimSpace(languageQuery) == "" {
+		return "", "", errors.New("language query must not be empty")
 	}
 
-	trimmedLangParam := strings.TrimSpace(languageParam)
-	normalizedInput := strings.ToLower(trimmedLangParam)
+	normalizedInput := strings.ToLower(strings.TrimSpace(languageQuery))
 	var targetLangCode string
 	var directlyResolved bool
 
@@ -568,22 +618,18 @@ func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*
 	if isNameMatch {
 		targetLangCode = bcp47Code
 		directlyResolved = true
-		log.Printf("Input '%s' directly matched language name. Resolved to BCP-47 code: '%s'", trimmedLangParam, targetLangCode)
 	} else {
 		for _, codeInMap := range LanguageNameToCodeMap {
 			if strings.ToLower(codeInMap) == normalizedInput {
 				targetLangCode = codeInMap
 				directlyResolved = true
-				log.Printf("Input '%s' directly matched BCP-47 code: '%s'", trimmedLangParam, targetLangCode)
 				break
 			}
 		}
 	}
 
 	if !directlyResolved {
-		log.Printf("Input '%s' not a direct match. Performing broader search for disambiguation.", trimmedLangParam)
 		potentialMatches := make(map[string]bool)
-
 		for lcNameKey, originalCasedName := range OriginalLanguageNames {
 			bcp47ForThisName := LanguageNameToCodeMap[lcNameKey]
 			if strings.Contains(lcNameKey, normalizedInput) || strings.Contains(strings.ToLower(bcp47ForThisName), normalizedInput) {
@@ -592,40 +638,30 @@ func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*
 		}
 
 		if len(potentialMatches) == 0 {
-			return mcp.NewToolResultError(fmt.Sprintf("Unsupported language query: '%s'. No matching language names or BCP-47 codes found.", trimmedLangParam)), nil
+			return "", "", fmt.Errorf("unsupported language query: '%s'. No matching language names or BCP-47 codes found", languageQuery)
 		}
 
-		if len(potentialMatches) == 1 {
-			var singleMatchFullName string
-			for name := range potentialMatches {
-				singleMatchFullName = name
-				break
-			}
-			targetLangCode = LanguageNameToCodeMap[strings.ToLower(singleMatchFullName)]
-			log.Printf("Broad search yielded one match: '%s'. Resolved to BCP-47 code: '%s'", singleMatchFullName, targetLangCode)
-		} else {
+		if len(potentialMatches) > 1 {
 			var displayNames []string
 			for name := range potentialMatches {
 				displayNames = append(displayNames, name)
 			}
 			sort.Strings(displayNames)
-			disambiguationMsg := fmt.Sprintf("Your language query '%s' is ambiguous. Please be more specific by choosing one of the following: %s",
-				trimmedLangParam, strings.Join(displayNames, ", "))
-			log.Println(disambiguationMsg)
-			return mcp.NewToolResultText(disambiguationMsg), nil
+			return "", "", fmt.Errorf("your language query '%s' is ambiguous. Please be more specific by choosing one of the following: %s", languageQuery, strings.Join(displayNames, ", "))
+		}
+
+		for name := range potentialMatches {
+			targetLangCode = LanguageNameToCodeMap[strings.ToLower(name)]
 		}
 	}
 
 	if len(availableVoices) == 0 {
-		log.Println("No Chirp3-HD voices cached to list.")
-		return mcp.NewToolResultText("No Chirp3-HD voices are currently available or cached. Check server logs for details."), nil
+		return "", "", errors.New("no Chirp3-HD voices are currently available or cached")
 	}
 
 	var filteredVoiceInfos []VoiceInfo
 	var voiceNameSuffixes []string
-
 	filterLangCodeNormalized := strings.ToLower(targetLangCode)
-	log.Printf("Using fully resolved and lowercased targetLangCode for matching: '%s'", filterLangCodeNormalized)
 
 	for _, v := range availableVoices {
 		voiceMatches := false
@@ -662,13 +698,13 @@ func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*
 	}
 
 	if len(filteredVoiceInfos) == 0 {
-		return mcp.NewToolResultText(fmt.Sprintf("No Chirp3-HD voices found for the specified language filter: '%s' (resolved to %s)", trimmedLangParam, targetLangCode)), nil
+		return "", "", fmt.Errorf("no Chirp3-HD voices found for the specified language filter: '%s' (resolved to %s)", languageQuery, targetLangCode)
 	}
 
 	sort.Strings(voiceNameSuffixes)
 
 	summaryText := fmt.Sprintf("I've resolved your request for '%s' to the language code '%s'. Found %d voice(s): %s",
-		trimmedLangParam,
+		languageQuery,
 		targetLangCode,
 		len(filteredVoiceInfos),
 		strings.Join(voiceNameSuffixes, ", "),
@@ -676,19 +712,39 @@ func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*
 
 	jsonData, err := json.MarshalIndent(filteredVoiceInfos, "", "  ")
 	if err != nil {
-		log.Printf("Error marshaling filtered voice list to JSON: %v", err)
-		return mcp.NewToolResultError(fmt.Sprintf("Error preparing filtered voice list: %v", err)), nil
+		return "", "", fmt.Errorf("error marshalling filtered voice list to JSON: %w", err)
+	}
+
+	return summaryText, string(jsonData), nil
+}
+
+func listChirpVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if err := ctx.Err(); err != nil {
+		log.Printf("listChirpVoicesHandler: Incoming context (ctx) is already canceled or has an error upon entry: %v. Attempting to proceed with listing.", err)
+	} else {
+		log.Printf("listChirpVoicesHandler: Incoming context (ctx) is active upon entry.")
+	}
+	log.Println("Handling list_chirp_voices request.")
+
+	languageParam, langProvided := request.GetArguments()["language"].(string)
+	if !langProvided || strings.TrimSpace(languageParam) == "" {
+		return mcp.NewToolResultError("'language' parameter must be provided and non-empty."), nil
+	}
+
+	summary, jsonData, err := getFilteredVoices(languageParam)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			mcp.TextContent{
 				Type: "text",
-				Text: summaryText,
+				Text: summary,
 			},
 			mcp.TextContent{
 				Type: "text",
-				Text: string(jsonData),
+				Text: jsonData,
 			},
 		},
 	}, nil
