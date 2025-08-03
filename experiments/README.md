@@ -13,7 +13,8 @@ We'd love to hear your feedback on these!
 * [Genmedia Creative Studio v.Next](#genmedia-creative-studio-vnext) - v.next of Genmedia creative studio
 * [Creative GenMedia Workflow](#creative-genmedia-workflow) - a Creative GenMedia workflow which takes various inputs to create prompts for Veo 3, plus allows a showcase of output videos.
 
-**Veo related**
+**Prompting Techniques**
+* [Promptlandia](#promptlandia) - a powerful web application that helps you analyze, refine, and improve your prompts using AI-powered feedback.
 * [Veo Genetic Prompt Optimizer](#veo-genetic-prompt-optimizer) - an automated system that uses a genetic algorithm to evolve and refine high-level "metaprompts," that guides Gemini to generate superior, task-specific prompts for Google's Veo video generation model.
 * [Veo 3 Character Consistency](#veo-3-character-consistency) - a workflow for generating a video of a person in a new scene while maintaining character consistency.
 * [Veo 3 Item Consistency](#veo-3-item-consistency) - a workflow for generating a video of an item in a new scene while maintaining item consistency.
@@ -40,6 +41,15 @@ An end-to-end workflow demo that demonstrates how a series of interconnected AI 
 - Includes a showcase to display pre-made examples, which is crucial for demonstrating the final output without the delay of live video generation.
 
 See [Creative GenMedia Workflow demo](./creative-genmedia-workflow/)
+
+## Promptlandia
+
+Stop guessing and start engineering your prompts! Promptlandia is a powerful web application that helps you analyze, refine, and improve your prompts using AI-powered feedback. Whether you're a seasoned prompt engineer or just getting started, this tool will help you get better results from your generative AI models.
+
+![Promptlandia Demo](promptlandia/assets/promptlandia_short.gif)
+
+See [Promptlandia](./promptlandia/)
+
 
 ## Veo Genetic Prompt Optimizer
 
@@ -103,3 +113,4 @@ See [Imagen Product Recontextualization at Scale](./Imagen_Product_Recontext/)
 A stand-alone service + web application that generates voices using Google Cloud's Chirp 3: HD Voices.
 
 ![babel experimental app ui](assets/babel.png)
+
