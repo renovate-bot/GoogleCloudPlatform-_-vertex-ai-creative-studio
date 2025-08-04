@@ -93,6 +93,10 @@ def generate_vto_image(
         ],
     }
 
+    if base_steps == 0:
+        base_steps = 32
+
+
     parameters = {
         "sampleCount": sample_count,
         "baseSteps": base_steps,
