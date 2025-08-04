@@ -4,7 +4,7 @@ absl-py==2.3.1
     # via mesop
 annotated-types==0.7.0
     # via pydantic
-anyio==4.9.0
+anyio==4.10.0
     # via
     #   google-genai
     #   httpx
@@ -19,7 +19,7 @@ cachecontrol==0.14.3
     # via firebase-admin
 cachetools==5.5.2
     # via google-auth
-certifi==2025.7.14
+certifi==2025.8.3
     # via
     #   httpcore
     #   httpx
@@ -107,7 +107,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.28.0
+google-genai==1.20.0
     # via
     #   google-cloud-aiplatform
     #   veo-app
@@ -176,7 +176,7 @@ markupsafe==3.0.2
     #   flask
     #   jinja2
     #   werkzeug
-matplotlib==3.10.3
+matplotlib==3.10.5
     # via mediapy
 matplotlib-inline==0.1.7
     # via ipython
