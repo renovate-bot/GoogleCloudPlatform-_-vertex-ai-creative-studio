@@ -27,7 +27,7 @@ class PageState:
     product_image_gcs: str = ""
     result_images: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     vto_sample_count: int = 4
-    vto_base_steps: int = 0
+    vto_base_steps: int = 32
     is_loading: bool = False
     is_generating_person_image: bool = False
     show_error_dialog: bool = False
