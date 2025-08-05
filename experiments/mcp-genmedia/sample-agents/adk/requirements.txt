@@ -127,7 +127,7 @@ grpc-google-iam-v1==0.14.2
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.73.1
+grpcio==1.74.0
     # via
     #   google-api-core
     #   googleapis-common-protos
