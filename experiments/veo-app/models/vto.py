@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import base64
+import logging
 import uuid
 
 from google import genai
@@ -133,12 +134,8 @@ def generate_vto_image(
         return gcs_uris
 
     except GoogleAPIError as e:
-        error_message = f"VTO API Error: {str(e)}"
-        print(error_message)
-        raise ValueError(error_message) from e
+        logging.error("VTO API Error: %s", e)
+        raise
     except Exception as e:
-        error_message = (
-            f"An unexpected error occurred during VTO image generation: {str(e)}"
-        )
-        print(error_message)
-        raise Exception(error_message) from e
+        logging.error("An unexpected error occurred during VTO image generation: %s", e)
+        raise
