@@ -50,11 +50,11 @@ class Config:
     IMAGE_CREATION_BUCKET = os.environ.get("IMAGE_CREATION_BUCKET", "")
     PROJECT_ID = os.environ.get("PROJECT_ID", "")
     LOCATION = os.getenv("LOCATION", "us-central1")
-    MODEL_GEMINI_MULTIMODAL = "gemini-2.0-flash"
+    MODEL_GEMINI_MULTIMODAL = "gemini-2.5-flash"
     MODEL_IMAGEN2 = "imagegeneration@006"
     MODEL_IMAGEN_NANO = "imagegeneration@004"
-    MODEL_IMAGEN3_FAST = "imagen-3.0-fast-generate-002"
-    MODEL_IMAGEN3 = "imagen-3.0-generate-001"
+    MODEL_IMAGEN3_FAST = "imagen-3.0-fast-generate-00"
+    MODEL_IMAGEN3 = "imagen-3.0-generate-002"
     TEMPERATURE = 0.8
     TOP_P = 0.97
     TOP_K = 40

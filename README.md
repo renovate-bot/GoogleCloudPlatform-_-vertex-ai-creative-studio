@@ -9,13 +9,14 @@ This app is built with [Mesop](https://mesop-dev.github.io/mesop/), a Python-bas
 ### **New!** Experiments
 
 We're releasing stand-alone applications in advance of integration into the main GenMedia Creative Studio. Please see the [experiments](/experiments/) folder for new, upcoming capbilities.
+
+* **GenMedia Creative Studio - v.next** - [the next version](./experiments/veo-app/) of GenMedia Creative Studio
 * **Creative GenMedia Workflow** - combining product image, brand guidelines and brief to create prompts for generation of creative video content using Veo. 
-* **Veo** - a stand-alone Veo app
 * **MCP tools for Genmedia** - Model Context Protocol servers for genmedia services
 * **Babel** - Chirp 3: HD Voices
 * **Arena** - rate Model Garden image models
 * **Creative Podcast Assistant** - create a podcast using Chirp 3, using audio and other sources
-
+* **More!!** 
 
 ## GenMedia | Creative Studio
 
