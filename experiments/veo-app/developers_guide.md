@@ -71,6 +71,17 @@ This section outlines the key architectural patterns and best practices that are
 *   **Problem:** A generated image appears stretched or improperly fitted in its UI container.
 *   **Solution:** Ensure that parameters used in backend API calls (e.g., `models.image_models.generate_image_for_vto`) match the expectations of the frontend UI components that will display the result. For example, if a UI container is styled to be square (`1:1`), the corresponding API call to generate an image for that container should request a `1:1` aspect ratio. Mismatches will lead to distorted or improperly fitted media.
 
+### Error Handling Philosophy
+
+To ensure a clean separation of concerns and a consistent user experience, the project follows a specific pattern for handling errors that occur during backend operations (e.g., generative model API calls).
+
+1.  **The `models` Layer Raises:** Functions within the `models/` directory should be treated as a service layer. When an error occurs, the function should first log the full error for debugging purposes, and then **re-raise the exception**. It must not silently handle the error and return `None`.
+2.  **The `pages` Layer Catches:** The UI layer, specifically within an event handler in a `pages/` file (e.g., `on_click_generate`), is responsible for wrapping calls to the `models` layer in a `try...except` block.
+3.  **The `pages` Layer Updates State:** Upon catching an exception, the event handler must update the page's state to trigger a UI change. This typically involves setting an `error_dialog_open = True` flag and populating an `error_message` string with a user-friendly message.
+4.  **The UI Displays the Error:** The page's render function should contain a `components.dialog` whose visibility is bound to the `error_dialog_open` state flag, displaying the error message to the user.
+
+This pattern ensures that backend logic remains decoupled from UI presentation and that all user-facing errors are handled in a standardized, predictable way.
+
 ## Firestore Setup
 
 This application uses Firestore to store metadata for the media library and user sessions. Here's how to set it up:
