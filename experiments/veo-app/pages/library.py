@@ -39,6 +39,7 @@ from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
+from state.state import AppState
 from components.pill import pill
 
 
@@ -62,6 +63,7 @@ class PageState:
     error_filter_value: str = (
         "all"  # New state for error filter: "all", "no_errors", "only_errors"
     )
+    user_filter: str = "all"  # New state for user filter: "all", "mine"
     initial_url_param_processed: bool = False
     url_item_not_found_message: Optional[str] = None
 
@@ -73,6 +75,9 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         pagestate: The current page state.
         is_filter_change: Whether the media is being loaded due to a filter change.
     """
+    app_state = me.state(AppState) # Get global app state for user email
+    user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
+
     if is_filter_change:
         pagestate.current_page = 1  # Reset to first page on any filter change
 
@@ -84,6 +89,7 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         media_per_page=1000,  # Effectively fetch all matching items up to the internal limit
         type_filters=pagestate.selected_values,
         error_filter=pagestate.error_filter_value,
+        filter_by_user_email=user_email_to_filter,
         sort_by_timestamp=True,
     )
     pagestate.total_media = len(all_matching_items)
@@ -94,6 +100,7 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         pagestate.media_per_page,
         pagestate.selected_values,
         pagestate.error_filter_value,
+        filter_by_user_email=user_email_to_filter,
         sort_by_timestamp=True,
     )
     pagestate.key += 1  # Force re-render of the grid
@@ -203,6 +210,15 @@ def library_content(app_state: me.state):
                     ],
                     on_change=on_change_error_filter,
                     # multiple=False is default for single value
+                )
+                # User Filter
+                me.button_toggle(
+                    value=pagestate.user_filter,
+                    buttons=[
+                        me.ButtonToggleButton(label="All Users", value="all"),
+                        me.ButtonToggleButton(label="Mine Only", value="mine"),
+                    ],
+                    on_change=on_change_user_filter,
                 )
                 with me.content_button(
                     type="icon",
@@ -964,14 +980,18 @@ def handle_page_change(e: me.ClickEvent):
 
     if (
         1
-        <= new_page
-        <= (
+        <=
+        new_page
+        <=
+        (
             (pagestate.total_media + pagestate.media_per_page - 1)
             // pagestate.media_per_page
             if pagestate.media_per_page > 0 and pagestate.total_media > 0
             else 1
         )
     ):
+        app_state = me.state(AppState)
+        user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
         pagestate.current_page = new_page
         # Fetch only the items for the new page with current filters
         pagestate.media_items = get_media_for_page(
@@ -979,6 +999,7 @@ def handle_page_change(e: me.ClickEvent):
             pagestate.media_per_page,
             pagestate.selected_values,
             pagestate.error_filter_value,
+            filter_by_user_email=user_email_to_filter,
             sort_by_timestamp=True,
         )
         pagestate.key += 1  # Refresh grid
@@ -1026,6 +1047,20 @@ def on_change_error_filter(e: me.ButtonToggleChangeEvent):
     pagestate.is_loading = False
     yield
 
+def on_change_user_filter(e: me.ButtonToggleChangeEvent):
+    """Handles changes to the user filter."""
+    pagestate = me.state(PageState)
+    pagestate.user_filter = e.value
+
+    pagestate.url_item_not_found_message = None
+    pagestate.is_loading = True
+    yield
+
+    _load_media_and_update_state(pagestate, is_filter_change=True)
+
+    pagestate.is_loading = False
+    yield
+
 
 def on_refresh_click(e: me.ClickEvent):
     """Handles the click event for the refresh button."""
@@ -1045,7 +1080,7 @@ def on_refresh_click(e: me.ClickEvent):
 )
 def page():
     """The main entry point for the library page."""
-    app_state = me.state(me.AppState)
+    app_state = me.state(AppState)
     with me.box(style=me.Style(display="flex", flex_direction="row")):
         library_content(app_state)
 
