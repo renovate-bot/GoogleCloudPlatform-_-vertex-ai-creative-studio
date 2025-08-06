@@ -187,13 +187,56 @@ def generate_images_from_prompt(
     return generated_uris
 
 
+def generate_virtual_models(prompt: str, num_images: int) -> list[str]:
+    """
+    Generates multiple virtual model images and saves them to GCS.
+
+    Args:
+        prompt: The prompt to generate the images.
+        num_images: The number of images to generate.
+
+    Returns:
+        A list of GCS URIs for the generated images.
+    """
+    response = generate_images(
+        model=Default().MODEL_IMAGEN4_FAST,
+        prompt=prompt,
+        number_of_images=num_images,
+        aspect_ratio="1:1",
+        negative_prompt="",  # Assuming no negative prompt for this case
+    )
+    generated_uris = [
+        img.image.gcs_uri
+        for img in response.generated_images
+        if hasattr(img, "image") and hasattr(img.image, "gcs_uri")
+    ]
+    return generated_uris
+
+
 def generate_image_for_vto(prompt: str) -> bytes:
-    """Generates a single image and returns the image bytes."""
+    """
+    Generates a single, randomized virtual model and returns the image bytes.
+    This function is designed to be a non-breaking replacement for the original VTO
+    workflow, ensuring backward compatibility.
+    """
+    # Use the VirtualModelGenerator to create a single random prompt
+    from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
+    
+    # The VTO page passes a simple prompt, so we use the generator with the default template
+    generator = VirtualModelGenerator(DEFAULT_PROMPT)
+    generator.randomize_all()
+    # Set a default variant for the VTO page
+    generator.set_value("variant", "facing forward with a natural, relaxed posture and a neutral expression")
+
+    random_prompt = generator.build_prompt()
+    
+    print(f"Generated random prompt for VTO: {random_prompt}")
+
     cfg = Default()
     client = ImagenModelSetup.init(model_id=cfg.MODEL_IMAGEN4_FAST)
     response = client.models.generate_images(
         model=cfg.MODEL_IMAGEN4_FAST,
-        prompt=prompt,
+        prompt=random_prompt,
         config=types.GenerateImagesConfig(
             number_of_images=1,
             aspect_ratio="1:1",

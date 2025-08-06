@@ -1,0 +1,65 @@
+{
+  "_citation": "Monk Skin Tone Scale License: Creative Commons Attribution 4.0 International license. Scale Usage Citation: Monk, Ellis. ‘Monk Skin Tone Scale,’ 2019. https://skintone.google",
+  "genders": [
+    {
+      "name": "Feminine-presenting",
+      "prompt_fragment": "a feminine-presenting"
+    },
+    {
+      "name": "Masculine-presenting",
+      "prompt_fragment": "a masculine-presenting"
+    },
+    {
+      "name": "Androgynous",
+      "prompt_fragment": "an androgynous"
+    }
+  ],
+  "MST": [
+    "MST-1",
+    "MST-2",
+    "MST-3",
+    "MST-4",
+    "MST-5",
+    "MST-6",
+    "MST-7",
+    "MST-8",
+    "MST-9",
+    "MST-10"
+  ],
+  "silhouette_presets": [
+    {
+      "name": "Linear & Balanced",
+      "description": "A streamlined form with a subtle waist, creating a clean, straight line through the torso.",
+      "prompt_fragment": "a linear and balanced silhouette where the shoulders, waist, and hips are elegantly aligned"
+    },
+    {
+      "name": "Tapered & Grounded",
+      "description": "A form defined by a tapered torso that gently widens from the waist to the hips.",
+      "prompt_fragment": "a tapered and grounded silhouette, with a torso that gently widens from the waist to the hips"
+    },
+    {
+      "name": "Inverted Triangle",
+      "description": "A silhouette defined by a broad upper body that tapers toward the hips.",
+      "prompt_fragment": "an inverted triangle silhouette, with broad shoulders and a torso that tapers toward the hips"
+    },
+    {
+      "name": "Classic Hourglass",
+      "description": "A silhouette with a distinctly narrow waist that balances a proportional bust and hips.",
+      "prompt_fragment": "a classic hourglass silhouette, with a distinctly narrow waist that balances a proportional bust and hips"
+    }
+  ],
+  "variants": [
+    {
+      "name": "Standard Pose",
+      "prompt_fragment": "facing forward with a natural, relaxed posture and a neutral expression"
+    },
+    {
+      "name": "Walking Pose",
+      "prompt_fragment": "in a walking pose, showing natural movement"
+    },
+    {
+      "name": "Smiling at Camera",
+      "prompt_fragment": "smiling and looking directly at the camera"
+    }
+  ]
+}
