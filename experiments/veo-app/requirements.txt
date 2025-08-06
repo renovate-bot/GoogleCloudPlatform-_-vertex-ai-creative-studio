@@ -70,7 +70,7 @@ google-api-core==2.25.1
     #   google-cloud-firestore
     #   google-cloud-resource-manager
     #   google-cloud-storage
-google-api-python-client==2.177.0
+google-api-python-client==2.178.0
     # via firebase-admin
 google-auth==2.40.3
     # via
