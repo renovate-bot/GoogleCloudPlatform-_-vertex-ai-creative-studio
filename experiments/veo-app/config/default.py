@@ -82,12 +82,12 @@ class Default:
 
     VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.0-generate-001")
     VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
-        "VEO_EXP_FAST_MODEL_ID", "veo-3.0-fast-generate-001"
+        "VEO_EXP_FAST_MODEL_ID", "veo-3.0-fast-generate-001",
     )
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 
     # VTO
-    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-exp-05-31")
+    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-preview-08-04")
 
     # Temperatures for Character Consistency Workflow
     # Low temp for factual, structured output. Increasing may break JSON parsing.
@@ -119,7 +119,7 @@ class Default:
     MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-preview-06-06"
     MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
     MODEL_IMAGEN_PRODUCT_RECONTEXT: str = os.environ.get(
-        "MODEL_IMAGEN_PRODUCT_RECONTEXT", "imagen-product-recontext-preview-06-30"
+        "MODEL_IMAGEN_PRODUCT_RECONTEXT", "imagen-product-recontext-preview-06-30",
     )
 
     IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get(
