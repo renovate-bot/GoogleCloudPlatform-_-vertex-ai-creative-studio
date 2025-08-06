@@ -327,6 +327,7 @@ def get_media_for_page(
     type_filters: Optional[List[str]] = None,
     error_filter: str = "all",  # "all", "no_errors", "only_errors"
     sort_by_timestamp: bool = False,
+    filter_by_user_email: Optional[str] = None,  # New parameter
 ) -> List[MediaItem]:
     """Fetches a paginated and filtered list of media items from Firestore.
 
@@ -350,6 +351,7 @@ def get_media_for_page(
 
     try:
         query = db.collection(config.GENMEDIA_COLLECTION_NAME)
+
         if sort_by_timestamp:
             query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
 
@@ -388,6 +390,10 @@ def get_media_for_page(
                 passes_error_filter = True
 
             if not passes_error_filter:
+                continue
+
+            # Apply user email filter
+            if filter_by_user_email and raw_item_data.get("user_email") != filter_by_user_email:
                 continue
 
             # Construct MediaItem if all filters pass
