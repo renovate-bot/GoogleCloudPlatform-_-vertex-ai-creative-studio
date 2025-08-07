@@ -6,8 +6,10 @@ import json
 from pathlib import Path
 from dataclasses import field
 
+from common.metadata import add_media_item
 from models.image_models import generate_virtual_models
 from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
+from state.state import AppState
 
 @me.stateclass
 class PageState:
@@ -19,6 +21,9 @@ class PageState:
     generated_images: list[list[str]] = field(default_factory=list)
     generated_description: str = ""
     loading: bool = False
+    save_to_library: bool = False
+    save_to_library: bool = False
+    save_to_library: bool = False
 
     # Load options once
     _options: dict = field(default_factory=dict, init=False)
@@ -87,10 +92,11 @@ def page():
                     me.text(preset["name"], type="subtitle-1")
                     me.text(preset["description"], type="body-2")
 
-        with me.box(style=me.Style(display="flex", gap=10, margin=me.Margin(top=20))):
+        with me.box(style=me.Style(display="flex", gap=10, margin=me.Margin(top=20), align_items="center")):
             me.button("Generate Matrix", on_click=on_click_generate_matrix, type="raised")
             me.button("I'm Feeling Lucky", on_click=on_click_randomize, type="flat")
             me.button("Generate Description", on_click=on_click_generate_description, type="flat", disabled=not state.generated_images)
+            me.checkbox(label="Save to Library", on_change=on_save_to_library_change, checked=state.save_to_library)
 
         # --- GENERATED DESCRIPTION ---
         if state.generated_description:
@@ -166,6 +172,15 @@ def on_click_generate_matrix(e: me.ClickEvent):
         image_urls = generate_virtual_models(prompt=prompt, num_images=3)
         matrix.append(image_urls)
 
+        if state.save_to_library:
+            add_media_item(
+                user_email=me.state(AppState).user_email,
+                model="imagen-4.0-generate-preview-06-06",
+                mime_type="image/png",
+                gcs_uris=image_urls,
+                prompt=prompt,
+            )
+
     state.generated_images = matrix
     state.loading = False
     yield
@@ -181,4 +196,8 @@ def on_click_generate_description(e: me.ClickEvent):
         f"The model has a {selected_silhouette_obj.get('name', 'defined')} silhouette: {selected_silhouette_obj.get('description', '')}"
     )
     state.generated_description = description
+    yield
+
+def on_save_to_library_change(e: me.CheckboxChangeEvent):
+    me.state(PageState).save_to_library = e.checked
     yield
