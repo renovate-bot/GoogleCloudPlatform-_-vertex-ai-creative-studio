@@ -72,6 +72,18 @@
       "group": "workflows"
     },
     {
+      "id": 56,
+      "display": "Shop the Look",
+      "icon": "shopping_bag",
+      "group": "workflows"
+    },
+    {
+      "id": 57,
+      "display": "Product Description",
+      "icon": "description",
+      "group": "workflows"
+    },
+    {
       "id": 60,
       "display": "Library",
       "icon": "perm_media",
