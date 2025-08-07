@@ -138,7 +138,7 @@ def generate_character_video(
     client = genai.Client(vertexai=True, project=cfg.PROJECT_ID, location=cfg.LOCATION)
     edit_model = cfg.CHARACTER_CONSISTENCY_IMAGEN_MODEL
     reference_images_for_generation = []
-    for i, image_bytes in enumerate(reference_image_bytes_list):
+    for i, image_bytes in enumerate(reference_image_bytes_list[:4]):
         image = types.Image(image_bytes=image_bytes)
         reference_images_for_generation.append(
             types.SubjectReferenceImage(
@@ -148,7 +148,7 @@ def generate_character_video(
                     subject_type="SUBJECT_TYPE_PERSON",
                     subject_description=all_descriptions[i],
                 ),
-            )
+            ),
         )
     response = client.models.edit_image(
         model=edit_model,
