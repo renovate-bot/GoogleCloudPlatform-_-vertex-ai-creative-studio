@@ -126,14 +126,6 @@ def on_click_generate_person(e: me.ClickEvent):
         # The result from generate_virtual_models is a GCS URI, so we can use it directly
         gcs_url = image_urls[0]
 
-        add_media_item(
-            user_email=me.state(AppState).user_email,
-            model=config.VTO_MODEL_ID, # Or a more specific model if you have one
-            mime_type="image/png",
-            gcs_uris=[gcs_url],
-            prompt=prompt,
-        )
-
         state.person_image_gcs = gcs_url.replace(
             "gs://", "https://storage.mtls.cloud.google.com/"
         )
