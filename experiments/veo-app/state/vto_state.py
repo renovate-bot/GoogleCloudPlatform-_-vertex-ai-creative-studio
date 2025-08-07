@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+from pathlib import Path
 from dataclasses import field
 
 import mesop as me
@@ -34,3 +36,11 @@ class PageState:
     error_message: str = ""
 
     info_dialog_open: bool = False
+
+    # Load options once
+    _options: dict = field(default_factory=dict, init=False)
+
+    def __post_init__(self):
+        config_path = Path(__file__).parent.parent / "config/virtual_model_options.json"
+        with open(config_path, "r") as f:
+            self._options = json.load(f)
