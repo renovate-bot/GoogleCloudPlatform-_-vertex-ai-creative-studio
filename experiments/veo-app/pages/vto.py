@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import random
 import uuid
 
 import mesop as me
@@ -23,7 +24,8 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from config.default import Default
-from models.image_models import generate_image_for_vto
+from models.image_models import generate_virtual_models
+from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
 from models.vto import generate_vto_image
 from state.state import AppState
 from state.vto_state import PageState
@@ -99,19 +101,35 @@ def on_click_generate_person(e: me.ClickEvent):
     yield
 
     try:
-        prompt = "A full-length studio shot of a model standing against a neutral seamless background, posed for virtual try-on application. Lighting is bright and even, highlighting the model's form without harsh shadows. The model is facing forward with a natural, relaxed posture and a neutral expression. The focus is sharp and clear, capturing the details of clothing textures and fit, suitable for e-commerce apparel display."
-        image_bytes = generate_image_for_vto(prompt)
-        file_name = f"generated_person_{uuid.uuid4()}.png"
-        gcs_url = store_to_gcs(
-            "vto_person_images",
-            file_name,
-            "image/png",
-            image_bytes,
-            decode=False,
-        )
+        # Randomly select options
+        selected_gender_obj = random.choice(state._options.get("genders", []))
+        selected_silhouette_obj = random.choice(state._options.get("silhouette_presets", []))
+        selected_mst_obj = random.choice(state._options.get("MST", []))
+        selected_variant_obj = random.choice(state._options.get("variants", []))
+
+        # Build the prompt
+        generator = VirtualModelGenerator(DEFAULT_PROMPT)
+        generator.set_value("gender", selected_gender_obj["prompt_fragment"])
+        generator.set_value("silhouette", selected_silhouette_obj["prompt_fragment"])
+        generator.set_value("MST", selected_mst_obj["prompt_fragment"])
+        generator.set_value("variant", selected_variant_obj["prompt_fragment"])
+        prompt = generator.build_prompt()
+
+        print(f"Generated prompt: {prompt}")
+
+        # Generate the image
+        image_urls = generate_virtual_models(prompt=prompt, num_images=1)
+
+        if not image_urls:
+            raise Exception("Image generation failed to return a URL.")
+
+        # The result from generate_virtual_models is a GCS URI, so we can use it directly
+        gcs_url = image_urls[0]
+
         state.person_image_gcs = gcs_url.replace(
             "gs://", "https://storage.mtls.cloud.google.com/"
         )
+
     except Exception as e:
         state.error_message = str(e)
         state.show_error_dialog = True

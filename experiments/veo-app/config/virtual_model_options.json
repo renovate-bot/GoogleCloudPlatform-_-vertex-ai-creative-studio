@@ -15,16 +15,16 @@
     }
   ],
   "MST": [
-    "MST-1",
-    "MST-2",
-    "MST-3",
-    "MST-4",
-    "MST-5",
-    "MST-6",
-    "MST-7",
-    "MST-8",
-    "MST-9",
-    "MST-10"
+    { "name": "MST-1", "hex": "#f6ede4", "prompt_fragment": "a very light skin tone with balanced undertones (#f6ede4)" },
+    { "name": "MST-2", "hex": "#f3e7db", "prompt_fragment": "a light skin tone with warm, yellow undertones (#f3e7db)" },
+    { "name": "MST-3", "hex": "#f7ead0", "prompt_fragment": "a light-medium skin tone with golden undertones (#f7ead0)" },
+    { "name": "MST-4", "hex": "#eadaba", "prompt_fragment": "a medium skin tone with olive undertones (#eadaba)" },
+    { "name": "MST-5", "hex": "#d7bd96", "prompt_fragment": "a medium-tan skin tone with warm, caramel undertones (#d7bd96)" },
+    { "name": "MST-6", "hex": "#a07e56", "prompt_fragment": "a tan-brown skin tone with neutral undertones (#a07e56)" },
+    { "name": "MST-7", "hex": "#825c43", "prompt_fragment": "a medium-dark brown skin tone with reddish undertones (#825c43)" },
+    { "name": "MST-8", "hex": "#604134", "prompt_fragment": "a dark brown skin tone with cool, espresso undertones (#604134)" },
+    { "name": "MST-9", "hex": "#3a312a", "prompt_fragment": "a very dark brown skin tone with neutral undertones (#3a312a)" },
+    { "name": "MST-10", "hex": "#292420", "prompt_fragment": "the deepest brown-black skin tone with cool undertones (#292420)" }
   ],
   "silhouette_presets": [
     {
