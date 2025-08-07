@@ -78,9 +78,9 @@ google-auth==2.40.3 \
     --hash=sha256:1370d4593e86213563547f97a92752fc658456fe4514c809544f330fed45a7ca \
     --hash=sha256:500c3a29adedeb36ea9cf24b8d10858e152f2412e3ca37829b3fa18e33d63b77
     # via google-genai
-google-genai==1.20.0 \
-    --hash=sha256:ccd61d6ebcb14f5c778b817b8010e3955ae4f6ddfeaabf65f42f6d5e3e5a8125 \
-    --hash=sha256:dccca78f765233844b1bd4f1f7a2237d9a76fe6038cf9aa72c0cd991e3c107b5
+google-genai==1.29.0 \
+    --hash=sha256:8b64737de008d15ca4737e593913f88f656f0568544ab6901f768f0d1fd69bbf \
+    --hash=sha256:a6b036ab032830f668d137b198c2a5abd8951a036d7a8480b61ce837c1c7f36b
     # via promptlandia
 greenlet==3.2.3 \
     --hash=sha256:024571bbce5f2c1cfff08bf3fbaa43bbc7444f580ae13b0099e95d0e6e67ed36 \
