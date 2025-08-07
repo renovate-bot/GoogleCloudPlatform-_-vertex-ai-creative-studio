@@ -86,7 +86,7 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.106.0
+google-cloud-aiplatform==1.107.0
     # via veo-app
 google-cloud-bigquery==3.35.1
     # via google-cloud-aiplatform
@@ -107,7 +107,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.20.0
+google-genai==1.29.0
     # via
     #   google-cloud-aiplatform
     #   veo-app
@@ -309,7 +309,9 @@ stack-data==0.6.3
 starlette==0.47.2
     # via fastapi
 tenacity==9.1.2
-    # via veo-app
+    # via
+    #   google-genai
+    #   veo-app
 traitlets==5.14.3
     # via
     #   ipython

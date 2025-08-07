@@ -15,6 +15,7 @@ class PageState:
     selected_gender_name: str = "Feminine-presenting"
     selected_silhouette_name: str = "Linear & Balanced"
     selected_mst: str = "MST-5"
+    selected_mst_orb_url: str = "https://google-ai-skin-tone-research.imgix.net/orbs/monk-05.png"
     generated_images: list[list[str]] = field(default_factory=list)
     generated_description: str = ""
     loading: bool = False
@@ -29,7 +30,7 @@ class PageState:
 
 @me.page(
     path="/test_vto_prompt_generator",
-    title="VTO Prompt Generator Test Page",
+    title="VTO Model Composite Card Generator Test Page",
     security_policy=me.SecurityPolicy(
         dangerously_disable_trusted_types=True
     )
@@ -37,31 +38,36 @@ class PageState:
 def page():
     state = me.state(PageState)
     with me.box(style=me.Style(padding=me.Padding.all(20))):
-        me.text("VTO Prompt Generator Matrix", type="headline-5")
+        me.text("Virtual Model Composite Card Generator Matrix", type="headline-5")
         me.text("Generate a matrix of virtual models with different attributes.", style=me.Style(margin=me.Margin(bottom=20)))
 
         # --- CONTROLS ---
-        with me.box(style=me.Style(display="flex", flex_direction="column", gap=20, margin=me.Margin(bottom=20))):
-            me.textarea(
-                label="Base Prompt",
-                value=state.base_prompt,
-                on_input=on_base_prompt_input,
-                rows=5,
-                style=me.Style(width="100%")
-            )
-            with me.box(style=me.Style(display="flex", gap=20)):
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=20, margin=me.Margin(bottom=20), align_items="flex-start")):
+            with me.box(style=me.Style(flex_grow=1)):
+                me.textarea(
+                    label="Base Prompt",
+                    value=state.base_prompt,
+                    on_input=on_base_prompt_input,
+                    rows=5,
+                    style=me.Style(width="100%")
+                )
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=10)):
                 me.select(
                     label="Gender Presentation",
                     options=[me.SelectOption(label=g["name"], value=g["name"]) for g in state._options.get("genders", [])],
                     value=state.selected_gender_name,
                     on_selection_change=on_gender_select
                 )
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=10)):
                 me.select(
                     label="Monk Skin Tone",
-                    options=[me.SelectOption(label=mst, value=mst) for mst in state._options.get("MST", [])],
+                    options=[me.SelectOption(label=f'{mst["name"]} ({mst["hex"]})', value=mst["name"]) for mst in state._options.get("MST", [])],
                     value=state.selected_mst,
                     on_selection_change=on_mst_select
                 )
+                if state.selected_mst_orb_url:
+                    with me.box(style=me.Style(display="flex", justify_content="center")):
+                        me.image(src=state.selected_mst_orb_url, style=me.Style(width=50, height=50))
 
         # --- SILHOUETTE PRESETS ---
         me.text("Select a Silhouette Preset", type="headline-6", style=me.Style(margin=me.Margin(bottom=10)))
@@ -72,6 +78,7 @@ def page():
                     on_click=on_select_silhouette,
                     style=me.Style(
                         border=me.Border.all(me.BorderSide(width=2, style="solid", color=me.theme_var("primary") if state.selected_silhouette_name == preset["name"] else me.theme_var("outline"))),
+                        background=me.theme_var("primary-container") if state.selected_silhouette_name == preset["name"] else "transparent",
                         padding=me.Padding.all(15),
                         border_radius=12,
                         cursor="pointer"
@@ -98,8 +105,9 @@ def page():
         elif state.generated_images:
             me.text("Generated Models", type="headline-6", style=me.Style(margin=me.Margin(top=20, bottom=10)))
             with me.box(style=me.Style(display="grid", grid_template_columns="repeat(3, 1fr)", gap=10)):
-                for image_url in state.generated_images[0]: # Displaying the first row of the matrix
-                    me.image(src=image_url.replace("gs://", "https://storage.mtls.cloud.google.com/"), style=me.Style(width="100%"))
+                for image_row in state.generated_images:
+                    for image_url in image_row:
+                        me.image(src=image_url.replace("gs://", "https://storage.mtls.cloud.google.com/"), style=me.Style(width="100%"))
 
 def on_base_prompt_input(e: me.InputEvent):
     me.state(PageState).base_prompt = e.value
@@ -111,13 +119,20 @@ def on_select_silhouette(e: me.ClickEvent):
     me.state(PageState).selected_silhouette_name = e.key
 
 def on_mst_select(e: me.SelectSelectionChangeEvent):
-    me.state(PageState).selected_mst = e.value
+    state = me.state(PageState)
+    state.selected_mst = e.value
+    # MST-1 -> 01, MST-10 -> 10
+    mst_number = e.value.split("-")[-1].zfill(2)
+    state.selected_mst_orb_url = f"https://google-ai-skin-tone-research.imgix.net/orbs/monk-{mst_number}.png"
 
 def on_click_randomize(e: me.ClickEvent):
     state = me.state(PageState)
     state.selected_gender_name = random.choice(state._options.get("genders", []))["name"]
     state.selected_silhouette_name = random.choice(state._options.get("silhouette_presets", []))["name"]
-    state.selected_mst = random.choice(state._options.get("MST", []))
+    selected_mst_obj = random.choice(state._options.get("MST", []))
+    state.selected_mst = selected_mst_obj["name"]
+    mst_number = selected_mst_obj["name"].split("-")[-1].zfill(2)
+    state.selected_mst_orb_url = f"https://google-ai-skin-tone-research.imgix.net/orbs/monk-{mst_number}.png"
     yield
 
 def on_click_generate_matrix(e: me.ClickEvent):
@@ -130,8 +145,9 @@ def on_click_generate_matrix(e: me.ClickEvent):
     # Find the selected gender and silhouette objects to get their prompt_fragments
     selected_gender_obj = next((g for g in state._options["genders"] if g["name"] == state.selected_gender_name), None)
     selected_silhouette_obj = next((s for s in state._options["silhouette_presets"] if s["name"] == state.selected_silhouette_name), None)
+    selected_mst_obj = next((m for m in state._options["MST"] if m["name"] == state.selected_mst), None)
 
-    if not selected_gender_obj or not selected_silhouette_obj:
+    if not selected_gender_obj or not selected_silhouette_obj or not selected_mst_obj:
         print("Error: Could not find selected gender or silhouette.")
         state.loading = False
         yield
@@ -142,12 +158,12 @@ def on_click_generate_matrix(e: me.ClickEvent):
         generator = VirtualModelGenerator(state.base_prompt)
         generator.set_value("gender", selected_gender_obj["prompt_fragment"])
         generator.set_value("silhouette", selected_silhouette_obj["prompt_fragment"])
-        generator.set_value("MST", state.selected_mst)
+        generator.set_value("MST", selected_mst_obj["prompt_fragment"])
         generator.set_value("variant", variant["prompt_fragment"])
 
         prompt = generator.build_prompt()
         print(f"Generating images for prompt: {prompt}")
-        image_urls = generate_virtual_models(prompt=prompt, num_images=1)
+        image_urls = generate_virtual_models(prompt=prompt, num_images=3)
         matrix.append(image_urls)
 
     state.generated_images = matrix
