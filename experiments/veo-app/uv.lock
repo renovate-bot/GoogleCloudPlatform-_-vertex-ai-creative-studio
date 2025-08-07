@@ -438,7 +438,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-aiplatform"
-version = "1.106.0"
+version = "1.107.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docstring-parser" },
@@ -455,9 +455,9 @@ dependencies = [
     { name = "shapely" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/1f/ef635da34013f2bad37e9832daf3c77b78d3644e7b28eae55c318d397803/google_cloud_aiplatform-1.106.0.tar.gz", hash = "sha256:c6a000253bb72001c199980abfde28ebd25e2d964121c727389ca222b4ba06c8", size = 9480135, upload-time = "2025-07-30T18:24:24.176Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/21/0e7686848b46e96d2f59f588ff30c9b7321536c6bcd1a9b9d245563bf939/google_cloud_aiplatform-1.107.0.tar.gz", hash = "sha256:216f8a620fc11f6670f3c8e4dd806f2f7d5a5c7944ae3529ce5fa9c140e2624d", size = 9499561, upload-time = "2025-08-06T21:18:29.183Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/42/cea4cfb68204fe67dde1b994b705da2f9f685045aa8bb12d1980b29011d5/google_cloud_aiplatform-1.106.0-py2.py3-none-any.whl", hash = "sha256:16487665acf1bf7703a9066e50cabf67f2b1fbdba97b4f679a506f593fe84e26", size = 7881764, upload-time = "2025-07-30T18:24:21.29Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/ed/9f488143e5b9c38e1153e4c197868fb86056eab2185bd3cf320cb888b4f9/google_cloud_aiplatform-1.107.0-py2.py3-none-any.whl", hash = "sha256:12a6b0e6c386affcd5c5ff45c73c5eb7e7750b24576b43abd8402267ae09337d", size = 7895071, upload-time = "2025-08-06T21:18:26.622Z" },
 ]
 
 [[package]]
@@ -557,7 +557,7 @@ wheels = [
 
 [[package]]
 name = "google-genai"
-version = "1.20.0"
+version = "1.29.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -565,12 +565,13 @@ dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "requests" },
+    { name = "tenacity" },
     { name = "typing-extensions" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/19/12/ad9f08be2ca85122ca50ac69ae70454f18a3c7d840bcc4ed43f517ab47be/google_genai-1.20.0.tar.gz", hash = "sha256:dccca78f765233844b1bd4f1f7a2237d9a76fe6038cf9aa72c0cd991e3c107b5", size = 201550, upload-time = "2025-06-11T23:57:16.411Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/9b/a1e31252c4151da9403b357b47ae7ec5fc852eaf3486696eec211794001d/google_genai-1.29.0.tar.gz", hash = "sha256:a6b036ab032830f668d137b198c2a5abd8951a036d7a8480b61ce837c1c7f36b", size = 224207, upload-time = "2025-08-06T23:32:09.708Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/b4/08f3ea414060a7e7d4436c08bb22d03dabef74cc05ef13ef8cd846156d5b/google_genai-1.20.0-py3-none-any.whl", hash = "sha256:ccd61d6ebcb14f5c778b817b8010e3955ae4f6ddfeaabf65f42f6d5e3e5a8125", size = 203039, upload-time = "2025-06-11T23:57:14.631Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/33/9b22b0b3734f93655d0d28cfcd64496ef46dd68efe8ae19278f3b1297998/google_genai-1.29.0-py3-none-any.whl", hash = "sha256:8b64737de008d15ca4737e593913f88f656f0568544ab6901f768f0d1fd69bbf", size = 222591, upload-time = "2025-08-06T23:32:08.133Z" },
 ]
 
 [[package]]
