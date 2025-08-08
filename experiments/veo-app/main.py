@@ -41,6 +41,7 @@ from pages.recontextualize import recontextualize
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
+from pages.test_index import page as test_index_page
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState

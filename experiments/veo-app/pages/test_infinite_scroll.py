@@ -14,7 +14,6 @@
 
 import mesop as me
 
-
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.infinite_scroll_chooser_button import (
     infinite_scroll_chooser_button,
@@ -29,7 +28,14 @@ class PageState:
     selected_gcs_uri: str = ""
 
 
-@me.page(path="/test_infinite_scroll")
+@me.page(
+    path="/test_infinite_scroll",
+    security_policy=me.SecurityPolicy(
+        allowed_script_srcs=[
+            "https://esm.sh",
+        ]
+    ),
+)
 def test_infinite_scroll_page():
     """Test page for the infinite scroll library chooser."""
     state = me.state(PageState)
@@ -45,8 +51,8 @@ def test_infinite_scroll_page():
         )
         yield
 
-    with page_scaffold():  # pylint: disable = E1129:not-context-manager
-        with page_frame():  # pylint: disable = E1129:not-context-manager
+    with page_scaffold():
+        with page_frame():
             with me.box(
                 style=me.Style(
                     padding=me.Padding.all(24),
