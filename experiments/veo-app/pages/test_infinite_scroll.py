@@ -51,8 +51,8 @@ def test_infinite_scroll_page():
         )
         yield
 
-    with page_scaffold():
-        with page_frame():
+    with page_scaffold():  # pylint: disable=not-context-manager
+        with page_frame():  # pylint: disable=not-context-manager
             with me.box(
                 style=me.Style(
                     padding=me.Padding.all(24),

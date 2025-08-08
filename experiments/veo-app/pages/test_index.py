@@ -36,6 +36,11 @@ def page():
             "description": "A test page for determining uploader component capabilities.",
             "route": "/test_uploader",
         },
+        {
+            "title": "Character Consistency Test",
+            "description": "A test page for the character consistency workflow.",
+            "route": "/test_character_consistency",
+        },
     ]
 
     with me.box(

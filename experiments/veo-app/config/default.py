@@ -102,7 +102,7 @@ class Default:
     # Character Consistency
     CHARACTER_CONSISTENCY_GEMINI_MODEL: str = "gemini-2.5-pro"
     CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
-    CHARACTER_CONSISTENCY_VEO_MODEL: str = "veo-3.0-generate-preview"
+    CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get("CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001")
 
     # Lyria
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
