@@ -20,11 +20,17 @@ See also AGENTS.md for more information.
 - **Components must be theme-aware.** Do not hardcode colors like `background="#fff"`. Instead, use `me.theme_var()` (e.g., `me.theme_var("surface")`) to ensure components adapt to the current light or dark theme.
 - **Handle content overflow.** For container components like dialogs, always include `overflow_y="auto"` in the style to ensure that long content is scrollable and does not break the layout.
 
+- **Error Recovery for Component APIs:** If you encounter a `TypeError: unexpected keyword argument` or
+     `AttributeError` related to a component, it is a strong signal that you have misunderstood its API. Your **immediate first step** must be to stop and use `read_file` to examine the source code of the component that caused the error. Read the `def` line of the component function to see the exact, correct arguments.
+
 # Mesop Hints and Lessons Learned
 
 - The `mesop` library was updated, and `me.yield_value(...)` was removed. It should be replaced with `yield`.
 - The function directly assigned to an event handler (e.g., `on_value_change`, `on_click`) must be the generator function that `yield`s. Using a `lambda` to call another generator function will break the UI update chain, and the component will not refresh.
-- **Building Custom Components from Primitives:** When a specific component like `me.icon_button` does not exist and causes an `AttributeError`, do not assume the library is deficient. Instead, build the desired functionality from more primitive, guaranteed components. For example, a clickable icon can be reliably constructed using a `me.box` with an `on_click` handler that contains a `me.icon`. This approach is more robust and avoids API-related errors.
+- - **Building Clickable Icons:** The standard `me.button` component is simple and does *not* accept an `icon`
+     parameter or a `type="icon"`. If you need a clickable icon (an "icon button"), you **must** build it from
+     primitives. The correct and only reliable way to do this is to use a `me.box` with an `on_click` handler that
+     contains a `me.icon`.
 - **Lambda Scope in Loops:** When creating event handlers inside a loop (e.g., for a list of items), be aware of Python's late binding in closures. A `lambda` function will capture the variable from the loop, not its value at each iteration. By the time the event is triggered, the variable will hold the value from the *last* iteration. The correct pattern is to use a dedicated event handler function and pass the necessary data through the component's `key` property. Alternatively, if a `lambda` is necessary, use a default argument to capture the value at definition time: `on_click=lambda e, my_value=item.value: handle_click(my_value)`.
 
 ## Interacting with Generative AI Models

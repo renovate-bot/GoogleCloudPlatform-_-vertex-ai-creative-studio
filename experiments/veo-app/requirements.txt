@@ -261,7 +261,7 @@ pydantic==2.11.7
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.38.0
+pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via
@@ -294,7 +294,7 @@ requests==2.32.4
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.12.7
+ruff==0.12.8
     # via veo-app
 shapely==2.1.1
     # via google-cloud-aiplatform
