@@ -47,7 +47,7 @@ def veo_content(app_state: me.state):
     state = me.state(PageState)
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Veo", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][1]["description"])
             me.divider()
@@ -57,7 +57,7 @@ def veo_content(app_state: me.state):
             me.text(f"Model: {state.veo_model}")
             me.text(f"Duration: {state.video_length}s")
             me.text(f"Input Image: {state.reference_image_gcs}")
-            with dialog_actions():
+            with dialog_actions():  # pylint: disable=not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
     with page_scaffold():  # pylint: disable=not-context-manager
