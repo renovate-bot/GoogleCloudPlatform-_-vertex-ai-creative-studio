@@ -1,0 +1,19 @@
+# Global owner
+* @GoogleCloudPlatform/google-cloud-aaie
+
+/experiments/ @GoogleCloudPlatform/google-cloud-aaie @ghchinoy @awaemmanuel
+/experiments/mcp-genmedia/ @ghchinoy
+/experiments/promptlandia/ @ghchinoy @dkashkin
+/experiments/babel/ @ghchinoy
+/experiments/Imagen_Product_Recontext/ @GoogleCloudPlatform/google-cloud-aaie @LUJ20
+/experiments/creative-genmedia-workflow/ @GoogleCloudPlatform/google-cloud-aaie @mandieq
+/experiments/veo-app/ @GoogleCloudPlatform/google-cloud-aaie @ghchinoy @awaemmanuel
+/experiments/veo-genetic-prompt-optimizer/ @GoogleCloudPlatform/google-cloud-aaie @cnemri
+/experiments/veo3-character-consistency/ @GoogleCloudPlatform/google-cloud-aaie @cnemri
+/experiments/veo3-item-consistency/ @GoogleCloudPlatform/google-cloud-aaie @PavithraCS25
+
+# Arena
+/experiments/arena/ @GoogleCloudPlatform/google-cloud-aaie @ghchinoy @awaemmanuel
+
+# VeoStart
+/experiments/VeoStart/ @GoogleCloudPlatform/google-cloud-aaie @WafaeBakkali
