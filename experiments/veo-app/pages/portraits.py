@@ -431,24 +431,26 @@ def motion_portraits_content(app_state: me.state):
                             )
 
                     if state.generated_scene_direction and not state.is_loading:
-                        me.text(
-                            "Generated Scene Direction:",
-                            style=me.Style(
-                                font_size="1.1em",
-                                font_weight="bold",
-                                margin=me.Margin(top=15, bottom=5),
-                            ),
-                        )
-                        me.text(
-                            state.generated_scene_direction,
-                            style=me.Style(
-                                white_space="pre-wrap",
-                                font_family="monospace",
-                                background=me.theme_var("sys-color-surface-container"),
-                                padding=me.Padding.all(10),
-                                border_radius=8,
-                            ),
-                        )
+                        with me.expansion_panel(title="Generated Scene Direction"):
+                        #     me.text(state.character_description)
+                        # me.text(
+                        #     "Generated Scene Direction:",
+                        #     style=me.Style(
+                        #         font_size="1.1em",
+                        #         font_weight="bold",
+                        #         margin=me.Margin(top=15, bottom=5),
+                        #     ),
+                        # )
+                            me.text(
+                                state.generated_scene_direction,
+                                style=me.Style(
+                                    white_space="pre-wrap",
+                                    font_family="monospace",
+                                    background=me.theme_var("sys-color-surface-container"),
+                                    padding=me.Padding.all(10),
+                                    border_radius=8,
+                                ),
+                            )
 
                     if (
                         state.show_error_dialog
