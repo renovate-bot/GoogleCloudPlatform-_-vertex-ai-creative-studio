@@ -2,11 +2,11 @@
 
 This document provides a comprehensive, definitive guide to correctly implementing and debugging custom, **interactive** Lit-based Web Components within a Mesop application that is served by a custom FastAPI server.
 
-**Last Updated:** 2025-07-28
+**Last Updated:** 2025-08-09
 
 ## 1. The Core Challenge: Two-Way Communication
 
-Integrating a custom JavaScript component is straightforward when it only needs to receive data from Python. The challenge arises when the component needs to send events *back* to Python (e.g., from a click or a scroll event). This two-way communication requires a specific, non-obvious implementation pattern, especially when using a custom FastAPI server.
+Integrating a custom JavaScript component is straightforward when it only needs to receive data from Python. The challenge arises when the component needs to send events *back* to Python (e.g., from a click or a scroll event). This two-way communication requires a specific, non-obvious implementation pattern.
 
 This guide outlines the definitive, working patterns discovered through a rigorous debugging process.
 
@@ -25,10 +25,14 @@ class MyInteractiveComponent extends LitElement {
     // 1. Receives data from Python.
     items: { type: Array },
     // 2. Receives a unique handler ID string from the Mesop framework.
-    // The name `itemClickEvent` is automatically generated from the Python
-    // `on_item_click` handler name.
     itemClickEvent: { type: String },
   };
+
+  // Use connectedCallback for initialization logic that needs Mesop.
+  connectedCallback() {
+    super.connectedCallback();
+    // Now it's safe to dispatch events.
+  }
 
   render() {
     return html`
@@ -47,6 +51,7 @@ class MyInteractiveComponent extends LitElement {
       return;
     }
     // 4. Dispatch a MesopEvent, using the handler ID as the event name.
+    // The MesopEvent class is globally available in the browser.
     this.dispatchEvent(new MesopEvent(this.itemClickEvent, { clicked_item: item }));
   }
 }
@@ -60,7 +65,7 @@ customElements.define("my-interactive-component", MyInteractiveComponent);
 import mesop as me
 import typing
 
-@me.web_component(path="./components/my_interactive_component.js")
+@me.web_component(path="./my_interactive_component.js")
 def my_interactive_component(
     *,
     items: list[dict],
@@ -75,10 +80,8 @@ def my_interactive_component(
     name="my-interactive-component", # Matches customElements.define()
     properties={"items": items},
     events={
-      # 3. Map the JS event name to the Python handler prop.
-      # This tells Mesop to create and pass the `itemClickEvent` property
-      # to the Lit component.
-      "itemClick": on_item_click,
+      # 3. The key MUST be the exact name of the JS property.
+      "itemClickEvent": on_item_click,
     },
   )
 ```
@@ -113,29 +116,66 @@ def my_page():
         me.text(f"You clicked: {state.last_clicked}")
 ```
 
-## 3. Key Concepts Explained
+## 3. Key Concepts & Lessons Learned
 
-### A. The `events` Dictionary is Mandatory
+### A. Event Naming: The `events` Dictionary
 
-The `TypeError: insert_web_component() got an unexpected keyword argument 'on_...'` proves that you cannot pass event handlers as direct arguments. You **must** use the `events` dictionary to map JavaScript event names to Python handler functions.
+This is the most critical and subtle part of the integration.
 
-### B. The JavaScript Event Name (`key`) vs. The Python Prop (`value`)
+-   The **key** in the `events` dictionary in the Python wrapper (e.g., `"itemClickEvent"`) must **exactly match** the property name in your Lit component that will receive the event handler ID.
+-   The convention is to name the property in your Lit component `eventNameEvent`.
+-   The `on_event_name` parameter in the Python wrapper function is what receives the handler from the parent page.
 
--   The **key** in the `events` dictionary (e.g., `"itemClick"`) is the `camelCase` name of the event your JavaScript will dispatch.
--   The **value** in the `events` dictionary (e.g., `on_item_click`) is the name of the Python function argument that will receive the handler.
+Failure to follow this will result in the event handler ID property being `undefined` in your web component, and events will not be sent to the backend.
 
-### C. The Magic `...Event` Property
+### B. Lifecycle Timing: `connectedCallback` is Essential
 
--   When you define an event in the `events` dictionary (e.g., `"itemClick": on_item_click`), the Mesop framework automatically creates a property on your web component with the same name, plus the suffix `Event` (e.g., `itemClickEvent`).
--   The value of this property is a unique string ID that the server generates for the handler.
--   Your JavaScript code **must** declare this property in `static properties` and use its value as the name of the `MesopEvent` it dispatches. This is the core mechanism that wires the frontend event to the backend handler.
+If your web component needs to perform initialization that communicates with the backend (e.g., dispatching a "load complete" event) or depends on a Mesop-provided global (like `MesopEvent`), you **must** delay this logic.
 
-### D. Accessing Event Data with `e.value`
+-   **DO NOT** perform this initialization in the component's `constructor()`.
+-   **DO** perform this initialization in the `connectedCallback()` lifecycle method.
 
-The `AttributeError: 'WebEvent' object has no attribute 'payload'` proves that the data sent from the `MesopEvent` is accessed in Python via the `e.value` attribute, not `e.payload`.
+`connectedCallback()` is guaranteed to run only after the component is attached to the DOM, by which time the Mesop framework has fully initialized and injected the necessary globals and properties.
 
-### E. Server Configuration (`main.py`)
+### C. Loading JavaScript Libraries (UMD, Workers, etc.)
 
-Remember to configure your FastAPI server to handle:
-1.  **File Serving:** Mount the `/__web-components-module__/` path to serve your `.js` files.
-2.  **Content Security Policy:** Add any external CDNs (like `https://esm.sh`) to the `script-src` directive in your CSP middleware.
+-   **Web Worker Same-Origin Policy:** A script running on your server **cannot** load a Web Worker script from a different origin (e.g., a CDN). This is a fundamental browser security policy. Any library that uses Web Workers **must** be served from your own application.
+-   **Loading UMD Scripts:** UMD scripts often create global variables (e.g., `window.FFmpegWASM`) instead of using standard ES module exports. You cannot use `import { ... } from ...` with these files. The correct way to load them from within a Lit component is to manually create a `<script>` tag and append it to the document, which executes it in the global scope.
+
+**Example:**
+```javascript
+  _loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  async loadMyLibrary() {
+    await this._loadScript('/path/to/my-library.umd.js');
+    // Now access the library via the global window object
+    const myLibrary = window.MyLibraryGlobal;
+    // ...
+  }
+```
+
+### D. Accessing GCS Resources: Signed URLs are Essential
+
+-   **The Problem:** Directly fetching GCS URLs (especially `gs://` or `https://storage.mtls.cloud.google.com`) from a web component will fail due to CORS and redirect issues, even if the bucket is public.
+-   **The Solution:** The frontend must not use GCS URIs directly. Instead, create a FastAPI endpoint (e.g., `/api/get_signed_url`) that uses the Python GCS client library to generate a short-lived, signed URL. The web component then fetches this signed URL, which is designed for public, temporary access and will not have cross-origin issues.
+-   **Local Development:** For the signed URL endpoint to work locally, developers must configure their Application Default Credentials (ADC) to impersonate the application's service account using `gcloud auth application-default login --impersonate-service-account=<SA_EMAIL>`.
+
+### E. Content Security Policy (CSP)
+
+A global CSP, implemented as a FastAPI middleware in `main.py`, is the most robust way to manage security policies. It must be configured to allow all the resources your application and its components need.
+
+**Example Policy Directives:**
+```python
+"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh; "
+"connect-src 'self' https://storage.googleapis.com https://*.googleusercontent.com; "
+"media-src 'self' blob: https://storage.googleapis.com https://*.googleusercontent.com; "
+"worker-src 'self' blob:;"
+```

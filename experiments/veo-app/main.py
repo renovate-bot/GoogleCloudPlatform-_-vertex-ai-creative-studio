@@ -17,6 +17,7 @@ import inspect
 import os
 import uuid
 
+import google.auth
 import mesop as me
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,9 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+from google.cloud import storage
+import datetime
 
 from app_factory import app
 from components.page_scaffold import page_scaffold
@@ -41,6 +45,7 @@ from pages.recontextualize import recontextualize
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
+from pages.test_worsfold_encoder import test_worsfold_encoder_page
 from pages.test_index import page as test_index_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
@@ -67,6 +72,43 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/get_signed_url")
+def get_signed_url(gcs_uri: str):
+    """Generates a signed URL for a GCS object."""
+    try:
+        credentials, project = google.auth.default()
+        storage_client = storage.Client(credentials=credentials)
+        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=15),
+            method="GET",
+        )
+        return {"signed_url": signed_url}
+    except Exception as e:
+        print(f"Error generating signed url: {e}")
+        return {"error": str(e)}, 500
+
+
+@app.middleware("http")
+async def add_global_csp(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://cdn.jsdelivr.net; "
+        "connect-src 'self' https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: blob: https://storage.mtls.cloud.google.com https://storage.googleapis.com; "
+        "media-src 'self' https://storage.mtls.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
+        "worker-src 'self' blob:;"
+    )
+    return response
 
 
 @app.middleware("http")
@@ -234,6 +276,12 @@ app.mount(
         )
     ),
     name="static",
+)
+
+app.mount(
+    "/assets",
+    StaticFiles(directory="assets"),
+    name="assets",
 )
 
 app.mount(
