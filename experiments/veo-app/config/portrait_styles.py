@@ -78,7 +78,7 @@ PORTRAIT_STYLES = [
     PortraitStyle(
         id="catwalk",
         label="Catwalk",
-        description="The subject is walking down a catwalk or a long hallway with confidence and style, showcasing an outfit.",
+        description="The subject is walking down a catwalk or a long hallway with confidence and style, showcasing their outfit.",
         representative_video_gcs_uri="gs://genai-blackbelt-fishfooding-assets/portraits/placeholder.mp4"
     ),
     PortraitStyle(
