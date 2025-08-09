@@ -78,7 +78,7 @@ def character_consistency_page_content():
                                 "gs://", "https://storage.mtls.cloud.google.com/"
                             ),
                             style=me.Style(width=200, height=200, object_fit="contain", border_radius="12px",
-                                box_shadow="0 2px 4px rgba(0,0,0,0.1)",),
+                                box_shadow="0 2px 4px rgba(0,0,0,0.1)"),
                         )
 
             me.textarea(
