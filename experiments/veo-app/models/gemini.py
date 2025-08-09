@@ -15,6 +15,7 @@
 
 import json
 import time
+import uuid
 from typing import Dict, Optional
 
 import requests
@@ -28,17 +29,64 @@ from tenacity import (
 )
 
 from common.error_handling import GenerationError
+from common.storage import store_to_gcs
+from config.default import Default  # Import Default for cfg
 from config.rewriters import MAGAZINE_EDITOR_PROMPT, REWRITER_PROMPT
+from models.character_consistency_models import (
+    BestImage,
+    FacialCompositeProfile,
+    GeneratedPrompts,
+)
 from models.model_setup import (
     GeminiModelSetup,
 )
-from config.default import Default # Import Default for cfg
-from models.character_consistency_models import FacialCompositeProfile, GeneratedPrompts, BestImage
+
+
+def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> list[str]:
+    """Generates images from a prompt and a list of images."""
+    model_name = cfg.GEMINI_IMAGE_GEN_MODEL
+
+    parts = [types.Part.from_text(text=prompt)]
+    for image_uri in images:
+        parts.append(types.Part.from_uri(file_uri=image_uri, mime_type="image/png"))
+
+    contents = [types.Content(role="user", parts=parts)]
+
+    response = client.models.generate_content(
+        model=model_name,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            response_modalities=["TEXT", "IMAGE"],
+        ),
+    )
+
+    gcs_uris = []
+    if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
+        print(f"generate_image_from_prompt_and_images: {len(response.candidates[0].content.parts)} parts")
+        for i, part in enumerate(response.candidates[0].content.parts):
+            if hasattr(part, "text"):
+                print(f"generate_image_from_prompt_and_images (text): {part.text}")
+            if hasattr(part, "inline_data") and part.inline_data:
+                # Default to "image/png" if mime_type is missing
+                mime_type = "image/png"
+                if hasattr(part.inline_data, "mime_type") and part.inline_data.mime_type:
+                    mime_type = part.inline_data.mime_type
+                gcs_uri = store_to_gcs(
+                    folder="character_consistency_candidates",
+                    file_name=f"candidate_{uuid.uuid4()}_{i}.png",
+                    mime_type=mime_type,
+                    contents=part.inline_data.data,
+                )
+                gcs_uris.append(gcs_uri)
+    else:
+        print("generate_image_from_prompt_and_images: no images")
+    return gcs_uris
+
 
 # Initialize client and default model ID for rewriter
 client = GeminiModelSetup.init()
-cfg = Default() # Instantiate config
-REWRITER_MODEL_ID = cfg.MODEL_ID # Use default model from config for rewriter
+cfg = Default()  # Instantiate config
+REWRITER_MODEL_ID = cfg.MODEL_ID  # Use default model from config for rewriter
 
 
 @retry(
@@ -64,7 +112,7 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
     print(f"Rewriter: '{full_prompt}' with model {REWRITER_MODEL_ID}")
     try:
         response = client.models.generate_content(
-            model=REWRITER_MODEL_ID, # Explicitly use the configured model
+            model=REWRITER_MODEL_ID,  # Explicitly use the configured model
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT"],
@@ -255,7 +303,9 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
     prompt_parts = [critic_prompt]
 
     for img_uri in img_uris:
-        prompt_parts.append(types.Part.from_uri(file_uri=img_uri, mime_type="image/png"))
+        prompt_parts.append(
+            types.Part.from_uri(file_uri=img_uri, mime_type="image/png")
+        )
 
     safety_settings_list = [
         types.SafetySetting(
@@ -283,7 +333,6 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
     # For a single user message with multiple parts:
     contents_payload = prompt_parts
 
-
     # The telemetry.tool_context_manager is from the Vertex AI SDK,
     # client here is from google-genai, so this context manager might not apply or could cause issues.
     # If it's not needed or causes errors, it should be removed.
@@ -291,34 +340,49 @@ def image_critique(original_prompt: str, img_uris: list[str]) -> str:
     with telemetry.tool_context_manager("creative-studio"):
         try:
             # Use default model from config for critique, unless a specific one is configured
-            critique_model_id = cfg.MODEL_ID # Or a specific cfg.GEMINI_CRITIQUE_MODEL_ID
-            print(f"Sending critique request to Gemini model: {critique_model_id} with {len(contents_payload)} parts.")
+            critique_model_id = (
+                cfg.MODEL_ID
+            )  # Or a specific cfg.GEMINI_CRITIQUE_MODEL_ID
+            print(
+                f"Sending critique request to Gemini model: {critique_model_id} with {len(contents_payload)} parts."
+            )
 
             response = client.models.generate_content(
                 model=critique_model_id,
                 contents=contents_payload,
                 config=types.GenerateContentConfig(
-                    response_modalities=["TEXT"], safety_settings=safety_settings_list, max_output_tokens=8192
+                    response_modalities=["TEXT"],
+                    safety_settings=safety_settings_list,
+                    max_output_tokens=8192,
                 ),
             )
 
             print("Received critique response from Gemini.")
 
             if response.text:
-                print(f"Critique generated (truncated): {response.text[:200]}...") # Log a snippet
-                return response.text # Return the text directly
+                print(
+                    f"Critique generated (truncated): {response.text[:200]}..."
+                )  # Log a snippet
+                return response.text  # Return the text directly
             # Fallback for safety reasons, though .text should be populated for text responses
-            elif response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[0].text:
+            elif (
+                response.candidates
+                and response.candidates[0].content.parts
+                and response.candidates[0].content.parts[0].text
+            ):
                 text_response = response.candidates[0].content.parts[0].text
                 print(f"Critique generated (truncated): {text_response[:200]}...")
                 return text_response
             else:
-                print("Warning: Gemini critique response text was empty or response structure unexpected.")
+                print(
+                    "Warning: Gemini critique response text was empty or response structure unexpected."
+                )
                 return "Critique could not be generated (empty or unexpected response)."
 
         except Exception as e:
             print(f"Error during Gemini API call for image critique: {e}")
             raise
+
 
 def rewrite_prompt_with_gemini(original_prompt: str) -> str:
     """
@@ -339,6 +403,7 @@ def rewrite_prompt_with_gemini(original_prompt: str) -> str:
     except Exception as e:
         print(f"Gemini rewriter failed: {e}")
         raise
+
 
 def generate_compliment(generation_instruction: str, image_output):
     """
@@ -418,7 +483,9 @@ def get_natural_language_description(profile: FacialCompositeProfile) -> str:
     """Generates a natural language description from a facial profile."""
     model_name = cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL
 
-    description_config = types.GenerateContentConfig(temperature=cfg.TEMP_DESCRIPTION_TRANSLATION)
+    description_config = types.GenerateContentConfig(
+        temperature=cfg.TEMP_DESCRIPTION_TRANSLATION
+    )
     description_prompt = f"""
     Based on the following structured JSON data of a person's facial features, write a concise, natural language description suitable for an image generation model. Focus on key physical traits.
 
