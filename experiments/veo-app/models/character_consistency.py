@@ -36,6 +36,7 @@ from models.gemini import (
     get_natural_language_description,
     generate_final_scene_prompt,
     select_best_image,
+    generate_image_from_prompt_and_images,
 )
 from .character_consistency_models import (
     BestImage,
@@ -130,51 +131,27 @@ def generate_character_video(
     yield WorkflowStepResult(
         step_name="generate_candidates",
         status="processing",
-        message="Step 4 of 7: Generating candidate images with Imagen...",
+        message="Step 4 of 7: Generating candidate images with Imagen and Gemini...",
         duration_seconds=0,
         data={},
     )
-    # TODO: This part needs to be refactored to use models/image_models.py
-    client = genai.Client(vertexai=True, project=cfg.PROJECT_ID, location=cfg.LOCATION)
-    edit_model = cfg.CHARACTER_CONSISTENCY_IMAGEN_MODEL
-    reference_images_for_generation = []
-    for i, image_bytes in enumerate(reference_image_bytes_list[:4]):
-        image = types.Image(image_bytes=image_bytes)
-        reference_images_for_generation.append(
-            types.SubjectReferenceImage(
-                reference_id=i,
-                reference_image=image,
-                config=types.SubjectReferenceConfig(
-                    subject_type="SUBJECT_TYPE_PERSON",
-                    subject_description=all_descriptions[i],
-                ),
-            ),
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Generate images with Imagen
+        imagen_future = executor.submit(
+            _generate_imagen_candidates, reference_image_bytes_list, all_descriptions, final_prompt, negative_prompt
         )
-    response = client.models.edit_image(
-        model=edit_model,
-        prompt=final_prompt,
-        reference_images=reference_images_for_generation,
-        config=types.EditImageConfig(
-            edit_mode="EDIT_MODE_DEFAULT",
-            number_of_images=4,
-            aspect_ratio="1:1",
-            person_generation="allow_all",
-            safety_filter_level="block_few",
-            negative_prompt=negative_prompt,
-        ),
-    )
-    candidate_image_gcs_uris = []
-    candidate_image_bytes_list = []
-    for i, image in enumerate(response.generated_images):
-        image_bytes = image.image.image_bytes
-        gcs_uri = store_to_gcs(
-            folder="character_consistency_candidates",
-            file_name=f"candidate_{uuid.uuid4()}_{i}.png",
-            mime_type="image/png",
-            contents=image_bytes,
+        # Generate images with Gemini
+        gemini_future = executor.submit(
+            generate_image_from_prompt_and_images, final_prompt, reference_image_gcs_uris
         )
-        candidate_image_gcs_uris.append(gcs_uri)
-        candidate_image_bytes_list.append(image_bytes)
+
+        imagen_candidate_gcs_uris, imagen_candidate_image_bytes_list = imagen_future.result()
+        gemini_candidate_gcs_uris = gemini_future.result()
+
+    candidate_image_gcs_uris = imagen_candidate_gcs_uris + gemini_candidate_gcs_uris
+    candidate_image_bytes_list = imagen_candidate_image_bytes_list  # We don't have bytes from Gemini yet
+
     step_duration = time.time() - step_start_time
     yield WorkflowStepResult(
         step_name="generate_candidates",
@@ -245,7 +222,7 @@ def generate_character_video(
         duration_seconds=0,
         data={},
     )
-    video_bytes, veo_prompt = _generate_video_from_image(outpainted_image_bytes)
+    video_bytes, veo_prompt = _generate_video_from_image(outpainted_image_bytes, scene_prompt)
     video_gcs_uri = store_to_gcs(
         folder="character_consistency_videos",
         file_name=f"video_{uuid.uuid4()}.mp4",
@@ -284,7 +261,54 @@ def generate_character_video(
     add_media_item_to_firestore(new_item)
     logger.info("Workflow complete in %.2f seconds. MediaItem ID: %s", total_duration, new_item.id)
 
-def _generate_video_from_image(image_bytes: bytes) -> tuple[bytes, str]:
+def _generate_imagen_candidates(reference_image_bytes_list, all_descriptions, final_prompt, negative_prompt):
+    """Generates candidate images with Imagen."""
+    client = genai.Client(vertexai=True, project=cfg.PROJECT_ID, location=cfg.LOCATION)
+    edit_model = cfg.CHARACTER_CONSISTENCY_IMAGEN_MODEL
+    reference_images_for_generation = []
+    for i, image_bytes in enumerate(reference_image_bytes_list[:4]):
+        image = types.Image(image_bytes=image_bytes)
+        reference_images_for_generation.append(
+            types.SubjectReferenceImage(
+                reference_id=i,
+                reference_image=image,
+                config=types.SubjectReferenceConfig(
+                    subject_type="SUBJECT_TYPE_PERSON",
+                    subject_description=all_descriptions[i],
+                ),
+            ),
+        )
+    response = client.models.edit_image(
+        model=edit_model,
+        prompt=final_prompt,
+        reference_images=reference_images_for_generation,
+        config=types.EditImageConfig(
+            edit_mode="EDIT_MODE_DEFAULT",
+            number_of_images=4,
+            aspect_ratio="1:1",
+            person_generation="allow_all",
+            safety_filter_level="block_few",
+            negative_prompt=negative_prompt,
+        ),
+    )
+    candidate_image_gcs_uris = []
+    candidate_image_bytes_list = []
+    for i, image in enumerate(response.generated_images):
+        image_bytes = image.image.image_bytes
+        gcs_uri = store_to_gcs(
+            folder="character_consistency_candidates",
+            file_name=f"candidate_{uuid.uuid4()}_{i}.png",
+            mime_type="image/png",
+            contents=image_bytes,
+        )
+        candidate_image_gcs_uris.append(gcs_uri)
+        candidate_image_bytes_list.append(image_bytes)
+    return candidate_image_gcs_uris, candidate_image_bytes_list
+
+
+def _generate_video_from_image(
+    image_bytes: bytes, provided_prompt: str | None = None
+) -> tuple[bytes, str]:
     """Generates a video from an image."""
     gemini_client = genai.Client(
         vertexai=True, project=cfg.PROJECT_ID, location=cfg.LOCATION
@@ -297,12 +321,18 @@ def _generate_video_from_image(image_bytes: bytes) -> tuple[bytes, str]:
     width, height = pil_image.size
     aspect_ratio = "9:16" if height > width else "16:9"
 
+    gemini_contents = [
+        "You are an expert Cinematic Prompt Engineer and a creative director for Veo. Your purpose is to transform a user's basic prompt and optional reference image into a masterful, detailed, and technically rich Veo prompt that will guide the model to generate a high-quality video.",
+        pil_image,
+    ]
+    if provided_prompt:
+        gemini_contents.insert(
+            1, f"the user has provided this prompt as a starter {provided_prompt}"
+        )
+
     video_prompt_response = gemini_client.models.generate_content(
         model=cfg.CHARACTER_CONSISTENCY_GEMINI_MODEL,
-        contents=[
-            "You are an expert Cinematic Prompt Engineer and a creative director for Veo. Your purpose is to transform a user's basic prompt and optional reference image into a masterful, detailed, and technically rich Veo prompt that will guide the model to generate a high-quality video.",
-            pil_image,
-        ],
+        contents=gemini_contents,
         config=genai.types.GenerateContentConfig(
             thinking_config=genai.types.ThinkingConfig(thinking_budget=-1)
         ),

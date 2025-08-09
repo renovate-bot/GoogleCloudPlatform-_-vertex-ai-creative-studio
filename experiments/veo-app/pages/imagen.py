@@ -21,8 +21,21 @@ from components.imagen.generation_controls import generation_controls
 from components.imagen.image_output import image_output
 from components.imagen.modifier_controls import modifier_controls
 from components.page_scaffold import page_frame, page_scaffold
-from state.imagen_state import PageState
 from config.default import ABOUT_PAGE_CONTENT
+from state.imagen_state import PageState
+
+
+@me.page(
+    path="/imagen",
+    title="Imagen Creative Studio",
+    security_policy=me.SecurityPolicy(
+        allowed_script_srcs=[
+            "https://cdn.jsdelivr.net",
+        ]
+    ),
+)
+def imagen_page():
+    imagen_content(me.state(PageState))
 
 
 def imagen_content(app_state: me.state):
@@ -30,7 +43,7 @@ def imagen_content(app_state: me.state):
     state = me.state(PageState)
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Imagen Creative Studio", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][0]["description"])
             me.divider()
@@ -39,12 +52,17 @@ def imagen_content(app_state: me.state):
             me.text(f"Negative Prompt: {state.image_negative_prompt_input}")
             me.text(f"Model: {state.image_model_name}")
             me.text(f"Aspect Ratio: {state.image_aspect_ratio}")
-            with dialog_actions():
+            with dialog_actions():  # pylint: disable=not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Imagen Creative Studio", "image", show_info_button=True, on_info_click=open_info_dialog)
+            header(
+                "Imagen Creative Studio",
+                "image",
+                show_info_button=True,
+                on_info_click=open_info_dialog,
+            )
 
             generation_controls()
             modifier_controls()
@@ -58,7 +76,7 @@ def imagen_content(app_state: me.state):
             style=me.Style(color=me.theme_var("error")),
         )
         me.text(state.dialog_message, style=me.Style(margin=me.Margin(top=16)))
-        with dialog_actions(): # pylint: disable=not-context-manager
+        with dialog_actions():  # pylint: disable=not-context-manager
             me.button("Close", on_click=on_close_dialog, type="flat")
 
 
@@ -68,11 +86,13 @@ def on_close_dialog(e: me.ClickEvent):
     state.show_dialog = False
     yield
 
+
 def open_info_dialog(e: me.ClickEvent):
     """Open the info dialog."""
     state = me.state(PageState)
     state.info_dialog_open = True
     yield
+
 
 def close_info_dialog(e: me.ClickEvent):
     """Close the info dialog."""
