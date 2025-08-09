@@ -33,11 +33,11 @@ class PageState:
 
     current_step: int = 1
     max_completed_step: int = 1
-    uploaded_image_gcs_uris: list[str] = field(default_factory=list)
+    uploaded_image_gcs_uris: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
     scene_prompt: str = ""
     video_prompt: str = ""
     character_description: str = ""
-    candidate_image_urls: list[str] = field(default_factory=list)
+    candidate_image_urls: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
     best_image_url: str = ""
     user_selected_image_url: str = ""
     outpainted_image_url: str = ""
@@ -52,7 +52,7 @@ def character_consistency_page_content():
     state = me.state(PageState)
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Character Consistency Test", type="headline-6")
             me.markdown("""
 This page allows you to test the character consistency workflow step-by-step.
@@ -74,8 +74,8 @@ This page allows you to test the character consistency workflow step-by-step.
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold():
-        with page_frame():
+    with page_scaffold():  # pylint: disable=not-context-manager
+        with page_frame():  # pylint: disable=not-context-manager
             header(
                 "Character Consistency Test",
                 "person",
