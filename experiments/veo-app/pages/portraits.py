@@ -86,12 +86,28 @@ class PageState:
 
 
 from config.portrait_styles import PORTRAIT_STYLES
+from config.veo_models import VEO_MODELS, get_veo_model_config
 
 
 def motion_portraits_content(app_state: me.state):
     """Motion portraits Mesop Page"""
 
     state = me.state(PageState)
+    # Get current model config
+    selected_model_config = get_veo_model_config(state.veo_model)
+
+    # Generate dynamic options
+    aspect_ratio_options = [
+        me.SelectOption(label=ratio, value=ratio)
+        for ratio in selected_model_config.supported_aspect_ratios
+    ]
+    video_length_options = [
+        me.SelectOption(label=f"{i} seconds", value=str(i))
+        for i in range(
+            selected_model_config.min_duration, selected_model_config.max_duration + 1
+        )
+    ]
+    auto_enhance_disabled = not selected_model_config.supports_prompt_enhancement
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
@@ -198,23 +214,27 @@ def motion_portraits_content(app_state: me.state):
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
                         me.select(
-                            label="aspect",
+                            label="model",
                             appearance="outline",
                             options=[
-                                me.SelectOption(label="16:9 widescreen", value="16:9"),
-                                me.SelectOption(label="9:16 portrait", value="9:16"),
+                                me.SelectOption(
+                                    label=model.display_name, value=model.version_id
+                                )
+                                for model in VEO_MODELS
                             ],
+                            value=state.veo_model,
+                            on_selection_change=on_model_selection_change,
+                        )
+                        me.select(
+                            label="aspect",
+                            appearance="outline",
+                            options=aspect_ratio_options,
                             value=state.aspect_ratio,
                             on_selection_change=on_selection_change_aspect,
                         )
                         me.select(
                             label="length",
-                            options=[
-                                me.SelectOption(label="5 seconds", value="5"),
-                                me.SelectOption(label="6 seconds", value="6"),
-                                me.SelectOption(label="7 seconds", value="7"),
-                                me.SelectOption(label="8 seconds", value="8"),
-                            ],
+                            options=video_length_options,
                             appearance="outline",
                             style=me.Style(),
                             value=f"{state.video_length}",
@@ -224,6 +244,7 @@ def motion_portraits_content(app_state: me.state):
                             label="auto-enhance prompt",
                             checked=state.auto_enhance_prompt,
                             on_change=on_change_auto_enhance_prompt,
+                            disabled=auto_enhance_disabled,
                         )
 
                     me.text(
@@ -231,35 +252,70 @@ def motion_portraits_content(app_state: me.state):
                         style=me.Style(font_size="1.1em", font_weight="bold"),
                     )
                     with me.box(
-                        style=me.Style(display="flex", flex_direction="row", gap=5)
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=10,
+                            flex_wrap="wrap",
+                        )
                     ):
                         for style in PORTRAIT_STYLES:
                             num_selected = len(state.modifier_array)
                             is_selected = style.id in state.modifier_array
                             is_disabled = num_selected >= 2 and not is_selected
-                            
+
                             # Define styles based on state
                             if is_disabled:
                                 button_style = me.Style(
-                                    padding=me.Padding.symmetric(vertical=8, horizontal=16),
+                                    padding=me.Padding.symmetric(
+                                        vertical=8, horizontal=16
+                                    ),
                                     border_radius=20,
-                                    border=me.Border.all(me.BorderSide(color=me.theme_var("sys-color-outline-variant"))),
-                                    background=me.theme_var("sys-color-surface-container"),
+                                    border=me.Border.all(
+                                        me.BorderSide(
+                                            color=me.theme_var(
+                                                "sys-color-outline-variant"
+                                            )
+                                        )
+                                    ),
+                                    background=me.theme_var(
+                                        "sys-color-surface-container"
+                                    ),
                                 )
-                                text_color = me.theme_var("sys-color-on-surface-variant")
+                                text_color = me.theme_var(
+                                    "sys-color-on-surface-variant"
+                                )
                             elif is_selected:
                                 button_style = me.Style(
-                                    padding=me.Padding.symmetric(vertical=8, horizontal=16),
+                                    padding=me.Padding.symmetric(
+                                        vertical=8, horizontal=16
+                                    ),
                                     border_radius=20,
-                                    border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("sys-color-primary"))),
-                                    background=me.theme_var("sys-color-primary-container"),
+                                    border=me.Border.all(
+                                        me.BorderSide(
+                                            width=1,
+                                            color=me.theme_var("sys-color-primary"),
+                                        )
+                                    ),
+                                    background=me.theme_var(
+                                        "sys-color-primary-container"
+                                    ),
                                 )
-                                text_color = me.theme_var("sys-color-on-primary-container")
-                            else: # Default
+                                text_color = me.theme_var(
+                                    "sys-color-on-primary-container"
+                                )
+                            else:  # Default
                                 button_style = me.Style(
-                                    padding=me.Padding.symmetric(vertical=8, horizontal=16),
+                                    padding=me.Padding.symmetric(
+                                        vertical=8, horizontal=16
+                                    ),
                                     border_radius=20,
-                                    border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("sys-color-outline"))),
+                                    border=me.Border.all(
+                                        me.BorderSide(
+                                            width=1,
+                                            color=me.theme_var("sys-color-outline"),
+                                        )
+                                    ),
                                     background="transparent",
                                 )
                                 text_color = me.theme_var("sys-color-on-surface")
@@ -279,9 +335,12 @@ def motion_portraits_content(app_state: me.state):
                                     )
                                 ):
                                     if is_selected:
-                                        me.icon("check", style=me.Style(color=text_color))
-                                    me.text(style.label, style=me.Style(color=text_color))
-
+                                        me.icon(
+                                            "check", style=me.Style(color=text_color)
+                                        )
+                                    me.text(
+                                        style.label, style=me.Style(color=text_color)
+                                    )
 
             with me.box(
                 style=me.Style(
@@ -326,15 +385,16 @@ def motion_portraits_content(app_state: me.state):
                                 display="flex",
                                 flex_direction="column",
                                 justify_content="center",  # Horizontal center
-                                align_items="center",      # Vertical center
-                                height=350,                # Give it a height to center within
+                                align_items="center",  # Vertical center
+                                height=350,  # Give it a height to center within
                                 width="100%",
                             )
                         ):
                             me.text(
                                 "Generating your moving portrait, please wait...",
                                 style=me.Style(
-                                    font_size="1.1em", margin=me.Margin(bottom=16),
+                                    font_size="1.1em",
+                                    margin=me.Margin(bottom=16),
                                 ),
                             )
                             me.progress_spinner(diameter=40)
@@ -408,6 +468,28 @@ def motion_portraits_content(app_state: me.state):
                             state.error_message,
                             style=me.Style(color="red", white_space="pre-wrap"),
                         )
+
+
+def on_model_selection_change(e: me.SelectSelectionChangeEvent):
+    """Handles model selection change."""
+    state = me.state(PageState)
+    state.veo_model = e.value
+
+    selected_model_config = get_veo_model_config(state.veo_model)
+
+    # Validate aspect ratio
+    if state.aspect_ratio not in selected_model_config.supported_aspect_ratios:
+        state.aspect_ratio = selected_model_config.supported_aspect_ratios[0]
+
+    # Validate video length
+    if not (
+        selected_model_config.min_duration
+        <= state.video_length
+        <= selected_model_config.max_duration
+    ):
+        state.video_length = selected_model_config.default_duration
+
+    yield
 
 
 def on_modifier_click(e: me.ClickEvent):
@@ -530,20 +612,23 @@ def on_click_motion_portraits(e: me.ClickEvent):
 Expand the given direction to include more facial engagement, as if the subject is looking out of the image and interested in the world outside.
 
 Examine the picture provided to improve the scene direction.
-
-Optionally, include is waving of hands and if necessary, and physical motion outside the frame.
-
-Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty."""
+"""
 
     final_prompt_for_llm = base_prompt
     if state.modifier_array:
         # Get the full style objects for the selected IDs
         selected_styles = [s for s in PORTRAIT_STYLES if s.id in state.modifier_array]
-        
+
         # Append each style's full description
         final_prompt_for_llm += "\n\nIncorporate the following stylistic directions:\n"
         for style in selected_styles:
             final_prompt_for_llm += f"- {style.description}\n"
+
+    else:
+        # base prompt - waving
+        final_prompt_for_llm += """Optionally, include is waving of hands and if necessary, and physical motion outside the frame.
+
+Do not describe the frame. There should be no lip movement like speaking, but there can be descriptions of facial movements such as laughter, either in joy or cruelty."""
 
     final_prompt_for_llm += "\n\nScene direction:\n"
 
