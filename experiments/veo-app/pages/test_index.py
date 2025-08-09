@@ -15,14 +15,18 @@
 import mesop as me
 from components.header import header
 
+
 def on_navigate(e: me.ClickEvent):
     me.navigate(e.key)
 
-@me.page(path="/test_index")
+
+@me.page(
+    path="/test_index",
+)
 def page():
     test_pages = [
         {
-            "title": "VTO Prompt Generator",
+            "title": "VTO Model Composite Card Generator",
             "description": "A tool to generate a matrix of virtual models with different attributes.",
             "route": "/test_vto_prompt_generator",
         },
@@ -45,6 +49,11 @@ def page():
             "title": "Gemini Image Generation Test",
             "description": "A test page for the Gemini image generation model.",
             "route": "/test_gemini_image_gen",
+        },
+        {
+            "title": "Worsfold Encoder Test",
+            "description": "A test page for the Worsfold Encoder web component.",
+            "route": "/test_worsfold_encoder",
         },
     ]
 
@@ -76,19 +85,42 @@ def page():
                 me.text("A list of test pages for debugging and testing new features.")
 
                 with me.box(style=me.Style(margin=me.Margin(top=24))):
-                    me.text("Test Pages:", style=me.Style(font_weight="bold", font_size="1.2rem", margin=me.Margin(bottom=12)))
-                    with me.box(style=me.Style(display="grid", grid_template_columns="repeat(auto-fill, minmax(250px, 1fr))", gap=15)):
+                    me.text(
+                        "Test Pages:",
+                        style=me.Style(
+                            font_weight="bold",
+                            font_size="1.2rem",
+                            margin=me.Margin(bottom=12),
+                        ),
+                    )
+                    with me.box(
+                        style=me.Style(
+                            display="grid",
+                            grid_template_columns="repeat(auto-fill, minmax(250px, 1fr))",
+                            gap=15,
+                        )
+                    ):
                         for test_page in test_pages:
                             with me.box(
                                 key=test_page["route"],
                                 on_click=on_navigate,
                                 style=me.Style(
-                                    border=me.Border.all(me.BorderSide(width=1, style="solid", color=me.theme_var("outline"))),
+                                    border=me.Border.all(
+                                        me.BorderSide(
+                                            width=1,
+                                            style="solid",
+                                            color=me.theme_var("outline"),
+                                        )
+                                    ),
                                     background=me.theme_var("surface-container-lowest"),
                                     padding=me.Padding.all(15),
                                     border_radius=12,
-                                    cursor="pointer"
-                                )
+                                    cursor="pointer",
+                                ),
                             ):
                                 me.text(test_page["title"], type="subtitle-1")
-                                me.text(test_page["description"], type="body-2", style=me.Style(margin=me.Margin(top=8)))
+                                me.text(
+                                    test_page["description"],
+                                    type="body-2",
+                                    style=me.Style(margin=me.Margin(top=8)),
+                                )

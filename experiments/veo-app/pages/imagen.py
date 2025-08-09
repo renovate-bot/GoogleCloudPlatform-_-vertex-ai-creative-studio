@@ -28,11 +28,6 @@ from state.imagen_state import PageState
 @me.page(
     path="/imagen",
     title="Imagen Creative Studio",
-    security_policy=me.SecurityPolicy(
-        allowed_script_srcs=[
-            "https://cdn.jsdelivr.net",
-        ]
-    ),
 )
 def imagen_page():
     imagen_content(me.state(PageState))
