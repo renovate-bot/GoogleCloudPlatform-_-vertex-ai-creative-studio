@@ -49,7 +49,7 @@ def character_consistency_page_content():
     state = me.state(PageState)
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Character Consistency", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][6]["description"])
             me.divider()
