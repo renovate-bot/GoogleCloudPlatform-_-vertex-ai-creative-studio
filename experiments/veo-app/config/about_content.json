@@ -50,7 +50,7 @@
     {
       "id": "character_consistency",
       "title": "Character Consistency",
-      "description": "This workflow allows you to generate a consistent character across multiple images. You provide a text prompt describing the character, and the model generates a series of images of that character in different poses and settings.",
+      "description": "This workflow allows you to generate a consistent character across multiple images. You provide one or more reference images of the character along with a the scene description for the character, and the model generates a series of images of that character in different poses and settings, chooses the best one that aligns with the reference images, and then creates a video of that character in the new scene.",
       "image": null,
       "video": null
     },

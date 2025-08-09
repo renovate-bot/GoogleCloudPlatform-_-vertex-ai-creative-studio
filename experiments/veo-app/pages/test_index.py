@@ -41,6 +41,11 @@ def page():
             "description": "A test page for the character consistency workflow.",
             "route": "/test_character_consistency",
         },
+        {
+            "title": "Gemini Image Generation Test",
+            "description": "A test page for the Gemini image generation model.",
+            "route": "/test_gemini_image_gen",
+        },
     ]
 
     with me.box(

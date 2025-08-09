@@ -289,6 +289,9 @@ def generate_alternatives(e: me.ClickEvent):
         reference_image_gcs_uris=state.uploaded_image_gcs_uris,
         scene_prompt=state.scene_prompt,
     ):
+        state.status_message = step_result.message
+        yield
+
         if "character_description" in step_result.data:
             state.character_description = step_result.data["character_description"]
         if "candidate_image_gcs_uris" in step_result.data:

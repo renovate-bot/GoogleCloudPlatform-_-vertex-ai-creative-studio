@@ -55,6 +55,7 @@ class Default:
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
+    GEMINI_IMAGE_GEN_MODEL: str = os.environ.get("GEMINI_IMAGE_GEN_MODEL", "gemini-2.0-flash-preview-image-generation")
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash"
     )
@@ -100,9 +101,10 @@ class Default:
     TEMP_BEST_IMAGE_SELECTION: float = 0.2
 
     # Character Consistency
-    CHARACTER_CONSISTENCY_GEMINI_MODEL: str = "gemini-2.5-pro"
     CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
     CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get("CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001")
+    CHARACTER_CONSISTENCY_GEMINI_MODEL: str = os.environ.get("CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID)
+
 
     # Lyria
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
