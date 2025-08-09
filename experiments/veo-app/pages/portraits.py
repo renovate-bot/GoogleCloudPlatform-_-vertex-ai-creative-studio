@@ -85,12 +85,7 @@ class PageState:
     info_dialog_open: bool = False
 
 
-modifier_options = [
-    {"label": "motion", "key": "motion"},
-    {"label": "distracted", "key": "distracted"},
-    {"label": "artistic", "key": "artistic_style"},
-    {"label": "close-up", "key": "close_up_shot"},
-]
+from config.portrait_styles import PORTRAIT_STYLES
 
 
 def motion_portraits_content(app_state: me.state):
@@ -238,31 +233,42 @@ def motion_portraits_content(app_state: me.state):
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=5)
                     ):
-                        for option in modifier_options:
-                            is_selected = option["key"] in state.modifier_array
+                        for style in PORTRAIT_STYLES:
+                            num_selected = len(state.modifier_array)
+                            is_selected = style.id in state.modifier_array
+                            is_disabled = num_selected >= 2 and not is_selected
+                            
+                            # Define styles based on state
+                            if is_disabled:
+                                button_style = me.Style(
+                                    padding=me.Padding.symmetric(vertical=8, horizontal=16),
+                                    border_radius=20,
+                                    border=me.Border.all(me.BorderSide(color=me.theme_var("sys-color-outline-variant"))),
+                                    background=me.theme_var("sys-color-surface-container"),
+                                )
+                                text_color = me.theme_var("sys-color-on-surface-variant")
+                            elif is_selected:
+                                button_style = me.Style(
+                                    padding=me.Padding.symmetric(vertical=8, horizontal=16),
+                                    border_radius=20,
+                                    border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("sys-color-primary"))),
+                                    background=me.theme_var("sys-color-primary-container"),
+                                )
+                                text_color = me.theme_var("sys-color-on-primary-container")
+                            else: # Default
+                                button_style = me.Style(
+                                    padding=me.Padding.symmetric(vertical=8, horizontal=16),
+                                    border_radius=20,
+                                    border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("sys-color-outline"))),
+                                    background="transparent",
+                                )
+                                text_color = me.theme_var("sys-color-on-surface")
 
                             with me.content_button(
-                                key=f"mod_btn_{option['key']}",
+                                key=f"mod_btn_{style.id}",
                                 on_click=on_modifier_click,
-                                style=me.Style(
-                                    padding=me.Padding.symmetric(
-                                        vertical=8, horizontal=16
-                                    ),
-                                    border=me.Border.all(
-                                        me.BorderSide(
-                                            width=1,
-                                            color=me.theme_var("sys-color-primary")
-                                            if is_selected
-                                            else me.theme_var("sys-color-outline"),
-                                        )
-                                    ),
-                                    background=me.theme_var(
-                                        "sys-color-primary-container"
-                                    )
-                                    if is_selected
-                                    else "transparent",
-                                    border_radius=20,
-                                ),
+                                disabled=is_disabled,
+                                style=button_style,
                             ):
                                 with me.box(
                                     style=me.Style(
@@ -273,33 +279,9 @@ def motion_portraits_content(app_state: me.state):
                                     )
                                 ):
                                     if is_selected:
-                                        me.icon(
-                                            "check",
-                                            style=me.Style(
-                                                color=me.theme_var(
-                                                    "sys-color-on-primary-container"
-                                                )
-                                                if is_selected
-                                                else me.theme_var(
-                                                    "sys-color-on-surface"
-                                                )
-                                            ),
-                                        )
-                                    me.text(
-                                        option["label"],
-                                        style=me.Style(
-                                            color=me.theme_var(
-                                                "sys-color-on-primary-container"
-                                            )
-                                            if is_selected
-                                            else me.theme_var("sys-color-on-surface")
-                                        ),
-                                    )
-                    if state.modifier_array:
-                        me.text(
-                            f"Active Modifiers: {', '.join(state.modifier_array)}",
-                            style=me.Style(margin=me.Margin(top=10), font_size="0.9em"),
-                        )
+                                        me.icon("check", style=me.Style(color=text_color))
+                                    me.text(style.label, style=me.Style(color=text_color))
+
 
             with me.box(
                 style=me.Style(
@@ -437,13 +419,18 @@ def on_modifier_click(e: me.ClickEvent):
         print("Error: ClickEvent has no key associated with the content_button.")
         return
 
+    # If the key is already selected, deselect it.
     if modifier_key in state.modifier_array:
         new_modifier_array = [
             mod for mod in state.modifier_array if mod != modifier_key
         ]
         state.modifier_array = new_modifier_array
-    else:
+    # If the key is not selected, add it, but only if less than 2 are already selected.
+    elif len(state.modifier_array) < 2:
         state.modifier_array = [*state.modifier_array, modifier_key]
+    # If 2 are already selected, do nothing (or we could show a message).
+    else:
+        print("Maximum of 2 modifiers can be selected.")
 
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
@@ -550,10 +537,14 @@ Do not describe the frame. There should be no lip movement like speaking, but th
 
     final_prompt_for_llm = base_prompt
     if state.modifier_array:
-        modifiers_string = ", ".join(state.modifier_array)
-        final_prompt_for_llm += (
-            f"\n\nUtilize the following modifiers for the subject: {modifiers_string}."
-        )
+        # Get the full style objects for the selected IDs
+        selected_styles = [s for s in PORTRAIT_STYLES if s.id in state.modifier_array]
+        
+        # Append each style's full description
+        final_prompt_for_llm += "\n\nIncorporate the following stylistic directions:\n"
+        for style in selected_styles:
+            final_prompt_for_llm += f"- {style.description}\n"
+
     final_prompt_for_llm += "\n\nScene direction:\n"
 
     gcs_uri = ""
