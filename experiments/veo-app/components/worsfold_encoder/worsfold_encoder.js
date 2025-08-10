@@ -37,7 +37,6 @@ class WorsfoldEncoder extends LitElement {
     this.config = { fps: 15, scale: 0.5 };
     this.startEncode = false;
     this.ffmpeg = null;
-    this.fetchFile = null;
     this.loaded = false;
   }
 
@@ -58,14 +57,11 @@ class WorsfoldEncoder extends LitElement {
 
   async loadFFmpeg() {
     try {
-      await this._loadScript('/assets/ffmpeg/util/package/dist/umd/index.js');
       await this._loadScript('/assets/ffmpeg/ffmpeg/package/dist/umd/ffmpeg.js');
 
       const { FFmpeg } = window.FFmpegWASM;
-      const { fetchFile } = window.FFmpegUtil;
 
       this.ffmpeg = new FFmpeg();
-      this.fetchFile = fetchFile;
 
       this.ffmpeg.on('log', ({ message }) => {
         this._onLog(message);
@@ -133,9 +129,15 @@ class WorsfoldEncoder extends LitElement {
     this._onProgress(0);
 
     // Get signed URL
-    const response = await fetch(`/api/get_signed_url?gcs_uri=${this.videoUrl}`);
-    const data = await response.json();
-    const signedUrl = data.signed_url;
+    const signedUrlResponse = await fetch(`/api/get_signed_url?gcs_uri=${this.videoUrl}`);
+    const signedUrlData = await signedUrlResponse.json();
+    const signedUrl = signedUrlData.signed_url;
+    console.log("Got signed URL:", signedUrl);
+
+    // Fetch the video data as an ArrayBuffer
+    const videoResponse = await fetch(signedUrl);
+    const videoData = await videoResponse.arrayBuffer();
+    console.log(`Fetched video data, size: ${videoData.byteLength} bytes`);
 
     const { fps, scale } = this.config;
     const inputName = 'input.mp4';
@@ -143,7 +145,7 @@ class WorsfoldEncoder extends LitElement {
     const outputName = 'output.gif';
 
     // Write the video file to ffmpeg's memory
-    await this.ffmpeg.writeFile(inputName, await this.fetchFile(signedUrl));
+    await this.ffmpeg.writeFile(inputName, new Uint8Array(videoData));
 
     // Generate palette
     const paletteArgs = [
@@ -163,11 +165,16 @@ class WorsfoldEncoder extends LitElement {
     await this.ffmpeg.exec(gifArgs);
 
     const gifData = await this.ffmpeg.readFile(outputName);
-    const dataUrl = URL.createObjectURL(new Blob([gifData.buffer], { type: 'image/gif' }));
 
-    this._onProgress(100);
-    this._onLog('Encoding complete!');
-    this._onEncodeComplete(dataUrl);
+    // Convert the data to a Base64 data URL
+    const reader = new FileReader();
+    reader.readAsDataURL(new Blob([gifData.buffer], { type: 'image/gif' }));
+    reader.onloadend = () => {
+      const dataUrl = reader.result;
+      this._onProgress(100);
+      this._onLog('Encoding complete!');
+      this._onEncodeComplete(dataUrl);
+    };
   }
 
   render() {
