@@ -114,11 +114,11 @@ class Default:
     # Imagen
     MODEL_IMAGEN2 = "imagegeneration@006"
     MODEL_IMAGEN_NANO = "imagegeneration@004"
-    MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"
     MODEL_IMAGEN = "imagen-3.0-generate-002"
-    MODEL_IMAGEN4 = "imagen-4.0-generate-preview-06-06"
-    MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-preview-06-06"
-    MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-preview-06-06"
+    MODEL_IMAGEN_FAST = "imagen-3.0-fast-generate-001"
+    MODEL_IMAGEN4 = "imagen-4.0-generate-001"
+    MODEL_IMAGEN4_FAST = "imagen-4.0-fast-generate-001"
+    MODEL_IMAGEN4_ULTRA = "imagen-4.0-ultra-generate-001"
     MODEL_IMAGEN_EDITING = "imagen-3.0-capability-001"
     MODEL_IMAGEN_PRODUCT_RECONTEXT: str = os.environ.get(
         "MODEL_IMAGEN_PRODUCT_RECONTEXT", "imagen-product-recontext-preview-06-30",
