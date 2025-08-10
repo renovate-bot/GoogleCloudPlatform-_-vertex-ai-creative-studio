@@ -30,9 +30,6 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
-from google.cloud import storage
-import datetime
-
 from app_factory import app
 from components.page_scaffold import page_scaffold
 from pages.about import about_page_content
