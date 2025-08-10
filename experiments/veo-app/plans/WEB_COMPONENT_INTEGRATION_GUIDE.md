@@ -2,7 +2,7 @@
 
 This document provides a comprehensive, definitive guide to correctly implementing and debugging custom, **interactive** Lit-based Web Components within a Mesop application that is served by a custom FastAPI server.
 
-**Last Updated:** 2025-08-09
+**Last Updated:** 2025-08-10
 
 ## 1. The Core Challenge: Two-Way Communication
 
@@ -166,7 +166,45 @@ If your web component needs to perform initialization that communicates with the
 
 -   **The Problem:** Directly fetching GCS URLs (especially `gs://` or `https://storage.mtls.cloud.google.com`) from a web component will fail due to CORS and redirect issues, even if the bucket is public.
 -   **The Solution:** The frontend must not use GCS URIs directly. Instead, create a FastAPI endpoint (e.g., `/api/get_signed_url`) that uses the Python GCS client library to generate a short-lived, signed URL. The web component then fetches this signed URL, which is designed for public, temporary access and will not have cross-origin issues.
--   **Local Development:** For the signed URL endpoint to work locally, developers must configure their Application Default Credentials (ADC) to impersonate the application's service account using `gcloud auth application-default login --impersonate-service-account=<SA_EMAIL>`.
+-   **Local Development vs. Cloud Run (IAP):** The implementation of the signed URL endpoint needs to be environment-aware.
+    -   **Local:** Your local Application Default Credentials (ADC) must be configured to impersonate the application's service account using `gcloud auth application-default login --impersonate-service-account=<SA_EMAIL>`.
+    -   **Cloud Run (with IAP):** When deployed with IAP, the endpoint receives the end-user's identity, not the service account's. The code must explicitly impersonate the service account to get a credential with a private key for signing.
+
+**Robust, Environment-Aware Endpoint:**
+```python
+from google.auth import impersonated_credentials
+import google.auth
+
+@app.get("/api/get_signed_url")
+def get_signed_url(gcs_uri: str):
+    try:
+        storage_client = storage.Client()
+        # On Cloud Run, the default credentials are for the service account,
+        # but they don't have a private key. We need to impersonate.
+        if os.environ.get("K_SERVICE"):
+            source_credentials, project = google.auth.default()
+            storage_client = storage.Client(
+                credentials=impersonated_credentials.Credentials(
+                    source_credentials=source_credentials,
+                    target_principal=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
+                    target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
+                )
+            )
+
+        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=15),
+            method="GET",
+            service_account_email=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
+        )
+        return {"signed_url": signed_url}
+    except Exception as e:
+        return {"error": str(e)}, 500
+```
 
 ### E. Content Security Policy (CSP)
 

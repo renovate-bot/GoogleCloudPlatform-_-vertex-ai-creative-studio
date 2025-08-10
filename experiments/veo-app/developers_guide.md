@@ -71,6 +71,16 @@ This section outlines the key architectural patterns and best practices that are
 *   **Problem:** A generated image appears stretched or improperly fitted in its UI container.
 *   **Solution:** Ensure that parameters used in backend API calls (e.g., `models.image_models.generate_image_for_vto`) match the expectations of the frontend UI components that will display the result. For example, if a UI container is styled to be square (`1:1`), the corresponding API call to generate an image for that container should request a `1:1` aspect ratio. Mismatches will lead to distorted or improperly fitted media.
 
+### Accessing GCS Resources from the Frontend
+
+*   **Problem:** You need to display a GCS object (like an image or video) in the browser, or a web component needs to fetch the data of a GCS object.
+*   **The Challenge:** Directly using `gs://` or even `https://storage.mtls.cloud.google.com` URLs in the frontend will fail due to browser security policies (CORS, CSP) and GCS redirects.
+*   **The Solution:** The correct and most secure pattern is to use **signed URLs**.
+    1.  Create a FastAPI endpoint (e.g., `/api/get_signed_url`) that takes a `gs://` URI as input.
+    2.  This endpoint uses the Python GCS client library to generate a short-lived, publicly accessible signed URL.
+    3.  The frontend (either a Mesop component or a custom web component) calls this endpoint to get the signed URL and then uses that URL to display or fetch the resource.
+*   **For full implementation details**, including how to handle local development vs. a deployed Cloud Run environment (with IAP), see the detailed `plans/WEB_COMPONENT_INTEGRATION_GUIDE.md`.
+
 ### Error Handling Philosophy
 
 To ensure a clean separation of concerns and a consistent user experience, the project follows a specific pattern for handling errors that occur during backend operations (e.g., generative model API calls).
