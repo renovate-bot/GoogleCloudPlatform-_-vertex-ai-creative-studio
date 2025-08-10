@@ -13,6 +13,7 @@
 # limitations under the License.
 """Main Mesop App."""
 
+import datetime
 import inspect
 import os
 import uuid
@@ -25,10 +26,9 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-
+from google.auth import impersonated_credentials
 from google.cloud import storage
-import datetime
+from pydantic import BaseModel
 
 from app_factory import app
 from components.page_scaffold import page_scaffold
@@ -42,13 +42,13 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
+from pages.test_character_consistency import page as test_character_consistency_page
+from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
+from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages.test_index import page as test_index_page
-from pages.test_character_consistency import page as test_character_consistency_page
-from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState
@@ -78,8 +78,22 @@ app.add_middleware(
 def get_signed_url(gcs_uri: str):
     """Generates a signed URL for a GCS object."""
     try:
-        credentials, project = google.auth.default()
-        storage_client = storage.Client(credentials=credentials)
+        storage_client = storage.Client()
+
+        # When running on Cloud Run with IAP, we need to impersonate the service account
+        # to get a credential with a private key for signing.
+        if os.environ.get("K_SERVICE"):
+            source_credentials, project = google.auth.default()
+            storage_client = storage.Client(
+                credentials=impersonated_credentials.Credentials(
+                    source_credentials=source_credentials,
+                    target_principal=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
+                    target_scopes=[
+                        "https://www.googleapis.com/auth/devstorage.read_only"
+                    ],
+                )
+            )
+
         bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
@@ -88,6 +102,7 @@ def get_signed_url(gcs_uri: str):
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="GET",
+            service_account_email=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
         )
         return {"signed_url": signed_url}
     except Exception as e:
