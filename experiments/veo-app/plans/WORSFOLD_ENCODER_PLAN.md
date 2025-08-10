@@ -4,6 +4,43 @@ This document outlines a phased plan to adapt the `worsfold/encoder` Angular app
 
 ---
 
+## Prerequisites: Acquiring the `ffmpeg.wasm` Assets
+
+This component depends on the pre-compiled WebAssembly version of `ffmpeg`. These assets are not checked into the Git repository and must be downloaded before running the application.
+
+1.  **Create the Asset Directory:**
+    ```bash
+    mkdir -p assets/ffmpeg
+    ```
+
+2.  **Download the Core Library:** This contains the main `.wasm` file and the JavaScript worker.
+    ```bash
+    curl -o assets/ffmpeg/ffmpeg-core.js https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js
+    curl -o assets/ffmpeg/ffmpeg-core.wasm https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm
+    curl -o assets/ffmpeg/ffmpeg-core.worker.js https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.worker.js
+    ```
+
+3.  **Download the Wrapper Libraries:** These provide a user-friendly API for interacting with the core library.
+    ```bash
+    # Create temporary directories for extraction
+    mkdir -p assets/ffmpeg/ffmpeg
+    mkdir -p assets/ffmpeg/util
+
+    # Download and extract the packages
+    curl -L https://registry.npmjs.org/@ffmpeg/ffmpeg/-/ffmpeg-0.12.10.tgz | tar -xz -C assets/ffmpeg/ffmpeg/
+    curl -L https://registry.npmjs.org/@ffmpeg/util/-/util-0.12.1.tgz | tar -xz -C assets/ffmpeg/util/
+    ```
+
+**Rationale for Self-Hosting:**
+
+While it may seem simpler to load these libraries from a CDN, we must serve them locally due to the **Same-Origin Policy**, a fundamental security feature of web browsers. Specifically:
+
+-   The `ffmpeg.wasm` library relies on **Web Workers** for performance.
+-   Browsers strictly prohibit a script from one origin (e.g., your application at `https://*.run.app`) from loading a Web Worker script from another origin (e.g., a CDN at `https://unpkg.com`).
+-   Therefore, to ensure the component works correctly, all parts of the `ffmpeg.wasm` library, including the worker scripts, must be served from the same origin as the main application.
+
+---
+
 ## Build and Deployment Impact
 
 Adding a custom Lit component like this introduces a new type of asset to the application that the server needs to handle. This has the following implications for the build and deployment process:
@@ -59,11 +96,34 @@ Adding a custom Lit component like this introduces a new type of asset to the ap
 
 ---
 
-## Phase 5: Advanced `ffmpeg` Commands (Future)
+## Phase 5: Rename Component to "Pixie Compositor" (Future)
+
+**Goal:** Rename the `worsfold-encoder` component to the more descriptive and brandable name "Pixie Compositor" to reflect its broader purpose.
+
+**Origin of the Name:** The name "Pixie" was chosen to evoke a sense of creativity and magic. "Compositor" is the technically accurate term for combining and manipulating media, making "Pixie Compositor" a perfect blend of the creative and the functional.
+
+**Files to be Changed:**
+
+1.  **Directory Rename:**
+    *   Rename `components/worsfold_encoder/` to `components/pixie_compositor/`.
+2.  **File Renames:**
+    *   Rename `components/pixie_compositor/worsfold_encoder.js` to `pixie_compositor.js`.
+    *   Rename `components/pixie_compositor/worsfold_encoder.py` to `pixie_compositor.py`.
+    *   Rename `pages/test_worsfold_encoder.py` to `pages/test_pixie_compositor.py`.
+3.  **Code Changes (Content):**
+    *   In `pixie_compositor.js`: Change the class name to `PixieCompositor` and the `customElements.define()` call to `'pixie-compositor'`.
+    *   In `pixie_compositor.py`: Change the function name to `pixie_compositor` and update the `@me.web_component` path and the `name` in `insert_web_component`.
+    *   In `test_pixie_compositor.py`: Update the import statement and the component call.
+    *   In `main.py`: Update the import for the test page.
+    *   In `config/navigation.json`: Update the route and name for the test page.
+
+---
+
+## Phase 6: Advanced `ffmpeg` Commands (Future)
 
 **Goal:** Extend the encoder to support more advanced `ffmpeg` operations like video concatenation and audio layering.
 
-**Phase 5.1: Refactor for Multiple Commands**
+**Phase 6.1: Refactor for Multiple Commands**
 
 1.  **Refactor Lit Component:**
     *   Modify `worsfold-encoder.js` to be more generic.
@@ -74,12 +134,12 @@ Adding a custom Lit component like this introduces a new type of asset to the ap
     *   Add a `me.select` to the test page to allow users to choose the command.
     *   Dynamically update the UI to show the correct number of file choosers based on the selected command.
 
-**Phase 5.2: Implement Video Concatenation**
+**Phase 6.2: Implement Video Concatenation**
 
 1.  **Update Lit Component:** Implement the `_concatenateVideos()` function, which will construct and execute the `ffmpeg` command with the `concat` filter.
 2.  **Update Mesop Page:** Add UI logic to allow the user to dynamically add and remove video choosers.
 
-**Phase 5.3: Implement Audio Layering**
+**Phase 6.3: Implement Audio Layering**
 
 1.  **Create Audio Chooser:** Create a new `audio_chooser_button.py` component, similar to the video chooser, that filters for `audio/*` mime types.
 2.  **Update Lit Component:** Implement the `_layerAudio()` function, which will construct and execute the `ffmpeg` command to combine the video and audio streams.
@@ -87,6 +147,6 @@ Adding a custom Lit component like this introduces a new type of asset to the ap
 
 ---
 
-## Phase 6: Documentation
+## Phase 7: Documentation
 
 **Goal:** Document the new component and its usage for future developers.
