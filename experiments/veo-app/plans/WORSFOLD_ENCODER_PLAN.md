@@ -49,26 +49,21 @@ Adding a custom Lit component like this introduces a new type of asset to the ap
 
 ---
 
-## Phase 4: Implement Saving to GCS and Library (Next Steps)
+## Phase 4: Implement Saving to GCS and Library (COMPLETE)
 
 **Goal:** Allow the user to save the generated GIF to Google Cloud Storage and have it appear in the application's media library.
 
-**Technical Steps:**
+**Lessons Learned:**
 
-1.  **Add "Save to Library" Button:** Add a `me.button` to the UI that is only enabled after a GIF has been successfully generated.
-2.  **Implement Save Logic:**
-    *   The `on_click` handler for this button will need to get the `blob:` URL from the `result_gif` state.
-    *   Since we cannot directly upload a `blob:` URL, we will need to modify the `worsfold-encoder` component to dispatch the raw GIF data (as a Base64 string or an ArrayBuffer) in the `encodeCompleteEvent` alongside the blob URL.
-    *   The Python handler will receive this data, decode it if necessary, and use `common.storage.store_to_gcs` to upload it.
-    *   Finally, it will use `common.metadata.add_media_item_to_firestore` to log the new media item.
+*   **Data Consistency:** Ensure that all required fields (e.g., `model`, `gcs_uris`) are included when creating a new `MediaItem` to avoid errors in other parts of the application, like the library details view.
 
 ---
 
-## Phase 6: Advanced `ffmpeg` Commands (Future)
+## Phase 5: Advanced `ffmpeg` Commands (Future)
 
 **Goal:** Extend the encoder to support more advanced `ffmpeg` operations like video concatenation and audio layering.
 
-**Phase 6.1: Refactor for Multiple Commands**
+**Phase 5.1: Refactor for Multiple Commands**
 
 1.  **Refactor Lit Component:**
     *   Modify `worsfold-encoder.js` to be more generic.
@@ -79,12 +74,12 @@ Adding a custom Lit component like this introduces a new type of asset to the ap
     *   Add a `me.select` to the test page to allow users to choose the command.
     *   Dynamically update the UI to show the correct number of file choosers based on the selected command.
 
-**Phase 6.2: Implement Video Concatenation**
+**Phase 5.2: Implement Video Concatenation**
 
 1.  **Update Lit Component:** Implement the `_concatenateVideos()` function, which will construct and execute the `ffmpeg` command with the `concat` filter.
 2.  **Update Mesop Page:** Add UI logic to allow the user to dynamically add and remove video choosers.
 
-**Phase 6.3: Implement Audio Layering**
+**Phase 5.3: Implement Audio Layering**
 
 1.  **Create Audio Chooser:** Create a new `audio_chooser_button.py` component, similar to the video chooser, that filters for `audio/*` mime types.
 2.  **Update Lit Component:** Implement the `_layerAudio()` function, which will construct and execute the `ffmpeg` command to combine the video and audio streams.
@@ -92,6 +87,6 @@ Adding a custom Lit component like this introduces a new type of asset to the ap
 
 ---
 
-## Phase 7: Documentation
+## Phase 6: Documentation
 
 **Goal:** Document the new component and its usage for future developers.
