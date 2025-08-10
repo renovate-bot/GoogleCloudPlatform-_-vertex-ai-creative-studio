@@ -1,0 +1,9 @@
+docs: Add Go docs and refactor MCP servers
+
+This commit introduces comprehensive Go documentation across all MCP packages to improve code clarity and developer experience.
+
+Key changes include:
+- Added Go-style documentation to all public functions in the `mcp-avtool-go`, `mcp-chirp3-go`, `mcp-common`, `mcp-imagen-go`,`mcp-lyria-go`, and `mcp-veo-go` packages.
+- Refactored the shared `mcp-common` configuration to be more generic, removing service-specific settings and adding support for a global `VERTEX_API_ENDPOINT`.
+- Updated all Go and Python dependencies to their latest versions.
+- Improved and clarified installation instructions in README files.
