@@ -30,9 +30,6 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
-from google.cloud import storage
-import datetime
-
 from app_factory import app
 from components.page_scaffold import page_scaffold
 from pages.about import about_page_content
@@ -53,6 +50,7 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
+from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState
