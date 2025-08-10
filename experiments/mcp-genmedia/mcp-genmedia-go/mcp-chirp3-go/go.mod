@@ -9,7 +9,7 @@ require (
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20250808054713-e1d1b6388bed
 	github.com/mark3labs/mcp-go v0.34.0
 	github.com/rs/cors v1.11.1
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.28.0
 
 )
 
