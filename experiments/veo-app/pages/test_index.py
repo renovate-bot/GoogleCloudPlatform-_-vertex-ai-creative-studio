@@ -51,9 +51,9 @@ def page():
             "route": "/test_gemini_image_gen",
         },
         {
-            "title": "Worsfold Encoder Test",
-            "description": "A test page for the Worsfold Encoder web component.",
-            "route": "/test_worsfold_encoder",
+            "title": "Pixie Compositor Test",
+            "description": "A test page for the Pixie Compositor web component.",
+            "route": "/test_pixie_compositor",
         },
     ]
 
