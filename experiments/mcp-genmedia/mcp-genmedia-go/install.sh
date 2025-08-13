@@ -52,7 +52,7 @@ check_path() {
     echo "The MCP server binaries will be installed there."
     echo "To run them from your command line, please add the following line to your shell configuration file (e.g., ~/.bashrc, ~/.zshrc):"
     echo ""
-    echo -e "  ${BLUE}export PATH=\"$PATH:$HOME/go/bin\"${NC}"
+    echo -e "  ${BLUE}export PATH=\"\$PATH:$HOME/go/bin\"${NC}"
     echo ""
     echo "You will need to restart your shell or run 'source <your_config_file>' for the change to take effect."
     read -p "Press Enter to continue, or Ctrl+C to exit and configure your PATH."
