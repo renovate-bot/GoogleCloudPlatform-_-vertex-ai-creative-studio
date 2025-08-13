@@ -130,9 +130,9 @@ colorama==0.4.6 ; sys_platform == 'win32' \
     # via
     #   click
     #   pytest
-deepdiff==6.7.1 \
-    --hash=sha256:58396bb7a863cbb4ed5193f548c56f18218060362311aa1dc36397b2f25108bd \
-    --hash=sha256:b367e6fa6caac1c9f500adc79ada1b5b1242c50d5f716a1a4362030197847d30
+deepdiff==8.6.0 \
+    --hash=sha256:6197216c2d777c3106a9989055c230e25848e599b26dcbcdc66226bd8d7fe901 \
+    --hash=sha256:db80677a434ac1f84147fd1598e93f1beb06d467e107af45fcf77cf8a681169f
     # via mesop
 flask==3.1.1 \
     --hash=sha256:07aae2bb5eaf77993ef57e357491839f5fd9f4dc281593a81a9e4d79a24f295c \
