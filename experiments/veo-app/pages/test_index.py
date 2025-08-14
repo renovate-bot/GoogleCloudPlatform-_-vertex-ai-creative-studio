@@ -80,7 +80,7 @@ def page():
                     flex_direction="column",
                 )
             ):
-                header("Test Page Index", "home")
+                header("Test Page Index", "science")
 
                 me.text("A list of test pages for debugging and testing new features.")
 

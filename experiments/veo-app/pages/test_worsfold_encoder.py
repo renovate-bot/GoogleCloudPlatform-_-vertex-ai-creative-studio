@@ -149,19 +149,16 @@ def on_start_click(e: me.ClickEvent):
     state.start_encode = False
     yield
 
-
 def on_log(e: me.WebEvent):
     state = me.state(PageState)
     state.logs += e.value + "\n"
     yield
-
 
 def on_encode_complete(e: me.WebEvent):
     state = me.state(PageState)
     state.result_gif = e.value
     state.is_encoding = False
     yield
-
 
 def on_load_complete(e: me.WebEvent):
     print("on_load_complete event received in Python:", e)
