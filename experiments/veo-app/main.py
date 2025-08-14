@@ -30,6 +30,9 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
+from google.cloud import storage
+import datetime
+
 from app_factory import app
 from components.page_scaffold import page_scaffold
 from pages.about import about_page_content
@@ -107,8 +110,13 @@ def get_signed_url(gcs_uri: str):
         )
         return {"signed_url": signed_url}
     except Exception as e:
-        print(f"Error generating signed url: {e}")
-        return {"error": str(e)}, 500
+        error_message = str(e)
+        print(f"Error generating signed url: {error_message}")
+        if "private key" in error_message:
+            print("This error often occurs in a local development environment. "
+                  "Please ensure you have authenticated with service account impersonation by running: "
+                  "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>")
+        return {"error": error_message}, 500
 
 
 @app.middleware("http")
