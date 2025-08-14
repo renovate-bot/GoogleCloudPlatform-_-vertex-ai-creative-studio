@@ -46,10 +46,10 @@ from pages.test_character_consistency import page as test_character_consistency_
 from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
+from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState
@@ -110,9 +110,11 @@ def get_signed_url(gcs_uri: str):
         error_message = str(e)
         print(f"Error generating signed url: {error_message}")
         if "private key" in error_message:
-            print("This error often occurs in a local development environment. "
-                  "Please ensure you have authenticated with service account impersonation by running: "
-                  "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>")
+            print(
+                "This error often occurs in a local development environment. "
+                "Please ensure you have authenticated with service account impersonation by running: "
+                "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>"
+            )
         return {"error": error_message}, 500
 
 
