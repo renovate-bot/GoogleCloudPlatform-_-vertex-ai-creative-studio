@@ -130,6 +130,7 @@ def test_pixie_compositor_page():
 
 
 def on_video_select(e: LibrarySelectionChangeEvent):
+    print(f"on_video_select event received in Python: {e}")
     state = me.state(PageState)
     state.selected_video_gcs_uri = e.gcs_uri
     state.selected_video_url = e.gcs_uri  # Pass the gs:// URI to the component

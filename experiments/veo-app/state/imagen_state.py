@@ -27,7 +27,7 @@ class PageState:
     # Image generation model selection and output
     image_output: list[str] = field(default_factory=list)
     image_commentary: str = ""
-    image_model_name: str = "imagen-4.0-generate-preview-06-06"
+    image_model_name: str = "imagen-4.0-generate-001"
 
     # General UI state
     is_loading: bool = False
