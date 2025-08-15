@@ -33,6 +33,10 @@ func GetEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
 	}
-	log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
+	if fallback != "" {
+	    log.Printf("Environment variable %s not set or empty, using fallback: %s", key, fallback)
+	} else {
+	    log.Printf("Environment variable %s not set or empty, using empty fallback.", key)
+	}
 	return fallback
 }

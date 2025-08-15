@@ -44,7 +44,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "1.9.0" // Add prompt support
+	version     = "1.10.0" // Add prompt support
 )
 
 func init() {
@@ -275,6 +275,8 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	} else if appConfig.GenmediaBucket != "" {
 		gcsOutputURI = fmt.Sprintf("gs://%s/imagen_outputs/", appConfig.GenmediaBucket)
 		log.Printf("Handler imagen_t2i: 'gcs_bucket_uri' parameter not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsOutputURI)
+	} else {
+		log.Printf("Handler imagen_t2i: 'gcs_bucket_uri' parameter and GENMEDIA_BUCKET env var are both empty. No GCS output will be saved.")
 	}
 
 	if gcsOutputURI != "" && !strings.HasSuffix(gcsOutputURI, "/") {
