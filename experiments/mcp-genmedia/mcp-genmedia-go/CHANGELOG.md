@@ -2,6 +2,9 @@
 
 ## 2025-08-14
 
+*   **Fix:** The `mcp-veo-go` tool now automatically prepends `gs://` to the GCS bucket name if it is missing, preventing an "Unsupported output storage uri" error.
+*   **Feat:** Added a new `EnsureGCSPathPrefix` helper function to `mcp-common` to provide a consistent way to normalize GCS paths.
+*   **Chore:** Incremented the version number for `mcp-veo-go`.
 *   **Fix:** Improved logging in `mcp-common` to clarify fallback behavior for environment variables.
 *   **Feat:** Updated Imagen 4 model names to production versions.
 *   **Chore:** Incremented the version number for `mcp-imagen-go`.
