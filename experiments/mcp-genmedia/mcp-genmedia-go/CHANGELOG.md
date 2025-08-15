@@ -1,5 +1,11 @@
 # Changelog
 
+## 2025-08-14
+
+*   **Fix:** Improved logging in `mcp-common` to clarify fallback behavior for environment variables.
+*   **Feat:** Updated Imagen 4 model names to production versions.
+*   **Chore:** Incremented the version number for `mcp-imagen-go`.
+
 ## 2025-07-31
 
 *   **Feat:** Added prompt support to all MCP servers to eliminate the `prompts not supported` error.

@@ -38,18 +38,18 @@ var SupportedImagenModels = map[string]ImagenModelInfo{
 		MaxImages:     4,
 		Aliases:       []string{"Imagen 3"},
 	},
-	"imagen-4.0-generate-preview-06-06": {
-		CanonicalName: "imagen-4.0-generate-preview-06-06",
+	"imagen-4.0-generate-001": {
+		CanonicalName: "imagen-4.0-generate-001",
 		MaxImages:     4,
 		Aliases:       []string{"Imagen 4", "Imagen4"},
 	},
-	"imagen-4.0-fast-generate-preview-06-06": {
-		CanonicalName: "imagen-4.0-fast-generate-preview-06-06",
+	"imagen-4.0-fast-generate-001": {
+		CanonicalName: "imagen-4.0-fast-generate-001",
 		MaxImages:     4,
 		Aliases:       []string{"Imagen 4 Fast", "Imagen4 Fast"},
 	},
-	"imagen-4.0-ultra-generate-preview-06-06": {
-		CanonicalName: "imagen-4.0-ultra-generate-preview-06-06",
+	"imagen-4.0-ultra-generate-001": {
+		CanonicalName: "imagen-4.0-ultra-generate-001",
 		MaxImages:     1,
 		Aliases:       []string{"Imagen 4 Ultra", "Imagen4 Ultra"},
 	},
