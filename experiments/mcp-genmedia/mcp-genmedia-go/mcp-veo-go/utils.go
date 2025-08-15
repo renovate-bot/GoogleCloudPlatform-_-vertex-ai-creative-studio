@@ -52,6 +52,9 @@ func parseCommonVideoParams(args map[string]interface{}) (string, string, string
 
 	// GCS Bucket
 	gcsBucket, _ := args["bucket"].(string)
+	if gcsBucket != "" {
+		gcsBucket = common.EnsureGCSPathPrefix(gcsBucket)
+	}
 
 	// Output Directory
 	outputDir, _ := args["output_directory"].(string)

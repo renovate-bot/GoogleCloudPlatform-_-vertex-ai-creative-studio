@@ -40,7 +40,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.8.0" // Add prompt support
+	version     = "1.9.0" // Feat: Generate descriptive filenames for downloaded videos.
 )
 
 // init handles command-line flags and initial logging setup.

@@ -168,3 +168,13 @@ func ParseGCSPath(gcsURI string) (bucketName, objectName string, err error) {
 	}
 	return parts[0], parts[1], nil
 }
+
+// EnsureGCSPathPrefix ensures that a given path starts with "gs://".
+// If the path does not start with "gs://", it prepends it.
+// This is useful for normalizing GCS paths provided by users.
+func EnsureGCSPathPrefix(path string) string {
+	if !strings.HasPrefix(path, "gs://") {
+		return "gs://" + path
+	}
+	return path
+}
