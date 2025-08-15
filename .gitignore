@@ -8,4 +8,5 @@ node_modules
 dist
 local/  
 
+experiments/mcp-genmedia/.gemini/
 .aider*
