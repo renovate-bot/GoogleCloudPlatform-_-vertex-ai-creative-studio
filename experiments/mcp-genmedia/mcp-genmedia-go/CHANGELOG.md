@@ -2,6 +2,7 @@
 
 ## 2025-08-14
 
+*   **Feat:** The `mcp-veo-go` tool now generates descriptive, unique filenames for downloaded videos (e.g., `veo-veo-2.0-generate-001-20250814-153000-0.mp4`), matching the behavior of the Imagen tool.
 *   **Fix:** The `mcp-veo-go` tool now automatically prepends `gs://` to the GCS bucket name if it is missing, preventing an "Unsupported output storage uri" error.
 *   **Feat:** Added a new `EnsureGCSPathPrefix` helper function to `mcp-common` to provide a consistent way to normalize GCS paths.
 *   **Chore:** Incremented the version number for `mcp-veo-go`.

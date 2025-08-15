@@ -40,7 +40,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.8.1" // Fix: Automatically prepend gs:// to bucket names.
+	version     = "1.9.0" // Feat: Generate descriptive filenames for downloaded videos.
 )
 
 // init handles command-line flags and initial logging setup.
