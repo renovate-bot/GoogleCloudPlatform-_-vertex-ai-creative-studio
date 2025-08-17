@@ -39,7 +39,6 @@ For this experiment, download the source and then change to this directory
 ```bash
 git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
 cd vertex-ai-creative-studio/
-git checkout veo
 cd experiments/veo-app/
 ```
 
@@ -88,6 +87,8 @@ service cloud.firestore {
   }
 }
 ```
+
+Please note, if you have existing Firestore security rules this will override them. Review your existing Firestore rules if you have them and incorporate these.
 
 
 
@@ -140,13 +141,13 @@ Use Cloud Shell and follow the tutorial instructions.
 
 ### Developing
 
-Using the mesop app in a virtual environment provides the best debugging and building experience as it supports hot reload.
+Using the Mesop app in a virtual environment provides the best debugging and building experience as it supports hot reload.
 
 ```bash
 source .venv/bin/activate
 ```
 
-Start the app, use the mesop command in your python virutal environment
+Start the app, use the Mesop command in your python virutal environment
 
 ```bash
 mesop main.py
