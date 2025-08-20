@@ -86,7 +86,7 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.109.0
+google-cloud-aiplatform==1.110.0
     # via veo-app
 google-cloud-bigquery==3.35.1
     # via google-cloud-aiplatform
