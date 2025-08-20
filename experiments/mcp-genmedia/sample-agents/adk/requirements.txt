@@ -246,7 +246,7 @@ python-multipart==0.0.20
     # via mcp
 pyyaml==6.0.2
     # via google-adk
-requests==2.32.4
+requests==2.32.5
     # via
     #   google-api-core
     #   google-cloud-bigquery
