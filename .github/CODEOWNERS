@@ -21,6 +21,7 @@
 
 ## Notebooks
 /experiments/Imagen_Product_Recontext/ @GoogleCloudPlatform/google-cloud-aaie @LUJ20
+/experiments/VTO/ @GoogleCloudPlatform/google-cloud-aaie @LUJ20
 
 ## Veo Optimizer
 /experiments/veo-genetic-prompt-optimizer/ @GoogleCloudPlatform/google-cloud-aaie @cnemri

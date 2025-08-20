@@ -29,6 +29,7 @@ We'd love to hear your feedback on these!
 
 **Image**
 * [Imagen Product Recontextualization at Scale](#imagen-product-recontextualization-at-scale) - a set of notebooks for the Imagen Product Recontext model to run at scale.
+* [Virtual Try-On](#virtual-try-on) - a notebook example for virtually trying on outfits at scale.
 
 **Image Comparison**
 * [Arena](#arena---rate-images) - rate your images with in a visual arena
@@ -106,6 +107,13 @@ A stand-alone application to rate Model Garden image generation models, includin
 This repository contains Jupyter notebooks and tools to perform large-scale product image recontextualization using Google's Gemini and Imagen Product Recontext models. It includes both the generation pipeline and an evaluation framework.
 
 See [Imagen Product Recontextualization at Scale](./Imagen_Product_Recontext/)
+
+
+## Virtual Try-On
+
+This notebook demonstrates how to use a generative AI model for Virtual Try-On, allowing users to visualize various outfits on a person's image. It leverages the Google Cloud Vertex AI Prediction API to simulate how different outfits would appear when virtually worn and includes suggestions for scaling the solution.
+
+See [Virtual Try-On](./VTO/)
 
 
 ## Babel - Chirp 3: HD Voices
