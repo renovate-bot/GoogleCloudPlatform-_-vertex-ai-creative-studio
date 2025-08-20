@@ -6,17 +6,33 @@ Features Gemini for prompt rewriting as well as for a critic to provide a multim
 
 This app is built with [Mesop](https://mesop-dev.github.io/mesop/), a Python-based UI framework that enables you to rapidly build web apps like this demo and internal apps.
 
-### **New!** Experiments
+## Experiments
 
-We're releasing stand-alone applications in advance of integration into the main GenMedia Creative Studio. Please see the [experiments](/experiments/) folder for new, upcoming capbilities.
+Welcome to the [Experimental folder](./experiments/)! This directory contains a variety of stand-alone applications and features that showcase cutting-edge capabilities with generative AI.
 
-* **GenMedia Creative Studio - v.next** - [the next version](./experiments/veo-app/) of GenMedia Creative Studio
-* **Creative GenMedia Workflow** - combining product image, brand guidelines and brief to create prompts for generation of creative video content using Veo. 
-* **MCP tools for Genmedia** - Model Context Protocol servers for genmedia services
-* **Babel** - Chirp 3: HD Voices
-* **Arena** - rate Model Garden image models
-* **Creative Podcast Assistant** - create a podcast using Chirp 3, using audio and other sources
-* **More!!** 
+Here's a glimpse of what you'll find:
+
+**Combined Workflows**
+*   **Genmedia Creative Studio v.Next:** The [the next generation](./experiments/veo-app/) of the creative studio application.
+*   **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
+
+**Prompting Techniques**
+*   **Promptlandia:** A powerful web app to analyze, refine, and improve your prompts.
+*   **Veo Genetic Prompt Optimizer:** An automated system to evolve and refine high-level "metaprompts" for Veo.
+*   **Character & Item Consistency:** Workflows for maintaining consistency for characters and items across video scenes.
+*   **VeoStart:** A prompt creation assistant for Veo.
+
+**Image Generation & Analysis**
+*   **Virtual Try-On:** A notebook for virtually trying on outfits at scale.
+*   **Imagen Product Recontextualization:** Tools for large-scale product image recontextualization.
+*   **Arena:** A visual arena for rating and comparing images from different models.
+
+**Audio & Video**
+*   **MCP Tools for Genmedia:** Model Context Protocol servers for Veo, Imagen, Lyria, and Chirp.
+*   **Creative Podcast Assistant:** A notebook for creating a podcast with generative media.
+*   **Babel:** An experimental app for Chirp 3 HD voices.
+
+...and much more! For a full, detailed list of all experiments, please see the [Experiments README](./experiments/README.md). 
 
 ## GenMedia | Creative Studio
 
