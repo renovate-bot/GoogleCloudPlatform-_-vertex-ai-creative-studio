@@ -6,9 +6,9 @@ Features Gemini for prompt rewriting as well as for a critic to provide a multim
 
 This app is built with [Mesop](https://mesop-dev.github.io/mesop/), a Python-based UI framework that enables you to rapidly build web apps like this demo and internal apps.
 
-## Experiments
+## New! Experiments
 
-Welcome to the [Experimental folder](./experiments/)! This directory contains a variety of stand-alone applications and features that showcase cutting-edge capabilities with generative AI.
+The [Experimental folder](./experiments/) contains a variety of stand-alone applications and new and upcoming features that showcase cutting-edge capabilities with generative AI.
 
 Here's a glimpse of what you'll find:
 
