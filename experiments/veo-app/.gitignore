@@ -12,3 +12,7 @@ samples/
 .gemini/
 
 .commit.txt
+
+# Ignore graphviz files
+*.dot
+*.png
