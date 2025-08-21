@@ -15,6 +15,7 @@ We'd love to hear your feedback on these!
 * [MCP Tools for Genmedia](#mcp-tools-for-genmedia) - MCP Servers for Genmedia services
 
 **Combined Workflows**
+* [Countdown Workflow](#countdown-workflow) - An automated two-stage pipeline to create branded countdown videos.
 * [Storycraft](#storycraft) - An AI-powered video storyboard generation platform.
 * [Creative GenMedia Workflow](#creative-genmedia-workflow) - a Creative GenMedia workflow which takes various inputs to create prompts for Veo 3, plus allows a showcase of output videos.
 
@@ -41,6 +42,12 @@ We'd love to hear your feedback on these!
 An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives using Google's generative AI models. Create cinematic scenes, generate voiceovers, compose music, and export professional videos with a modern web interface.
 
 See [Storycraft](./storycraft/)
+
+## Countdown Workflow
+
+This project is a powerful, two-stage Python pipeline that automates the creation of bespoke, branded countdown videos using a suite of Google's generative AI models.
+
+See [Countdown Workflow](./countdown-workflow/)
 
 
 ## Creative GenMedia Workflow
