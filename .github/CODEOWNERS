@@ -35,3 +35,6 @@
 
 ## VeoStart
 /experiments/VeoStart/ @GoogleCloudPlatform/google-cloud-aaie @WafaeBakkali
+
+## Storycract
+/experiments/storycraft @GoogleCloudPlatform/google-cloud-aaie @mblanc
