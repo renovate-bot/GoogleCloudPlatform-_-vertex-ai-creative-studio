@@ -12,9 +12,11 @@ The [Experimental folder](./experiments/) contains a variety of stand-alone appl
 
 Here's a glimpse of what you'll find:
 
+**Genmedia Creative Studio v.Next:** The [the next generation](./experiments/veo-app/) of the creative studio application.
+
 **Combined Workflows**
+*   **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.
 *   **Storycraft:** An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.
-*   **Genmedia Creative Studio v.Next:** The [the next generation](./experiments/veo-app/) of the creative studio application.
 *   **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
 
 **Prompting Techniques**
