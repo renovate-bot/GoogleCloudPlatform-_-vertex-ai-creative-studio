@@ -30,6 +30,19 @@ Here is a breakdown of the key directories and their roles:
     *   `navigation.json`: For configuring the application's side navigation.
     *   `rewriters.py`: For storing the prompt templates used by the AI models.
 
+### Visual Workflow
+
+While the text above describes the roles of each directory, a diagram can help visualize how they interact. The following sequence diagram shows the typical flow for a generative AI feature in this application, using the VEO page as an example.
+
+![veo sequence diagram](https://github.com/user-attachments/assets/9df0cece-47b0-4c0f-848a-6d6dbf24465c)
+
+This diagram illustrates the flow:
+1.  A user interaction happens in the **UI (`pages/`)**.
+2.  The UI calls a function in the **business logic layer (`models/`)**.
+3.  The model layer interacts with **external Google Cloud APIs**.
+4.  Data is saved to **Firestore** via the metadata service (`common/metadata.py`).
+5.  The **UI State (`state/`)** is updated, causing the UI to re-render and display the result.
+
 ## Core Development Patterns and Lessons Learned
 
 This section outlines the key architectural patterns and best practices that are essential for extending this application. Adhering to these conventions will help you avoid common errors and build features that are consistent with the existing codebase.
@@ -179,6 +192,154 @@ The UI components then read from these configuration objects to dynamically buil
 
 This pattern is the preferred way to manage model capabilities and other complex configurations in this project.
 
+## How to Add a New Page
+
+Adding a new page to the application is a straightforward process. Here are the steps:
+
+### Step 1: Create the Page File
+
+Create a new Python file in the `pages/` directory. The name of the file should be descriptive of the page's purpose (e.g., `my_new_page.py`).
+
+In this file, define a function that will contain the UI for your page. This function should accept the application state as an argument.
+
+**`pages/my_new_page.py`:**
+```python
+import mesop as me
+from state.state import AppState
+from components.header import header
+from components.page_scaffold import page_frame, page_scaffold
+
+def my_new_page_content(app_state: AppState):
+    with page_scaffold():
+        with page_frame():
+            header("My New Page", "rocket_launch")
+            me.text("Welcome to my new page!")
+```
+
+### Step 2: Register the Page in `main.py`
+
+Next, you need to register your new page in `main.py` so that the application knows how to serve it.
+
+1.  Import your new page function at the top of `main.py`:
+    ```python
+    from pages.my_new_page import my_new_page_content
+    ```
+
+2.  Add a new `@me.page` decorator to define the route and other page settings:
+    ```python
+    @me.page(
+        path="/my_new_page",
+        title="My New Page - GenMedia Creative Studio",
+        on_load=on_load,
+    )
+    def my_new_page():
+        my_new_page_content(me.state(AppState))
+    ```
+
+### Step 3: Add the Page to the Navigation
+
+To make your new page accessible to users, you need to add it to the side navigation.
+
+1.  Open the `config/navigation.json` file.
+2.  Add a new JSON object to the `pages` array for your new page. Make sure to give it a unique `id`.
+
+**`config/navigation.json`:**
+```json
+{
+  "pages": [
+    // ... other pages ...
+    {
+      "id": 60, // Make sure this ID is unique
+      "display": "My New Page",
+      "icon": "rocket_launch",
+      "route": "/my_new_page",
+      "group": "workflows"
+    }
+  ]
+}
+```
+
+### Step 4: (Optional) Control with a Feature Flag
+
+If you want to control the visibility of your new page with an environment variable, you can add a `feature_flag` to its entry in `navigation.json`.
+
+```json
+{
+  "id": 60,
+  "display": "My New Page",
+  "icon": "rocket_launch",
+  "route": "/my_new_page",
+  "group": "workflows",
+  "feature_flag": "MY_NEW_PAGE_ENABLED"
+}
+```
+
+Now, the "My New Page" link will only appear in the navigation if the `MY_NEW_PAGE_ENABLED` environment variable is set to `True` in your `.env` file.
+
+That's it! When you restart the application, your new page will be available at the route you defined and will appear in the side navigation.
+
+## Adding a Generative Workflow
+
+The guide above is perfect for simple, static pages. However, for pages that perform multi-step generative tasks (like "Motion Portraits" or "Shop The Look"), a more robust pattern is required to keep the code clean and maintainable.
+
+The recommended approach is to create a dedicated **workflow function** in the `models/` directory to orchestrate the entire process.
+
+### How It Works
+
+1.  **Create a Workflow Function:** In the relevant `models/` file (e.g., `models/portraits.py`), create a Python generator function. This function will contain all the business logic for the feature.
+
+2.  **Orchestrate Model Calls:** Inside this function, make the sequential calls to the different generative models (e.g., call Gemini to generate a prompt, then call VEO with that prompt).
+
+3.  **`yield` Status Updates:** After each major step, the workflow function should `yield` a status update. This allows the UI to show real-time progress to the user (e.g., "Step 1 of 3: Generating scene description...").
+
+4.  **Keep the UI Handler Simple:** The `on_click` handler in the `pages/` file should now have only one job: to call the workflow function. It will loop over the `yielded` results and update the UI state accordingly.
+
+### Example: Motion Portraits
+
+```python
+# In models/portraits.py
+def run_motion_portrait_workflow(image_gcs_uri: str):
+    yield "Step 1: Generating scene direction..."
+    scene_direction = generate_scene_direction(image_gcs_uri) # Calls Gemini
+
+    yield "Step 2: Generating video..."
+    video_uri = generate_video(scene_direction) # Calls VEO
+
+    yield "Complete!"
+    return video_uri
+
+# In pages/portraits.py
+def on_click_motion_portraits(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.is_loading = True
+    
+    # Delegate all logic to the workflow
+    for status in run_motion_portrait_workflow(state.reference_image_gcs):
+        state.status_message = status
+        yield
+
+    state.is_loading = False
+    yield
+```
+
+This pattern separates the complex business logic from the UI presentation, making both much easier to understand, test, and maintain.
+
+## Code Quality Guidelines
+
+To help maintain the quality and consistency of the codebase, please keep the following guidelines in mind when contributing.
+
+### Cyclomatic Complexity
+This metric measures the number of decision points in a function. A high score indicates a complex function that is difficult to test and understand.
+
+*   **Guideline:** Aim to keep the cyclomatic complexity of your functions low (ideally under 15).
+*   **Action:** If you find a function with high complexity, it's a strong signal that it's doing too much work. Break it down into smaller, more focused functions. You can use the `radon cc -s .` command to check the complexity of your code.
+
+### Code Duplication
+Duplicated code makes the application harder to maintain. A bug fix or a change in logic needs to be applied in every duplicated location, which is error-prone.
+
+*   **Guideline:** Avoid copy-pasting code.
+*   **Action:** If you find yourself duplicating code, take the opportunity to refactor it into a reusable function or a more generic UI component. You can use the `jscpd` tool to find instances of duplicated code in the project.
+
 ## Testing Strategy
 
 This project uses a combination of unit tests and integration tests to ensure code quality and reliability. The tests are located in the `test/` directory and are built using the `pytest` framework.
@@ -266,92 +427,6 @@ To modify the "About" page, you will need to:
 
 For local development, if you do not set the `GCS_ASSETS_BUCKET` variable, the page will use local paths. To make this work, you can temporarily add a `StaticFiles` mount to `main.py`:
 `app.mount("/assets", StaticFiles(directory="assets"), name="assets")`
-
-## How to Add a New Page
-
-Adding a new page to the application is a straightforward process. Here are the steps:
-
-### Step 1: Create the Page File
-
-Create a new Python file in the `pages/` directory. The name of the file should be descriptive of the page's purpose (e.g., `my_new_page.py`).
-
-In this file, define a function that will contain the UI for your page. This function should accept the application state as an argument.
-
-**`pages/my_new_page.py`:**
-```python
-import mesop as me
-from state.state import AppState
-from components.header import header
-from components.page_scaffold import page_frame, page_scaffold
-
-def my_new_page_content(app_state: AppState):
-    with page_scaffold():
-        with page_frame():
-            header("My New Page", "rocket_launch")
-            me.text("Welcome to my new page!")
-```
-
-### Step 2: Register the Page in `main.py`
-
-Next, you need to register your new page in `main.py` so that the application knows how to serve it.
-
-1.  Import your new page function at the top of `main.py`:
-    ```python
-    from pages.my_new_page import my_new_page_content
-    ```
-
-2.  Add a new `@me.page` decorator to define the route and other page settings:
-    ```python
-    @me.page(
-        path="/my_new_page",
-        title="My New Page - GenMedia Creative Studio",
-        on_load=on_load,
-    )
-    def my_new_page():
-        my_new_page_content(me.state(AppState))
-    ```
-
-### Step 3: Add the Page to the Navigation
-
-To make your new page accessible to users, you need to add it to the side navigation.
-
-1.  Open the `config/navigation.json` file.
-2.  Add a new JSON object to the `pages` array for your new page. Make sure to give it a unique `id`.
-
-**`config/navigation.json`:**
-```json
-{
-  "pages": [
-    // ... other pages ...
-    {
-      "id": 60, // Make sure this ID is unique
-      "display": "My New Page",
-      "icon": "rocket_launch",
-      "route": "/my_new_page",
-      "group": "workflows"
-    }
-  ]
-}
-```
-
-### Step 4: (Optional) Control with a Feature Flag
-
-If you want to control the visibility of your new page with an environment variable, you can add a `feature_flag` to its entry in `navigation.json`.
-
-```json
-{
-  "id": 60,
-  "display": "My New Page",
-  "icon": "rocket_launch",
-  "route": "/my_new_page",
-  "group": "workflows",
-  "feature_flag": "MY_NEW_PAGE_ENABLED"
-}
-```
-
-Now, the "My New Page" link will only appear in the navigation if the `MY_NEW_PAGE_ENABLED` environment variable is set to `True` in your `.env` file.
-
-That's it! When you restart the application, your new page will be available at the route you defined and will appear in the side navigation.
 
 ### Choosing an Image from the Library
 
