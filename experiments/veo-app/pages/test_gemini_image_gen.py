@@ -135,6 +135,17 @@ def test_gemini_image_gen_page_content():
                         if state.generation_complete and state.generation_time > 0:
                             me.text(f"{state.generation_time:.2f} seconds", style=me.Style(font_size=12))
 
+                    # Actions row
+                    if state.generated_image_urls:
+                        with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, margin=me.Margin(top=16))):
+                            me.text("Actions", type="headline-5")
+                            with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=16)):
+                                me.image(
+                                    src=state.selected_image_url,
+                                    style=me.Style(width=100, height=100, border_radius=8, object_fit="cover")
+                                )
+                                me.button("Continue", on_click=on_continue_click, type="stroked")
+
                 with me.box(style=me.Style(flex_grow=1)):
                     if state.generation_complete and not state.generated_image_urls:
                         me.text("No images returned.")
@@ -239,6 +250,22 @@ def on_clear_click(e: me.ClickEvent):
     state.generated_image_urls = []
     state.prompt = ""
     state.uploaded_image_gcs_uris = []
+    state.selected_image_url = ""
+    state.generation_time = 0.0
+    state.generation_complete = False
+    yield
+
+def on_continue_click(e: me.ClickEvent):
+    """Handle continue button click."""
+    state = me.state(PageState)
+    # Convert the display URL back to a GCS URI
+    gcs_uri = state.selected_image_url.replace("https://storage.mtls.cloud.google.com/", "gs://")
+    
+    # Clear the uploaded images and add the selected one
+    state.uploaded_image_gcs_uris = [gcs_uri]
+    
+    # Clear the generated images and related state
+    state.generated_image_urls = []
     state.selected_image_url = ""
     state.generation_time = 0.0
     state.generation_complete = False
