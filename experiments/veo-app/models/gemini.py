@@ -50,8 +50,9 @@ from models.shop_the_look_models import (
 )
 
 
-def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> list[str]:
+def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> tuple[list[str], float]:
     """Generates images from a prompt and a list of images."""
+    start_time = time.time()
     model_name = cfg.GEMINI_IMAGE_GEN_MODEL
 
     parts = [types.Part.from_text(text=prompt)]
@@ -67,6 +68,9 @@ def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> lis
             response_modalities=["TEXT", "IMAGE"],
         ),
     )
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
 
     gcs_uris = []
     if (
@@ -97,7 +101,7 @@ def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> lis
                 gcs_uris.append(gcs_uri)
     else:
         print("generate_image_from_prompt_and_images: no images")
-    return gcs_uris
+    return gcs_uris, execution_time
 
 
 # Initialize client and default model ID for rewriter

@@ -34,6 +34,8 @@ class PageState:
     generated_image_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_generating: bool = False
     generation_complete: bool = False
+    generation_time: float = 0.0
+    selected_image_url: str = ""
 
 
 def test_gemini_image_gen_page_content():
@@ -105,47 +107,99 @@ def test_gemini_image_gen_page_content():
                     me.textarea(
                         label="Prompt",
                         rows=3,
-                        on_input=on_prompt_input,
+                                                on_blur=on_prompt_blur,
+                        value=state.prompt,
                         style=me.Style(width="100%", margin=me.Margin(bottom=16)),
                     )
 
-                    if state.is_generating:
-                        with me.content_button(type="raised", disabled=True):
-                            with me.box(
-                                style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    align_items="center",
-                                    gap=8,
-                                )
-                            ):
-                                me.progress_spinner(diameter=20, stroke_width=3)
-                                me.text("Generating Images...")
-                    else:
-                        me.button(
-                            "Generate Images", on_click=generate_images, type="raised"
-                        )
+                    with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=16)):
+                        if state.is_generating:
+                            with me.content_button(type="raised", disabled=True):
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        align_items="center",
+                                        gap=8,
+                                    )
+                                ):
+                                    me.progress_spinner(diameter=20, stroke_width=3)
+                                    me.text("Generating Images...")
+                        else:
+                            me.button(
+                                "Generate Images", on_click=generate_images, type="raised"
+                            )
+                            with me.content_button(on_click=on_clear_click, type="icon"):
+                                me.icon("delete_sweep")
+                        
+                        if state.generation_complete and state.generation_time > 0:
+                            me.text(f"{state.generation_time:.2f} seconds", style=me.Style(font_size=12))
 
                 with me.box(style=me.Style(flex_grow=1)):
                     if state.generation_complete and not state.generated_image_urls:
                         me.text("No images returned.")
                     elif state.generated_image_urls:
-                        with me.box(
-                            style=me.Style(
-                                display="grid",
-                                grid_template_columns="repeat(auto-fill, minmax(200px, 1fr))",
-                                gap=16,
+                        if len(state.generated_image_urls) == 1:
+                            # Display single, maximized image
+                            me.image(
+                                src=state.generated_image_urls[0],
+                                style=me.Style(
+                                    width="100%",
+                                    max_height="85vh",
+                                    object_fit="contain",
+                                    border_radius=8,
+                                ),
                             )
-                        ):
-                            for url in state.generated_image_urls:
+                        else:
+                            # Display multiple images in a gallery view
+                            with me.box(style=me.Style(display="flex", flex_direction="column", gap=16)):
+                                # Main image
                                 me.image(
-                                    src=url,
+                                    src=state.selected_image_url,
                                     style=me.Style(
                                         width="100%",
-                                        height="auto",
+                                        max_height="75vh",
+                                        object_fit="contain",
                                         border_radius=8,
                                     ),
                                 )
+
+                                # Thumbnail strip
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        gap=16,
+                                        justify_content="center",
+                                    )
+                                ):
+                                    for url in state.generated_image_urls:
+                                        is_selected = url == state.selected_image_url
+                                        with me.box(
+                                            key=url,
+                                            on_click=on_thumbnail_click,
+                                            style=me.Style(
+                                                padding=me.Padding.all(4),
+                                                border=me.Border.all(
+                                                    me.BorderSide(
+                                                        width=4,
+                                                        style="solid",
+                                                                                                                color=me.theme_var("secondary") if is_selected else "transparent",
+                                                    )
+                                                ),
+                                                border_radius=12,
+                                                cursor="pointer",
+                                            ),
+                                        ):
+                                            me.image(
+                                                src=url,
+                                                style=me.Style(
+                                                    width=100,
+                                                    height=100,
+                                                    object_fit="cover",
+                                                    border_radius=6,
+                                                ),
+                                            )
 
 
 def on_upload(e: me.UploadEvent):
@@ -169,9 +223,26 @@ def on_library_select(e: LibrarySelectionChangeEvent):
     yield
 
 
-def on_prompt_input(e: me.InputEvent):
+def on_prompt_blur(e: me.InputEvent):
     """Handle prompt input."""
     me.state(PageState).prompt = e.value
+
+def on_thumbnail_click(e: me.ClickEvent):
+    """Handle thumbnail click."""
+    state = me.state(PageState)
+    state.selected_image_url = e.key
+    yield
+
+def on_clear_click(e: me.ClickEvent):
+    """Handle clear button click."""
+    state = me.state(PageState)
+    state.generated_image_urls = []
+    state.prompt = ""
+    state.uploaded_image_gcs_uris = []
+    state.selected_image_url = ""
+    state.generation_time = 0.0
+    state.generation_complete = False
+    yield
 
 
 def generate_images(e: me.ClickEvent):
@@ -181,7 +252,7 @@ def generate_images(e: me.ClickEvent):
     state.generation_complete = False
     yield
 
-    gcs_uris = generate_image_from_prompt_and_images(
+    gcs_uris, execution_time = generate_image_from_prompt_and_images(
         prompt=state.prompt,
         images=state.uploaded_image_gcs_uris,
     )
@@ -192,6 +263,9 @@ def generate_images(e: me.ClickEvent):
     ]
     state.is_generating = False
     state.generation_complete = True
+    state.generation_time = execution_time
+    if state.generated_image_urls:
+        state.selected_image_url = state.generated_image_urls[0]
     yield
 
 
