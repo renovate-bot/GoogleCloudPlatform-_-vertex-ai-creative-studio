@@ -147,7 +147,7 @@ def generate_character_video(
         )
 
         imagen_candidate_gcs_uris, imagen_candidate_image_bytes_list = imagen_future.result()
-        gemini_candidate_gcs_uris = gemini_future.result()
+        gemini_candidate_gcs_uris, _ = gemini_future.result()
 
     candidate_image_gcs_uris = imagen_candidate_gcs_uris + gemini_candidate_gcs_uris
     candidate_image_bytes_list = imagen_candidate_image_bytes_list  # We don't have bytes from Gemini yet

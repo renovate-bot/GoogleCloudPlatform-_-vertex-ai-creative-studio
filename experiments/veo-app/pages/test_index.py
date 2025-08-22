@@ -21,7 +21,7 @@ def on_navigate(e: me.ClickEvent):
 
 
 @me.page(
-    path="/test_index",
+    path="/labs",
 )
 def page():
     test_pages = [
@@ -80,9 +80,9 @@ def page():
                     flex_direction="column",
                 )
             ):
-                header("Test Page Index", "science")
+                header("Labs Page Index", "science")
 
-                me.text("A list of test pages for debugging and testing new features.")
+                me.text("A list of test pages for debugging and exploring new features.")
 
                 with me.box(style=me.Style(margin=me.Margin(top=24))):
                     me.text(

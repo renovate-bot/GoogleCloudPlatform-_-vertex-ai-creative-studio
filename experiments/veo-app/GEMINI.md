@@ -27,6 +27,10 @@ See also AGENTS.md for more information.
 
 - The `mesop` library was updated, and `me.yield_value(...)` was removed. It should be replaced with `yield`.
 - The function directly assigned to an event handler (e.g., `on_value_change`, `on_click`) must be the generator function that `yield`s. Using a `lambda` to call another generator function will break the UI update chain, and the component will not refresh.
+- **Building Clickable Icons:** The standard `me.button` component is simple and does *not* accept an `icon`
+     parameter or a `type="icon"`. If you need a clickable icon (an "icon button"), you **must** build it from
+     primitives. The correct and only reliable way to do this is to use a `me.content_button` with an `on_click` handler that
+     contains a `me.icon`.
 - - **Building Clickable Icons:** The standard `me.button` component is simple and does *not* accept an `icon`
      parameter or a `type="icon"`. If you need a clickable icon (an "icon button"), you **must** build it from
      primitives. The correct and only reliable way to do this is to use a `me.box` with an `on_click` handler that
