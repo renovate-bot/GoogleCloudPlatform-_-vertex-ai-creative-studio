@@ -20,40 +20,39 @@ import csv
 import datetime
 import time
 import uuid
+from dataclasses import field
 
-import requests
 import mesop as me
+import requests
+from google.cloud import firestore
 
+from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import (
     download_from_gcs,
-    store_to_gcs,
     download_from_gcs_as_string,
     list_files_in_bucket,
+    store_to_gcs,
 )
-from common.metadata import MediaItem, add_media_item_to_firestore
 from common.workflows import WorkflowStepResult
 from components.header import header
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-from components.tab_nav import tab_group, Tab
+from components.tab_nav import Tab, tab_group
 from config.default import Default
 from config.firebase_config import FirebaseClient
-from dataclasses import field
-from google.cloud import firestore
 from models.gemini import (
-    select_best_image_with_description,
-    final_image_critic,
     describe_images_and_look,
+    final_image_critic,
+    select_best_image_with_description,
 )
-
 from models.shop_the_look_models import (
+    CatalogRecord,
     GeneratedImageAccuracyWrapper,
     ModelRecord,
     ProgressionImage,
     ProgressionImages,
-    CatalogRecord,
 )
 from models.veo import image_to_video
 from models.vto import call_virtual_try_on
@@ -114,9 +113,9 @@ class PageState:
     result_video: str
     generate_alternate_views: bool
     selected_model: ModelRecord
-    generate_video: bool
+    generate_video: bool = True
     result_images: list[str] = field(default_factory=list)
-    veo_model = "3.0"
+    veo_model = "2.0"
     current_status: str = ""
     vto_sample_count: str = "4"
     veo_sample_count: str = "2"
@@ -1601,16 +1600,6 @@ def vto_enterprise_config():
             )
         ):
 
-            me.text(
-                f"Logged in as {app_state.user_email}",
-                style=me.Style(
-                    display="flex",
-                    flex_direction="row",
-                    gap=5,
-                    width="100%",
-                    margin=me.Margin(bottom=10, top=10),
-                ),
-            )
             with me.box(
                 style=me.Style(
                     display="flex",
