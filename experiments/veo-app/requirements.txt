@@ -210,7 +210,7 @@ packaging==25.0
     #   pytest
 pandas==2.3.2
     # via veo-app
-parso==0.8.4
+parso==0.8.5
     # via jedi
 pathspec==0.12.1
     # via black
