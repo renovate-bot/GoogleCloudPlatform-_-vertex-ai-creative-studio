@@ -30,6 +30,7 @@ steps:
     - -c
     - "pack build $LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME --network cloudbuild"
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push image to Artifact Registry'
     args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME']
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: gcloud
