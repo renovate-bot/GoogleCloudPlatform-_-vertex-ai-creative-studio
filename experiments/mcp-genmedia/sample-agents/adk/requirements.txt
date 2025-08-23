@@ -79,7 +79,7 @@ google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
 google-cloud-audit-log==0.3.2
     # via google-cloud-logging
-google-cloud-bigquery==3.35.1
+google-cloud-bigquery==3.36.0
     # via google-cloud-aiplatform
 google-cloud-core==2.4.3
     # via
