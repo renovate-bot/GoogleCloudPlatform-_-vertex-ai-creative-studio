@@ -265,7 +265,7 @@ sqlalchemy==2.0.43
     # via google-adk
 sse-starlette==3.0.2
     # via mcp
-starlette==0.47.2
+starlette==0.47.3
     # via
     #   fastapi
     #   mcp
