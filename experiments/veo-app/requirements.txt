@@ -316,7 +316,7 @@ traitlets==5.14.3
     # via
     #   ipython
     #   matplotlib-inline
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   fastapi
     #   google-cloud-aiplatform
