@@ -166,7 +166,7 @@ def home_page():
     """Main Page."""
     state = me.state(AppState)
     with page_scaffold():  # pylint: disable=not-context-manager
-        home_page_content(state))
+        home_page_content(state)
 
 @me.page(path="/veo", title="Veo - GenMedia Creative Studio")
 def veo_page():
