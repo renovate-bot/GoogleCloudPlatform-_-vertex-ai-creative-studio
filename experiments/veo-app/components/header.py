@@ -55,14 +55,4 @@ def header(
             ), me.tooltip(message="About this page"):
                 me.icon(icon="info_outline")
 
-        if current_status and len(current_status) > 0:
-            with me.box(
-                style=me.Style(
-                    display="flex",
-                    flex_direction="row",
-                    justify_content="flex-end",
-                    align_items="top",
-                )
-            ):
-
-                me.text(current_status)
+        

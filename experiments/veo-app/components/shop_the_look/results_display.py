@@ -12,17 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provides the results display component for the Shop The Look feature."""
+
 import mesop as me
 
-import models.shop_the_look_workflow as shop_the_look_workflow
-from models.shop_the_look_workflow import run_shop_the_look_workflow
+from models.shop_the_look_handlers import on_click_veo, on_click_vto_look
 from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
 from state.shop_the_look_state import PageState
-from state.state import AppState
+
+
+def on_click_clear_reference_image(
+    e: me.ClickEvent = None,
+):  # pylint: disable=unused-argument
+    """Clear reference image"""
+    state = me.state(PageState)
+    state.is_loading = False
+    state.progression_images = []
+    state.retry_progression_images = []
+    state.alternate_progression_images = []
+    state.alternate_images = []
+    state.result_video = None
+    state.look_description = ""
+    state.reference_image_gcs_clothing = []
+    state.reference_image_uri_clothing = []
+    state.reference_image_gcs_model = None
+    state.reference_image_uri_model = None
+    state.result_image = None
+    state.error_message = ""
+    state.timing = None
+    state.look = 0
+    state.catalog = []
+    state.before_image_uri = None
+    state.models = []
+    state.result_images = []
+    state.final_critic = None
+    state.tryon_started = False
+    state.retry_counter = 0
+    yield
 
 
 @me.component
 def results_display():
+    """Renders the main results UI for the Shop The Look feature."""
     state = me.state(PageState)
     with me.box(
         style=me.Style(
@@ -67,6 +98,19 @@ def results_display():
                     ),
                 )
 
+                if state.is_loading:
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            align_items="center",
+                            gap=8,
+                        )
+                    ):
+                        me.progress_spinner(diameter=20, stroke_width=3)
+                        me.text(state.current_status, style=me.Style(margin=me.Margin(top=10)))
+
+
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -101,7 +145,7 @@ def results_display():
                     ):
                         with me.content_button(
                             type="icon",
-                            on_click=on_click_vto_look, # This should be on_click_veo, which we will create later
+                            on_click=on_click_veo,
                         ):
                             with me.box(style=icon_style):
                                 me.icon("cinematic_blur")
@@ -313,6 +357,8 @@ def results_display():
                             "gs://",
                             "https://storage.mtls.cloud.google.com/",
                         )
+                        print(f"video_url: {video_url}")
+
                         with me.tooltip(message=state.veo_prompt_input):
                             me.icon("information")
                         me.video(
@@ -571,63 +617,9 @@ def results_display():
                                     ),
                                 )
 
-def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
-    """Handles the click event to start the Shop the Look workflow."""
-    state = me.state(PageState)
-    app_state = me.state(AppState)
-    state.is_loading = True
-    state.tryon_started = True
-    state.show_error_dialog = False
-    state.error_message = ""
-    yield
+    return me
 
-    try:
-        look_articles = shop_the_look_workflow.get_selected_look()
-        for step_result in run_shop_the_look_workflow(app_state.user_email, state.selected_model, look_articles, int(state.vto_sample_count), int(state.max_retry)):
-            state.current_status = step_result.message
-            if step_result.data.get("look_description"):
-                state.look_description = step_result.data["look_description"]
-            if step_result.data.get("articles"):
-                new_articles = []
-                for item in state.articles:
-                    for article_dict in step_result.data["articles"]:
-                        if item.item_id.split("/")[-1] == article_dict['article_image_path'].split("/")[-1]:
-                            item.ai_description = article_dict['article_description']
-                    new_articles.append(item)
-                state.articles = new_articles
-            if step_result.data.get("progressions"):
-                new_progression_images = state.progression_images.copy()
-                if step_result.data["primary_view"]:
-                    new_progression_images.append(step_result.data["progressions"])
-                    state.progression_images = new_progression_images
-                else:
-                    new_alternate_progression_images = state.alternate_progression_images.copy()
-                    new_alternate_progression_images.append(step_result.data["progressions"])
-                    state.alternate_progression_images = new_alternate_progression_images
-                print(f"DEBUG: Progression images count: {len(state.progression_images)}")
-                print(f"DEBUG: Alternate progression images count: {len(state.alternate_progression_images)}")
-                
-                yield
-            if step_result.data.get("last_best_image"):
-                if step_result.data["primary_view"]:
-                    state.result_image = step_result.data["last_best_image"]
-                else:
-                    state.alternate_images.append(step_result.data["last_best_image"])
-            if step_result.data.get("final_critic"):
-                state.final_critic = step_result.data["final_critic"]
-                state.final_accuracy = state.final_critic.accurate
 
-            yield
-
-        state.current_status = "Workflow complete!"
-
-    except Exception as err:
-        state.error_message = f"An unexpected error occurred: {err}"
-        state.show_error_dialog = True
-        state.current_status = "Workflow failed."
-
-    state.is_loading = False
-    yield
 
 def on_click_manual_retry(e: me.ClickEvent):
     state = me.state(PageState)
@@ -637,51 +629,3 @@ def on_click_manual_retry(e: me.ClickEvent):
     new_event.key = "retry"
     yield from on_click_vto_look(new_event)
 
-def on_click_clear_reference_image(
-    e: me.ClickEvent = None,  # pylint: disable=unused-argument
-):
-    """Clear reference image"""
-    state = me.state(PageState)
-    state.is_loading = False
-    for p in state.progression_images:
-        del p
-
-    state.progression_images = []
-    state.retry_progression_images = []
-    # state.progression_images.clear()
-    state.alternate_progression_images = []
-    state.alternate_images = []
-    # state.veo_prompt_input = "Model walks torwards camera and slowly turns 360 degrees."
-    state.result_video = None
-    # state.generate_alternate_views = False
-    state.look_description = ""
-
-    # I2V reference Image
-    state.reference_image_file_clothing = None
-    state.reference_image_file_key_clothing = 0
-    state.reference_image_gcs_clothing = []
-    state.reference_image_uri_clothing = []
-
-    state.reference_image_file_model = None
-    state.reference_image_file_key_model = 0
-    state.reference_image_gcs_model = None
-    state.reference_image_uri_model = None
-
-    state.result_image = None
-
-    # TAB NAV
-    state.aspect_ratio = "9:16"
-    state.video_length = 8  # 5-8
-    state.error_message = ""
-    state.timing = None
-    state.look = 0
-    state.catalog = []
-    state.before_image_uri = None
-    state.models = []
-    # state.selected_model = None
-    state.result_images = []
-    # state.final_accuracy = False
-    state.final_critic = None
-    state.tryon_started = False
-    state.retry_counter = 0
-    yield
