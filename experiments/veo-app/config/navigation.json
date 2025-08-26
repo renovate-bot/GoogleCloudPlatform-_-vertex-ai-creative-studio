@@ -29,6 +29,14 @@
       "group": "foundation"
     },
     {
+      "id": 12,
+      "display": "Gemini",
+      "icon": "auto_awesome",
+      "icon_family": "Google Symbols",
+      "route": "/gemini_image_generation",
+      "group": "foundation"
+    },
+    {
       "id": 15,
       "display": "Chirp 3 HD",
       "icon": "graphic_eq",

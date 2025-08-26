@@ -44,7 +44,7 @@ from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
 from pages.shop_the_look import workflows_content_retail_look
 from pages.test_character_consistency import page as test_character_consistency_page
-from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
+from pages.gemini_image_generation import page as test_gemini_image_gen_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_pixie_compositor import test_pixie_compositor_page
@@ -164,6 +164,9 @@ async def set_request_context(request: Request, call_next):
     security_policy=me.SecurityPolicy(
         dangerously_disable_trusted_types=True,
     ),
+    stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Google+Symbols:opsz,wght,FILL,GRAD,ROND@20..48,100..700,0..1,-50..200,0..100&icon_names=spark",
+    ]
 )
 def home_page():
     """Main Page."""

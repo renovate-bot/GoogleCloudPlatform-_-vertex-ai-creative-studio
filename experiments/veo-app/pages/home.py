@@ -109,5 +109,6 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                             route = page_data.get("route")
                             icon = page_data.get("icon", "broken_image")
                             display_name = page_data.get("display", "Unnamed Page")
+                            icon_family = page_data.get("icon_family")
 
-                            media_tile(display_name, icon, route)
+                            media_tile(display_name, icon, route, icon_family)

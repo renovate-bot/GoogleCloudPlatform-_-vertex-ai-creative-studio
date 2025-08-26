@@ -50,6 +50,12 @@ from models.shop_the_look_models import (
 )
 
 
+# Initialize client and default model ID for rewriter
+client = GeminiModelSetup.init()
+cfg = Default()  # Instantiate config
+REWRITER_MODEL_ID = cfg.MODEL_ID  # Use default model from config for rewriter
+
+
 def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> tuple[list[str], float]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
@@ -60,6 +66,10 @@ def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> tup
         parts.append(types.Part.from_uri(file_uri=image_uri, mime_type="image/png"))
 
     contents = [types.Content(role="user", parts=parts)]
+
+    client = GeminiModelSetup.init(
+        location=cfg.GEMINI_IMAGE_GEN_LOCATION,
+    )
 
     response = client.models.generate_content(
         model=model_name,
@@ -103,11 +113,6 @@ def generate_image_from_prompt_and_images(prompt: str, images: list[str]) -> tup
         print("generate_image_from_prompt_and_images: no images")
     return gcs_uris, execution_time
 
-
-# Initialize client and default model ID for rewriter
-client = GeminiModelSetup.init()
-cfg = Default()  # Instantiate config
-REWRITER_MODEL_ID = cfg.MODEL_ID  # Use default model from config for rewriter
 
 
 @retry(
