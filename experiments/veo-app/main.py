@@ -42,7 +42,7 @@ from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
-from pages.shop_the_look import workflows_content_retail_look
+import pages.shop_the_look
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_gemini_image_gen import page as test_gemini_image_gen_page
 from pages.test_index import page as test_index_page
@@ -51,7 +51,6 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.veo import veo_content
 from pages.vto import vto
 from state.state import AppState
@@ -67,7 +66,6 @@ router = APIRouter()
 app.include_router(router)
 
 # Define allowed origins for CORS
-# This is necessary to allow the Cloud Shell proxy to communicate with the app.
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https://.*\.cloudshell\.dev|http://localhost:8080",
@@ -82,9 +80,6 @@ def get_signed_url(gcs_uri: str):
     """Generates a signed URL for a GCS object."""
     try:
         storage_client = storage.Client()
-
-        # When running on Cloud Run with IAP, we need to impersonate the service account
-        # to get a credential with a private key for signing.
         if os.environ.get("K_SERVICE"):
             source_credentials, project = google.auth.default()
             storage_client = storage.Client(
@@ -158,132 +153,64 @@ async def set_request_context(request: Request, call_next):
     return response
 
 
-@me.page(
-    path="/home",
-    title="GenMedia Creative Studio - v.next",
-    security_policy=me.SecurityPolicy(
-        dangerously_disable_trusted_types=True,
-    ),
-)
+@me.page(path="/home", title="GenMedia Creative Studio - v.next")
 def home_page():
-    """Main Page."""
-    state = me.state(AppState)
-    with page_scaffold():  # pylint: disable=not-context-manager
-        home_page_content(state)
+    with page_scaffold():
+        home_page_content(me.state(AppState))
 
-
-@me.page(
-    path="/veo",
-    title="Veo - GenMedia Creative Studio",
-)
+@me.page(path="/veo", title="Veo - GenMedia Creative Studio")
 def veo_page():
-    """Veo Page."""
     veo_content(me.state(AppState))
 
-
-@me.page(
-    path="/motion_portraits",
-    title="Motion Portraits - GenMedia Creative Studio",
-)
+@me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
 def motion_portrait_page():
-    """Motion Portrait Page."""
     motion_portraits_content(me.state(AppState))
 
-
-@me.page(
-    path="/lyria",
-    title="Lyria - GenMedia Creative Studio",
-)
+@me.page(path="/lyria", title="Lyria - GenMedia Creative Studio")
 def lyria_page():
-    """Lyria Page."""
     lyria_content(me.state(AppState))
 
-
-@me.page(
-    path="/config",
-    title="GenMedia Creative Studio - Config",
-)
+@me.page(path="/config", title="GenMedia Creative Studio - Config")
 def config_page():
-    """Config Page."""
     config_page_contents(me.state(AppState))
 
-
-@me.page(
-    path="/imagen",
-    title="GenMedia Creative Studio - Imagen",
-    security_policy=me.SecurityPolicy(
-        allowed_script_srcs=[
-            "https://cdn.jsdelivr.net",
-        ],
-        dangerously_disable_trusted_types=True,
-    ),
-)
+@me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
 def imagen_page():
-    """Imagen Page."""
     imagen_content(me.state(AppState))
 
-
-@me.page(
-    path="/library",
-    title="GenMedia Creative Studio - Library",
-)
+@me.page(path="/library", title="GenMedia Creative Studio - Library")
 def library_page():
-    """Library Page."""
     library_content(me.state(AppState))
 
-
-@me.page(
-    path="/edit_images",
-    title="GenMedia Creative Studio - Edit Images",
-)
+@me.page(path="/edit_images", title="GenMedia Creative Studio - Edit Images")
 def edit_images_page():
-    """Edit Images Page."""
     edit_images_content(me.state(AppState))
 
-
-@me.page(
-    path="/vto",
-    title="GenMedia Creative Studio - Virtual Try-On",
-)
+@me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
 def vto_page():
-    """VTO Page"""
     vto()
 
-
-@me.page(
-    path="/recontextualize",
-    title="GenMedia Creative Studio - Product in Scene",
-)
+@me.page(path="/recontextualize", title="GenMedia Creative Studio - Product in Scene")
 def recontextualize_page():
-    """Recontextualize Page"""
     recontextualize()
 
-
-@me.page(
-    path="/character_consistency",
-    title="GenMedia Creative Studio - Character Consistency",
-)
+@me.page(path="/character_consistency", title="GenMedia Creative Studio - Character Consistency")
 def character_consistency_page():
-    """Character Consistency Page"""
     character_consistency_page_content()
 
-
-@me.page(
-    path="/shop_the_look",
-    title="GenMedia Creative Studio - Shop the Look",
-)
-def shop_the_look_page():
-    """Shop the Look Page"""
-    workflows_content_retail_look()
-
-
-@me.page(
-    path="/about",
-    title="About - GenMedia Creative Studio",
-)
+@me.page(path="/about", title="About - GenMedia Creative Studio")
 def about_page():
-    """About Page"""
     about_page_content()
+
+# Test page routes are left as is, they don't need the scaffold
+me.page(path="/test_character_consistency", title="Test Character Consistency")(test_character_consistency_page)
+me.page(path="/test_gemini_image_gen", title="Test Gemini Image Gen")(test_gemini_image_gen_page)
+me.page(path="/test_index", title="Test Index")(test_index_page)
+me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(test_infinite_scroll_page)
+me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(test_pixie_compositor_page)
+me.page(path="/test_uploader", title="Test Uploader")(test_uploader_page)
+me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(test_vto_prompt_generator_page)
+me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(test_worsfold_encoder_page)
 
 
 @app.get("/")

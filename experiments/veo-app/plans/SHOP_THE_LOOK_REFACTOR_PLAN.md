@@ -52,11 +52,11 @@ This refactoring is broken down into sequential phases. Each phase includes a ch
 **Objective:** Decompose the main UI into smaller, more manageable components for selection and configuration, following the pattern of `imagen` and `veo`.
 
 #### Tasks:
-- [ ] Create the directory `components/shop_the_look/`.
-- [ ] Create `components/shop_the_look/config_panel.py` and move the `vto_enterprise_config` component logic into it.
-- [ ] Create `components/shop_the_look/model_selection.py` and move the `stl_model_select` component logic into it.
-- [ ] Create `components/shop_the_look/look_selection.py` and move the `stl_look_select` component logic into it.
-- [ ] Update `pages/shop_the_look.py` to import and use these new components, commenting out the old, now-redundant functions within the page file.
+- [x] Create the directory `components/shop_the_look/`.
+- [x] Create `components/shop_the_look/config_panel.py` and move the `vto_enterprise_config` component logic into it.
+- [x] Create `components/shop_the_look/model_selection.py` and move the `stl_model_select` component logic into it.
+- [x] Create `components/shop_the_look/look_selection.py` and move the `stl_look_select` component logic into it.
+- [x] Update `pages/shop_the_look.py` to import and use these new components, commenting out the old, now-redundant functions within the page file.
 
 #### Manual Validation (Phase 2):
 1.  Load the "Shop the Look" page.
@@ -69,25 +69,43 @@ This refactoring is broken down into sequential phases. Each phase includes a ch
 
 ---
 
-### **Phase 3: Implementing the Workflow and Results UI**
-**Objective:** Re-implement the core generation logic using the robust generator pattern and componentize the final results display.
+### **Phase 2.5 (Intermediate Refactor: File Tractability)**
+**Objective:** Break down the monolithic `pages/shop_the_look.py` into smaller, more focused files to improve readability and maintainability before refactoring the core workflow.
 
 #### Tasks:
-- [ ] In `models/shop_the_look_workflow.py`, implement the `run_shop_the_look_workflow()` generator function, moving the complex, multi-step logic from the original `on_click_vto_look` event handler. This new function will `yield` `WorkflowStepResult` objects.
-- [ ] In `models/shop_the_look_workflow.py`, create the `generate_shop_the_look_video()` function, moving the logic from the original `on_click_veo` handler.
-- [ ] Create `components/shop_the_look/results_display.py` and move the `stl_result` component logic into it.
-- [ ] Refactor the primary "Try On" button's click handler in `pages/shop_the_look.py`. It should now call and iterate over the new `run_shop_the_look_workflow()` generator, updating the page's status message and results from the yielded data at each step.
-- [ ] Update the "Create Video" button in the new `results_display.py` component to call the new `generate_shop_the_look_video()` function.
-- [ ] Update the main page to use the new `results_display.py` component.
+- [ ] Create a new file: `components/shop_the_look/results_display.py`.
+- [ ] Move the `stl_result` component function and its direct helper functions/handlers (like `on_click_veo` and `on_click_manual_retry`) from `pages/shop_the_look.py` into this new file.
+- [ ] Create a new file: `models/shop_the_look_handlers.py`.
+- [ ] Move the primary workflow entry point, the `on_click_vto_look` function, from `pages/shop_the_look.py` into `models/shop_the_look_handlers.py`.
+- [ ] Update `pages/shop_the_look.py` to import and call the components and handlers from their new locations. The main page file should now be significantly smaller, primarily responsible for defining the page structure and tabs.
 
-#### Manual Validation (Phase 3):
-1.  Perform a full, end-to-end test of the "Shop the Look" workflow.
-2.  Select a model and a look. Click the "Try On" button.
-3.  **Verification:** Observe the status text on the page. Confirm that it updates in real-time to reflect the current step of the workflow (e.g., "Trying on shirt...", "Running final critic...").
-4.  **Verification:** Once the workflow completes, confirm that the final generated image and the progression image galleries are displayed correctly in the results area.
-5.  **Verification:** If the final critic deems the image inaccurate, confirm the retry logic is triggered correctly.
-6.  **Verification:** Click the "Create Video" button and confirm that a video is generated from the final image.
-7.  **Verification:** Click the "Clear" button and confirm that the entire page state is reset correctly.
+#### Manual Validation (Phase 2.5):
+1.  Load the "Shop the Look" page and perform a full, end-to-end test.
+2.  Select a model and a look, then click "Try On".
+3.  **Verification:** Confirm that the workflow still executes correctly and the final result image is displayed. The user experience should be identical to before; only the code's location has changed.
+4.  Click the "Create Video" button.
+5.  **Verification:** Confirm that video generation is still successful.
+
+---
+
+### **Revised Phase 3: Implementing the Workflow Generator & URI-Based Critic**
+**Objective:** Re-implement the core logic using the robust generator pattern for real-time UI updates and refactor the Gemini critic calls to use efficient GCS URIs instead of image bytes.
+
+#### Tasks:
+- [ ] **Safety Check:** Before modifying `models/gemini.py`, perform a global search across the entire codebase to find all usages of the `final_image_critic` and `select_best_image_with_description` functions. This is critical to understand the full impact of the change.
+- [ ] In `models/gemini.py`, modify the `final_image_critic` and `select_best_image_with_description` functions. Change their signatures to accept GCS URIs (`list[str]`) instead of image bytes (`list[bytes]`).
+- [ ] In `models/shop_the_look_workflow.py`, implement the `run_shop_the_look_workflow()` generator function.
+- [ ] Move the logic from the (now temporary) `on_click_vto_look` function in `models/shop_the_look_handlers.py` into this new generator.
+- [ ] During this migration, **remove the code that downloads image bytes for the critic**. Instead, call the newly refactored critic methods from `models/gemini.py` with the GCS URIs of the candidate images.
+- [ ] Refactor the "Try On" button's click handler in `pages/shop_the_look.py` to call and iterate over the new `run_shop_the_look_workflow()` generator, updating the page's status from the yielded `WorkflowStepResult` objects.
+- [ ] Delete the temporary `models/shop_the_look_handlers.py` file.
+
+#### Manual Validation (Revised Phase 3):
+1.  Perform another full, end-to-end test.
+2.  **Verification:** Observe the status text. Confirm that it updates in real-time (e.g., "Trying on shirt...", "Running final critic..."), demonstrating the new generator is working.
+3.  **Verification:** Confirm the final image and progression galleries are displayed correctly.
+4.  **Verification:** Check the application logs. Confirm there are **no log entries** for downloading candidate images for the critic, proving the URI-based optimization is working.
+5.  **Verification:** Confirm the retry logic and video generation still function correctly.
 
 ---
 
