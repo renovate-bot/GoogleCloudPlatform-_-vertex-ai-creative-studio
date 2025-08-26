@@ -56,8 +56,12 @@ class Default:
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
     GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
-        "GEMINI_IMAGE_GEN_MODEL", "gemini-2.0-flash-preview-image-generation"
+        "GEMINI_IMAGE_GEN_MODEL", "gemini-2.5-flash-image-preview",
     )
+    GEMINI_IMAGE_GEN_LOCATION: str = os.environ.get(
+        "GEMINI_IMAGE_GEN_LOCATION", "global",
+    )
+
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash"
     )

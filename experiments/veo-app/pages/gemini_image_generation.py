@@ -30,7 +30,7 @@ from components.snackbar import snackbar
 
 @me.stateclass
 class PageState:
-    """Test Gemini Image Generation Page State"""
+    """Gemini Image Generation Page State"""
 
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
@@ -43,13 +43,13 @@ class PageState:
     snackbar_message: str = ""
 
 
-def test_gemini_image_gen_page_content():
+def gemini_image_gen_page_content():
     """UI for the Gemini Image Generation test page."""
     state = me.state(PageState)
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Gemini Image Generation Test", "image")
+            header("Gemini Image Generation", "image")
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Left column (controls)
@@ -219,7 +219,6 @@ def test_gemini_image_gen_page_content():
                                             )
             snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
-
 def on_upload(e: me.UploadEvent):
     """Handle image uploads."""
     state = me.state(PageState)
@@ -233,13 +232,11 @@ def on_upload(e: me.UploadEvent):
         state.uploaded_image_gcs_uris.append(gcs_url)
     yield
 
-
 def on_library_select(e: LibrarySelectionChangeEvent):
     """Handle image selection from the library."""
     state = me.state(PageState)
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
     yield
-
 
 def on_prompt_blur(e: me.InputEvent):
     """Handle prompt input."""
@@ -323,7 +320,6 @@ def on_save_click(e: me.ClickEvent):
         state.show_snackbar = False
         yield
 
-
 def generate_images(e: me.ClickEvent):
     """Generate images."""
     state = me.state(PageState)
@@ -348,6 +344,6 @@ def generate_images(e: me.ClickEvent):
     yield
 
 
-@me.page(path="/test_gemini_image_gen")
+@me.page(path="/gemini_image_generation")
 def page():
-    test_gemini_image_gen_page_content()
+    gemini_image_gen_page_content()

@@ -97,6 +97,7 @@ def results_display():
                         border_radius="115px",
                     ),
                 )
+
                 if state.is_loading:
                     with me.box(
                         style=me.Style(
@@ -108,6 +109,7 @@ def results_display():
                     ):
                         me.progress_spinner(diameter=20, stroke_width=3)
                         me.text(state.current_status, style=me.Style(margin=me.Margin(top=10)))
+
 
             with me.box(
                 style=me.Style(
@@ -356,6 +358,7 @@ def results_display():
                             "https://storage.mtls.cloud.google.com/",
                         )
                         print(f"video_url: {video_url}")
+
                         with me.tooltip(message=state.veo_prompt_input):
                             me.icon("information")
                         me.video(
@@ -613,7 +616,9 @@ def results_display():
                                         box_shadow="0 2px 4px rgba(0,0,0,0.1)",
                                     ),
                                 )
+
     return me
+
 
 
 def on_click_manual_retry(e: me.ClickEvent):
@@ -623,3 +628,4 @@ def on_click_manual_retry(e: me.ClickEvent):
     new_event = e
     new_event.key = "retry"
     yield from on_click_vto_look(new_event)
+

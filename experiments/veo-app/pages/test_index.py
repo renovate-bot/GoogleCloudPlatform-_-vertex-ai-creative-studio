@@ -46,11 +46,6 @@ def page():
             "route": "/test_character_consistency",
         },
         {
-            "title": "Gemini Image Generation Test",
-            "description": "A test page for the Gemini image generation model.",
-            "route": "/test_gemini_image_gen",
-        },
-        {
             "title": "Pixie Compositor Test",
             "description": "A test page for the Pixie Compositor web component.",
             "route": "/test_pixie_compositor",
