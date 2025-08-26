@@ -73,11 +73,11 @@ This refactoring is broken down into sequential phases. Each phase includes a ch
 **Objective:** Break down the monolithic `pages/shop_the_look.py` into smaller, more focused files to improve readability and maintainability before refactoring the core workflow.
 
 #### Tasks:
-- [ ] Create a new file: `components/shop_the_look/results_display.py`.
-- [ ] Move the `stl_result` component function and its direct helper functions/handlers (like `on_click_veo` and `on_click_manual_retry`) from `pages/shop_the_look.py` into this new file.
-- [ ] Create a new file: `models/shop_the_look_handlers.py`.
-- [ ] Move the primary workflow entry point, the `on_click_vto_look` function, from `pages/shop_the_look.py` into `models/shop_the_look_handlers.py`.
-- [ ] Update `pages/shop_the_look.py` to import and call the components and handlers from their new locations. The main page file should now be significantly smaller, primarily responsible for defining the page structure and tabs.
+- [x] Create a new file: `components/shop_the_look/results_display.py`.
+- [x] Move the `stl_result` component function and its direct helper functions/handlers (like `on_click_veo` and `on_click_manual_retry`) from `pages/shop_the_look.py` into this new file.
+- [x] Create a new file: `models/shop_the_look_handlers.py`.
+- [x] Move the primary workflow entry point, the `on_click_vto_look` function, from `pages/shop_the_look.py` into `models/shop_the_look_handlers.py`.
+- [x] Update `pages/shop_the_look.py` to import and call the components and handlers from their new locations. The main page file should now be significantly smaller, primarily responsible for defining the page structure and tabs.
 
 #### Manual Validation (Phase 2.5):
 1.  Load the "Shop the Look" page and perform a full, end-to-end test.
@@ -88,24 +88,34 @@ This refactoring is broken down into sequential phases. Each phase includes a ch
 
 ---
 
-### **Revised Phase 3: Implementing the Workflow Generator & URI-Based Critic**
-**Objective:** Re-implement the core logic using the robust generator pattern for real-time UI updates and refactor the Gemini critic calls to use efficient GCS URIs instead of image bytes.
+### **Phase 3.1 (Critic & URI Refactor)**
+**Objective:** Refactor the critic models to use URIs instead of bytes for better performance.
 
 #### Tasks:
-- [ ] **Safety Check:** Before modifying `models/gemini.py`, perform a global search across the entire codebase to find all usages of the `final_image_critic` and `select_best_image_with_description` functions. This is critical to understand the full impact of the change.
-- [ ] In `models/gemini.py`, modify the `final_image_critic` and `select_best_image_with_description` functions. Change their signatures to accept GCS URIs (`list[str]`) instead of image bytes (`list[bytes]`).
-- [ ] In `models/shop_the_look_workflow.py`, implement the `run_shop_the_look_workflow()` generator function.
-- [ ] Move the logic from the (now temporary) `on_click_vto_look` function in `models/shop_the_look_handlers.py` into this new generator.
-- [ ] During this migration, **remove the code that downloads image bytes for the critic**. Instead, call the newly refactored critic methods from `models/gemini.py` with the GCS URIs of the candidate images.
-- [ ] Refactor the "Try On" button's click handler in `pages/shop_the_look.py` to call and iterate over the new `run_shop_the_look_workflow()` generator, updating the page's status from the yielded `WorkflowStepResult` objects.
-- [ ] Delete the temporary `models/shop_the_look_handlers.py` file.
+- [ ] **Safety Check:** Before modifying `models/gemini.py`, perform a global search across the entire codebase to find all usages of the `final_image_critic` and `select_best_image_with_description` functions.
+- [ ] **Analyze Usages:** Review the search results to understand the full impact of changing the function signatures.
+- [ ] **Refactor `gemini.py`:** Modify the function signatures in `models/gemini.py` to accept GCS URIs.
+- [ ] **Refactor Call Sites:** Update all the places where these functions are called (including in `models/shop_the_look_handlers.py`) to pass URIs instead of bytes. This includes removing the byte-downloading logic at each call site.
 
-#### Manual Validation (Revised Phase 3):
-1.  Perform another full, end-to-end test.
-2.  **Verification:** Observe the status text. Confirm that it updates in real-time (e.g., "Trying on shirt...", "Running final critic..."), demonstrating the new generator is working.
-3.  **Verification:** Confirm the final image and progression galleries are displayed correctly.
-4.  **Verification:** Check the application logs. Confirm there are **no log entries** for downloading candidate images for the critic, proving the URI-based optimization is working.
-5.  **Verification:** Confirm the retry logic and video generation still function correctly.
+#### Manual Validation (Phase 3.1):
+1.  Run the "Shop the Look" workflow end-to-end. The critic should still work correctly, but the logs should show no image byte downloads for the critic steps.
+2.  Manually test any other features identified in the safety check that use these critic functions to ensure no regressions were introduced.
+
+---
+
+### **Phase 3.2 (Workflow Generator Implementation)**
+**Objective:** Re-implement the core logic using the generator pattern for better UX.
+
+#### Tasks:
+- [ ] **Implement Generator:** Create `run_shop_the_look_workflow()` in `models/shop_the_look_workflow.py`.
+- [ ] **Move Logic:** Move the (now URI-based) logic from `on_click_vto_look` in the temporary handlers file into the new generator, yielding `WorkflowStepResult` at each step.
+- [ ] **Update UI:** Refactor the "Try On" button's click handler to call the new generator and update the UI from the yielded results.
+- [ ] **Cleanup:** Delete the temporary `models/shop_the_look_handlers.py` file.
+
+#### Manual Validation (Phase 3.2):
+1.  Run the "Shop the Look" workflow end-to-end.
+2.  The status text (under the model image) should update in real-time for each step of the process.
+3.  The final results should be identical to the previous phase.
 
 ---
 
