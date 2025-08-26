@@ -24,7 +24,7 @@ def go_to_page(e: me.ClickEvent):
 
 
 @me.component
-def media_tile(label: str, icon: str, route: Optional[str]):
+def media_tile(label: str, icon: str, route: str | None, icon_family: str | None = None):
     """Media component"""
 
     is_clickable = bool(route)
@@ -65,13 +65,17 @@ def media_tile(label: str, icon: str, route: Optional[str]):
                 gap=5,
             ),
         ):
+            icon_style = me.Style(
+                font_size="38pt",
+                width="50px",
+                height="60px",
+                color=me.theme_var("on-surface"),
+            )
+            if icon_family:
+                print(f"changing icon family for {label} to: {icon_family}")
+                icon_style.font_family = icon_family
             me.icon(
                 icon,
-                style=me.Style(
-                    font_size="38pt",
-                    width="50px",
-                    height="60px",
-                    color=me.theme_var("on-surface"),
-                ),
+                style=icon_style,
             )
             me.text(label, style=me.Style(font_weight="medium", text_align="center"))
