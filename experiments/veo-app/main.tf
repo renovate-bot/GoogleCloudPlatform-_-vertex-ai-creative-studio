@@ -238,6 +238,12 @@ resource "google_storage_bucket_iam_member" "sa_bucket_viewer" {
   member = google_service_account.creative_studio.member
 }
 
+resource "google_storage_bucket_iam_member" "sa_object_user" {
+  bucket = module.creative_studio_asset_bucket.bucket.name
+  role = "roles/storage.objectUser"
+  member = google_service_account.creative_studio.member
+}
+
 resource "google_firestore_database" "create_studio_asset_metadata" {
   name                              = "create-studio-asset-metadata"
   location_id                       = var.region
