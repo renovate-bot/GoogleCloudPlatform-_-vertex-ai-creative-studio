@@ -190,6 +190,9 @@ resource "google_cloud_run_v2_service" "creative_studio" {
       max_instance_count = 1
     }
   }
+  lifecycle {
+    ignore_changes = [ template.containers[0].image, client ]
+  }
   depends_on = [
     google_service_account_iam_member.build_act_as_creative_studio,
     google_project_iam_member.build_logs_writer,
