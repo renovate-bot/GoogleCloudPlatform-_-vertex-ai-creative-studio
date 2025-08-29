@@ -94,7 +94,7 @@ markupsafe==3.0.2
     # via
     #   jinja2
     #   werkzeug
-marshmallow==4.0.0
+marshmallow==4.0.1
     # via dataclasses-json
 mdurl==0.1.2
     # via markdown-it-py
