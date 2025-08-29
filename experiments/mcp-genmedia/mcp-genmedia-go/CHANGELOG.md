@@ -1,5 +1,13 @@
 # Changelog
 
+## 2025-08-29
+
+*   **Feat:** Added a new `mcp-gemini-go` server to provide an MCP interface for Google's Gemini models.
+*   **Feat:** The new server includes a `gemini_image_generation` tool for multimodal (text and image) content generation.
+*   **Fix:** Resolved multiple build and dependency issues in the new server, including correcting Go module versions and fixing compilation errors.
+*   **Docs:** Updated the main project `README.md` to include the `mcp-gemini-go` server in the installation instructions and the list of available servers.
+*   **Chore:** Improved the `install.sh` script to verify that the `PROJECT_ID` environment variable is set, preventing a common installation failure.
+
 ## 2025-08-14
 
 *   **Feat:** The `mcp-veo-go` tool now generates descriptive, unique filenames for downloaded videos (e.g., `veo-veo-2.0-generate-001-20250814-153000-0.mp4`), matching the behavior of the Imagen tool.

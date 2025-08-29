@@ -7,4 +7,5 @@ use (
 	./mcp-imagen-go
 	./mcp-lyria-go
 	./mcp-veo-go
+./mcp-gemini-go
 )

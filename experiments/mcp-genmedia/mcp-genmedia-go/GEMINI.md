@@ -59,7 +59,7 @@ s := server.NewMCPServer(
 
 ### **CRITICAL: Environment Variables**
 
-Before running **any** verification or testing command (including `verify.sh`), you **MUST** ensure the `PROJECT_ID` environment variable is set. The servers will fail to initialize and time out without it.
+Before running **any** verification or installation command (including `verify.sh` and `install.sh`), you **MUST** ensure the `PROJECT_ID` environment variable is set. The servers will fail to initialize and time out without it.
 
 **Example:**
 ```bash
