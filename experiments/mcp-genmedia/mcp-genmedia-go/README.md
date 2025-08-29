@@ -44,7 +44,7 @@ This project uses a Go workspace (`go.work`) to manage the multiple modules. The
 3.  **Install the Binaries**
     This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
     ```bash
-    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
     ```
 
 4.  **Verify the Installation**
@@ -138,6 +138,11 @@ This repository provides AI application samples for:
     *   Offers Text-to-Speech (TTS) synthesis using Google Cloud TTS with Chirp3-HD voices.
     *   Tools: `chirp_tts` for synthesis (with custom pronunciation support) and `list_chirp_voices` for discovering available voices.
     *   Audio can be returned as base64 data or saved to a local directory.
+
+*   **`mcp-gemini-go`**:
+    *   Provides a multimodal interface to Google's Gemini models.
+    *   Tool: `gemini_image_generation` for generating text and images from a prompt that can include text and images.
+    *   Output can be saved to a local directory or GCS.
 
 *   **`mcp-imagen-go`**:
     *   Enables image generation using Google's Imagen models via Vertex AI.

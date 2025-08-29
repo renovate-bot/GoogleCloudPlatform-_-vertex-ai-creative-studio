@@ -6,6 +6,7 @@ Each server can be enabled and run separately, allowing flexibility for environm
 
 ## Generative Media & Compositing Capabilities
 
+*   **[Gemini 2.5 Flash multimodal output](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)** - for image generation and editing
 *   **[Imagen 3](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
 *   **[Veo 2](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
 *   **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for audio synthesis
@@ -41,6 +42,7 @@ The servers are configured primarily through environment variables. Key variable
 
 ## Available MCP Servers and Capabilities
 
+*   **Gemini** Generate and edit images from text prompts.
 *   **Imagen:** Generate and edit images from text prompts.
 *   **Veo:** Create videos from text or images.
 *   **Chirp 3 HD:** Synthesize high-quality audio from text.
