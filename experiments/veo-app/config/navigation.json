@@ -57,6 +57,13 @@
       "route": "/vto",
       "group": "foundation"
     },
+    {
+      "id": 35,
+      "display": "Starter Pack",
+      "icon": "style",
+      "route": "/starter-pack",
+      "group": "workflows"
+    },
 
     {
       "id": 40,

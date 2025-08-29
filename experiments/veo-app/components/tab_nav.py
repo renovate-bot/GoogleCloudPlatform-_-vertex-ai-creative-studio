@@ -41,7 +41,7 @@ def load(e: me.LoadEvent):
 @me.stateclass
 class State:
     selected_tab_index: int = 0
-    disabled_tab_indexes: set[int] = field(default_factory=lambda: {1})
+    disabled_tab_indexes: set[int] = field(default_factory=lambda: {1}) # pylint: disable=invalid-field-call
 
 
 @me.page(
