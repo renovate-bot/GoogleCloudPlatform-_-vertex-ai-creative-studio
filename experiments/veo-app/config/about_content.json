@@ -29,7 +29,14 @@
       "id": "gemini-tts",
       "title": "Gemini TTS",
       "stage": "preview",
-      "description": "The **Gemini Text-to-Speech** page uses Google's latest generative TTS models to create high-quality, natural-sounding audio from text.\n\n- **Text to Synthesize**: The raw text to be spoken.\n- **Voice Prompt**: A prompt to guide the style, tone, and emotion of the voice.\n- **Model**: Choose between faster or higher-quality models.\n- **Voice**: Select from a variety of distinct voices.\n\nFor more information see the [Google Cloud docs for Gemini-TTS](https://cloud.google.com/text-to-speech/docs/gemini-tts)",
+      "description": "The **Gemini Text-to-Speech** page uses Google's latest generative TTS models to create high-quality, natural-sounding audio from text.\n\n- **Text to Synthesize**: The raw text to be spoken.\n- **Voice Prompt**: A prompt to guide the style, tone, and emotion of the voice.\n- **Model**: Choose between faster or higher-quality models.\n- **Voice**: Select from a variety of distinct voices.\n\nText-to-Speech Gemini-TTS is the latest evolution of our Text-to-Speech technology that's moving beyond just naturalness to giving granular control over generated audio using text-based prompts. Using Gemini-TTS, you can synthesize speech from short snippets to long-form narratives, precisely dictating style, accent, pace, tone, and even emotional expression, all steerable through natural-language prompts.\n\n[Learn more about Gemini-TTS on Vertex AI](https://cloud.google.com/text-to-speech/docs/gemini-tts)",
+      "image": null,
+      "video": null
+    },
+    {
+      "id": "chirp-3hd",
+      "title": "Chirp3 HD",
+      "description": "**Chirp 3** represents the latest generation of Google's Text-to-Speech technology, powered by large language models (LLMs). These high-definition voices are designed to deliver an unparalleled level of realism and emotional resonance, making them sound incredibly natural.\n\nYou can use Chirp 3 to:\n*   Create realistic, conversational audio for applications.\n*   Generate speech in dozens of languages and regions.\n*   Control the pace, add pauses, and specify custom pronunciations.\n\n[Learn more about Chirp 3 HD on Vertex AI](https://cloud.google.com/text-to-speech/docs/chirp3-hd)",
       "image": null,
       "video": null
     },

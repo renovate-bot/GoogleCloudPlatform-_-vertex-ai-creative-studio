@@ -47,6 +47,7 @@
       "id": 15,
       "display": "Chirp 3 HD",
       "icon": "graphic_eq",
+      "route": "/chirp-3hd",
       "group": "foundation"
     },
     {

@@ -70,6 +70,7 @@ google-api-core==2.25.1
     #   google-cloud-firestore
     #   google-cloud-resource-manager
     #   google-cloud-storage
+    #   google-cloud-texttospeech
 google-api-python-client==2.179.0
     # via firebase-admin
 google-auth==2.40.3
@@ -83,6 +84,7 @@ google-auth==2.40.3
     #   google-cloud-firestore
     #   google-cloud-resource-manager
     #   google-cloud-storage
+    #   google-cloud-texttospeech
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
@@ -103,6 +105,8 @@ google-cloud-storage==2.19.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
+google-cloud-texttospeech==2.27.0
+    # via veo-app
 google-crc32c==1.7.1
     # via
     #   google-cloud-storage
@@ -232,12 +236,14 @@ proto-plus==1.26.1
     #   google-cloud-aiplatform
     #   google-cloud-firestore
     #   google-cloud-resource-manager
+    #   google-cloud-texttospeech
 protobuf==6.32.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
     #   google-cloud-firestore
     #   google-cloud-resource-manager
+    #   google-cloud-texttospeech
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
