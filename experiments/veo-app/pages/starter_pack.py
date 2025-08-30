@@ -2,6 +2,8 @@ import mesop as me
 import mesop.labs as mel
 
 from components.header import header
+from components.library.events import LibrarySelectionChangeEvent
+from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from state.starter_pack_state import StarterPackState
 from state.state import AppState
@@ -36,7 +38,7 @@ def page():
                 )
             ):
                 with me.box():
-                    me.text("Inputs", type="headline-5")
+                    #me.text("Inputs", type="headline-5")
                     tabs = [
                         Tab(
                             label="Look to Starter Pack",
@@ -52,7 +54,7 @@ def page():
                     tab_group(tabs, on_tab_click=on_tab_click)
 
                 with me.box(style=me.Style(display="flex", flex_direction="column")):
-                    me.text("Outputs", type="headline-5")
+                    #me.text("Outputs", type="headline-5")
                     if me.state(StarterPackState).selected_tab_index == 0:
                         with me.box(style=me.Style(margin=me.Margin(top=16))):
                             me.text("Generated Starter Pack", type="headline-6")
@@ -79,6 +81,10 @@ def page():
                                     )
                                 else:
                                     me.text("Output will appear here")
+                            if me.state(StarterPackState).look_image_uri or me.state(StarterPackState).generated_starter_pack_uri:
+                                with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
+                                    me.button("Clear", on_click=on_click_clear_starter_pack, type="stroked")
+
                     if me.state(StarterPackState).selected_tab_index == 1:
                         with me.box(style=me.Style(margin=me.Margin(top=16))):
                             me.text("Generated Look", type="headline-6")
@@ -105,6 +111,9 @@ def page():
                                     )
                                 else:
                                     me.text("Output will appear here")
+                            if me.state(StarterPackState).starter_pack_image_uri or me.state(StarterPackState).model_image_uri or me.state(StarterPackState).generated_look_uri:
+                                with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
+                                    me.button("Clear", on_click=on_click_clear_look, type="stroked")
 
 @me.component
 def look_to_starter_pack_content():
@@ -113,12 +122,18 @@ def look_to_starter_pack_content():
             "Upload an image of a person wearing an outfit (a 'look') to generate a starter pack collage.",
             style=me.Style(margin=me.Margin(bottom=16)),
         )
-        me.uploader(
-            label="Upload Look Image",
-            on_upload=on_upload_look_image,
-            style=me.Style(width="100%"),
-            accepted_file_types=["image/jpeg", "image/png"],
-        )
+        with me.box(style=me.Style(display="flex", align_items="center", justify_content="center", gap=8, margin=me.Margin(top=16))):
+            me.uploader(
+                label="Upload Look Image",
+                on_upload=on_upload_look_image,
+                style=me.Style(width="100%"),
+                accepted_file_types=["image/jpeg", "image/png"],
+            )
+            library_chooser_button(
+                key="library_look",
+                on_library_select=on_library_chooser,
+                button_type="icon",
+            )
         if me.state(StarterPackState).look_image_uri:
             me.image(
                 src=gcs_uri_to_https_url(me.state(StarterPackState).look_image_uri),
@@ -142,12 +157,18 @@ def starter_pack_to_look_content():
             "Upload a starter pack/mood board and a model image to generate an image of the model wearing the outfit.",
             style=me.Style(margin=me.Margin(bottom=16)),
         )
-        me.uploader(
-            label="Upload Starter Pack Image",
-            on_upload=on_upload_starter_pack_image,
-            style=me.Style(width="100%"),
-            accepted_file_types=["image/jpeg", "image/png"],
-        )
+        with me.box(style=me.Style(display="flex", align_items="center", justify_content="center", gap=8, margin=me.Margin(top=16))):
+            me.uploader(
+                label="Upload Starter Pack Image",
+                on_upload=on_upload_starter_pack_image,
+                style=me.Style(width="100%"),
+                accepted_file_types=["image/jpeg", "image/png"],
+            )
+            library_chooser_button(
+                key="library_starter_pack",
+                on_library_select=on_library_chooser,
+                button_type="icon",
+            )
         if me.state(StarterPackState).starter_pack_image_uri:
             me.image(
                 src=gcs_uri_to_https_url(me.state(StarterPackState).starter_pack_image_uri),
@@ -157,15 +178,20 @@ def starter_pack_to_look_content():
                     border_radius=8,
                 ),
             )
-        with me.box(style=me.Style(display="flex", align_items="center", gap=8, justify_content="center", margin=me.Margin(top=16))):
+        with me.box(style=me.Style(display="flex", align_items="center",justify_content="center", gap=8, margin=me.Margin(top=16))):
             me.uploader(
                 label="Upload Model Image",
                 on_upload=on_upload_model_image,
                 style=me.Style(width="100%"),
                 accepted_file_types=["image/jpeg", "image/png"],
             )
+            library_chooser_button(
+                key="library_model",
+                on_library_select=on_library_chooser,
+                button_type="icon",
+            )
             me.button("Create Virtual Model", on_click=on_click_generate_virtual_model)
-        
+
         if me.state(StarterPackState).is_generating_virtual_model:
             with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
                 me.progress_spinner()
@@ -201,6 +227,19 @@ def on_upload_look_image(e: me.UploadEvent):
         mime_type=uploaded_file.mime_type,
         contents=uploaded_file.getvalue(),
     )
+    print(f"Look image URI: {state.look_image_uri}")
+    yield
+
+def on_library_chooser(e: LibrarySelectionChangeEvent):
+    state = me.state(StarterPackState)
+    print(f"EVENT: {e}")
+    
+    if e.chooser_id == "library_look":
+        state.look_image_uri = e.gcs_uri
+    elif e.chooser_id == "library_starter_pack":
+        state.starter_pack_image_uri = e.gcs_uri
+    elif e.chooser_id == "library_model":
+        state.model_image_uri = e.gcs_uri
     yield
 
 def on_upload_starter_pack_image(e: me.UploadEvent):
@@ -285,4 +324,17 @@ def on_click_generate_look(e: me.ClickEvent):
         source_images_gcs=[state.starter_pack_image_uri, state.model_image_uri]
     )
     state.is_generating_look = False
+    yield
+
+def on_click_clear_starter_pack(e: me.ClickEvent):
+    state = me.state(StarterPackState)
+    state.look_image_uri = ""
+    state.generated_starter_pack_uri = ""
+    yield
+
+def on_click_clear_look(e: me.ClickEvent):
+    state = me.state(StarterPackState)
+    state.starter_pack_image_uri = ""
+    state.model_image_uri = ""
+    state.generated_look_uri = ""
     yield
