@@ -15,11 +15,8 @@ from config.default import Default
 
 cfg = Default()
 
-def gcs_uri_to_https_url(gcs_uri: str) -> str:
-    """Converts a GCS URI to a public HTTPS URL."""
-    if gcs_uri and gcs_uri.startswith("gs://"):
-        return gcs_uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-    return gcs_uri
+from common.utils import gcs_uri_to_https_url
+from config.default import Default
 
 @me.page(
     path="/starter-pack",
