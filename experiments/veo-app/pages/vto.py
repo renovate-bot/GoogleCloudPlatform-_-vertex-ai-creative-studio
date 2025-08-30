@@ -213,14 +213,14 @@ def vto():
     state = me.state(PageState)
 
     if state.error_dialog_open:
-        with dialog(is_open=state.error_dialog_open):
+        with dialog(is_open=state.error_dialog_open):  # pylint: disable=E1129
             me.text("VTO Generation Error", type="headline-6")
             me.text(state.error_message)
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_error_dialog, type="flat")
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=E1129
             me.text("About Virtual Try-On", type="headline-6")
             me.markdown(ABOUT_PAGE_CONTENT["sections"][3]["description"])
             me.divider()

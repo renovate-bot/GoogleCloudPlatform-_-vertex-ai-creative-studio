@@ -53,6 +53,7 @@ from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_pa
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
 from pages.veo import veo_content
 from pages.vto import vto
+from pages.starter_pack import page as starter_pack_page
 from state.state import AppState
 
 
@@ -199,6 +200,10 @@ def edit_images_page():
 @me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
 def vto_page():
     vto()
+
+@me.page(path="/starter-pack", title="GenMedia Creative Studio - Starter Pack")
+def starter_pack_route():
+    starter_pack_page()
 
 @me.page(path="/recontextualize", title="GenMedia Creative Studio - Product in Scene")
 def recontextualize_page():
