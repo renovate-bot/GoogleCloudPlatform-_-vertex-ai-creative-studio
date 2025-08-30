@@ -33,3 +33,12 @@ This document outlines the steps to add a new "Gemini TTS" page to the applicati
     - [x] Manage loading and error states.
 - [x] **Register Page in Navigation:** Add a "Gemini TTS" entry to `config/navigation.json`.
 - [x] **Phase 3 Validation:** Run the application and test the end-to-end flow. Enter text, select a model, click "Generate", and confirm that the audio is generated and can be played back in the UI. Check GCS to ensure the file was uploaded.
+
+### Refinements & Fixes (Post-Completion)
+
+- [x] **Refactor Auth:** Replaced `subprocess`-based auth with the `google-auth` library for Cloud Run compatibility.
+- [x] **Add Debug Logging:** Added detailed error logging to the model and page for easier debugging in deployed environments.
+- [x] **Implement Library Saving:** Added logic to save generated audio metadata to the Firestore library.
+- [x] **Improve UI Layout:** Adjusted input controls to be full-width and use multi-line textareas where appropriate.
+- [x] **Add Clear Button:** Implemented a "Clear" button to reset form inputs.
+- [x] **Apply Consistent Styling:** Styled the control panel to match other pages in the application.

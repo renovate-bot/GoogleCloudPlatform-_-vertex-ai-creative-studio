@@ -8,8 +8,8 @@
       "id": "imagen",
       "title": "Imagen",
       "description": "The **Imagen** page allows you to generate images from text prompts. You can control various parameters like aspect ratio, style, and content type.\n\n**Available Models:**\n*   Imagen 3 Fast\n*   Imagen 3\n*   Imagen 4\n*   Imagen 4 Ultra\n\n[Learn more about Imagen on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview)",
-      "image": "assets/about/imagen_demo.png",
-      "video": null
+      "image": null,
+      "video": "https://storage.mtls.cloud.google.com/genai-blackbelt-fishfooding-assets/walkthroughs/foundations-imagen.mp4"
     },
     {
       "id": "veo",

@@ -1,29 +1,16 @@
 """Model for Gemini Text-to-Speech."""
 import base64
-import json
-import subprocess
 
+import google.auth
+import google.auth.transport.requests
 import requests
 
+from config.default import Default
 
-def _get_gcloud_auth_token() -> str:
-    """Gets the gcloud auth token."""
-    try:
-        # Run the gcloud command to print the access token
-        result = subprocess.run(
-            ["gcloud", "auth", "application-default", "print-access-token"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"Error getting gcloud auth token: {e}")
-        # Handle the error as needed, e.g., by raising an exception
-        # or returning a specific error indicator.
-        raise
+cfg = Default()
 
-def synthesize_speech(text: str, prompt: str, model_name: str) -> bytes:
+
+def synthesize_speech(text: str, prompt: str, model_name: str, voice_name: str) -> bytes:
     """
     Synthesizes speech from text using the Gemini TTS API.
 
@@ -31,15 +18,21 @@ def synthesize_speech(text: str, prompt: str, model_name: str) -> bytes:
         text: The text to synthesize.
         prompt: The prompt for the voice.
         model_name: The name of the TTS model to use.
+        voice_name: The name of the voice to use.
 
     Returns:
         The synthesized audio in bytes.
     """
-    token = _get_gcloud_auth_token()
+    creds, _ = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+    auth_req = google.auth.transport.requests.Request()
+    creds.refresh(auth_req)
+
     url = "https://texttospeech.googleapis.com/v1/text:synthesize"
     headers = {
-        "Authorization": f"Bearer {token}",
-        "x-goog-user-project": "genai-blackbelt-fishfooding",
+        "Authorization": f"Bearer {creds.token}",
+        "x-goog-user-project": cfg.PROJECT_ID,
         "Content-Type": "application/json; charset=utf-8",
     }
     payload = {
@@ -49,7 +42,7 @@ def synthesize_speech(text: str, prompt: str, model_name: str) -> bytes:
         },
         "voice": {
             "languageCode": "en-us",
-            "name": "Callirrhoe",
+            "name": voice_name,
             "model_name": model_name,
         },
         "audioConfig": {
@@ -58,6 +51,8 @@ def synthesize_speech(text: str, prompt: str, model_name: str) -> bytes:
     }
 
     response = requests.post(url, headers=headers, json=payload)
+    if response.status_code != 200:
+        print(f"Error from TTS API: {response.status_code} - {response.text}")
     response.raise_for_status()  # Raise an exception for bad status codes
 
     audio_content_base64 = response.json()["audioContent"]
