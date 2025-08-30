@@ -15,6 +15,7 @@
 
 import time
 from dataclasses import field
+import json
 
 import mesop as me
 from google.genai import types
@@ -51,6 +52,12 @@ client = GeminiModelSetup.init()
 config = Default()
 veo_model_name = VeoModelSetup.init()
 
+
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    MOTION_PORTRAITS_INFO = next(
+        (s for s in about_content["sections"] if s.get("id") == "motion_portraits"), None
+    )
 
 @me.stateclass
 class PageState:
@@ -111,8 +118,8 @@ def motion_portraits_content(app_state: me.state):
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
-            me.text("About Motion Portraits", type="headline-6")
-            me.markdown(ABOUT_PAGE_CONTENT["sections"][5]["description"])
+            me.text(f'About {MOTION_PORTRAITS_INFO["title"]}', type="headline-6")
+            me.markdown(MOTION_PORTRAITS_INFO["description"])
             me.divider()
             me.text("Current Settings", type="headline-6")
             me.text(f"VEO Model: {state.veo_model}")

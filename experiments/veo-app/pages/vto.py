@@ -14,6 +14,7 @@
 
 import random
 import uuid
+import json
 
 import mesop as me
 
@@ -48,6 +49,12 @@ IMAGE_BOX_STYLE = me.Style(
     gap=8,
     margin=me.Margin(top=16),
 )
+
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    VTO_INFO = next(
+        (s for s in about_content["sections"] if s.get("id") == "vto"), None
+    )
 
 
 def on_upload_person(e: me.UploadEvent):
@@ -221,8 +228,8 @@ def vto():
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=E1129
-            me.text("About Virtual Try-On", type="headline-6")
-            me.markdown(ABOUT_PAGE_CONTENT["sections"][3]["description"])
+            me.text(f'About {VTO_INFO["title"]}', type="headline-6")
+            me.markdown(VTO_INFO["description"])
             me.divider()
             me.text("Current Settings", type="headline-6")
             me.text(f"Person Image: {state.person_image_gcs}")

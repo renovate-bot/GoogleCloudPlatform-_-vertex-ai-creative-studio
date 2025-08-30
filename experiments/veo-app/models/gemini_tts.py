@@ -10,7 +10,7 @@ from config.default import Default
 cfg = Default()
 
 
-def synthesize_speech(text: str, prompt: str, model_name: str, voice_name: str) -> bytes:
+def synthesize_speech(text: str, prompt: str, model_name: str, voice_name: str, language_code: str) -> bytes:
     """
     Synthesizes speech from text using the Gemini TTS API.
 
@@ -41,7 +41,7 @@ def synthesize_speech(text: str, prompt: str, model_name: str, voice_name: str) 
             "prompt": prompt,
         },
         "voice": {
-            "languageCode": "en-us",
+            "languageCode": language_code,
             "name": voice_name,
             "model_name": model_name,
         },
