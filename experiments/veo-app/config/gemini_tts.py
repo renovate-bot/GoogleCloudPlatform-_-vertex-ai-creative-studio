@@ -41,6 +41,13 @@ GEMINI_TTS_VOICES = [
     "Umbriel", "Vindemiatrix", "Zephyr", "Zubenelgenubi",
 ]
 
+GEMINI_TTS_ENCODINGS = {
+    "X-SAMPA": "PHONETIC_ENCODING_X_SAMPA",
+    "IPA": "PHONETIC_ENCODING_IPA",
+    "Pinyin": "PHONETIC_ENCODING_PINYIN",
+    "Japanese": "PHONETIC_ENCODING_JAPANESE_YOMIGANA",
+}
+
 GEMINI_TTS_LANGUAGES = {
     "Arabic (Generic)": "ar-XA",
     "Bengali (India)": "bn-IN",

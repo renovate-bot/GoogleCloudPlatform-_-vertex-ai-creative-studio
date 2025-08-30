@@ -25,30 +25,29 @@ def synthesize_chirp_speech(
     # pitch: float = 0.0, # Disabled pending API support
     volume_gain_db: float = 0.0,
     pronunciations: List[Dict[str, str]] = None,
+    phonetic_encoding: str = "PHONETIC_ENCODING_X_SAMPA",
 ) -> bytes:
     """Synthesizes speech from text using the Chirp3 HD model."""
     client = texttospeech.TextToSpeechClient()
 
-    # Start with a dictionary for the synthesis input.
     input_dict = {"text": text}
 
-    # Handle custom pronunciations with the full nested structure
+    # Handle custom pronunciations
+    custom_pronunciation_entries = []
     if pronunciations:
-        custom_pronunciation_entries = []
+        print(f"Custom pronunciations: {pronunciations}")
         for p in pronunciations:
             entry = texttospeech.CustomPronunciationParams(
                 phrase=p["phrase"],
                 pronunciation=p["pronunciation"],
-                phonetic_encoding="PHONETIC_ENCODING_X_SAMPA",
+                phonetic_encoding=phonetic_encoding,
             )
             custom_pronunciation_entries.append(entry)
-        
         if custom_pronunciation_entries:
             input_dict["custom_pronunciations"] = texttospeech.CustomPronunciations(
                 pronunciations=custom_pronunciation_entries
             )
-
-    # Create the final SynthesisInput object from the dictionary.
+    
     synthesis_input = texttospeech.SynthesisInput(input_dict)
 
     # Construct the full voice name required by the Text-to-Speech API

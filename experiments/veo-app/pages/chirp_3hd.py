@@ -30,6 +30,7 @@ from components.page_scaffold import page_frame, page_scaffold
 from config.chirp_3hd import (
     CHIRP3_HD_VOICES,
     CHIRP3_HD_LANGUAGES,
+    CHIRP3_HD_ENCODINGS,
 )
 from models.chirp_3hd import synthesize_chirp_speech
 from state.state import AppState
@@ -57,9 +58,10 @@ class Chirp3hdState:
     show_error_dialog: bool = False
     error_message: str = ""
     # For custom pronunciations
-    custom_pronunciations: list[dict[str, str]] = field(default_factory=list)
+    custom_pronunciations: list[dict[str, str]] = field(default_factory=list) # pylint: disable=invalid-field-call
     current_phrase_input: str = ""
     current_pronunciation_input: str = ""
+    selected_encoding: str = "PHONETIC_ENCODING_X_SAMPA"
 
 
 @me.page(
@@ -70,8 +72,8 @@ def page():
     """Renders the Chirp3 HD TTS page."""
     state = me.state(Chirp3hdState)
 
-    with page_scaffold():
-        with page_frame():
+    with page_scaffold():  # pylint: disable=E1129
+        with page_frame():  # pylint: disable=E1129
             header(
                 "Chirp3 HD Text-to-Speech",
                 "graphic_eq",
@@ -81,18 +83,18 @@ def page():
 
             # Info Dialog
             if state.info_dialog_open:
-                with dialog(is_open=state.info_dialog_open):
+                with dialog(is_open=state.info_dialog_open):  # pylint: disable=E1129
                     me.text(CHIRP3_HD_INFO["title"], type="headline-6")
                     me.markdown(CHIRP3_HD_INFO["description"])
-                    with dialog_actions():
+                    with dialog_actions():  # pylint: disable=E1129
                         me.button("Close", on_click=close_info_dialog, type="flat")
             
             # Error Dialog
             if state.show_error_dialog:
-                with dialog(is_open=state.show_error_dialog):
+                with dialog(is_open=state.show_error_dialog):  # pylint: disable=E1129
                     me.text("Generation Error", type="headline-6", style=me.Style(color=me.theme_var("error")))
                     me.text(state.error_message, style=me.Style(margin=me.Margin(top=16)))
-                    with dialog_actions():
+                    with dialog_actions():  # pylint: disable=E1129
                         me.button("Close", on_click=close_error_dialog, type="flat")
 
             with me.box(
@@ -106,7 +108,7 @@ def page():
                 # Left column (controls)
                 with me.box(
                     style=me.Style(
-                        width=600,
+                        width=800,
                         background=me.theme_var("surface-container-lowest"),
                         padding=me.Padding.all(16),
                         border_radius=12,
@@ -147,32 +149,48 @@ def page():
                             value=state.selected_language,
                             style=me.Style(flex_grow=1),
                         )
-                    # Sliders
-                    with me.box(style=me.Style(display="flex", flex_direction="row", justify_content="space-around", gap=8)):
-                        with me.box():
-                            me.text(f"Pace: {state.speaking_rate:.2f}")
-                            me.slider(on_value_change=on_change_pace, min=0.25, max=2.0, value=state.speaking_rate, step=0.05)
-                        with me.box():
-                            me.text(f"Volume Gain: {state.volume_gain_db:.1f} dB")
-                            me.slider(on_value_change=on_change_volume, min=-96.0, max=16.0, value=state.volume_gain_db, step=0.5)
+                    with me.expansion_panel(
+                        key="advanced_controls",
+                        icon="tune",
+                        title="",
+                        description="Advanced Controls",
+                    ):
+                        # Pace, Volume Controls Section
+                        with me.box(style=me.Style(display="flex", flex_direction="row", justify_content="space-around", gap=8)):
+                            with me.box():
+                                me.text(f"Pace: {state.speaking_rate:.2f}")
+                                me.slider(on_value_change=on_change_pace, min=0.25, max=2.0, value=state.speaking_rate, step=0.05)
+                            with me.box():
+                                me.text(f"Volume Gain: {state.volume_gain_db:.1f} dB")
+                                me.slider(on_value_change=on_change_volume, min=-96.0, max=16.0, value=state.volume_gain_db, step=0.5)
+                        
+                        # Custom Pronunciations Section
+                        me.text("Custom Pronunciations", style=me.Style(font_weight=500, margin=me.Margin(top=8)))
+                        with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, align_items="baseline")):
+                            me.input(label="Phrase", on_blur=on_blur_phrase, style=me.Style(flex_grow=1,font_size="smaller"), value=state.current_phrase_input,)
+                            me.input(label="Pronunciation", on_blur=on_blur_pronunciation, style=me.Style(flex_grow=1,font_size="smaller"), value=state.current_pronunciation_input)
+                            me.select(
+                                label="Encoding",
+                                options=[
+                                    me.SelectOption(label=lang, value=code)
+                                    for lang, code in CHIRP3_HD_ENCODINGS.items()
+                                ],
+                                on_selection_change=on_select_encoding,
+                                value=state.selected_encoding,
+                                style=me.Style(flex_grow=1,font_size="smaller"),
+                            )
+                            with me.content_button(type="icon", on_click=on_add_pronunciation,):
+                                me.icon("add")
+                            #me.button("Add", on_click=on_add_pronunciation, type="stroked")
                     
-                    # Custom Pronunciations Section
-                    me.divider()
-                    me.text("Custom Pronunciations", style=me.Style(font_weight=500, margin=me.Margin(top=8)))
-                    with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, align_items="center")):
-                        me.input(label="Phrase", on_blur=on_blur_phrase, style=me.Style(flex_grow=1), value=state.current_phrase_input)
-                        me.input(label="Pronunciation (X-SAMPA)", on_blur=on_blur_pronunciation, style=me.Style(flex_grow=1), value=state.current_pronunciation_input)
-                        me.button("Add", on_click=on_add_pronunciation, type="stroked")
-                    
-                    if state.custom_pronunciations:
-                        with me.box(style=me.Style(margin=me.Margin(top=16))):
-                            for i, p in enumerate(state.custom_pronunciations):
-                                with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=8, margin=me.Margin(bottom=8))):
-                                    me.text(f'{p["phrase"]} → {p["pronunciation"]}', style=me.Style(flex_grow=1))
-                                    with me.content_button(key=str(i), on_click=on_remove_pronunciation, type="icon"):
-                                        me.icon("delete")
+                        if state.custom_pronunciations:
+                            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                                for i, p in enumerate(state.custom_pronunciations):
+                                    with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=8, margin=me.Margin(bottom=8))):
+                                        me.text(f'{p["phrase"]} → {p["pronunciation"]}', style=me.Style(flex_grow=1))
+                                        with me.content_button(key=str(i), on_click=on_remove_pronunciation, type="icon"):
+                                            me.icon("delete")
 
-                    me.divider()
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=16, margin=me.Margin(top=16))
                     ):
@@ -232,6 +250,10 @@ def on_select_language(e: me.SelectSelectionChangeEvent):
     state.selected_language = e.value
     yield
 
+def on_select_encoding(e: me.SelectSelectionChangeEvent):
+    state = me.state(Chirp3hdState)
+    state.selected_encoding = e.value
+
 def on_change_pace(e: me.SliderValueChangeEvent):
     me.state(Chirp3hdState).speaking_rate = e.value
 
@@ -270,6 +292,7 @@ def on_click_clear(e: me.ClickEvent):
     state.custom_pronunciations = []
     state.current_phrase_input = ""
     state.current_pronunciation_input = ""
+    state.selected_encoding = "PHONETIC_ENCODING_X_SAMPA"
     state.audio_url = ""
     state.error_message = ""
     state.show_error_dialog = False
@@ -294,6 +317,7 @@ def on_click_generate(e: me.ClickEvent):
     print(f"Type of 'speaking_rate': {type(state.speaking_rate)}, Value: {state.speaking_rate}")
     print(f"Type of 'volume_gain_db': {type(state.volume_gain_db)}, Value: {state.volume_gain_db}")
     print(f"Type of 'pronunciations': {type(state.custom_pronunciations)}, Value: {state.custom_pronunciations}")
+    print(f"Type of 'phonetic_encoding': {type(state.selected_encoding)}, Value: {state.selected_encoding}")
     print("----------------------------------------------------")
 
     try:
@@ -305,6 +329,7 @@ def on_click_generate(e: me.ClickEvent):
             # pitch=state.pitch,
             volume_gain_db=state.volume_gain_db,
             pronunciations=state.custom_pronunciations,
+            phonetic_encoding=state.selected_encoding,
         )
 
         file_name = f"chirp3-hd-{uuid.uuid4()}.wav"
