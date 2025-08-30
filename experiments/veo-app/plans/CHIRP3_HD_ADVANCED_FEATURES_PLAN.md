@@ -1,30 +1,30 @@
 ### Plan: Advanced Chirp3 HD Features
 
+This plan outlines the addition of advanced audio controls and custom pronunciation features to the Chirp3 HD page.
+
 #### Feature 1: Audio Configuration Sliders
 
-1.  **Backend (`models/chirp_3hd.py`):**
-    *   Update the `synthesize_chirp_speech` function to accept new float parameters: `speaking_rate`, `pitch`, and `volume_gain_db`.
-    *   Pass these new parameters into the `texttospeech.AudioConfig` object.
-
-2.  **Frontend (`pages/chirp_3hd.py`):**
-    *   Add `speaking_rate: float`, `pitch: float`, and `volume_gain_db: float` to the `Chirp3hdState` class with the specified default values.
-    *   In the UI, add a new row with three `me.slider` components for Pace, Pitch, and Volume, configured with the correct min/max values.
-    *   Create `on_change` event handlers for each slider to update the state.
-    *   Update the `on_click_generate` handler to pass the new state values to the backend function.
-    *   Update the `on_click_clear` handler to reset these new state values.
+-   **[x] Backend:**
+    -   [x] Modify `synthesize_chirp_speech` in `models/chirp_3hd.py` to accept `speaking_rate`, `pitch`, and `volume_gain_db`.
+    -   [x] Pass new parameters to the `texttospeech.AudioConfig` object.
+-   **[x] Frontend:**
+    -   [x] Add `speaking_rate`, `pitch`, `volume_gain_db` fields to `Chirp3hdState` in `pages/chirp_3hd.py`.
+    -   [x] Add a new row of three `me.slider` components to the UI.
+    -   [x] Implement `on_change` handlers for each slider.
+    -   [x] Update `on_click_generate` to pass the new state values.
+    -   [x] Update `on_click_clear` to reset the new state values.
+-   **[x] Testing Point 1:** Verify that the sliders appear and control the generated audio's pace, pitch, and volume.
+    -   **NOTE:** The `pitch` slider has been disabled in the UI and backend as the feature is not currently supported by the Chirp3 HD API.
 
 #### Feature 2: Custom Pronunciations
 
-1.  **Backend (`models/chirp_3hd.py`):**
-    *   Update the `synthesize_chirp_speech` function to accept a new list parameter, `pronunciations`.
-    *   Inside the function, if the list is provided, it will loop through it to create a list of `texttospeech.CustomPronunciation` objects.
-    *   This list will then be passed as the `custom_pronunciations` argument to the main `client.synthesize_speech` request.
-
-2.  **Frontend (`pages/chirp_3hd.py`):**
-    *   Add the following to `Chirp3hdState`:
-        *   `custom_pronunciations: list[dict]` to store the list of added phrase/pronunciation pairs.
-        *   `current_phrase_input: str` and `current_pronunciation_input: str` to hold the values from the text inputs.
-    *   In the UI, add a new "Custom Pronunciations" section with inputs for "Phrase" and "Pronunciation", and an "Add" button.
-    *   Below the inputs, dynamically render the list of added pronunciations, with a "Remove" button for each.
-    *   Create `on_add_pronunciation` and `on_remove_pronunciation` event handlers to manage the list in the state.
-    *   Update the `on_click_generate` and `on_click_clear` handlers to manage and pass the new state.
+-   **[x] Backend:**
+    -   [x] Modify `synthesize_chirp_speech` to accept a `pronunciations` list.
+    -   [x] If the list is provided, create `texttospeech.CustomPronunciation` objects and pass them to the `client.synthesize_speech` request.
+-   **[x] Frontend:**
+    -   [x] Add `custom_pronunciations`, `current_phrase_input`, `current_pronunciation_input` to `Chirp3hdState`.
+    -   [x] Add a new "Custom Pronunciations" section to the UI with input fields and an "Add" button.
+    -   [x] Dynamically render the list of added pronunciations with "Remove" buttons.
+    -   [x] Implement `on_add_pronunciation` and `on_remove_pronunciation` event handlers.
+    -   [x] Update `on_click_generate` and `on_click_clear` to handle the new state.
+-   **[x] Testing Point 2:** Verify that custom pronunciations can be added, removed, and correctly affect the generated audio.
