@@ -37,6 +37,7 @@ class MediaItem:
     """Represents a single media item in the library for Firestore storage and retrieval."""
 
     id: Optional[str] = None  # Firestore document ID
+    related_media_item_id: Optional[str] = None # For linking generation sequences
     user_email: Optional[str] = None
     timestamp: Optional[datetime.datetime] = None # Store as datetime object
 
@@ -92,6 +93,12 @@ class MediaItem:
 
     # Chirp and Gemini-TTS specific fields
     custom_pronunciations: List[dict[str, str]] = field(default_factory=list)
+    voice: Optional[str] = None
+    pace: Optional[float] = None
+    volume_gain_db: Optional[float] = None
+    language_code: Optional[str] = None
+    style_prompt: Optional[str] = None
+
 
 
 

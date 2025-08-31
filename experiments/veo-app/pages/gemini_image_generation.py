@@ -13,14 +13,16 @@
 # limitations under the License.
 
 from dataclasses import field
+import time
 
 import mesop as me
 
-from common.storage import download_from_gcs, store_to_gcs
+from common.storage import store_to_gcs
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
+from components.image_thumbnail import image_thumbnail
 from models.gemini import generate_image_from_prompt_and_images
 from state.state import AppState
 from common.metadata import MediaItem, add_media_item_to_firestore
@@ -32,15 +34,16 @@ from components.snackbar import snackbar
 class PageState:
     """Gemini Image Generation Page State"""
 
-    uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    uploaded_image_gcs_uris: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
     prompt: str = ""
-    generated_image_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    generated_image_urls: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
     is_generating: bool = False
     generation_complete: bool = False
     generation_time: float = 0.0
     selected_image_url: str = ""
     show_snackbar: bool = False
     snackbar_message: str = ""
+    previous_media_item_id: str | None = None # For linking generation sequences
 
 
 def gemini_image_gen_page_content():
@@ -49,7 +52,7 @@ def gemini_image_gen_page_content():
 
     with page_scaffold():  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Gemini Image Generation", "image")
+            header("Gemini Image Generation", "image") 
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Left column (controls)
@@ -96,18 +99,9 @@ def gemini_image_gen_page_content():
                                 margin=me.Margin(bottom=16),
                             ),
                         ):
-                            for uri in state.uploaded_image_gcs_uris:
-                                me.image(
-                                    src=uri.replace(
-                                        "gs://",
-                                        "https://storage.mtls.cloud.google.com/",
-                                    ),
-                                    style=me.Style(
-                                        width=150,
-                                        height=150,
-                                        object_fit="contain",
-                                        border_radius=8,
-                                    ),
+                            for i, uri in enumerate(state.uploaded_image_gcs_uris):
+                                image_thumbnail(
+                                    image_uri=uri, index=i, on_remove=on_remove_image, icon_size=18,
                                 )
                     me.textarea(
                         label="Prompt",
@@ -150,7 +144,6 @@ def gemini_image_gen_page_content():
                                     style=me.Style(width=100, height=100, border_radius=8, object_fit="cover")
                                 )
                                 me.button("Continue", on_click=on_continue_click, type="stroked")
-                                me.button("Save", on_click=on_save_click, type="stroked")
 
                 with me.box(style=me.Style(flex_grow=1)):
                     if state.generation_complete and not state.generated_image_urls:
@@ -201,7 +194,7 @@ def gemini_image_gen_page_content():
                                                     me.BorderSide(
                                                         width=4,
                                                         style="solid",
-                                                                                                                color=me.theme_var("secondary") if is_selected else "transparent",
+                                                        color=me.theme_var("secondary") if is_selected else "transparent",
                                                     )
                                                 ),
                                                 border_radius=12,
@@ -238,6 +231,12 @@ def on_library_select(e: LibrarySelectionChangeEvent):
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
     yield
 
+def on_remove_image(e: me.ClickEvent):
+    """Handle remove image click."""
+    state = me.state(PageState)
+    del state.uploaded_image_gcs_uris[int(e.key)]
+    yield
+
 def on_prompt_blur(e: me.InputEvent):
     """Handle prompt input."""
     me.state(PageState).prompt = e.value
@@ -257,6 +256,7 @@ def on_clear_click(e: me.ClickEvent):
     state.selected_image_url = ""
     state.generation_time = 0.0
     state.generation_complete = False
+    state.previous_media_item_id = None # Reset the chain
     yield
 
 def on_continue_click(e: me.ClickEvent):
@@ -268,80 +268,71 @@ def on_continue_click(e: me.ClickEvent):
     # Clear the uploaded images and add the selected one
     state.uploaded_image_gcs_uris = [gcs_uri]
     
-    # Clear the generated images and related state
+    # Clear the generated images and related state, and reset the chain
     state.generated_image_urls = []
     state.selected_image_url = ""
     state.generation_time = 0.0
     state.generation_complete = False
+    state.previous_media_item_id = None # Reset the chain
     yield
 
-def on_save_click(e: me.ClickEvent):
-    """Handle save button click."""
-    state = me.state(PageState)
-    app_state = me.state(AppState)
-
-    if not state.selected_image_url:
-        return
-
-    try:
-        # Convert the display URL back to a GCS URI
-        gcs_uri = state.selected_image_url.replace("https://storage.mtls.cloud.google.com/", "gs://")
-
-        # Add metadata to Firestore
-        add_media_item_to_firestore(
-            MediaItem(
-                gcs_uris=[gcs_uri],
-                prompt=state.prompt,
-                mime_type="image/png",
-                user_email=app_state.user_email,
-                source_images_gcs=state.uploaded_image_gcs_uris,
-                comment="generated by gemini image generation",
-                model=cfg().GEMINI_IMAGE_GEN_MODEL,
-            )
-        )
-        state.snackbar_message = "Image saved to library!"
-        state.show_snackbar = True
-        yield
-
-        # Hide snackbar after 3 seconds
-        import time
-        time.sleep(3)
-        state.show_snackbar = False
-        yield
-
-    except Exception as ex:
-        state.snackbar_message = f"Error saving image: {ex}"
-        state.show_snackbar = True
-        yield
-
-        # Hide snackbar after 3 seconds
-        import time
-        time.sleep(3)
-        state.show_snackbar = False
-        yield
+def show_snackbar(state: PageState, message: str):
+    state.snackbar_message = message
+    state.show_snackbar = True
+    yield
+    time.sleep(3)
+    state.show_snackbar = False
+    yield
 
 def generate_images(e: me.ClickEvent):
-    """Generate images."""
+    """Generate images and automatically save them to the library in a chain."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
     state.is_generating = True
     state.generation_complete = False
     yield
 
-    gcs_uris, execution_time = generate_image_from_prompt_and_images(
-        prompt=state.prompt,
-        images=state.uploaded_image_gcs_uris,
-    )
+    try:
+        gcs_uris, execution_time = generate_image_from_prompt_and_images(
+            prompt=state.prompt,
+            images=state.uploaded_image_gcs_uris,
+        )
 
-    state.generated_image_urls = [
-        uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-        for uri in gcs_uris
-    ]
-    state.is_generating = False
-    state.generation_complete = True
-    state.generation_time = execution_time
-    if state.generated_image_urls:
-        state.selected_image_url = state.generated_image_urls[0]
-    yield
+        state.generated_image_urls = [
+            uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+            for uri in gcs_uris
+        ]
+        state.generation_time = execution_time
+        if state.generated_image_urls:
+            state.selected_image_url = state.generated_image_urls[0]
+
+        # Automatically save to library
+        item = MediaItem(
+            gcs_uris=gcs_uris,
+            prompt=state.prompt,
+            mime_type="image/png",
+            user_email=app_state.user_email,
+            source_images_gcs=state.uploaded_image_gcs_uris,
+            comment="generated by gemini image generation",
+            model=cfg().GEMINI_IMAGE_GEN_MODEL,
+            related_media_item_id=state.previous_media_item_id,
+        )
+        add_media_item_to_firestore(item)
+        
+        # Update state for the next link in the chain
+        state.previous_media_item_id = item.id
+        
+        # Show feedback
+        show_snackbar(state, "Automatically saved to library.")
+
+    except Exception as ex:
+        print(f"ERROR: Failed to generate images. Details: {ex}")
+        show_snackbar(state, f"An error occurred: {ex}")
+
+    finally:
+        state.is_generating = False
+        state.generation_complete = True
+        yield
 
 
 @me.page(path="/gemini_image_generation")
