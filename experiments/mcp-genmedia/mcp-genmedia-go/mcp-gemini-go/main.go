@@ -136,6 +136,15 @@ func main() {
 	s.AddTool(ttsTool, geminiAudioTTSHandler)
 	// --- End of TTS Tools ---
 
+	// --- Register Gemini Resources ---
+	s.AddResource(mcp.NewResource(
+		"gemini://language_codes",
+		"Gemini TTS Language Codes",
+		mcp.WithResourceDescription("A list of supported languages and their BCP-47 codes for Gemini TTS."),
+		mcp.WithMIMEType("application/json"),
+	), geminiLanguageCodesHandler)
+	// --- End of Gemini Resources ---
+
 	log.Printf("Starting %s MCP Server (Version: %s)", serviceName, version)
 	if err := server.ServeStdio(s); err != nil {
 		log.Fatalf("STDIO Server error: %v", err)

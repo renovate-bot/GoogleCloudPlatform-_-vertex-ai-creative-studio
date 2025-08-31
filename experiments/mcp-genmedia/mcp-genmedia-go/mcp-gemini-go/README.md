@@ -33,6 +33,12 @@ Synthesizes speech from text using Gemini models, allowing for granular control 
 
 Lists the available single-speaker voices for use with the Gemini-TTS models.
 
+## Resources
+
+### `gemini://language_codes`
+
+Provides a list of supported languages and their BCP-47 codes. Currently, only `en-US` is supported.
+
 ## Example Usage
 
 ### Generating an Image
@@ -55,4 +61,17 @@ export PROJECT_ID=$(gcloud config get-value project)
 mcptools call gemini_audio_tts \
   --params '{"text": "Hello, this is a test of the Gemini Text-to-Speech API.", "output_directory": "./tts_output"}' \
   mcp-gemini-go
+```
+
+### Testing Direct Audio Output (Advanced)
+
+If you want to test the direct audio output without saving to a file via the `output_directory` parameter, you can send a raw JSON-RPC request to the server. This is necessary because the `mcptools` client does not support rendering audio content to the terminal.
+
+The following command pipes a `tools/call` request to the server, parses the JSON response with `jq` to extract the base64-encoded audio data, decodes it, and saves it to a local file.
+
+```bash
+echo '{"jsonrpc":"2.0","method":"tools/call","id":1,"params":{"name":"gemini_audio_tts","arguments":{"text":"This is a direct JSON-RPC output test."}}}' | \
+mcp-gemini-go | \
+jq -r '.result.content[] | select(.type == "audio") | .data' | \
+base64 --decode > test_direct_jsonrpc.wav
 ```

@@ -60,6 +60,27 @@ var availableGeminiVoices = []string{
 	"Zubenelgenubi",
 }
 
+// geminiLanguageCodeMap holds the supported languages.
+var geminiLanguageCodeMap = map[string]string{
+	"english (united states)": "en-US",
+}
+
+// --- Resource Handler ---
+
+func geminiLanguageCodesHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+	jsonData, err := json.MarshalIndent(geminiLanguageCodeMap, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal language codes: %w", err)
+	}
+	return []mcp.ResourceContents{
+		mcp.TextResourceContents{
+			URI:      "gemini://language_codes",
+			MIMEType: "application/json",
+			Text:     string(jsonData),
+		},
+	}, nil
+}
+
 // --- API Request and Response Structs ---
 
 type geminiTTSRequest struct {
