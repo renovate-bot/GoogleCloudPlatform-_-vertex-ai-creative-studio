@@ -36,6 +36,8 @@ from pages.about import about_page_content
 from pages.character_consistency import character_consistency_page_content
 from pages.config import config_page_contents
 from pages.edit_images import content as edit_images_content
+from pages.gemini_tts import page as gemini_tts_page
+from pages.chirp_3hd import page as chirp_3hd_page
 from pages.home import home_page_content
 from pages.imagen import imagen_content
 from pages.library import library_content
@@ -197,6 +199,10 @@ def library_page():
 def edit_images_page():
     edit_images_content(me.state(AppState))
 
+@me.page(path="/gemini-tts", title="GenMedia Creative Studio - Gemini TTS")
+def gemini_tts_route():
+    gemini_tts_page()
+
 @me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
 def vto_page():
     vto()
@@ -283,3 +289,4 @@ if __name__ == "__main__":
         timeout_graceful_shutdown=0,
         proxy_headers=True,
     )
+

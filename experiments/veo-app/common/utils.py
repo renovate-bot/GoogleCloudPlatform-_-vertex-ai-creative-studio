@@ -96,3 +96,9 @@ def print_keys(obj, prefix=""):
             # you might adjust the print statement here or what you pass to print_keys.
             # Current behavior: treats list items as potentially new objects to explore.
             print_keys(item, prefix + f"  [{i}] ")  # indicate list index in prefix
+
+def gcs_uri_to_https_url(gcs_uri: str) -> str:
+    """Converts a GCS URI to a public HTTPS URL."""
+    if gcs_uri and gcs_uri.startswith("gs://"):
+        return gcs_uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+    return gcs_uri

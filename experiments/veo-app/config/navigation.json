@@ -30,16 +30,24 @@
     },
     {
       "id": 12,
-      "display": "Gemini",
+      "display": "Gemini Image Generation",
       "icon": "auto_awesome",
       "icon_family": "Google Symbols",
       "route": "/gemini_image_generation",
+      "group": "foundation"
+    },
+       {
+      "id": 14,
+      "display": "Gemini TTS",
+      "icon": "record_voice_over",
+      "route": "/gemini-tts",
       "group": "foundation"
     },
     {
       "id": 15,
       "display": "Chirp 3 HD",
       "icon": "graphic_eq",
+      "route": "/chirp-3hd",
       "group": "foundation"
     },
     {
@@ -50,6 +58,7 @@
       "group": "foundation",
       "feature_flag": "LYRIA_PROJECT_ID"
     },
+ 
     {
       "id": 30,
       "display": "Virtual Try-On",
@@ -64,7 +73,6 @@
       "route": "/starter-pack",
       "group": "workflows"
     },
-
     {
       "id": 40,
       "display": "Product in Scene",

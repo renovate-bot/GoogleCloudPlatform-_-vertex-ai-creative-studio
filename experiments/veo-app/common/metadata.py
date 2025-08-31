@@ -90,6 +90,10 @@ class MediaItem:
     best_candidate_image: Optional[str] = None
     outpainted_image: Optional[str] = None
 
+    # Chirp and Gemini-TTS specific fields
+    custom_pronunciations: List[dict[str, str]] = field(default_factory=list)
+
+
 
 def add_media_item_to_firestore(item: MediaItem):
     """Adds a MediaItem to Firestore. Sets timestamp if not already present."""

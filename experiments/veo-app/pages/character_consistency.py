@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from dataclasses import field
+import json
 
 import mesop as me
 
@@ -44,14 +45,20 @@ class PageState:
     info_dialog_open: bool = False
 
 
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    CHARACTER_CONSISTENCY_INFO = next(
+        (s for s in about_content["sections"] if s.get("id") == "character_consistency"), None
+    )
+
 def character_consistency_page_content():
     """UI for the Character Consistency page."""
     state = me.state(PageState)
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
-            me.text("About Character Consistency", type="headline-6")
-            me.markdown(ABOUT_PAGE_CONTENT["sections"][6]["description"])
+            me.text(f'About {CHARACTER_CONSISTENCY_INFO["title"]}', type="headline-4")
+            me.markdown(CHARACTER_CONSISTENCY_INFO["description"])
             me.divider()
             me.text("Current Settings", type="headline-6")
             me.text(f"Scene Prompt: {state.scene_prompt}")

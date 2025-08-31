@@ -1,3 +1,17 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import mesop as me
 import mesop.labs as mel
 
@@ -15,11 +29,8 @@ from config.default import Default
 
 cfg = Default()
 
-def gcs_uri_to_https_url(gcs_uri: str) -> str:
-    """Converts a GCS URI to a public HTTPS URL."""
-    if gcs_uri and gcs_uri.startswith("gs://"):
-        return gcs_uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-    return gcs_uri
+from common.utils import gcs_uri_to_https_url
+from config.default import Default
 
 @me.page(
     path="/starter-pack",

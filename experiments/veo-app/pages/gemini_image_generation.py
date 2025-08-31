@@ -112,7 +112,7 @@ def gemini_image_gen_page_content():
                     me.textarea(
                         label="Prompt",
                         rows=3,
-                                                on_blur=on_prompt_blur,
+                        on_blur=on_prompt_blur,
                         value=state.prompt,
                         style=me.Style(width="100%", margin=me.Margin(bottom=16)),
                     )
