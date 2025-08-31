@@ -191,7 +191,7 @@ resource "google_cloud_run_v2_service" "creative_studio" {
     }
   }
   lifecycle {
-    ignore_changes = [ template.containers[0].image, client ]
+    ignore_changes = [ template[0].containers[0].image, client ]
   }
   depends_on = [
     google_service_account_iam_member.build_act_as_creative_studio,
