@@ -364,6 +364,10 @@ def on_click_generate(e: me.ClickEvent):
                 mime_type="audio/wav",
                 gcsuri=gcs_url,
                 custom_pronunciations=state.custom_pronunciations,
+                voice=state.selected_voice,
+                pace=state.speaking_rate,
+                volume=state.volume_gain_db,
+                language_code=state.selected_language
             )
             add_media_item_to_firestore(item)
             me.state(AppState).snackbar_message = "Audio saved to library"

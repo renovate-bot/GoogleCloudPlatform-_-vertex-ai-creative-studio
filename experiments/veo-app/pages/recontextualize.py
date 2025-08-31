@@ -24,7 +24,7 @@ from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
-from components.recontext.image_thumbnail import image_thumbnail
+from components.image_thumbnail import image_thumbnail
 from config.default import Default, ABOUT_PAGE_CONTENT
 from models.image_models import recontextualize_product_in_scene
 from state.state import AppState
@@ -78,6 +78,7 @@ def recontextualize():
             with me.box(
                 style=me.Style(display="flex", flex_direction="column", gap=16),
             ):
+                me.text("Provide 1-3 images of a product, then recast it in a new scene of your choosing.")
                 if len(state.uploaded_image_gcs_uris) < 3:
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=16, justify_content="center"),

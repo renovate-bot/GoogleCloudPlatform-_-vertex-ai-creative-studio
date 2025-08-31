@@ -16,7 +16,11 @@ import mesop as me
 from typing import Callable
 
 @me.component
-def image_thumbnail(image_uri: str, index: int, on_remove: Callable):
+def image_thumbnail(image_uri: str, index: int, on_remove: Callable, icon_size: int = 18):
+    # Calculate the container dimension based on the icon size.
+    # This creates a consistent 4px "padding" on all sides.
+    box_dimension = icon_size + 8
+    
     with me.box(style=me.Style(position="relative", width=100, height=100)):
         me.image(src=image_uri.replace("gs://", "https://storage.mtls.cloud.google.com/"), style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover"))
         with me.box(
@@ -28,9 +32,13 @@ def image_thumbnail(image_uri: str, index: int, on_remove: Callable):
                 position="absolute",
                 top=4,
                 right=4,
-                border_radius=50,
-                padding=me.Padding.all(4),
+                border_radius="50%",  # Use 50% for a perfect circle
                 cursor="pointer",
+                display="flex",
+                align_items="center",
+                justify_content="center",
+                width=box_dimension,
+                height=box_dimension,
             ),
         ):
-            me.icon("close")
+            me.icon("close", style=me.Style(font_size=icon_size, transform="translate(2px, 3px)",))
