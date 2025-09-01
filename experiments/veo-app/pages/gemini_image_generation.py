@@ -353,6 +353,8 @@ def generate_images(e: me.ClickEvent):
         gcs_uris, execution_time = generate_image_from_prompt_and_images(
             prompt=state.prompt,
             images=state.uploaded_image_gcs_uris,
+            gcs_folder="gemini_image_generations",
+            file_prefix="gemini_image",
         )
 
         state.generation_time = execution_time
