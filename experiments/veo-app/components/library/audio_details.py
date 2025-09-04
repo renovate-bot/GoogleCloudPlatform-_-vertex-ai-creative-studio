@@ -17,7 +17,8 @@ import json
 import mesop as me
 from common.metadata import MediaItem
 from datetime import datetime
-
+import os
+from components.download_button.download_button import download_button
 
 from typing import Callable
 
@@ -90,17 +91,22 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
         if item.duration is not None:
             me.text(f"Duration: {item.duration} seconds")
         
-        with me.content_button(
-            on_click=on_click_permalink,
-            key=item.id or "",  # Ensure key is not None
-        ):
-            with me.box(
-                style=me.Style(
-                    display="flex",
-                    flex_direction="row",
-                    align_items="center",
-                    gap=5,
-                )
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16))):
+            with me.content_button(
+                on_click=on_click_permalink,
+                key=item.id or "",  # Ensure key is not None
             ):
-                me.icon(icon="link")
-                me.text("permalink")
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        align_items="center",
+                        gap=5,
+                    )
+                ):
+                    me.icon(icon="link")
+                    me.text("permalink")
+            
+            if item.gcsuri:
+                filename = os.path.basename(item.gcsuri.split('?')[0])
+                download_button(url=item.gcsuri, filename=filename)

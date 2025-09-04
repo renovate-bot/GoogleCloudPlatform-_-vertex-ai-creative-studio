@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,15 @@
 # limitations under the License.
 """Component for displaying video details."""
 
-import mesop as me
-from common.metadata import MediaItem
+import os
 from datetime import datetime
 from typing import Callable
+
+import mesop as me
+
+from common.metadata import MediaItem
+from components.download_button.download_button import download_button
+
 
 @me.component
 def video_details(item: MediaItem, on_click_permalink: Callable):
@@ -24,15 +29,18 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
     item_display_url = (
         item.gcsuri.replace("gs://", "https://storage.mtls.cloud.google.com/")
         if item.gcsuri
-        else (item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/") if item.gcs_uris else "")
+        else (
+            item.gcs_uris[0].replace("gs://", "https://storage.mtls.cloud.google.com/")
+            if item.gcs_uris
+            else ""
+        )
     )
-    
+
     with me.box(
         style=me.Style(
             display="flex",
             flex_direction="column",
             gap=12,
-
         )
     ):
 
@@ -77,9 +85,7 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
                     ts_str_detail = item.timestamp.isoformat()
                 dialog_timestamp_str_detail = datetime.fromisoformat(
                     ts_str_detail.replace("Z", "+00:00")
-                ).strftime(
-                    "%Y-%m-%d %H:%M:%S %Z"
-                )
+                ).strftime("%Y-%m-%d %H:%M:%S %Z")
             except Exception:
                 dialog_timestamp_str_detail = str(item.timestamp)
         me.text(f"Generated: {dialog_timestamp_str_detail}")
@@ -122,9 +128,7 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
             )
             me.text(
                 "Last Reference Image:",
-                style=me.Style(
-                    font_weight="500", margin=me.Margin(top=8)
-                ),
+                style=me.Style(font_weight="500", margin=me.Margin(top=8)),
             )
             me.image(
                 src=last_ref_url,
@@ -135,8 +139,13 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
                     margin=me.Margin(top=4),
                 ),
             )
-            
-        with me.content_button(
+
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16)
+            )
+        ):
+            with me.content_button(
                 on_click=on_click_permalink,
                 key=item.id or "",  # Ensure key is not None
             ):
@@ -150,3 +159,7 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
                 ):
                     me.icon(icon="link")
                     me.text("permalink")
+
+            if item.gcsuri:
+                filename = os.path.basename(item.gcsuri.split("?")[0])
+                download_button(url=item.gcsuri, filename=filename)
