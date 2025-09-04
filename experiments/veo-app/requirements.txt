@@ -46,7 +46,7 @@ cycler==0.12.1
     # via matplotlib
 decorator==5.2.1
     # via ipython
-deepdiff==8.6.1
+deepdiff==6.7.1
     # via mesop
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
@@ -105,7 +105,7 @@ google-cloud-storage==2.19.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
-google-cloud-texttospeech==2.28.0
+google-cloud-texttospeech==2.29.0
     # via veo-app
 google-crc32c==1.7.1
     # via
@@ -280,7 +280,7 @@ pyparsing==3.2.3
     # via
     #   httplib2
     #   matplotlib
-pytest==8.4.1
+pytest==8.4.2
     # via veo-app
 python-dateutil==2.9.0.post0
     # via
@@ -300,7 +300,7 @@ requests==2.32.5
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.12.11
+ruff==0.12.12
     # via veo-app
 shapely==2.1.1
     # via google-cloud-aiplatform
