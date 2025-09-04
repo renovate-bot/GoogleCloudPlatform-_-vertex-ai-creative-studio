@@ -300,7 +300,7 @@ requests==2.32.5
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.12.11
+ruff==0.12.12
     # via veo-app
 shapely==2.1.1
     # via google-cloud-aiplatform
