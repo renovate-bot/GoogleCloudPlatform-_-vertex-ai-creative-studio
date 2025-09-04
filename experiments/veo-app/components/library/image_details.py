@@ -21,6 +21,8 @@ import mesop as me
 from common.metadata import MediaItem
 
 
+from typing import Callable
+
 @me.stateclass
 class CarouselState:
     """State for the image carousel."""
@@ -49,7 +51,7 @@ def on_prev(e: me.ClickEvent) -> None:
 
 
 @me.component
-def image_details(item: MediaItem) -> None:
+def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
     """A component that displays image details in a carousel.
 
     Args:
@@ -199,4 +201,17 @@ def image_details(item: MediaItem) -> None:
                             width="100px", height="auto", border_radius="8px"
                         ),
                     )
-
+    with me.content_button(
+            on_click=on_click_permalink,
+            key=item.id or "",  # Ensure key is not None
+        ):
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                align_items="center",
+                gap=5,
+            )
+        ):
+            me.icon(icon="link")
+            me.text("permalink")
