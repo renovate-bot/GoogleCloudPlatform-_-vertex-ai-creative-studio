@@ -19,7 +19,8 @@
 import mesop as me
 
 from common.metadata import MediaItem
-
+import os
+from components.download_button.download_button import download_button
 
 from typing import Callable
 
@@ -201,17 +202,23 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                             width="100px", height="auto", border_radius="8px"
                         ),
                     )
-    with me.content_button(
-            on_click=on_click_permalink,
-            key=item.id or "",  # Ensure key is not None
-        ):
-        with me.box(
-            style=me.Style(
-                display="flex",
-                flex_direction="row",
-                align_items="center",
-                gap=5,
-            )
-        ):
-            me.icon(icon="link")
-            me.text("permalink")
+    with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16))):
+        with me.content_button(
+                on_click=on_click_permalink,
+                key=item.id or "",  # Ensure key is not None
+            ):
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    align_items="center",
+                    gap=5,
+                )
+            ):
+                me.icon(icon="link")
+                me.text("permalink")
+
+        if image_url:
+            gcs_uri = item.gcs_uris[state.current_index]
+            filename = os.path.basename(gcs_uri.split('?')[0])
+            download_button(url=gcs_uri, filename=filename)
