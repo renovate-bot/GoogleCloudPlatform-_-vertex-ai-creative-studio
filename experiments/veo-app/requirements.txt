@@ -46,7 +46,7 @@ cycler==0.12.1
     # via matplotlib
 decorator==5.2.1
     # via ipython
-deepdiff==8.6.1
+deepdiff==6.7.1
     # via mesop
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
@@ -111,7 +111,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.32.0
+google-genai==1.33.0
     # via
     #   google-cloud-aiplatform
     #   veo-app
