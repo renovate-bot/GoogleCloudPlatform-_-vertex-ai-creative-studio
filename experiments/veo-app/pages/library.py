@@ -26,21 +26,26 @@ from common.metadata import (
     MediaItem,
     config,
     db,
+    get_media_for_page,  # This might need adjustment if we want truly accurate filtered counts server-side
     get_media_item_by_id,
-    get_media_for_page, # This might need adjustment if we want truly accurate filtered counts server-side
 )
 from components.dialog import (
     dialog,
     dialog_actions,
 )
 from components.header import header
-from components.library.image_details import image_details
+from components.library.image_details import CarouselState, image_details
+from components.library.video_details import video_details
+from components.library.audio_details import audio_details
+from components.library.character_consistency_details import character_consistency_details
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-from state.state import AppState
 from components.pill import pill
+from components.library.video_grid_item import video_grid_item
+from components.library.grid_parts import render_video_pills, render_image_pills, render_audio_pills, render_video_preview, render_image_preview, render_audio_preview
+from state.state import AppState
 
 
 @me.stateclass
@@ -53,6 +58,7 @@ class PageState:
     media_per_page: int = 9
     total_media: int = 0
     media_items: List[MediaItem] = field(default_factory=list)
+    all_media_items: List[MediaItem] = field(default_factory=list)
     key: int = 0  # Used to force re-render of the media grid
     show_details_dialog: bool = False
     selected_media_item_id: Optional[str] = None
@@ -75,8 +81,10 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         pagestate: The current page state.
         is_filter_change: Whether the media is being loaded due to a filter change.
     """
-    app_state = me.state(AppState) # Get global app state for user email
-    user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
+    app_state = me.state(AppState)  # Get global app state for user email
+    user_email_to_filter = (
+        app_state.user_email if pagestate.user_filter == "mine" else None
+    )
 
     if is_filter_change:
         pagestate.current_page = 1  # Reset to first page on any filter change
@@ -84,7 +92,7 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
     # Fetch all items matching current filters to correctly determine total_media for pagination
     # This fetches up to 'fetch_limit' defined in get_media_for_page.
     # For very large datasets, a server-side count with filters would be more performant.
-    all_matching_items = get_media_for_page(
+    pagestate.all_media_items = get_media_for_page(
         page=1,  # Fetch from page 1
         media_per_page=1000,  # Effectively fetch all matching items up to the internal limit
         type_filters=pagestate.selected_values,
@@ -92,20 +100,45 @@ def _load_media_and_update_state(pagestate: PageState, is_filter_change: bool = 
         filter_by_user_email=user_email_to_filter,
         sort_by_timestamp=True,
     )
-    pagestate.total_media = len(all_matching_items)
+    pagestate.total_media = len(pagestate.all_media_items)
 
-    # Then fetch just the items for the current page
-    pagestate.media_items = get_media_for_page(
-        pagestate.current_page,
-        pagestate.media_per_page,
-        pagestate.selected_values,
-        pagestate.error_filter_value,
-        filter_by_user_email=user_email_to_filter,
-        sort_by_timestamp=True,
-    )
+    # Then slice the fetched items for the current page
+    start_slice = (pagestate.current_page - 1) * pagestate.media_per_page
+    end_slice = start_slice + pagestate.media_per_page
+    pagestate.media_items = pagestate.all_media_items[start_slice:end_slice]
     pagestate.key += 1  # Force re-render of the grid
 
 
+def _item_matches_filters(
+    item: MediaItem, pagestate: PageState, app_state: AppState
+) -> bool:
+    """Checks if a media item matches the current filter state."""
+    # User filter check
+    if pagestate.user_filter == "mine" and item.user_email != app_state.user_email:
+        return False
+
+    # Error filter check
+    error_message_present = bool(item.error_message)
+    if pagestate.error_filter_value == "no_errors" and error_message_present:
+        return False
+    if pagestate.error_filter_value == "only_errors" and not error_message_present:
+        return False
+
+    # Type filter check
+    if "all" not in pagestate.selected_values:
+        mime_type = item.raw_data.get("mime_type", "") if item.raw_data else ""
+        passes_type_filter = False
+        if "videos" in pagestate.selected_values and mime_type.startswith("video/"):
+            passes_type_filter = True
+        elif "images" in pagestate.selected_values and mime_type.startswith("image/"):
+            passes_type_filter = True
+        elif "music" in pagestate.selected_values and mime_type.startswith("audio/"):
+            passes_type_filter = True
+
+        if not passes_type_filter:
+            return False
+
+    return True
 def library_content(app_state: me.state):
     """The main content of the library page.
 
@@ -117,7 +150,8 @@ def library_content(app_state: me.state):
     if not pagestate.initial_url_param_processed:
         # Load initial data respecting all filters
         _load_media_and_update_state(
-            pagestate, is_filter_change=True
+            pagestate,
+            is_filter_change=True
         )  # Treat initial load as a filter change for count
 
         query_params = me.query_params
@@ -134,19 +168,22 @@ def library_content(app_state: me.state):
             else:
                 fetched_item = get_media_item_by_id(media_id_from_url)
                 if fetched_item:
-                    # Check if the fetched item matches current filters before adding
-                    # This is a simplified check; ideally, get_media_item_by_id would also consider filters
-                    # or we re-evaluate if it should be shown.
-                    # For now, we add it if found, but it might not match current filters.
-                    if not any(v.id == fetched_item.id for v in pagestate.media_items):
-                        pagestate.media_items.insert(
-                            0, fetched_item
-                        )  # Prepend for visibility
-                        # pagestate.total_media +=1 # Adjust if needed, though complex with filters
-
-                    pagestate.selected_media_item_id = fetched_item.id
-                    pagestate.show_details_dialog = True
-                    pagestate.dialog_instance_key += 1
+                    # NEW: Check if the fetched item matches current filters before adding
+                    if _item_matches_filters(fetched_item, pagestate, app_state):
+                        if not any(
+                            v.id == fetched_item.id for v in pagestate.media_items
+                        ):
+                            pagestate.media_items.insert(
+                                0, fetched_item
+                            )  # Prepend for visibility
+                        pagestate.selected_media_item_id = fetched_item.id
+                        pagestate.show_details_dialog = True
+                        pagestate.dialog_instance_key += 1
+                    else:
+                        pagestate.url_item_not_found_message = (
+                            f"Item '{media_id_from_url}' exists but is hidden by your current filters. "
+                            "Try adjusting the 'All Users' or 'Media Type' filters."
+                        )
                 else:
                     pagestate.url_item_not_found_message = (
                         f"Media item with ID '{media_id_from_url}' not found."
@@ -220,11 +257,14 @@ def library_content(app_state: me.state):
                     ],
                     on_change=on_change_user_filter,
                 )
-                with me.content_button(
-                    type="icon",
-                    on_click=on_refresh_click,
-                    style=me.Style(margin=me.Margin(left="auto")),
-                ), me.tooltip(message="Refresh Library"):
+                with (
+                    me.content_button(
+                        type="icon",
+                        on_click=on_refresh_click,
+                        style=me.Style(margin=me.Margin(left="auto")),
+                    ),
+                    me.tooltip(message="Refresh Library"),
+                ):
                     me.icon(icon="refresh")
 
             with me.box(
@@ -315,9 +355,7 @@ def library_content(app_state: me.state):
                         )
 
                         with me.box(
-                            key=str(
-                                i
-                            ),  # Use item ID if available and unique, otherwise index is fine for local list
+                            key=m_item.id,  # Use item ID if available and unique, otherwise index is fine for local list
                             # key=m_item.id or str(i), # Prefer item ID for key if stable
                             on_click=on_media_item_click,
                             style=me.Style(
@@ -355,54 +393,11 @@ def library_content(app_state: me.state):
                                 )
                             ):
                                 if media_type_group == "video":
-                                    pill("Video", "media_type_video")
-                                    pill(
-                                        "t2v" if not m_item.reference_image else "i2v",
-                                        "gen_t2v"
-                                        if not m_item.reference_image
-                                        else "gen_i2v",
-                                    )
-                                    if m_item.aspect:
-                                        pill(m_item.aspect, "aspect")
-                                    if m_item.duration is not None:
-                                        pill(item_duration_str, "duration")
-                                    if m_item.resolution:
-                                        pill(m_item.resolution, "resolution")
-                                    pill("24 fps", "fps")
-                                    if (
-                                        m_item.enhanced_prompt_used
-                                        and media_type_group == "video"
-                                    ):
-                                        with me.tooltip(
-                                            message="Prompt was auto-enhanced"
-                                        ):
-                                            me.icon(
-                                                "auto_fix_normal",
-                                                style=me.Style(
-                                                    color=me.theme_var("primary")
-                                                ),
-                                            )
-
+                                    render_video_pills(item=m_item)
                                 elif media_type_group == "image":
-                                    pill("Image", "media_type_image")
-                                    if m_item.aspect:
-                                        pill(m_item.aspect, "aspect")
-
+                                    render_image_pills(item=m_item)
                                 elif media_type_group == "audio":
-                                    pill("Audio", "media_type_audio")
-                                    if m_item.duration is not None:
-                                        pill(item_duration_str, "duration")
-
-                                    if m_item.rewritten_prompt is not None:
-                                        with me.tooltip(
-                                            message="Custom prompt rewriter"
-                                        ):
-                                            me.icon(
-                                                "auto_fix_normal",
-                                                style=me.Style(
-                                                    color=me.theme_var("primary")
-                                                ),
-                                            )
+                                    render_audio_pills(item=m_item)
 
                                 # Pill for error message
                                 if m_item.error_message:
@@ -428,20 +423,19 @@ def library_content(app_state: me.state):
                             with me.box(
                                 style=me.Style(
                                     display="flex",
-                                    flex_direction="row",  # Changed to row for side-by-side potential
+                                    flex_direction="row",
                                     gap=8,
-                                    align_items="center",  # Align items vertically in center
-                                    justify_content="center",  # Center content horizontally
+                                    align_items="center",
+                                    justify_content="center",
                                     margin=me.Margin(top=8, bottom=8),
-                                    min_height="150px",  # Ensure consistent height for preview area
+                                    min_height="150px",
                                 )
                             ):
                                 if m_item.error_message:
-                                    # Display error message prominently if it exists, instead of media
                                     me.text(
                                         f"Error: {m_item.error_message}",
                                         style=me.Style(
-                                            width="100%",  # Take full width of the preview area
+                                            width="100%",
                                             font_style="italic",
                                             font_size="10pt",
                                             margin=me.Margin.all(3),
@@ -454,43 +448,18 @@ def library_content(app_state: me.state):
                                                 )
                                             ),
                                             border_radius=5,
-                                            background=me.theme_var(
-                                                "error-container"
-                                            ),  # Corrected theme var
-                                            color=me.theme_var(
-                                                "on-error-container"
-                                            ),  # Corrected theme var
+                                            background=me.theme_var("error-container"),
+                                            color=me.theme_var("on-error-container"),
                                         ),
                                     )
-                                else:  # Only show media preview if no error
-                                    if media_type_group == "video" and item_url:
-                                        me.video(
-                                            src=item_url,
-                                            style=me.Style(
-                                                width="100%",  # Take full width
-                                                height="150px",  # Fixed height for consistency
-                                                border_radius=6,
-                                                object_fit="cover",
-                                            ),
-                                        )
-                                    elif media_type_group == "image" and item_url:
-                                        me.image(
-                                            src=item_url,
-                                            # alt_text=m_item.prompt or "Generated Image",
-                                            style=me.Style(
-                                                max_width="100%",  # Ensure it doesn't overflow
-                                                max_height="150px",  # Max height for consistency
-                                                height="auto",  # Maintain aspect ratio
-                                                border_radius=6,
-                                                object_fit="contain",  # Use contain to see whole image
-                                            ),
-                                        )
-                                    elif media_type_group == "audio" and item_url:
-                                        me.audio(
-                                            src=item_url,
-                                            # style=me.Style(width="100%"), # Audio player width
-                                        )
-                                    else:  # Fallback if no URL or unknown type (and no error)
+                                else:
+                                    if media_type_group == "video":
+                                        render_video_preview(item=m_item, item_url=item_url)
+                                    elif media_type_group == "image":
+                                        render_image_preview(item=m_item, item_url=item_url)
+                                    elif media_type_group == "audio":
+                                        render_audio_preview(item=m_item, item_url=item_url)
+                                    else:
                                         me.text(
                                             f"{media_type_group.capitalize() if media_type_group else 'Media'} not available.",
                                             style=me.Style(
@@ -501,48 +470,6 @@ def library_content(app_state: me.state):
                                                 color=me.theme_var("onsurfacevariant"),
                                             ),
                                         )
-
-                                # Reference images for video (only if no error)
-                                if (
-                                    media_type_group == "video"
-                                    and not m_item.error_message
-                                ):
-                                    with me.box(
-                                        style=me.Style(
-                                            display="flex",
-                                            flex_direction="column",  # Stack reference images
-                                            gap=5,
-                                            # margin=me.Margin(left=8) # Add some space if side-by-side with video
-                                        )
-                                    ):
-                                        if m_item.reference_image:
-                                            ref_img_url = m_item.reference_image.replace(
-                                                "gs://",
-                                                "https://storage.mtls.cloud.google.com/",
-                                            )
-                                            me.image(
-                                                src=ref_img_url,
-                                                style=me.Style(
-                                                    height="70px",  # Smaller reference images
-                                                    width="auto",
-                                                    border_radius=4,
-                                                    object_fit="contain",
-                                                ),
-                                            )
-                                        if m_item.last_reference_image:
-                                            last_ref_img_url = m_item.last_reference_image.replace(
-                                                "gs://",
-                                                "https://storage.mtls.cloud.google.com/",
-                                            )
-                                            me.image(
-                                                src=last_ref_img_url,
-                                                style=me.Style(
-                                                    height="70px",
-                                                    width="auto",
-                                                    border_radius=4,
-                                                    object_fit="contain",
-                                                ),
-                                            )
                             # Generation time
                             if m_item.generation_time is not None:
                                 me.text(
@@ -565,19 +492,15 @@ def library_content(app_state: me.state):
             ):
                 item_to_display: Optional[MediaItem] = None
                 if pagestate.selected_media_item_id:
-                    # Try to find in current list first
+                    # Find the item in the total list to ensure it's found, regardless of pagination
                     item_to_display = next(
                         (
                             v
-                            for v in pagestate.media_items
+                            for v in pagestate.all_media_items
                             if v.id == pagestate.selected_media_item_id
                         ),
                         None,
                     )
-                    # If not found (e.g., direct URL access to an item not on current page/filters)
-                    # This case is partially handled by initial load, but good to have a fallback.
-                    # if not item_to_display:
-                    # item_to_display = get_media_item_by_id(pagestate.selected_media_item_id)
 
                 if item_to_display:
                     item = item_to_display
@@ -615,255 +538,23 @@ def library_content(app_state: me.state):
                             ),
                         )
 
-                        item_display_url = (
-                            item.gcsuri.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            )
-                            if item.gcsuri
-                            else (
-                                item.gcs_uris[0].replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
-                                )
-                                if item.gcs_uris
-                                else ""
-                            )
-                        )
-                        if (
-                            item.media_type == "character_consistency"
-                            and item.best_candidate_image
-                        ):
-                            me.video(
-                                src=item_display_url,
-                                style=me.Style(
-                                    width="100%",
-                                    max_height="40vh",
-                                    border_radius=8,
-                                    background="#000",
-                                    display="block",
-                                    margin=me.Margin(bottom=16),
-                                ),
-                            )
-                            best_candidate_url = item.best_candidate_image.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            )
-                            me.text(
-                                "Best Candidate Image:",
-                                style=me.Style(
-                                    font_weight="500", margin=me.Margin(top=8)
-                                ),
-                            )
-                            me.image(
-                                src=best_candidate_url,
-                                style=me.Style(
-                                    max_width="250px",
-                                    height="auto",
-                                    border_radius=6,
-                                    margin=me.Margin(top=4),
-                                ),
-                            )
+                        if dialog_media_type_group == "video":
+                            video_details(item=item, on_click_permalink=on_click_set_permalink)
                         elif dialog_media_type_group == "image":
-                            image_details(item)
-                        elif (
-                            dialog_media_type_group == "video"
-                            and item_display_url
-                            and not item.error_message
-                        ):
-                            me.video(
-                                src=item_display_url,
-                                style=me.Style(
-                                    width="100%",
-                                    max_height="40vh",
-                                    border_radius=8,
-                                    background="#000",  # Background for video player
-                                    display="block",  # Ensure it takes block space
-                                    margin=me.Margin(bottom=16),
-                                ),
-                            )
-                        elif (
-                            dialog_media_type_group == "audio"
-                            and item_display_url
-                            and not item.error_message
-                        ):
-                            me.audio(
-                                src=item_display_url,
-                                # style=me.Style(width="100%", margin=me.Margin(top=8, bottom=16))
-                            )
+                            image_details(item, on_click_permalink=on_click_set_permalink)
+                        elif dialog_media_type_group == "audio":
+                            audio_details(item=item, on_click_permalink=on_click_set_permalink)
+                        elif item.media_type == "character_consistency":
+                            character_consistency_details(item=item, on_click_permalink=on_click_set_permalink)
+                        else:
+                            # Fallback for other types
+                            me.text("Details for this media type are not yet implemented.")
 
-                        if item.error_message:
-                            me.text(
-                                f"Error: {item.error_message}",
-                                style=me.Style(
-                                    color=me.theme_var("error"),
-                                    font_style="italic",
-                                    padding=me.Padding.all(8),
-                                    background=me.theme_var("error-container"),
-                                    border_radius=4,
-                                    margin=me.Margin(bottom=10),
-                                ),
-                            )
-
-                        me.text(f"Model: {item.raw_data['model']}")
-
-                        if dialog_media_type_group != "image":
-                            me.text(f'Prompt: "{item.prompt or "N/A"}"')
-                            if item.negative_prompt:
-                                me.text(f'Negative Prompt: "{item.negative_prompt}"')
-                            if item.enhanced_prompt_used:
-                                me.text(
-                                    f'Enhanced Prompt: "{item.enhanced_prompt_used}"'
-                                )
-
-                        dialog_timestamp_str_detail = "N/A"
-                        if item.timestamp:
-                            try:
-                                ts_str_detail = item.timestamp
-                                if isinstance(item.timestamp, datetime):
-                                    ts_str_detail = item.timestamp.isoformat()
-                                dialog_timestamp_str_detail = datetime.fromisoformat(
-                                    ts_str_detail.replace("Z", "+00:00")
-                                ).strftime(
-                                    "%Y-%m-%d %H:%M:%S %Z"
-                                )  # More detailed timestamp
-                            except Exception:
-                                dialog_timestamp_str_detail = str(item.timestamp)
-                        me.text(f"Generated: {dialog_timestamp_str_detail}")
-
-                        if item.generation_time is not None:
-                            me.text(
-                                f"Generation Time: {round(item.generation_time, 2)} seconds"
-                            )
-
-                        if item.model is not None:
-                            me.text(f"Model: {item.model}")
-
-                        if (
-                            dialog_media_type_group == "video"
-                            or dialog_media_type_group == "image"
-                        ):
-                            if item.aspect:
-                                me.text(f"Aspect Ratio: {item.aspect}")
-                        if (
-                            dialog_media_type_group == "video"
-                            or dialog_media_type_group == "audio"
-                        ):
-                            if item.duration is not None:
-                                me.text(f"Duration: {item.duration} seconds")
-
-                        if dialog_media_type_group == "video":
-                            me.text(f"Resolution: {item.resolution or '720p'}")
-
-                        if dialog_media_type_group == "video":
-                            if item.reference_image:
-                                ref_url = item.reference_image.replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
-                                )
-                                me.text(
-                                    "Reference Image:",
-                                    style=me.Style(
-                                        font_weight="500",
-                                        margin=me.Margin(
-                                            top=8
-                                        ),  # medium is not a valid value
-                                    ),
-                                )
-                                me.image(
-                                    src=ref_url,
-                                    style=me.Style(
-                                        max_width="250px",
-                                        height="auto",
-                                        border_radius=6,
-                                        margin=me.Margin(top=4),
-                                    ),
-                                )
-                            if item.last_reference_image:
-                                last_ref_url = item.last_reference_image.replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
-                                )
-                                me.text(
-                                    "Last Reference Image:",
-                                    style=me.Style(
-                                        font_weight="500", margin=me.Margin(top=8)
-                                    ),
-                                )
-                                me.image(
-                                    src=last_ref_url,
-                                    style=me.Style(
-                                        max_width="250px",
-                                        height="auto",
-                                        border_radius=6,
-                                        margin=me.Margin(top=4),
-                                    ),
-                                )
-                        elif (
-                            item.media_type == "character_consistency"
-                            and item.best_candidate_image
-                        ):
-                            print("I'm in character consistency")
-                            best_candidate_url = item.best_candidate_image.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            )
-                            me.text(
-                                "Best Candidate Image:",
-                                style=me.Style(
-                                    font_weight="500", margin=me.Margin(top=8)
-                                ),
-                            )
-                            me.image(
-                                src=best_candidate_url,
-                                style=me.Style(
-                                    max_width="250px",
-                                    height="auto",
-                                    border_radius=6,
-                                    margin=me.Margin(top=4),
-                                ),
-                            )
-                            if item.source_character_images:
-                                me.text(
-                                    "Source Images:",
-                                    style=me.Style(
-                                        font_weight="500", margin=me.Margin(top=8)
-                                    ),
-                                )
-                                with me.box(
-                                    style=me.Style(
-                                        display="flex", flex_direction="row", gap=10
-                                    )
-                                ):
-                                    for src_image_uri in item.source_character_images[
-                                        :3
-                                    ]:
-                                        src_url = src_image_uri.replace(
-                                            "gs://",
-                                            "https://storage.mtls.cloud.google.com/",
-                                        )
-                                        me.image(
-                                            src=src_url,
-                                            style=me.Style(
-                                                max_width="150px",
-                                                height="auto",
-                                                border_radius=6,
-                                                margin=me.Margin(top=4),
-                                            ),
-                                        )
-
-                        with me.content_button(
-                            on_click=on_click_set_permalink,
-                            key=item.id or "",  # Ensure key is not None
-                        ):
-                            with me.box(
-                                style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    align_items="center",
-                                    gap=5,
-                                )
-                            ):
-                                me.icon(icon="link")
-                                me.text("permalink")
-
+                        # Common metadata can be displayed here if not handled by sub-components
+                        # For example, the raw data viewer:
                         if item.raw_data:
                             with me.expansion_panel(
-                                key="raw_metadata_panel_dialog",  # Unique key for dialog panel
+                                key="raw_metadata_panel_dialog",
                                 title="Firestore Metadata",
                                 description=item.id or "N/A",
                                 icon="dataset",
@@ -872,7 +563,7 @@ def library_content(app_state: me.state):
                                     json_string = json.dumps(
                                         item.raw_data,
                                         indent=2,
-                                        default=str,  # Use default=str for non-serializable
+                                        default=str,
                                     )
                                     me.markdown(f"```json\n{json_string}\n```")
                                 except Exception as e_json:
@@ -908,7 +599,7 @@ def library_content(app_state: me.state):
                 ):
                     me.button(
                         "Previous",
-                        key="-1",  # Key for direction
+                        key="-1",
                         on_click=handle_page_change,
                         disabled=pagestate.current_page == 1 or pagestate.is_loading,
                         type="stroked",
@@ -916,13 +607,12 @@ def library_content(app_state: me.state):
                     me.text(f"Page {pagestate.current_page} of {total_pages}")
                     me.button(
                         "Next",
-                        key="1",  # Key for direction
+                        key="1",
                         on_click=handle_page_change,
                         disabled=pagestate.current_page == total_pages
                         or pagestate.is_loading,
                         type="stroked",
                     )
-
 
 def on_click_set_permalink(e: me.ClickEvent):
     """set the permalink from dialog"""
@@ -932,31 +622,34 @@ def on_click_set_permalink(e: me.ClickEvent):
 
 def on_media_item_click(e: me.ClickEvent):
     pagestate = me.state(PageState)
-    try:
-        # Assuming e.key is the index of the item in the currently displayed pagestate.media_items
-        selected_index = int(e.key)  # The key for the media item box is its index 'i'
-        if 0 <= selected_index < len(pagestate.media_items):
-            clicked_item = pagestate.media_items[selected_index]
-            pagestate.selected_media_item_id = clicked_item.id
-            pagestate.show_details_dialog = True
-            pagestate.dialog_instance_key += 1
-            pagestate.url_item_not_found_message = (
-                None  # Clear any old not found message
-            )
-        else:
-            print(f"Error: Invalid index {selected_index} for media item click.")
-    except ValueError:
-        print(f"Error: Click event key '{e.key}' is not a valid integer index.")
+    item_id = e.key
+    # Search in the complete list of items to avoid issues with stale paginated state.
+    clicked_item = next(
+        (item for item in pagestate.all_media_items if item.id == item_id), None,
+    )
+
+    if clicked_item:
+        pagestate.selected_media_item_id = clicked_item.id
+        pagestate.show_details_dialog = True
+        pagestate.dialog_instance_key += 1
+        pagestate.url_item_not_found_message = None  # Clear any old not found message
+    else:
+        # This error should now be much less likely, but we'll keep the log just in case.
+        print(f"Error: Could not find media item with ID '{item_id}' in the total item list.")
     yield
 
 
 def on_close_details_dialog(e: me.ClickEvent):
     pagestate = me.state(PageState)
+    carousel_state = me.state(CarouselState)  # Get the state
+
     pagestate.show_details_dialog = False
     pagestate.selected_media_item_id = None
     pagestate.url_item_not_found_message = (
         None  # Clear message when dialog is closed by user
     )
+    carousel_state.current_index = 0  # Reset the index
+
     # Optionally, clear media_id from URL params if desired
     # if "media_id" in me.query_params:
     #    del me.query_params["media_id"]
@@ -980,28 +673,19 @@ def handle_page_change(e: me.ClickEvent):
 
     if (
         1
-        <=
-        new_page
-        <=
-        (
+        <= new_page
+        <= (
             (pagestate.total_media + pagestate.media_per_page - 1)
             // pagestate.media_per_page
             if pagestate.media_per_page > 0 and pagestate.total_media > 0
             else 1
         )
     ):
-        app_state = me.state(AppState)
-        user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
         pagestate.current_page = new_page
-        # Fetch only the items for the new page with current filters
-        pagestate.media_items = get_media_for_page(
-            pagestate.current_page,
-            pagestate.media_per_page,
-            pagestate.selected_values,
-            pagestate.error_filter_value,
-            filter_by_user_email=user_email_to_filter,
-            sort_by_timestamp=True,
-        )
+        # Slice the full list of items for the new page
+        start_slice = (pagestate.current_page - 1) * pagestate.media_per_page
+        end_slice = start_slice + pagestate.media_per_page
+        pagestate.media_items = pagestate.all_media_items[start_slice:end_slice]
         pagestate.key += 1  # Refresh grid
         pagestate.url_item_not_found_message = None
 
@@ -1046,6 +730,7 @@ def on_change_error_filter(e: me.ButtonToggleChangeEvent):
 
     pagestate.is_loading = False
     yield
+
 
 def on_change_user_filter(e: me.ButtonToggleChangeEvent):
     """Handles changes to the user filter."""

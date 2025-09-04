@@ -21,6 +21,8 @@ import mesop as me
 from common.metadata import MediaItem
 
 
+from typing import Callable
+
 @me.stateclass
 class CarouselState:
     """State for the image carousel."""
@@ -49,14 +51,25 @@ def on_prev(e: me.ClickEvent) -> None:
 
 
 @me.component
-def image_details(item: MediaItem) -> None:
+def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
     """A component that displays image details in a carousel.
 
     Args:
         item: The MediaItem to display.
     """
     state = me.state(CarouselState)
+
+    # Handle case where there are no images to display.
+    if not item.gcs_uris:
+        me.text("Image data not available for this item.")
+        return
+
     num_images = len(item.gcs_uris)
+
+    # Defensively reset index if it's out of bounds. This can happen if the
+    # component is re-rendered with a new item that has fewer images.
+    if state.current_index >= num_images:
+        state.current_index = 0
 
     with me.box(
         style=me.Style(
@@ -76,26 +89,27 @@ def image_details(item: MediaItem) -> None:
             ),
         )
 
-        # Carousel controls
-        with me.box(
-            style=me.Style(
-                display="flex",
-                align_items="center",
-                justify_content="center",
-                gap=16,
-            )
-        ):
-            me.button(
-                "Back",
-                on_click=on_prev,
-                disabled=state.current_index == 0,
-            )
-            me.text(f"{state.current_index + 1} / {num_images}")
-            me.button(
-                "Next",
-                on_click=on_next,
-                disabled=state.current_index >= num_images - 1,
-            )
+        # Carousel controls - only show if there is more than one image.
+        if num_images > 1:
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    align_items="center",
+                    justify_content="center",
+                    gap=16,
+                )
+            ):
+                me.button(
+                    "Back",
+                    on_click=on_prev,
+                    disabled=state.current_index == 0,
+                )
+                me.text(f"{state.current_index + 1} / {num_images}")
+                me.button(
+                    "Next",
+                    on_click=on_next,
+                    disabled=state.current_index >= num_images - 1,
+                )
 
     if item.rewritten_prompt:
         me.text(f'Rewritten Prompt: "{item.rewritten_prompt}"')
@@ -187,3 +201,17 @@ def image_details(item: MediaItem) -> None:
                             width="100px", height="auto", border_radius="8px"
                         ),
                     )
+    with me.content_button(
+            on_click=on_click_permalink,
+            key=item.id or "",  # Ensure key is not None
+        ):
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                align_items="center",
+                gap=5,
+            )
+        ):
+            me.icon(icon="link")
+            me.text("permalink")
