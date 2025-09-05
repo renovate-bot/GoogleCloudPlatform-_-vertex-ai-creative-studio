@@ -33,7 +33,8 @@
       "route": "/veo",
       "group": "foundation",
       "mode": "video",
-      "description": "Generate videos from text or image prompts using Veo."
+      "description": "Generate videos from text or image prompts using Veo.",
+      "video_url": "https://deepmind.google/api/blob/website/media/veo__veo-3__us_wm_a-paper-boat-sets-sail-in-a-rain-filled-gutter-it-navigates-the.mp4"
     },
     {
       "id": 12,
@@ -43,7 +44,8 @@
       "route": "/gemini_image_generation",
       "group": "foundation",
       "mode": "image",
-      "description": "Generate images from text prompts using Gemini."
+      "description": "Generate images from text prompts using Gemini.",
+      "video_url": "https://deepmind.google/api/blob/website/media/gemini-image__page_cover.mp4"
     },
        {
       "id": 14,

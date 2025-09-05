@@ -112,11 +112,13 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                             description = page_data.get(
                                 "description", "Explore this capability."
                             )
+                            video_url = page_data.get("video_url", "")
 
                             interactive_tile(
                                 label=display_name,
                                 icon=icon,
                                 description=description,
                                 route=route,
+                                video_url=video_url,
                                 on_tile_click=handle_tile_click,
                             )

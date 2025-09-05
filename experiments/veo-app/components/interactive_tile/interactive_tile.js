@@ -8,7 +8,7 @@ class InteractiveTile extends LitElement {
     icon: { type: String },
     description: { type: String },
     route: { type: String },
-    gifUrl: { type: String },
+    videoUrl: { type: String },
     tileClickEvent: { type: String },
     isHovered: { state: true },
   };
@@ -19,7 +19,7 @@ class InteractiveTile extends LitElement {
     this.icon = '';
     this.description = '';
     this.route = '';
-    this.gifUrl = '';
+    this.videoUrl = '';
     this.tileClickEvent = '';
     this.isHovered = false;
   }
@@ -47,12 +47,10 @@ class InteractiveTile extends LitElement {
         return html`<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>`;
       case 'spark':
         return html `<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4285f4ff"><path d="M480-80q-6 0-11-4t-7-10q-17-67-51-126t-83-108q-49-49-108-83T94-462q-6-2-10-7t-4-11q0-6 4-11t10-7q67-17 126-51t108-83q49-49 83-108t51-126q2-6 7-10t11-4q6 0 10.5 4t6.5 10q18 67 52 126t83 108q49 49 108 83t126 51q6 2 10 7t4 11q0 6-4 11t-10 7q-67 17-126 51t-108 83q-49 49-83 108T498-94q-2 6-7 10t-11 4Z"/></svg>`
-        //return html`<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>`;
       case 'record_voice_over':
         return html`<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.33 0-4.31 1.46-5.11 3.5h10.22c-.8-2.04-2.78-3.5-5.11-3.5z"/></svg>`;
       case 'graphic_eq':
         return html `<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#5f6368"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7 18h2V6H7v12zm4 4h2V2h-2v20zm-8-8h2v-4H3v4zm12 4h2V6h-2v12zm4-8v4h2v-4h-2z"/></svg>`
-        //return html`<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0z" fill="none"/><path d="M7 18h2V6H7v12zm4 0h2V6h-2v12zm-8 0h2V6H3v12zm12 0h2V6h-2v12zm4-18v24h-2V0h2z"/></svg>`;
       case 'music_note':
         return html`<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>`;
       case 'shopping_bag':
@@ -67,7 +65,6 @@ class InteractiveTile extends LitElement {
         return html `<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#5f6368"><g><rect fill="none" height="24" width="24"/><path d="M21.6,18.2L13,11.75v-0.91c1.65-0.49,2.8-2.17,2.43-4.05c-0.26-1.31-1.3-2.4-2.61-2.7C10.54,3.57,8.5,5.3,8.5,7.5h2 C10.5,6.67,11.17,6,12,6s1.5,0.67,1.5,1.5c0,0.84-0.69,1.52-1.53,1.5C11.43,8.99,11,9.45,11,9.99v1.76L2.4,18.2 C1.63,18.78,2.04,20,3,20h9h9C21.96,20,22.37,18.78,21.6,18.2z M6,18l6-4.5l6,4.5H6z"/></g></svg>`
       case 'style':
         return html `<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4285f4ff"><path d="m159-168-34-14q-31-13-41.5-45t3.5-63l72-156v278Zm160 88q-33 0-56.5-23.5T239-160v-240l106 294q3 7 6 13.5t8 12.5h-40Zm206-4q-32 12-62-3t-42-47L243-622q-12-32 2-62.5t46-41.5l302-110q32-12 62 3t42 47l178 488q12 32-2 62.5T827-194L525-84Zm-86-476q17 0 28.5-11.5T479-600q0-17-11.5-28.5T439-640q-17 0-28.5 11.5T399-600q0 17 11.5 28.5T439-560Zm58 400 302-110-178-490-302 110 178 490ZM319-650l302-110-302 110Z"/></svg>`
-        //return html`<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v4h-2zm0 6h2v2h-2z"/></svg>`;
       case 'scene':
         return html `<svg style=${iconStyle} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4285f4ff"><path d="M800-80v-600q0-33-23.5-56.5T720-760h-40v52q0 12-8 20t-20 8H428q-14 0-22.5-15t-1.5-29l76-164q7-15 20.5-23.5T532-920h92q24 0 40 18t16 42v20h40q66 0 113 47t47 113v600h-80ZM508-760h92v-80h-56l-36 80ZM200-80q-51 0-85.5-34.5T80-200v-100q0-33 22-61.5t58-34.5v-84q0-33 23.5-56.5T240-560h320q33 0 56.5 23.5T640-480v84q36 6 58 33t22 63v100q0 51-34.5 85.5T600-80H200Zm40-400v100q18 15 29 35.5t11 44.5v20h240v-20q0-24 11-44.5t29-35.5v-100H240Zm-40 320h400q18 0 29-12.5t11-27.5v-100q0-9-5.5-14.5T620-320q-9 0-14.5 5.5T600-300v100H200v-100q0-9-5.5-14.5T180-320q-9 0-14.5 5.5T160-300v100q0 15 11 27.5t29 12.5Zm320-120H280h240ZM240-480h320-320Zm-40 320h400-400Z"/></svg>`
       case 'portrait':
@@ -99,16 +96,20 @@ class InteractiveTile extends LitElement {
       padding: 16px;
       border-radius: 12px;
       border: 1px solid var(--mesop-theme-outline-variant, #ccc);
-      background-color: var(--mesop-theme-surface-container-low, #f5f5f5);
       transition: all 0.2s ease-in-out;
       box-sizing: border-box;
-      color: var(--mesop-theme-on-surface-variant, #444);
       background-size: cover;
       background-position: center;
-      overflow: hidden; /* Ensures GIF doesn't spill out of rounded corners */
-      position: relative; /* For positioning the overlay */
+      overflow: hidden; /* Ensures video and overlay don't spill out */
+      position: relative; /* For positioning the overlay and video */
+
+      /* Default theme for non-video tiles */
+      background-color: var(--mesop-theme-surface-container-low, #f5f5f5);
+      color: var(--mesop-theme-on-surface-variant, #444);
     }
-    .card:hover {
+    /* Hover effect for non-video tiles */
+    .card:not(.has-video):hover {
+      background-color: var(--mesop-theme-secondary-container, #e8def8);
       color: var(--mesop-theme-on-secondary-container, #1d192b);
     }
     .icon-container {
@@ -121,7 +122,7 @@ class InteractiveTile extends LitElement {
       font-size: 1.1em;
       margin-bottom: 12px;
     }
-    .hover-content {
+    .content-container {
       width: 100%;
       height: 100%;
       display: flex;
@@ -130,43 +131,65 @@ class InteractiveTile extends LitElement {
       justify-content: center;
       padding: 16px;
       box-sizing: border-box;
-      color: white; /* Make text readable on dark overlay */
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.7); /* Add shadow for more readability */
+      z-index: 2; /* Position content above the background video */
+      position: relative;
+      /* Ensure overlay corners match the parent card's corners */
+      border-radius: 12px;
+    }
+    .background-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      z-index: 1;
     }
   `;
 
   // -- Render method --
   render() {
-    const hasGif = this.gifUrl && this.gifUrl.length > 0;
+    const hasVideo = this.videoUrl && this.videoUrl.length > 0;
 
+    // Styles for the container that holds the text/icon content.
+    // This acts as the overlay for video tiles.
+    const contentContainerStyles = {
+      backgroundColor: hasVideo ? 'rgba(0, 0, 0, 0.15)' : 'transparent',
+      textShadow: hasVideo ? '1px 1px 2px rgba(0,0,0,0.7)' : 'none',
+    };
+
+    // Dynamically set the text color on the main card.
+    // It will be white for video tiles, and inherit from the CSS for non-video tiles.
     const cardStyles = {
-      backgroundImage: (this.isHovered && hasGif) ? `url(${this.gifUrl})` : 'none',
-      backgroundColor: (this.isHovered && !hasGif) ? 'var(--mesop-theme-secondary-container)' : 'var(--mesop-theme-surface-container-low)',
-    };
-
-    const hoverContentStyles = {
-      backgroundColor: (this.isHovered && hasGif) ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
-    };
+       color: hasVideo ? 'white' : 'inherit',
+    }
 
     return html`
       <div
-        class="card"
+        class="card ${hasVideo ? 'has-video' : ''}"
         style=${styleMap(cardStyles)}
         @mouseover=${this.handleMouseOver}
         @mouseout=${this.handleMouseOut}
         @click=${this.handleClick}
       >
-        ${this.isHovered
-          ? html`
-              <div class="hover-content" style=${styleMap(hoverContentStyles)}>
+        ${hasVideo
+          ? html`<video class="background-video" autoplay loop muted playsinline .src=${this.videoUrl}></video>`
+          : ''
+        }
+
+        <div class="content-container" style=${styleMap(contentContainerStyles)}>
+          ${this.isHovered
+            ? html`
                 <div class="hover-label">${this.label}</div>
                 <div class="description">${this.description}</div>
-              </div>
-            `
-          : html`
-              <div class="icon-container">${this.renderIcon()}</div>
-              <div class="label">${this.label}</div>
-            `}
+              `
+            : html`
+                <div class="icon-container">${this.renderIcon()}</div>
+                <div class="label">${this.label}</div>
+              `}
+        </div>
       </div>
     `;
   }

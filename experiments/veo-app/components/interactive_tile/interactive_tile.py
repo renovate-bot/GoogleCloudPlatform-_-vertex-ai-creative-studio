@@ -8,7 +8,7 @@ def interactive_tile(
     icon: str,
     description: str,
     route: str,
-    gif_url: str = "",
+    video_url: str = "",
     on_tile_click: typing.Callable[[me.WebEvent], None] | None = None,
     key: str | None = None,
 ):
@@ -21,7 +21,7 @@ def interactive_tile(
             "icon": icon,
             "description": description,
             "route": route,
-            "gifUrl": gif_url,
+            "videoUrl": video_url,
         },
         events={
             "tileClickEvent": on_tile_click,
