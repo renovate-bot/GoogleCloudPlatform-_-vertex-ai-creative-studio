@@ -20,6 +20,7 @@ import mesop as me
 
 from components.header import header
 from components.interactive_tile.interactive_tile import interactive_tile
+from components.page_scaffold import page_frame, page_scaffold
 from config.default import get_welcome_page_config
 from state.state import AppState
 
@@ -36,27 +37,12 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
     """Home Page"""
     with me.box(
         style=me.Style(
+            background=me.theme_var("background"),
+            padding=me.Padding(top=24, left=24, right=24, bottom=24),
             display="flex",
             flex_direction="column",
-            height="100%",
-        ),
+        )
     ):
-        with me.box(
-            style=me.Style(
-                background=me.theme_var("background"),
-                height="100%",
-                overflow_y="scroll",
-                margin=me.Margin(bottom=20),
-            )
-        ):
-            with me.box(
-                style=me.Style(
-                    background=me.theme_var("background"),
-                    padding=me.Padding(top=24, left=24, right=24, bottom=24),
-                    display="flex",
-                    flex_direction="column",
-                )
-            ):
                 header("GenMedia Creative Studio", "home")
 
                 # Group pages by the "group" key

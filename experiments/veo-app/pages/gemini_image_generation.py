@@ -64,8 +64,7 @@ def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
 
-    with page_scaffold():  # pylint: disable=E1129
-        with page_frame():  # pylint: disable=E1129
+    with page_frame():  # pylint: disable=E1129
             header("Gemini Image Generation", "image")
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
