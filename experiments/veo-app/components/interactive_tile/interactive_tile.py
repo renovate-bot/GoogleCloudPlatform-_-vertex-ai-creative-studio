@@ -9,6 +9,10 @@ def interactive_tile(
     description: str,
     route: str,
     video_url: str = "",
+    default_bg_color: str = "",
+    default_text_color: str = "",
+    hover_bg_color: str = "",
+    hover_text_color: str = "",
     on_tile_click: typing.Callable[[me.WebEvent], None] | None = None,
     key: str | None = None,
 ):
@@ -22,6 +26,10 @@ def interactive_tile(
             "description": description,
             "route": route,
             "videoUrl": video_url,
+            "defaultBgColor": default_bg_color,
+            "defaultTextColor": default_text_color,
+            "hoverBgColor": hover_bg_color,
+            "hoverTextColor": hover_text_color,
         },
         events={
             "tileClickEvent": on_tile_click,

@@ -121,4 +121,8 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                                 route=route,
                                 video_url=video_url,
                                 on_tile_click=handle_tile_click,
+                                default_bg_color=me.theme_var("secondary-container"),
+                                default_text_color=me.theme_var("on-secondary-container"),
+                                hover_bg_color=me.theme_var("surface-container-high"),
+                                hover_text_color=me.theme_var("on-tertiary-container"),
                             )
