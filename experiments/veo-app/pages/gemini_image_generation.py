@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import time
 from dataclasses import field
 
@@ -19,6 +20,7 @@ import mesop as me
 
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
+from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
@@ -46,6 +48,8 @@ class PageState:
     previous_media_item_id: str | None = None  # For linking generation sequences
     num_images_to_generate: int = 1
 
+    info_dialog_open: bool = False
+
 
 ACTION_PROMPTS = {
     "rotate_left": "Rotate the primary subject in the image to the left.",
@@ -59,14 +63,28 @@ NUM_IMAGES_PROMPTS = {
     4: "Give me 4 options.",
 }
 
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    NANO_BANANA_INFO = next(
+        (s for s in about_content["sections"] if s.get("id") == "gemini_image_generation"), None
+    )
 
 def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
 
-    with page_scaffold():  # pylint: disable=E1129
-        with page_frame():  # pylint: disable=E1129
-            header("Gemini Image Generation", "image")
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
+            me.text(f'About {NANO_BANANA_INFO["title"]}', type="headline-6")
+            me.markdown(NANO_BANANA_INFO["description"])
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
+    with page_frame():  # pylint: disable=E1129
+            header("Gemini Image Generation", "spark", show_info_button=True,
+                on_info_click=open_info_dialog,)
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Left column (controls)
@@ -536,8 +554,18 @@ def generate_images(e: me.ClickEvent):
         base_prompt=state.prompt, input_gcs_uris=state.uploaded_image_gcs_uris
     )
 
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
 
-@me.page(path="/gemini_image_generation")
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
+    yield
+
 def page():
     """Defines the Mesop page route for Gemini Image Generation."""
     gemini_image_gen_page_content()

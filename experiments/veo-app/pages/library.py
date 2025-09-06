@@ -199,8 +199,7 @@ def library_content(app_state: me.state):
     if pagestate.total_media == 0:
         total_pages = 0  # Show 0 pages if no items
 
-    with page_scaffold():  # pylint: disable=not-context-manager
-        with page_frame():  # pylint: disable=not-context-manager
+    with page_frame():  # pylint: disable=not-context-manager
             header("Library", "perm_media")
 
             if pagestate.url_item_not_found_message:
