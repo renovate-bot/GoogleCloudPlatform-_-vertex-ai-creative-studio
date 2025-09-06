@@ -47,7 +47,7 @@ from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
 import pages.shop_the_look
 from pages.test_character_consistency import page as test_character_consistency_page
-from pages.gemini_image_generation import page as test_gemini_image_gen_page
+from pages.gemini_image_generation import gemini_image_gen_page_content
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_pixie_compositor import test_pixie_compositor_page
@@ -241,9 +241,15 @@ def about_page():
     with page_scaffold(page_name="about"):
         about_page_content()
 
+
+@me.page(path="/gemini_image_generation", title="Gemini Image Generation - GenMedia Creative Studio")
+def gemini_image_generation_page():
+    with page_scaffold(page_name="gemini_image_generation"):
+        gemini_image_gen_page_content()
+
+
 # Test page routes are left as is, they don't need the scaffold
 me.page(path="/test_character_consistency", title="Test Character Consistency")(test_character_consistency_page)
-me.page(path="/test_gemini_image_gen", title="Test Gemini Image Gen")(test_gemini_image_gen_page)
 me.page(path="/test_index", title="Test Index")(test_index_page)
 me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(test_infinite_scroll_page)
 me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(test_pixie_compositor_page)
