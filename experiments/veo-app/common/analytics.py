@@ -2,14 +2,19 @@
 import functools
 import logging
 import json
+import os
 import time
 from contextlib import contextmanager
 
 import mesop as me
+from google.cloud import logging as cloud_logging
+
 from state.state import AppState
+
 
 class JsonFormatter(logging.Formatter):
     """Formats log records as JSON."""
+
     def format(self, record):
         log_object = {
             "timestamp": self.formatTime(record, self.datefmt),
@@ -18,9 +23,10 @@ class JsonFormatter(logging.Formatter):
             "name": record.name,
         }
         # Add extra fields if they exist
-        if hasattr(record, 'extra_data'):
+        if hasattr(record, "extra_data"):
             log_object.update(record.extra_data)
         return json.dumps(log_object)
+
 
 def get_logger(name: str):
     """Creates and configures a logger."""
@@ -28,8 +34,18 @@ def get_logger(name: str):
     # Prevent duplicate logs in case of multiple calls
     if not logger.handlers:
         logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler()
-        handler.setFormatter(JsonFormatter())
+
+        # Check if we are in a Google Cloud environment (e.g., Cloud Run)
+        if os.environ.get("K_SERVICE"):
+            # The Google Cloud Logging handler automatically recognizes JSON fields
+            # and parses them as structured logs.
+            client = cloud_logging.Client()
+            handler = client.get_default_handler()
+        else:
+            # For local development, use a standard handler with our custom JSON formatter.
+            handler = logging.StreamHandler()
+            handler.setFormatter(JsonFormatter())
+
         logger.addHandler(handler)
     return logger
 
