@@ -30,33 +30,33 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
 
-from config import default as config
+import pages.shop_the_look
 from app_factory import app
 from components.page_scaffold import page_scaffold
+from config import default as config
 from pages.about import about_page_content
 from pages.character_consistency import character_consistency_page_content
+from pages.chirp_3hd import page as chirp_3hd_page
 from pages.config import config_page_contents
 from pages.edit_images import content as edit_images_content
+from pages.gemini_image_generation import gemini_image_gen_page_content
 from pages.gemini_tts import page as gemini_tts_page
-from pages.chirp_3hd import page as chirp_3hd_page
 from pages.home import home_page_content
 from pages.imagen import imagen_content
 from pages.library import library_content
 from pages.lyria import lyria_content
 from pages.portraits import motion_portraits_content
 from pages.recontextualize import recontextualize
-import pages.shop_the_look
+from pages.starter_pack import page as starter_pack_page
 from pages.test_character_consistency import page as test_character_consistency_page
-from pages.gemini_image_generation import gemini_image_gen_page_content
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
 from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages.veo import veo_content
+from pages import veo
 from pages.vto import vto
-from pages.starter_pack import page as starter_pack_page
 from state.state import AppState
 
 
@@ -176,75 +176,69 @@ def home_page():
     with page_scaffold(page_name="home"):  # pylint: disable=not-context-manager
         home_page_content(state)
 
-@me.page(path="/veo", title="Veo - GenMedia Creative Studio")
-def veo_page():
-    with page_scaffold(page_name="veo"):
-        veo_content(me.state(AppState))
-
 @me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
 def motion_portrait_page():
-    with page_scaffold(page_name="motion_portraits"):
+    with page_scaffold(page_name="motion_portraits"):  # pylint: disable=E1129:not-context-manager
         motion_portraits_content(me.state(AppState))
 
 @me.page(path="/lyria", title="Lyria - GenMedia Creative Studio")
 def lyria_page():
-    with page_scaffold(page_name="lyria"):
+    with page_scaffold(page_name="lyria"):  # pylint: disable=E1129:not-context-manager
         lyria_content(me.state(AppState))
 
 @me.page(path="/config", title="GenMedia Creative Studio - Config")
 def config_page():
-    with page_scaffold(page_name="config"):
+    with page_scaffold(page_name="config"):  # pylint: disable=E1129:not-context-manager
         config_page_contents(me.state(AppState))
 
 @me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
 def imagen_page():
-    with page_scaffold(page_name="imagen"):
+    with page_scaffold(page_name="imagen"):  # pylint: disable=E1129:not-context-manager
         imagen_content(me.state(AppState))
 
 @me.page(path="/library", title="GenMedia Creative Studio - Library")
 def library_page():
-    with page_scaffold(page_name="library"):
+    with page_scaffold(page_name="library"):  # pylint: disable=E1129:not-context-manager
         library_content(me.state(AppState))
 
 @me.page(path="/edit_images", title="GenMedia Creative Studio - Edit Images")
 def edit_images_page():
-    with page_scaffold(page_name="edit_images"):
+    with page_scaffold(page_name="edit_images"):  # pylint: disable=E1129:not-context-manager
         edit_images_content(me.state(AppState))
 
 @me.page(path="/gemini-tts", title="GenMedia Creative Studio - Gemini TTS")
 def gemini_tts_route():
-    with page_scaffold(page_name="gemini-tts"):
+    with page_scaffold(page_name="gemini-tts"):  # pylint: disable=E1129:not-context-manager
         gemini_tts_page()
 
 @me.page(path="/vto", title="GenMedia Creative Studio - Virtual Try-On")
 def vto_page():
-    with page_scaffold(page_name="vto"):
+    with page_scaffold(page_name="vto"):  # pylint: disable=E1129:not-context-manager
         vto()
 
 @me.page(path="/starter-pack", title="GenMedia Creative Studio - Starter Pack")
 def starter_pack_route():
-    with page_scaffold(page_name="starter-pack"):
+    with page_scaffold(page_name="starter-pack"):  # pylint: disable=E1129:not-context-manager
         starter_pack_page()
 
 @me.page(path="/recontextualize", title="GenMedia Creative Studio - Product in Scene")
 def recontextualize_page():
-    with page_scaffold(page_name="recontextualize"):
+    with page_scaffold(page_name="recontextualize"):  # pylint: disable=E1129:not-context-manager
         recontextualize()
 
 @me.page(path="/character_consistency", title="GenMedia Creative Studio - Character Consistency")
 def character_consistency_page():
-    with page_scaffold(page_name="character_consistency"):
+    with page_scaffold(page_name="character_consistency"):  # pylint: disable=E1129:not-context-manager
         character_consistency_page_content()
 
 @me.page(path="/about", title="About - GenMedia Creative Studio")
 def about_page():
-    with page_scaffold(page_name="about"):
+    with page_scaffold(page_name="about"):  # pylint: disable=E1129:not-context-manager
         about_page_content()
-
 
 @me.page(path="/gemini_image_generation", title="Gemini Image Generation - GenMedia Creative Studio")
 def gemini_image_generation_page():
-    with page_scaffold(page_name="gemini_image_generation"):
+    with page_scaffold(page_name="gemini_image_generation"):  # pylint: disable=E1129:not-context-manager
         gemini_image_gen_page_content()
 
 

@@ -282,14 +282,14 @@ def on_click_generate_virtual_model(e: me.ClickEvent):
 
     gcs_uri = model.generate_virtual_model()
     state.model_image_uri = gcs_uri
-    add_media_item(
-        user_email=app_state.user_email,
-        model=cfg.MODEL_IMAGEN4_FAST,
-        mime_type="image/png",
-        gcs_uris=[gcs_uri],
-        comment="virtual model",
-        source_images_gcs=[]
-    )
+    #add_media_item(
+    #    user_email=app_state.user_email,
+    #    model=cfg.MODEL_IMAGEN4_FAST,
+    #    mime_type="image/png",
+    #    gcs_uris=[gcs_uri],
+    #    comment="virtual model",
+    #    source_images_gcs=[]
+    #)
     state.is_generating_virtual_model = False
     yield
 
