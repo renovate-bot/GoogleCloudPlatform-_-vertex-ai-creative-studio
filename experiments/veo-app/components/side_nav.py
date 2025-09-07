@@ -157,14 +157,7 @@ def menu_item(
             me.icon(icon=icon_name)
 
     if minimized:  # minimized
-        with me.box(
-            style=me.Style(
-                display="flex",
-                flex_direction="row",
-                gap=5,
-                align_items="center",
-            ),
-        ):
+        with me.tooltip(message=text):
             with me.content_button(
                 key=button_key,
                 on_click=navigate_to if is_clickable else None,
@@ -172,8 +165,7 @@ def menu_item(
                 type="icon",
                 disabled=not is_clickable,
             ):
-                with me.tooltip(message=text):
-                    render_icon(icon)
+                render_icon(icon)
 
     else:  # expanded
         with me.content_button(
