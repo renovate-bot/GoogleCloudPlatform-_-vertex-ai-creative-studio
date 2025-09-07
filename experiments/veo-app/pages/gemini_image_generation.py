@@ -594,6 +594,11 @@ def on_send_to_veo(e: me.ClickEvent):
     me.navigate(url="/veo", query_params={"source_image_uri": gcs_uri})
     yield
 
+@me.page(
+    path="/gemini_image_generation",
+    title="Gemini Image Generation - GenMedia Creative Studio",
+)
 def page():
     """Define the Mesop page route for Gemini Image Generation."""
-    gemini_image_gen_page_content()
+    with page_scaffold(page_name="gemini_image_generation"):
+        gemini_image_gen_page_content()
