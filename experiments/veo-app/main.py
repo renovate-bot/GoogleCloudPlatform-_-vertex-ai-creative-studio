@@ -49,6 +49,7 @@ from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
 from pages import veo
 from pages import vto as vto_page
+from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
@@ -182,8 +183,27 @@ me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
 
 
 @app.get("/")
-def root_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/home")
+def root_redirect(request: Request) -> RedirectResponse:
+    """Redirects to /welcome for first-time users, otherwise to /home."""
+    # Check if our tracking cookie exists on the incoming request.
+    if request.cookies.get("has_visited_welcome"):
+        # If it does, send the user to the regular home page.
+        return RedirectResponse(url="/home")
+    else:
+        # If it doesn't, it's a first-time visit.
+        # Create a response that will send the user to the welcome page.
+        response = RedirectResponse(url="/welcome")
+
+        # Before sending the response, set our cookie on it.
+        # The browser will save this cookie for future visits.
+        # max_age=31536000 sets the cookie to expire in 1 year.
+        response.set_cookie(
+            key="has_visited_welcome",
+            value="true",
+            max_age=31536000,
+            httponly=True,
+        )
+        return response
 
 
 # Use this to mount the static files for the Mesop app

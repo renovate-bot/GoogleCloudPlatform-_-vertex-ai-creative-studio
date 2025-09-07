@@ -266,9 +266,9 @@ def page():
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_scaffold(page_name="vto"):
-        with page_frame():
-            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog)
+    with page_scaffold(page_name="vto"):  # pylint: disable=E1129
+        with page_frame():  # pylint: disable=E1129
+            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog) # pylint: disable=E1129
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Person Image Section

@@ -117,6 +117,7 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                         "description", "Explore this capability."
                     )
                     video_url = page_data.get("video_url", "")
+                    video_object_position = page_data.get("video_object_position", "center")
 
                     interactive_tile(
                         label=display_name,
@@ -124,6 +125,7 @@ def home_page_content(app_state: me.state):  # pylint: disable=unused-argument
                         description=description,
                         route=route,
                         video_url=video_url,
+                        video_object_position=video_object_position,
                         on_tile_click=handle_tile_click,
                         default_bg_color=me.theme_var("secondary-container"),
                         default_text_color=me.theme_var("on-secondary-container"),
