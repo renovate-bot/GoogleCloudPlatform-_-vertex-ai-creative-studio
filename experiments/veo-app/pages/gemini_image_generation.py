@@ -231,6 +231,19 @@ def gemini_image_gen_page_content():
                                     on_click=on_continue_click,
                                     type="stroked",
                                 )
+                                with me.content_button(
+                                    on_click=on_send_to_veo,
+                                    #type="flat",
+                                ), me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        align_items="center",
+                                        gap=8,
+                                    )
+                                ):
+                                    me.icon("slideshow")
+                                    me.text("Veo")
 
                     # Image presets
                     if state.generated_image_urls or state.uploaded_image_gcs_uris:
@@ -566,6 +579,26 @@ def close_info_dialog(e: me.ClickEvent):
     state.info_dialog_open = False
     yield
 
+def on_send_to_veo(e: me.ClickEvent):
+    """Navigates to the Veo page with the selected image as a query parameter."""
+    state = me.state(PageState)
+    if not state.selected_image_url:
+        yield from show_snackbar(state, "Please select an image to send.")
+        return
+
+    # Convert back to GCS URI to pass a clean identifier
+    gcs_uri = state.selected_image_url.replace(
+        "https://storage.mtls.cloud.google.com/", "gs://"
+    )
+
+    me.navigate(url="/veo", query_params={"source_image_uri": gcs_uri})
+    yield
+
+@me.page(
+    path="/gemini_image_generation",
+    title="Gemini Image Generation - GenMedia Creative Studio",
+)
 def page():
-    """Defines the Mesop page route for Gemini Image Generation."""
-    gemini_image_gen_page_content()
+    """Define the Mesop page route for Gemini Image Generation."""
+    with page_scaffold(page_name="gemini_image_generation"):
+        gemini_image_gen_page_content()
