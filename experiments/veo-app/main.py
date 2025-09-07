@@ -34,8 +34,13 @@ import pages.shop_the_look
 from app_factory import app
 from components.page_scaffold import page_scaffold
 from config import default as config
+from pages import about as about_page
+from pages import character_consistency as character_consistency_page
 from pages import chirp_3hd as chirp_3hd_page
 from pages import config as config_page
+from pages import gemini_image_generation as gemini_image_generation_page
+from pages import gemini_tts as gemini_tts_page
+from pages import home as home_page
 from pages import imagen as imagen_page
 from pages import library as library_page
 from pages import lyria as lyria_page
@@ -43,12 +48,8 @@ from pages import portraits as motion_portraits
 from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
 from pages import veo
-from pages import about as about_page
-from pages import character_consistency as character_consistency_page
+from pages import vto as vto_page
 from pages.edit_images import content as edit_images_content
-from pages import gemini_image_generation as gemini_image_generation_page
-from pages import gemini_tts as gemini_tts_page
-from pages import home as home_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
@@ -56,7 +57,6 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages import vto as vto_page
 from state.state import AppState
 
 
@@ -159,24 +159,6 @@ async def set_request_context(request: Request, call_next):
         key="session_id", value=session_id, httponly=True, samesite="Lax"
     )
     return response
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Test page routes are left as is, they don't need the scaffold

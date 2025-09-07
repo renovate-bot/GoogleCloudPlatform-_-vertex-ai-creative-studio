@@ -44,9 +44,11 @@ veo_model = VeoModelSetup.init()
 
 def on_veo_load(e: me.LoadEvent):
     """Handles page load events, including query parameters for deep linking."""
+    state = me.state(PageState)
     source_image_uri = me.query_params.get("source_image_uri")
+    veo_model_param = me.query_params.get("veo_model")
+
     if source_image_uri:
-        state = me.state(PageState)
         # Set the image from the query parameter
         state.reference_image_gcs = source_image_uri
         state.reference_image_uri = source_image_uri.replace(
@@ -56,6 +58,10 @@ def on_veo_load(e: me.LoadEvent):
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
         state.veo_prompt_input = "Animate this image with subtle motion."
+
+    if veo_model_param:
+        state.veo_model = veo_model_param
+
     yield
 
 
