@@ -36,18 +36,18 @@ from components.page_scaffold import page_scaffold
 from config import default as config
 from pages.about import about_page_content
 from pages.character_consistency import character_consistency_page_content
-from pages.chirp_3hd import page as chirp_3hd_page
-from pages.config import config_page_contents
+from pages import chirp_3hd as chirp_3hd_page
+from pages import config as config_page
 from pages.edit_images import content as edit_images_content
 from pages.gemini_image_generation import gemini_image_gen_page_content
 from pages.gemini_tts import page as gemini_tts_page
 from pages.home import home_page_content
-from pages.imagen import imagen_content
-from pages.library import library_content
-from pages.lyria import lyria_content
-from pages.portraits import motion_portraits_content
-from pages.recontextualize import recontextualize
-from pages.starter_pack import page as starter_pack_page
+from pages import imagen as imagen_page
+from pages import library as library_page
+from pages import lyria as lyria_page
+from pages import portraits as motion_portraits
+from pages import recontextualize as recontextualize_page
+from pages import starter_pack as starter_pack_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
@@ -176,36 +176,6 @@ def home_page():
     with page_scaffold(page_name="home"):  # pylint: disable=not-context-manager
         home_page_content(state)
 
-@me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
-def motion_portrait_page():
-    with page_scaffold(page_name="motion_portraits"):  # pylint: disable=E1129:not-context-manager
-        motion_portraits_content(me.state(AppState))
-
-@me.page(path="/lyria", title="Lyria - GenMedia Creative Studio")
-def lyria_page():
-    with page_scaffold(page_name="lyria"):  # pylint: disable=E1129:not-context-manager
-        lyria_content(me.state(AppState))
-
-@me.page(path="/config", title="GenMedia Creative Studio - Config")
-def config_page():
-    with page_scaffold(page_name="config"):  # pylint: disable=E1129:not-context-manager
-        config_page_contents(me.state(AppState))
-
-@me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
-def imagen_page():
-    with page_scaffold(page_name="imagen"):  # pylint: disable=E1129:not-context-manager
-        imagen_content(me.state(AppState))
-
-@me.page(path="/library", title="GenMedia Creative Studio - Library")
-def library_page():
-    with page_scaffold(page_name="library"):  # pylint: disable=E1129:not-context-manager
-        library_content(me.state(AppState))
-
-@me.page(path="/edit_images", title="GenMedia Creative Studio - Edit Images")
-def edit_images_page():
-    with page_scaffold(page_name="edit_images"):  # pylint: disable=E1129:not-context-manager
-        edit_images_content(me.state(AppState))
-
 @me.page(path="/gemini-tts", title="GenMedia Creative Studio - Gemini TTS")
 def gemini_tts_route():
     with page_scaffold(page_name="gemini-tts"):  # pylint: disable=E1129:not-context-manager
@@ -215,16 +185,6 @@ def gemini_tts_route():
 def vto_page():
     with page_scaffold(page_name="vto"):  # pylint: disable=E1129:not-context-manager
         vto()
-
-@me.page(path="/starter-pack", title="GenMedia Creative Studio - Starter Pack")
-def starter_pack_route():
-    with page_scaffold(page_name="starter-pack"):  # pylint: disable=E1129:not-context-manager
-        starter_pack_page()
-
-@me.page(path="/recontextualize", title="GenMedia Creative Studio - Product in Scene")
-def recontextualize_page():
-    with page_scaffold(page_name="recontextualize"):  # pylint: disable=E1129:not-context-manager
-        recontextualize()
 
 @me.page(path="/character_consistency", title="GenMedia Creative Studio - Character Consistency")
 def character_consistency_page():

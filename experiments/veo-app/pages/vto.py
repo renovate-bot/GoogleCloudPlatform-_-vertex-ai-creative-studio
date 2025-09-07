@@ -239,7 +239,7 @@ def vto():
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
     with page_frame():  # pylint: disable=not-context-manager
-            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog)
+            header("Virtual Try-On", "checkroom", show_info_button=True, on_info_click=open_info_dialog) # pylint: disable=E1129
 
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
                 # Person Image Section
