@@ -591,7 +591,10 @@ def on_send_to_veo(e: me.ClickEvent):
         "https://storage.mtls.cloud.google.com/", "gs://"
     )
 
-    me.navigate(url="/veo", query_params={"source_image_uri": gcs_uri})
+    me.navigate(
+        url="/veo",
+        query_params={"source_image_uri": gcs_uri, "veo_model": "3.0-fast"},
+    )
     yield
 
 @me.page(
@@ -600,5 +603,5 @@ def on_send_to_veo(e: me.ClickEvent):
 )
 def page():
     """Define the Mesop page route for Gemini Image Generation."""
-    with page_scaffold(page_name="gemini_image_generation"):
+    with page_scaffold(page_name="gemini_image_generation"):  # pylint: disable=E1129
         gemini_image_gen_page_content()

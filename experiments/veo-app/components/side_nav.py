@@ -35,6 +35,12 @@ def on_sidenav_menu_click(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.sidenav_open = not state.sidenav_open
 
 
+def on_click_title(e: me.ClickEvent):
+    """Navigate to the welcome page."""
+    me.navigate(url="/welcome")
+    yield
+
+
 def navigate_to(e: me.ClickEvent):
     """navigate to a specific page"""
     s = me.state(AppState)
@@ -91,7 +97,8 @@ def sidenav(current_page: Optional[str]):
                         with me.tooltip(message="Expand menu"):
                             me.icon(icon="menu")
                 if app_state.sidenav_open:
-                    me.text("GENMEDIA STUDIO", style=_FANCY_TEXT_GRADIENT)
+                    with me.box(on_click=on_click_title, style=me.Style(cursor="pointer")):
+                        me.text("GENMEDIA STUDIO", style=_FANCY_TEXT_GRADIENT)
             
             me.box(style=me.Style(height=16)) # spacer
 
