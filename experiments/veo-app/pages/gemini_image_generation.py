@@ -21,6 +21,7 @@ import mesop as me
 from common.analytics import log_ui_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
 from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
@@ -527,9 +528,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = state.selected_image_url.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
@@ -544,9 +543,7 @@ def on_image_action_click(e: me.ClickEvent):
 
     # Prioritize the selected generated image
     if state.selected_image_url:
-        input_gcs_uri = state.selected_image_url.replace(
-            "https://storage.mtls.cloud.google.com/", "gs://"
-        )
+        input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
     # Fallback to the first uploaded image
     elif state.uploaded_image_gcs_uris:
         input_gcs_uri = state.uploaded_image_gcs_uris[0]
@@ -573,9 +570,7 @@ def on_continue_click(e: me.ClickEvent):
         yield from show_snackbar(state, "Please select an image to continue with.")
         return
 
-    gcs_uri = state.selected_image_url.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
     state.uploaded_image_gcs_uris = [gcs_uri]
     state.generated_image_urls = []
     state.selected_image_url = ""
@@ -626,12 +621,18 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     yield
 
     try:
-        gcs_uris, execution_time = generate_image_from_prompt_and_images(
-            prompt=final_prompt,
-            images=input_gcs_uris,
-            gcs_folder="gemini_image_generations",
-            file_prefix="gemini_image",
-        )
+        with track_model_call(
+            model_name=cfg().GEMINI_IMAGE_GEN_MODEL,
+            prompt_length=len(final_prompt),
+            num_input_images=len(input_gcs_uris),
+            num_images_generated=state.num_images_to_generate,
+        ):
+            gcs_uris, execution_time = generate_image_from_prompt_and_images(
+                prompt=final_prompt,
+                images=input_gcs_uris,
+                gcs_folder="gemini_image_generations",
+                file_prefix="gemini_image",
+            )
 
         state.generation_time = execution_time
 
@@ -655,8 +656,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             )
         else:
             state.generated_image_urls = [
-                uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
-                for uri in gcs_uris
+                gcs_uri_to_https_url(uri) for uri in gcs_uris
             ]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
@@ -729,9 +729,7 @@ def on_send_to_veo(e: me.ClickEvent):
         return
 
     # Convert back to GCS URI to pass a clean identifier
-    gcs_uri = state.selected_image_url.replace(
-        "https://storage.mtls.cloud.google.com/", "gs://"
-    )
+    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
 
     me.navigate(
         url="/veo",
@@ -748,4 +746,3 @@ def page():
     """Define the Mesop page route for Gemini Image Generation."""
     with page_scaffold(page_name="gemini_image_generation"):  # pylint: disable=E1129
         gemini_image_gen_page_content()
-
