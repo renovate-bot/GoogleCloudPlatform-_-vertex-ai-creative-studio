@@ -18,6 +18,8 @@ from components.styles import _BOX_STYLE
 from state.imagen_state import PageState
 from svg_icon.svg_icon_component import svg_icon_component
 
+from common.utils import gcs_uri_to_https_url
+
 
 @me.component
 def image_output():
@@ -62,14 +64,8 @@ def image_output():
                 ):
                     for img_uri in state.image_output:
                         if img_uri:
-                            final_img_src = img_uri
-                            if img_uri.startswith("gs://"):
-                                final_img_src = img_uri.replace(
-                                    "gs://", "https://storage.mtls.cloud.google.com/"
-                                )
-
                             me.image(
-                                src=final_img_src,
+                                src=gcs_uri_to_https_url(img_uri),
                                 style=me.Style(
                                     width="300px",
                                     height="300px",
