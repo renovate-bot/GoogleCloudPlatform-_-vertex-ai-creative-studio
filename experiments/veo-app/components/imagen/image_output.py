@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mesop as me
+from components.styles import _BOX_STYLE
 
 from state.imagen_state import PageState
 from svg_icon.svg_icon_component import svg_icon_component
@@ -24,7 +25,7 @@ def image_output():
     state = me.state(PageState)
     print(f"Rendering image_output, commentary: {state.image_commentary}")
     with me.box(style=_BOX_STYLE):
-        me.text("Output", style=me.Style(font_weight=500))
+        #me.text("Output", style=me.Style(font_weight=500))
         me.box(style=me.Style(height=10))
 
         if state.is_loading:

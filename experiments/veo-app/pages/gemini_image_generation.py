@@ -18,7 +18,7 @@ from dataclasses import field
 
 import mesop as me
 
-from common.analytics import log_ui_click
+from common.analytics import log_ui_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from components.dialog import dialog
@@ -113,7 +113,7 @@ def gemini_image_gen_page_content():
                 ),
             ):
                 me.text(
-                    "Upload Images and Provide a Prompt",
+                    "Type a prompt or add images and a prompt",
                     style=me.Style(
                         margin=me.Margin(bottom=16),
                     ),
@@ -717,3 +717,4 @@ def page():
     """Define the Mesop page route for Gemini Image Generation."""
     with page_scaffold(page_name="gemini_image_generation"):  # pylint: disable=E1129
         gemini_image_gen_page_content()
+
