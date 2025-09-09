@@ -337,77 +337,108 @@ def gemini_image_gen_page_content():
                                         me.text(transformation["title"])
 
             # Right column (generated images)
-            with me.box(style=me.Style(flex_grow=1)):
+            with me.box(
+                style=me.Style(
+                    flex_grow=1,
+                    display="flex",
+                    flex_direction="column",
+                    align_items="center",
+                    justify_content="center",
+                    border_radius=12,
+                    padding=me.Padding.all(16),
+                    min_height=400,
+                )
+            ):
                 if state.generation_complete and not state.generated_image_urls:
                     me.text("No images returned.")
                 elif state.generated_image_urls:
-                    if len(state.generated_image_urls) == 1:
-                        # Display single, maximized image
-                        me.image(
-                            src=state.generated_image_urls[0],
-                            style=me.Style(
-                                width="100%",
-                                max_height="85vh",
-                                object_fit="contain",
-                                border_radius=8,
-                            ),
+                    # This box is to override the parent's centering styles
+                    with me.box(
+                        style=me.Style(
+                            width="100%",
+                            height="100%",
+                            display="flex",
+                            flex_direction="column",
                         )
-                    else:
-                        # Display multiple images in a gallery view
-                        with me.box(
-                            style=me.Style(
-                                display="flex", flex_direction="column", gap=16
-                            )
-                        ):
-                            # Main image
+                    ):
+                        if len(state.generated_image_urls) == 1:
+                            # Display single, maximized image
                             me.image(
-                                src=state.selected_image_url,
+                                src=state.generated_image_urls[0],
                                 style=me.Style(
                                     width="100%",
-                                    max_height="75vh",
+                                    max_height="85vh",
                                     object_fit="contain",
                                     border_radius=8,
                                 ),
                             )
-
-                            # Thumbnail strip
+                        else:
+                            # Display multiple images in a gallery view
                             with me.box(
                                 style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    gap=16,
-                                    justify_content="center",
+                                    display="flex", flex_direction="column", gap=16
                                 )
                             ):
-                                for url in state.generated_image_urls:
-                                    is_selected = url == state.selected_image_url
-                                    with me.box(
-                                        key=url,
-                                        on_click=on_thumbnail_click,
-                                        style=me.Style(
-                                            padding=me.Padding.all(4),
-                                            border=me.Border.all(
-                                                me.BorderSide(
-                                                    width=4,
-                                                    style="solid",
-                                                    color=me.theme_var("secondary")
-                                                    if is_selected
-                                                    else "transparent",
-                                                )
-                                            ),
-                                            border_radius=12,
-                                            cursor="pointer",
-                                        ),
-                                    ):
-                                        me.image(
-                                            src=url,
+                                # Main image
+                                me.image(
+                                    src=state.selected_image_url,
+                                    style=me.Style(
+                                        width="100%",
+                                        max_height="75vh",
+                                        object_fit="contain",
+                                        border_radius=8,
+                                    ),
+                                )
+
+                                # Thumbnail strip
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        gap=16,
+                                        justify_content="center",
+                                    )
+                                ):
+                                    for url in state.generated_image_urls:
+                                        is_selected = url == state.selected_image_url
+                                        with me.box(
+                                            key=url,
+                                            on_click=on_thumbnail_click,
                                             style=me.Style(
-                                                width=100,
-                                                height=100,
-                                                object_fit="cover",
-                                                border_radius=6,
+                                                padding=me.Padding.all(4),
+                                                border=me.Border.all(
+                                                    me.BorderSide(
+                                                        width=4,
+                                                        style="solid",
+                                                        color=me.theme_var("secondary")
+                                                        if is_selected
+                                                        else "transparent",
+                                                    )
+                                                ),
+                                                border_radius=12,
+                                                cursor="pointer",
                                             ),
-                                        )
+                                        ):
+                                            me.image(
+                                                src=url,
+                                                style=me.Style(
+                                                    width=100,
+                                                    height=100,
+                                                    object_fit="cover",
+                                                    border_radius=6,
+                                                ),
+                                            )
+                else:
+                    # Placeholder
+                    with me.box(
+                        style=me.Style(
+                            opacity=0.2,
+                            width=128,
+                            height=128,
+                            color=me.theme_var("on-surface-variant"),
+                        )
+                    ):
+                        svg_icon(icon_name="banana")
         snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 
