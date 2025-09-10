@@ -247,6 +247,12 @@ resource "google_storage_bucket_iam_member" "sa_object_user" {
   member = google_service_account.creative_studio.member
 }
 
+resource "google_project_iam_member" "creative_studio_sa_token_creator" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
+  member  = google_service_account.creative_studio.member
+}
+
 resource "google_firestore_database" "create_studio_asset_metadata" {
   name                              = "create-studio-asset-metadata"
   location_id                       = var.region
