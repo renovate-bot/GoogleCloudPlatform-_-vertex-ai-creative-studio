@@ -125,6 +125,7 @@ This repository provides AI application samples for:
 
 *   [Google ADK (Agent Development Kit)](../sample-agents/adk/README.md)
 *   [Google Firebase Genkit](../sample-agents/genkit/README.md)
+*   [Google Gemini CLI](../sample-agents/geminicli/README.md)
 
 
 ## Available Go MCP Servers:
