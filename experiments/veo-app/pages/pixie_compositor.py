@@ -19,6 +19,7 @@ import datetime
 
 import mesop as me
 
+from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url
 from common.metadata import MediaItem, add_media_item_to_firestore
 from components.header import header
@@ -77,9 +78,16 @@ def page_content():
             # Video 1 Selector
             with me.box(style=me.Style(display="flex", flex_direction="column", gap=10)):
                 me.text("Video 1")
-                video_chooser_button(
-                    key="video_1", on_library_select=on_video_select
-                )
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+                    me.uploader(
+                        label="Upload Video",
+                        on_upload=on_upload_video_1,
+                        accepted_file_types=["video/mp4", "video/quicktime"],
+                        style=me.Style(width="100%"),
+                    )
+                    video_chooser_button(
+                        key="video_1", on_library_select=on_video_select
+                    )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
                     if "video_1" in state.selected_videos:
                         me.video(
@@ -94,9 +102,16 @@ def page_content():
             # Video 2 Selector
             with me.box(style=me.Style(display="flex", flex_direction="column", gap=10)):
                 me.text("Video 2")
-                video_chooser_button(
-                    key="video_2", on_library_select=on_video_select
-                )
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+                    me.uploader(
+                        label="Upload Video",
+                        on_upload=on_upload_video_2,
+                        accepted_file_types=["video/mp4", "video/quicktime"],
+                        style=me.Style(width="100%"),
+                    )
+                    video_chooser_button(
+                        key="video_2", on_library_select=on_video_select
+                    )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
                     if "video_2" in state.selected_videos:
                         me.video(
@@ -164,6 +179,24 @@ def page_content():
                     style=me.Style(width="100%", max_width="480px", border_radius=8),
                 )
 
+
+def on_upload_video_1(e: me.UploadEvent):
+    """Upload video 1 handler."""
+    state = me.state(PageState)
+    gcs_url = store_to_gcs(
+        "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+    )
+    state.selected_videos["video_1"] = gcs_url
+    yield
+
+def on_upload_video_2(e: me.UploadEvent):
+    """Upload video 2 handler."""
+    state = me.state(PageState)
+    gcs_url = store_to_gcs(
+        "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+    )
+    state.selected_videos["video_2"] = gcs_url
+    yield
 
 def on_video_select(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)

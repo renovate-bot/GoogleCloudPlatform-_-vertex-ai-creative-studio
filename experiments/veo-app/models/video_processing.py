@@ -114,6 +114,15 @@ def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
 
     final_clip = VideoClip(make_frame, duration=total_duration)
     final_clip.fps = clip1.fps  # Set fps for the new clip
+    
+    if clip1.audio and clip2.audio:
+        audio1 = clip1.audio.fx(afx.fadeout, transition_duration)
+        audio2 = clip2.audio.fx(afx.fadein, transition_duration).set_start(
+            clip1.duration - transition_duration
+        )
+        final_audio = CompositeAudioClip([audio1, audio2])
+        final_clip.audio = final_audio
+
     return final_clip
 
 
@@ -158,6 +167,15 @@ def wipe(clip1, clip2, transition_duration, direction="left-to-right"):
     final_clip = CompositeVideoClip([clip2, clip1_masked], size=(width, height))
     final_clip = final_clip.with_duration(total_duration)
     final_clip.fps = clip1.fps
+
+    if clip1.audio and clip2.audio:
+        audio1 = clip1.audio.fx(afx.fadeout, transition_duration)
+        audio2 = clip2.audio.fx(afx.fadein, transition_duration).set_start(
+            clip1.duration - transition_duration
+        )
+        final_audio = CompositeAudioClip([audio1, audio2])
+        final_clip.audio = final_audio
+
     return final_clip
 
 
@@ -174,6 +192,15 @@ def dipToBlack(clip1, clip2, transition_duration, **kwargs):
 
     final_clip = CompositeVideoClip([black_clip, clip1_faded, clip2_faded])
     final_clip.fps = clip1.fps
+
+    if clip1.audio and clip2.audio:
+        audio1 = clip1.audio.fx(afx.fadeout, fade_duration)
+        audio2 = clip2.audio.fx(afx.fadein, fade_duration).set_start(
+            clip1.duration - fade_duration
+        )
+        final_audio = CompositeAudioClip([audio1, audio2])
+        final_clip.audio = final_audio
+
     return final_clip
 
 
