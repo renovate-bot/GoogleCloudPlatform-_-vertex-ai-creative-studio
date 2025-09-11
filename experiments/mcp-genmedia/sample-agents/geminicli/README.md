@@ -25,7 +25,7 @@ A `sample_settings.json` is provided for your convenience.
       "env": {
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
         "MCP_SERVER_REQUEST_TIMEOUT": "30000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
@@ -33,7 +33,7 @@ A `sample_settings.json` is provided for your convenience.
       "command": "mcp-imagen-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
@@ -41,14 +41,14 @@ A `sample_settings.json` is provided for your convenience.
       "command": "mcp-chirp3-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
     "lyria": {
       "command": "mcp-lyria-go",
       "env": {
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
@@ -81,7 +81,7 @@ Here is an example of how to configure the `veo` server to use an insecure conne
         "OTEL_EXPORTER_OTLP_INSECURE": "true",
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
         "MCP_SERVER_REQUEST_TIMEOUT": "30000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     }
@@ -118,7 +118,7 @@ Then, add to that directory a `gemini-extension.json`
       "env": {
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
         "MCP_SERVER_REQUEST_TIMEOUT": "30000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
@@ -126,7 +126,7 @@ Then, add to that directory a `gemini-extension.json`
       "command": "mcp-imagen-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
@@ -134,14 +134,14 @@ Then, add to that directory a `gemini-extension.json`
       "command": "mcp-chirp3-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
     "lyria": {
       "command": "mcp-lyria-go",
       "env": {
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
