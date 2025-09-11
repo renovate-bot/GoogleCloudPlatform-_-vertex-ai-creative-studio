@@ -43,7 +43,7 @@ decorator==5.2.1
     # via
     #   ipython
     #   moviepy
-deepdiff==6.7.1
+deepdiff==8.6.1
     # via mesop
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
