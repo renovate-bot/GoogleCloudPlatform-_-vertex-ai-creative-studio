@@ -30,12 +30,21 @@ from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
+from config.banana_presets import IMAGE_ACTION_PRESETS
 from config.default import Default as cfg
 from models.gemini import (
     generate_image_from_prompt_and_images,
     generate_transformation_prompts,
 )
 from state.state import AppState
+
+
+CHIP_STYLE = me.Style(
+    padding=me.Padding(top=4, right=12, bottom=4, left=12),
+    border_radius=8,
+    font_size=14,
+    height=32,
+)
 
 
 @me.stateclass
@@ -54,15 +63,12 @@ class PageState:
     previous_media_item_id: str | None = None  # For linking generation sequences
     num_images_to_generate: int = 1
     suggested_transformations: list[dict] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    is_suggesting_transformations: bool = False
 
     info_dialog_open: bool = False
 
 
-ACTION_PROMPTS = {
-    "rotate_left": "Rotate the primary subject in the image to the left.",
-    "rotate_right": "Rotate the primary subject in the image to the right.",
-    "remove_background": "Remove the background from this image, replacing it with a solid white background.",
-}
+
 
 NUM_IMAGES_PROMPTS = {
     2: "Give me 2 options.",
@@ -132,6 +138,7 @@ def gemini_image_gen_page_content():
                         label="Upload Images",
                         on_upload=on_upload,
                         multiple=True,
+                        accepted_file_types=["image/jpeg", "image/png", "image/webp"],
                         style=me.Style(width="100%"),
                     )
                     library_chooser_button(
@@ -263,42 +270,74 @@ def gemini_image_gen_page_content():
                                 me.icon("slideshow")
                                 me.text("Veo")
 
+
                 # Image presets
                 if state.generated_image_urls or state.uploaded_image_gcs_uris:
                     with me.box(
                         style=me.Style(
                             display="flex",
                             flex_direction="column",
-                            gap=16,
+                            gap=8,  # Reduced gap for tighter category spacing
                             margin=me.Margin(top=16),
-                        )
+                        ),
                     ):
-                        me.text("Image Presets", style=me.Style(font_weight="bold"))
-                        with me.box(
-                            style=me.Style(
-                                display="flex",
-                                flex_direction="row",
-                                align_items="center",
-                                gap=16,
-                            ),
-                        ):
-                            me.button(
-                                "Rotate left",
-                                on_click=on_image_action_click,
-                                type="stroked",
-                                key="rotate_left",
+                        #me.text("Image Presets", style=me.Style(font_weight="bold"))
+
+                        for category_name, presets in IMAGE_ACTION_PRESETS.items():
+                            if not presets:
+                                continue
+
+                            me.text(
+                                f"{category_name.capitalize()} Actions",
+                                style=me.Style(
+                                    font_size=14, margin=me.Margin(top=8),
+                                ),
                             )
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    flex_direction="row",
+                                    align_items="center",
+                                    gap=8,  # Reduced gap
+                                    flex_wrap="wrap",
+                                ),
+                            ):
+                                for preset in presets:
+                                    label = preset.get("label") or preset["key"]
+                                    me.button(
+                                        label,
+                                        on_click=on_image_action_click,
+                                        type="stroked",
+                                        key=preset["key"],
+                                        style=CHIP_STYLE,
+                                    )
+
+
+                # Suggest transformations button
+                if (
+                    state.generation_complete
+                    and not state.suggested_transformations
+                    and state.generated_image_urls
+                ):
+                    with me.box(style=me.Style(margin=me.Margin(top=16))):
+                        if state.is_suggesting_transformations:
+                            with me.content_button(disabled=True, style=CHIP_STYLE):
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="row",
+                                        align_items="center",
+                                        gap=8,
+                                    )
+                                ):
+                                    me.progress_spinner(diameter=20, stroke_width=3)
+                                    me.text("Suggesting...")
+                        else:
                             me.button(
-                                "Rotate right",
-                                on_click=on_image_action_click,
+                                "Suggest Transformations",
+                                on_click=on_suggest_transformations_click,
                                 type="stroked",
-                                key="rotate_right",
-                            )
-                            me.button(
-                                "Remove background",
-                                on_click=on_image_action_click,
-                                type="stroked",
-                                key="remove_background",
+                                style=CHIP_STYLE,
                             )
 
                 # Suggested transformations
@@ -325,6 +364,7 @@ def gemini_image_gen_page_content():
                                     on_click=on_transformation_click,
                                     key=json.dumps(transformation),
                                     type="stroked",
+                                    style=CHIP_STYLE,
                                 ):
                                     with me.box(
                                         style=me.Style(
@@ -536,9 +576,38 @@ def on_transformation_click(e: me.ClickEvent):
     yield from _generate_and_save(base_prompt=prompt, input_gcs_uris=[input_gcs_uri])
 
 
+def on_suggest_transformations_click(e: me.ClickEvent):
+    """Generates and displays suggested transformations for the primary generated image."""
+    state = me.state(PageState)
+
+    if not state.generated_image_urls:
+        yield from show_snackbar(
+            state, "No image available to suggest transformations for."
+        )
+        return
+
+    state.is_suggesting_transformations = True
+    yield
+
+    try:
+        # Use the first generated image to get suggestions
+        gcs_uri = https_url_to_gcs_uri(state.generated_image_urls[0])
+        raw_transformations = generate_transformation_prompts(image_uris=[gcs_uri])
+        # Convert Pydantic objects to dicts for state
+        state.suggested_transformations = [t.model_dump() for t in raw_transformations]
+    except Exception as ex:
+        print(f"Could not generate transformation prompts: {ex}")
+        state.suggested_transformations = []
+        yield from show_snackbar(state, f"Failed to get suggestions: {ex}")
+    finally:
+        state.is_suggesting_transformations = False
+        yield
+
+
 def on_image_action_click(e: me.ClickEvent):
     """Handles clicks on image action buttons, triggering a new generation."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
     input_gcs_uri = ""
 
     # Prioritize the selected generated image
@@ -552,14 +621,27 @@ def on_image_action_click(e: me.ClickEvent):
         yield from show_snackbar(state, "Please upload or select an image first.")
         return
 
-    action_prompt = ACTION_PROMPTS.get(e.key)
-    if not action_prompt:
+    preset = None
+    for category in IMAGE_ACTION_PRESETS.values():
+        found = next((p for p in category if p["key"] == e.key), None)
+        if found:
+            preset = found
+            break
+
+    if not preset:
         yield from show_snackbar(state, f"Unknown action: {e.key}")
         return
 
+    # Log the click event for analytics
+    log_ui_click(
+        element_id=f"preset_action_{preset['key']}",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
+
     # The action uses the identified image as the sole input
     yield from _generate_and_save(
-        base_prompt=action_prompt, input_gcs_uris=[input_gcs_uri]
+        base_prompt=preset["prompt"], input_gcs_uris=[input_gcs_uri]
     )
 
 
@@ -675,19 +757,6 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             add_media_item_to_firestore(item)
             state.previous_media_item_id = item.id
             yield from show_snackbar(state, "Automatically saved to library.")
-
-            # Generate transformation prompts
-            try:
-                raw_transformations = generate_transformation_prompts(
-                    image_uris=[gcs_uris[0]]
-                )
-                # Convert Pydantic objects to dicts for state
-                state.suggested_transformations = [
-                    t.model_dump() for t in raw_transformations
-                ]
-            except Exception as e:
-                print(f"Could not generate transformation prompts: {e}")
-                state.suggested_transformations = []  # Clear any old ones
 
     except Exception as ex:
         print(f"ERROR: Failed to generate images. Details: {ex}")
