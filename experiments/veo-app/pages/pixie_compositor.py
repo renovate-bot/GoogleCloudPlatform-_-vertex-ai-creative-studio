@@ -16,6 +16,7 @@
 
 from dataclasses import field
 import datetime
+import time
 
 import mesop as me
 
@@ -26,6 +27,7 @@ from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.video_chooser_button import video_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
+from components.snackbar import snackbar
 from models.video_processing import process_videos, convert_mp4_to_gif
 from state.state import AppState
 
@@ -40,6 +42,8 @@ class PageState:
     is_converting_gif: bool = False
     error_message: str = ""
     selected_transition: str = "concat"
+    show_snackbar: bool = False
+    snackbar_message: str = ""
 
 
 VIDEO_PLACEHOLDER_STYLE = me.Style(
@@ -178,6 +182,19 @@ def page_content():
                     src=gcs_uri_to_https_url(state.gif_url),
                     style=me.Style(width="100%", max_width="480px", border_radius=8),
                 )
+        
+        snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
+
+
+def show_snackbar(state: PageState, message: str):
+    """Displays a snackbar message at the bottom of the page."""
+    state.snackbar_message = message
+    state.show_snackbar = True
+    yield
+    time.sleep(3)
+    state.show_snackbar = False
+    yield
+    # The snackbar will be hidden on the next interaction.
 
 
 def on_upload_video_1(e: me.UploadEvent):
@@ -224,8 +241,15 @@ def on_process_click(e: me.ClickEvent):
             state.selected_videos["video_1"],
             state.selected_videos["video_2"],
         ]
-        processed_uri = process_videos(video_uris_to_process, state.selected_transition)
+        result = process_videos(video_uris_to_process, state.selected_transition)
+        processed_uri = result["gcs_uri"]
+        messages = result["messages"]
+
         state.concatenated_video_url = processed_uri
+
+        # Show snackbar for any messages
+        if messages:
+            yield from show_snackbar(state, " ".join(messages))
 
         # Log to Firestore
         add_media_item_to_firestore(

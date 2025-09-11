@@ -69,9 +69,14 @@ def _upload_to_gcs(local_path: str, destination_folder: str, mime_type: str) -> 
 
 
 # --- Transition Functions (moviepy v2.x compatible) --- #
+import moviepy
+import datetime
+
+print(f"DEBUG: Loading video_processing.py at {datetime.datetime.now()}. Moviepy version: {moviepy.__version__}")
 
 
 def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
+    print("DEBUG: Entering crossfade function")
     transition_start = clip1.duration - transition_duration
     total_duration = clip1.duration + clip2.duration - transition_duration
 
@@ -116,8 +121,9 @@ def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
     final_clip.fps = clip1.fps  # Set fps for the new clip
     
     if clip1.audio and clip2.audio:
-        audio1 = clip1.audio.fx(afx.fadeout, transition_duration)
-        audio2 = clip2.audio.fx(afx.fadein, transition_duration).set_start(
+        print("DEBUG: Applying audio crossfade")
+        audio1 = clip1.audio.with_effects([afx.AudioFadeOut(transition_duration)])
+        audio2 = clip2.audio.with_effects([afx.AudioFadeIn(transition_duration)]).with_start(
             clip1.duration - transition_duration
         )
         final_audio = CompositeAudioClip([audio1, audio2])
@@ -128,7 +134,6 @@ def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
 
 def wipe(clip1, clip2, transition_duration, direction="left-to-right"):
     width, height = clip1.size
-    clip2 = clip2.resized((width, height))
 
     transition_start = clip1.duration - transition_duration
     total_duration = clip1.duration + clip2.duration - transition_duration
@@ -169,8 +174,8 @@ def wipe(clip1, clip2, transition_duration, direction="left-to-right"):
     final_clip.fps = clip1.fps
 
     if clip1.audio and clip2.audio:
-        audio1 = clip1.audio.fx(afx.fadeout, transition_duration)
-        audio2 = clip2.audio.fx(afx.fadein, transition_duration).set_start(
+        audio1 = clip1.audio.with_effects([afx.AudioFadeOut(transition_duration)])
+        audio2 = clip2.audio.with_effects([afx.AudioFadeIn(transition_duration)]).with_start(
             clip1.duration - transition_duration
         )
         final_audio = CompositeAudioClip([audio1, audio2])
@@ -194,8 +199,8 @@ def dipToBlack(clip1, clip2, transition_duration, **kwargs):
     final_clip.fps = clip1.fps
 
     if clip1.audio and clip2.audio:
-        audio1 = clip1.audio.fx(afx.fadeout, fade_duration)
-        audio2 = clip2.audio.fx(afx.fadein, fade_duration).set_start(
+        audio1 = clip1.audio.with_effects([afx.AudioFadeOut(fade_duration)])
+        audio2 = clip2.audio.with_effects([afx.AudioFadeIn(fade_duration)]).with_start(
             clip1.duration - fade_duration
         )
         final_audio = CompositeAudioClip([audio1, audio2])
@@ -278,10 +283,11 @@ def process_videos(
     video_gcs_uris: list[str],
     transition: str = "concat",
     transition_duration: float = 1.0,
-) -> str:
+) -> dict:
     if not video_gcs_uris or len(video_gcs_uris) < 2:
         raise ValueError("At least two videos are required.")
 
+    messages = []
     with tempfile.TemporaryDirectory() as tmpdir:
         local_paths = _download_videos_to_temp(video_gcs_uris, tmpdir)
         clips = [VideoFileClip(path) for path in local_paths]
@@ -289,16 +295,30 @@ def process_videos(
         clip1 = clips[0]
         clip2 = clips[1]
 
-        if transition == "concat":
-            final_clip = concatenate_videoclips(clips)
-        elif transition == "x-fade":
-            final_clip = crossfade(clip1, clip2, transition_duration)
-        elif transition == "wipe":
-            final_clip = wipe(clip1, clip2, transition_duration)
-        elif transition == "dipToBlack":
-            final_clip = dipToBlack(clip1, clip2, transition_duration)
-        else:
-            final_clip = concatenate_videoclips(clips)  # Default to concat
+        # Check for resolution mismatch before transitions that require it
+        if transition in ["x-fade", "wipe"]:
+            if clip1.size != clip2.size:
+                messages.append(f"Resized video 2 from {clip2.size} to {clip1.size} to match video 1.")
+                clip2 = clip2.resize(clip1.size)
+
+        try:
+            if transition == "concat":
+                final_clip = concatenate_videoclips(clips)
+            elif transition == "x-fade":
+                final_clip = crossfade(clip1, clip2, transition_duration)
+            elif transition == "wipe":
+                final_clip = wipe(clip1, clip2, transition_duration)
+            elif transition == "dipToBlack":
+                final_clip = dipToBlack(clip1, clip2, transition_duration)
+            else:
+                final_clip = concatenate_videoclips(clips)  # Default to concat
+        except ValueError as e:
+            if "broadcast" in str(e):
+                raise ValueError(
+                    "Error: This transition requires videos to have the same resolution."
+                ) from e
+            else:
+                raise e
 
         output_filename = f"processed_{uuid.uuid4()}.mp4"
         final_clip_path = os.path.join(tmpdir, output_filename)
@@ -310,7 +330,7 @@ def process_videos(
             clip.close()
         final_clip.close()
 
-        return final_gcs_uri
+        return {"gcs_uri": final_gcs_uri, "messages": messages}
 
 
 # --- GIF Conversion --- #
