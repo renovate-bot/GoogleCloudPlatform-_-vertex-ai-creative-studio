@@ -270,6 +270,7 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
 
 resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
   collection  = "genmedia-library"
+  database    = google_firestore_database.create_studio_asset_metadata.name
   query_scope = "COLLECTION"
 
   fields {
@@ -281,10 +282,6 @@ resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
     field_path = "timestamp"
     order      = "DESCENDING"
   }
-
-  depends_on = [
-    google_firestore_database.create_studio_asset_metadata
-  ]
 }
 
 resource "google_project_iam_member" "creative_studio_db_access" {
