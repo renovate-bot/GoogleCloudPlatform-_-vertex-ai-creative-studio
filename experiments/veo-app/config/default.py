@@ -53,6 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
+    SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
     # Gemini
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
     LOCATION: str = os.environ.get("LOCATION", "us-central1")
