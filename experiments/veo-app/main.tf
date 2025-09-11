@@ -267,6 +267,25 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
   depends_on      = [module.project-services]
 }
 
+resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
+  collection = "genmedia-library"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "mime_type"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+
+  depends_on = [
+    google_firestore_database.create_studio_asset_metadata
+  ]
+}
+
 resource "google_project_iam_member" "creative_studio_db_access" {
   project = var.project_id
   role    = "roles/datastore.user"
