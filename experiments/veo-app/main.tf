@@ -138,20 +138,21 @@ resource "google_service_account" "creative_studio" {
 # Centralizing environment variables here and using for each in service declaration for simplicity
 locals {
   creative_studio_env_vars = {
-    PROJECT_ID           = var.project_id
-    LOCATION             = var.region
-    MODEL_ID             = var.model_id
-    VEO_MODEL_ID         = var.veo_model_id
-    VEO_EXP_MODEL_ID     = var.veo_exp_model_id
-    LYRIA_MODEL_VERSION  = var.lyria_model_id
-    LYRIA_PROJECT_ID     = var.project_id
-    GENMEDIA_BUCKET      = module.creative_studio_asset_bucket.bucket.name
-    VIDEO_BUCKET         = module.creative_studio_asset_bucket.bucket.name
-    MEDIA_BUCKET         = module.creative_studio_asset_bucket.bucket.name
-    IMAGE_BUCKET         = module.creative_studio_asset_bucket.bucket.name
-    GCS_ASSETS_BUCKET    = module.creative_studio_asset_bucket.bucket.name
-    GENMEDIA_FIREBASE_DB = google_firestore_database.create_studio_asset_metadata.name
-    EDIT_IMAGES_ENABLED  = var.edit_images_enabled
+    PROJECT_ID            = var.project_id
+    LOCATION              = var.region
+    MODEL_ID              = var.model_id
+    VEO_MODEL_ID          = var.veo_model_id
+    VEO_EXP_MODEL_ID      = var.veo_exp_model_id
+    LYRIA_MODEL_VERSION   = var.lyria_model_id
+    LYRIA_PROJECT_ID      = var.project_id
+    GENMEDIA_BUCKET       = module.creative_studio_asset_bucket.bucket.name
+    VIDEO_BUCKET          = module.creative_studio_asset_bucket.bucket.name
+    MEDIA_BUCKET          = module.creative_studio_asset_bucket.bucket.name
+    IMAGE_BUCKET          = module.creative_studio_asset_bucket.bucket.name
+    GCS_ASSETS_BUCKET     = module.creative_studio_asset_bucket.bucket.name
+    GENMEDIA_FIREBASE_DB  = google_firestore_database.create_studio_asset_metadata.name
+    SERVICE_ACCOUNT_EMAIL = google_service_account.creative_studio.email
+    EDIT_IMAGES_ENABLED   = var.edit_images_enabled
   }
 }
 
@@ -268,7 +269,8 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
 }
 
 resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
-  collection = "genmedia-library"
+  collection  = "genmedia-library"
+  database    = google_firestore_database.create_studio_asset_metadata.name
   query_scope = "COLLECTION"
 
   fields {
@@ -280,10 +282,6 @@ resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
     field_path = "timestamp"
     order      = "DESCENDING"
   }
-
-  depends_on = [
-    google_firestore_database.create_studio_asset_metadata
-  ]
 }
 
 resource "google_project_iam_member" "creative_studio_db_access" {

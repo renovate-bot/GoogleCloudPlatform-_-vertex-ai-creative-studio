@@ -60,7 +60,7 @@ from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_pa
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
 from pages import pixie_compositor as pixie_compositor_page
 from state.state import AppState
-
+import google.auth
 
 class UserInfo(BaseModel):
     email: str | None
@@ -85,29 +85,26 @@ app.add_middleware(
 def get_signed_url(gcs_uri: str):
     """Generates a signed URL for a GCS object."""
     try:
-        storage_client = storage.Client()
-        if os.environ.get("K_SERVICE"):
-            source_credentials, project = google.auth.default()
-            storage_client = storage.Client(
-                credentials=impersonated_credentials.Credentials(
-                    source_credentials=source_credentials,
-                    target_principal=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
-                    target_scopes=[
-                        "https://www.googleapis.com/auth/devstorage.read_only"
-                    ],
-                )
-            )
+        credentials, _ = google.auth.default()
 
+        signing_credentials = impersonated_credentials.Credentials(
+            source_credentials=credentials,
+            target_principal=config.Default.SERVICE_ACCOUNT_EMAIL,
+            target_scopes="https://www.googleapis.com/auth/devstorage.read_only",
+        )
+
+        storage_client = storage.Client()
         bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
-
+        
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="GET",
-            service_account_email=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
+            credentials=signing_credentials
         )
+
         return {"signed_url": signed_url}
     except Exception as e:
         error_message = str(e)
