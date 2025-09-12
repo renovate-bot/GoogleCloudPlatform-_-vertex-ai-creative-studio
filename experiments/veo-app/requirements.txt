@@ -89,7 +89,7 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.112.0
+google-cloud-aiplatform==1.113.0
     # via veo-app (pyproject.toml)
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
