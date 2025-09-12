@@ -69,9 +69,14 @@ def _upload_to_gcs(local_path: str, destination_folder: str, mime_type: str) -> 
 
 
 # --- Transition Functions (moviepy v2.x compatible) --- #
+import moviepy
+import datetime
+
+print(f"DEBUG: Loading video_processing.py at {datetime.datetime.now()}. Moviepy version: {moviepy.__version__}")
 
 
 def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
+    print("DEBUG: Entering crossfade function")
     transition_start = clip1.duration - transition_duration
     total_duration = clip1.duration + clip2.duration - transition_duration
 
@@ -116,8 +121,9 @@ def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
     final_clip.fps = clip1.fps  # Set fps for the new clip
     
     if clip1.audio and clip2.audio:
-        audio1 = clip1.audio.fx(afx.fadeout, transition_duration)
-        audio2 = clip2.audio.fx(afx.fadein, transition_duration).set_start(
+        print("DEBUG: Applying audio crossfade")
+        audio1 = clip1.audio.with_effects([afx.AudioFadeOut(transition_duration)])
+        audio2 = clip2.audio.with_effects([afx.AudioFadeIn(transition_duration)]).with_start(
             clip1.duration - transition_duration
         )
         final_audio = CompositeAudioClip([audio1, audio2])
@@ -128,7 +134,6 @@ def crossfade(clip1, clip2, transition_duration, speed_curve="sigmoid"):
 
 def wipe(clip1, clip2, transition_duration, direction="left-to-right"):
     width, height = clip1.size
-    clip2 = clip2.resized((width, height))
 
     transition_start = clip1.duration - transition_duration
     total_duration = clip1.duration + clip2.duration - transition_duration
@@ -169,8 +174,8 @@ def wipe(clip1, clip2, transition_duration, direction="left-to-right"):
     final_clip.fps = clip1.fps
 
     if clip1.audio and clip2.audio:
-        audio1 = clip1.audio.fx(afx.fadeout, transition_duration)
-        audio2 = clip2.audio.fx(afx.fadein, transition_duration).set_start(
+        audio1 = clip1.audio.with_effects([afx.AudioFadeOut(transition_duration)])
+        audio2 = clip2.audio.with_effects([afx.AudioFadeIn(transition_duration)]).with_start(
             clip1.duration - transition_duration
         )
         final_audio = CompositeAudioClip([audio1, audio2])
@@ -194,8 +199,8 @@ def dipToBlack(clip1, clip2, transition_duration, **kwargs):
     final_clip.fps = clip1.fps
 
     if clip1.audio and clip2.audio:
-        audio1 = clip1.audio.fx(afx.fadeout, fade_duration)
-        audio2 = clip2.audio.fx(afx.fadein, fade_duration).set_start(
+        audio1 = clip1.audio.with_effects([afx.AudioFadeOut(fade_duration)])
+        audio2 = clip2.audio.with_effects([afx.AudioFadeIn(fade_duration)]).with_start(
             clip1.duration - fade_duration
         )
         final_audio = CompositeAudioClip([audio1, audio2])
@@ -288,6 +293,30 @@ def process_videos(
 
         clip1 = clips[0]
         clip2 = clips[1]
+
+        # Check for resolution mismatch before transitions that require it
+        if transition in ["x-fade", "wipe"]:
+            if clip1.size != clip2.size:
+                messages.append(f"Resized video 2 from {clip2.size} to match video 1's resolution of {clip1.size} while preserving aspect ratio.")
+                
+                # Import necessary classes locally to avoid polluting the global scope
+                from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
+                from moviepy.video.VideoClip import ColorClip
+
+                # Resize clip2 to fit within clip1's dimensions, preserving aspect ratio
+                ratio = min(clip1.size[0] / clip2.size[0], clip1.size[1] / clip2.size[1])
+                resized_clip2 = clip2.resize(ratio)
+
+                # Create a black background clip with the size of clip1
+                background = ColorClip(size=clip1.size, color=(0, 0, 0), duration=resized_clip2.duration)
+                
+                # Composite the resized clip2 onto the center of the background
+                # This makes clip2 have the same dimensions as clip1, with black bars
+                clip2 = CompositeVideoClip([background, resized_clip2.set_position("center")])
+
+                # Ensure the new composite clip has the same audio properties
+                if resized_clip2.audio:
+                    clip2.audio = resized_clip2.audio
 
         if transition == "concat":
             final_clip = concatenate_videoclips(clips)
