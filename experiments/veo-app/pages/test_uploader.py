@@ -17,6 +17,7 @@ from dataclasses import field
 import mesop as me
 
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 
@@ -39,13 +40,9 @@ def test_uploader_page():
             f"Test Uploader Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}",
         )
         if e.chooser_id == "chooser_A":
-            state.selected_gcs_uri_A = e.gcs_uri.replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
-            )
+            state.selected_gcs_uri_A = gcs_uri_to_https_url(e.gcs_uri)
         elif e.chooser_id == "chooser_B":
-            state.selected_gcs_uri_B = e.gcs_uri.replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
-            )
+            state.selected_gcs_uri_B = gcs_uri_to_https_url(e.gcs_uri)
         yield
 
     with me.box(

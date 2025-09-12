@@ -422,7 +422,7 @@ def motion_portraits_content(app_state: me.state):
                                 margin=me.Margin(bottom=10),
                             ),
                         )
-                        video_url = gcs_uri_to_https_url(state.result_video)
+                        video_url = gcs_uri_to_https_url(state.result_video[0])
                         print(f"Displaying result video: {video_url}")
                         me.video(
                             src=video_url,
@@ -674,6 +674,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
             reference_image_gcs=state.reference_image_gcs,
             reference_image_mime_type=state.reference_image_mime_type,
             person_generation="allow_adult",
+            video_count=1
         )
 
         gcs_uri, _ = generate_video(request)

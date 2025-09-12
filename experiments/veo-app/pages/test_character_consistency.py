@@ -17,6 +17,7 @@ from dataclasses import field
 import mesop as me
 
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from components.stepper import stepper
@@ -108,9 +109,7 @@ This page allows you to test the character consistency workflow step-by-step.
                         with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=10, justify_content="center", margin=me.Margin(bottom=16))):
                             for uri in state.uploaded_image_gcs_uris:
                                 me.image(
-                                    src=uri.replace(
-                                        "gs://", "https://storage.mtls.cloud.google.com/"
-                                    ),
+                                    src=gcs_uri_to_https_url(uri),
                                     style=me.Style(width=200, height=200, object_fit="contain", border_radius=8),
                                 )
                     me.textarea(
@@ -296,12 +295,12 @@ def generate_alternatives(e: me.ClickEvent):
             state.character_description = step_result.data["character_description"]
         if "candidate_image_gcs_uris" in step_result.data:
             state.candidate_image_urls = [
-                uri.replace("gs://", "https://storage.mtls.cloud.google.com/")
+                uri.replace("gs://", "https://storage.cloud.google.com/")
                 for uri in step_result.data["candidate_image_gcs_uris"]
             ]
         if "best_image_gcs_uri" in step_result.data:
             state.best_image_url = step_result.data["best_image_gcs_uri"].replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
+                "gs://", "https://storage.cloud.google.com/"
             )
             break
 
@@ -321,7 +320,7 @@ def generate_video(e: me.ClickEvent):
     yield
 
     # Convert the display URL back to a GCS URI before passing it to the model.
-    gcs_uri = state.user_selected_image_url.replace("https://storage.mtls.cloud.google.com/", "gs://")
+    gcs_uri = state.user_selected_image_url.replace("https://storage.cloud.google.com/", "gs://")
 
     for step_result in generate_character_video(
         user_email=app_state.user_email,
@@ -330,7 +329,7 @@ def generate_video(e: me.ClickEvent):
     ):
         if "video_gcs_uri" in step_result.data:
             state.final_video_url = step_result.data["video_gcs_uri"].replace(
-                "gs://", "https://storage.mtls.cloud.google.com/"
+                "gs://", "https://storage.cloud.google.com/"
             )
             break
 

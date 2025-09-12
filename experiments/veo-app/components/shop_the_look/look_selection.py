@@ -18,11 +18,11 @@ import mesop as me
 
 import models.shop_the_look_workflow as shop_the_look_workflow
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from config.default import Default
 from state.shop_the_look_state import PageState
 
 config = Default()
-
 
 @me.component
 def look_selection():
@@ -325,10 +325,7 @@ def look_selection():
                         align_items="left",
                     )
                 ):
-                    img = item.clothing_image.replace(
-                        "gs://",
-                        "https://storage.mtls.cloud.google.com/",
-                    )
+                    img = gcs_uri_to_https_url(item.clothing_image)
                     with me.box(
                         key=f"{item.item_id}_{item.article_type}",
                         style=me.Style(
@@ -419,12 +416,7 @@ def on_upload_article_image(e: me.UploadEvent):
             file.getvalue(),
         )
         state.reference_image_gcs_clothing.append(f"{gcs_url}")
-        state.reference_image_uri_clothing.append(
-            gcs_url.replace(
-                "gs://",
-                "https://storage.mtls.cloud.google.com/",
-            )
-        )
+        state.reference_image_uri_clothing.append(gcs_uri_to_https_url(gcs_url))
         article_type = gcs_url.split("/")[-2]
         shop_the_look_workflow.store_article_data(file_path, article_type)
 
