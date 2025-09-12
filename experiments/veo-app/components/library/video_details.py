@@ -22,13 +22,17 @@ import mesop as me
 from common.metadata import MediaItem
 from common.utils import gcs_uri_to_https_url
 from components.download_button.download_button import download_button
+from ..video_thumbnail.video_thumbnail import video_thumbnail
 
 
 @me.component
-def video_details(item: MediaItem, on_click_permalink: Callable):
-    """Renders the details for a video item."""
-    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
-    item_display_url = gcs_uri_to_https_url(gcs_uri)
+def video_details(
+    item: MediaItem,
+    on_click_permalink: Callable,
+    selected_url: str,
+    on_thumbnail_click: Callable,
+):
+    """Renders the details for a video item, including a gallery for multiple videos."""
 
     with me.box(
         style=me.Style(
@@ -37,10 +41,11 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
             gap=12,
         )
     ):
-
-        if item_display_url and not item.error_message:
+        # Main video player
+        if selected_url and not item.error_message:
             me.video(
-                src=item_display_url,
+                key=selected_url, # Add key to force re-render
+                src=gcs_uri_to_https_url(selected_url),
                 style=me.Style(
                     width="100%",
                     max_height="40vh",
@@ -50,6 +55,27 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
                     margin=me.Margin(bottom=16),
                 ),
             )
+
+        # Thumbnail strip for multiple videos
+        if item.gcs_uris and len(item.gcs_uris) > 1:
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=16,
+                    justify_content="center",
+                    margin=me.Margin(top=16, bottom=16),
+                    flex_wrap="wrap",
+                )
+            ):
+                for url in item.gcs_uris:
+                    is_selected = url == selected_url
+                    video_thumbnail(
+                        key=url,
+                        video_src=gcs_uri_to_https_url(url),
+                        selected=is_selected,
+                        on_click=on_thumbnail_click,
+                    )
 
         if item.error_message:
             me.text(
@@ -150,6 +176,7 @@ def video_details(item: MediaItem, on_click_permalink: Callable):
                     me.icon(icon="link")
                     me.text("permalink")
 
-            if item.gcsuri:
-                filename = os.path.basename(item.gcsuri.split("?")[0])
-                download_button(url=item.gcsuri, filename=filename)
+            # Download button should download the selected video
+            if selected_url:
+                filename = os.path.basename(selected_url.split("?")[0])
+                download_button(url=selected_url, filename=filename)

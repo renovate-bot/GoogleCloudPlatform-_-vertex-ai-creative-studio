@@ -71,6 +71,7 @@ class PageState:
     show_details_dialog: bool = False
     selected_media_item_id: Optional[str] = None
     dialog_instance_key: int = 0
+    dialog_selected_video_url: str = "" # For gallery in dialog
     selected_values: list[str] = field(
         default_factory=lambda: ["all"]
     )  # Default to "all" media types
@@ -533,7 +534,12 @@ def library_content(app_state: me.state):
                         )
 
                         if dialog_media_type_group == "video":
-                            video_details(item=item, on_click_permalink=on_click_set_permalink)
+                            video_details(
+                                item=item,
+                                on_click_permalink=on_click_set_permalink,
+                                selected_url=pagestate.dialog_selected_video_url,
+                                on_thumbnail_click=on_dialog_thumbnail_click,
+                            )
                         elif dialog_media_type_group == "image":
                             image_details(item, on_click_permalink=on_click_set_permalink)
                         elif dialog_media_type_group == "audio":
@@ -608,6 +614,12 @@ def library_content(app_state: me.state):
                         type="stroked",
                     )
 
+def on_dialog_thumbnail_click(e: me.ClickEvent):
+    """Sets the clicked thumbnail as the main selected video in the dialog."""
+    pagestate = me.state(PageState)
+    pagestate.dialog_selected_video_url = e.key
+    yield
+
 def on_click_set_permalink(e: me.ClickEvent):
     """set the permalink from dialog"""
     if e.key:  # Ensure key is not None or empty
@@ -624,6 +636,14 @@ def on_media_item_click(e: me.ClickEvent):
 
     if clicked_item:
         pagestate.selected_media_item_id = clicked_item.id
+        # Set the initial selected video for the dialog gallery
+        if clicked_item.gcs_uris:
+            pagestate.dialog_selected_video_url = clicked_item.gcs_uris[0]
+        elif clicked_item.gcsuri: # Fallback for older items
+             pagestate.dialog_selected_video_url = clicked_item.gcsuri
+        else:
+             pagestate.dialog_selected_video_url = ""
+
         pagestate.show_details_dialog = True
         pagestate.dialog_instance_key += 1
         pagestate.url_item_not_found_message = None  # Clear any old not found message
@@ -639,6 +659,7 @@ def on_close_details_dialog(e: me.ClickEvent):
 
     pagestate.show_details_dialog = False
     pagestate.selected_media_item_id = None
+    pagestate.dialog_selected_video_url = "" # Reset dialog video state
     pagestate.url_item_not_found_message = (
         None  # Clear message when dialog is closed by user
     )

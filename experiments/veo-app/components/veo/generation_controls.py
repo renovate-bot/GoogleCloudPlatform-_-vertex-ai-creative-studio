@@ -45,6 +45,19 @@ def generation_controls():
         state.veo_mode = selected_config.supported_modes[0]
 
     with me.box(style=me.Style(display="flex", flex_basis="row", gap=5)):
+        # Number of Videos Selector
+        me.select(
+            label="count",
+            appearance="outline",
+            options=[
+                me.SelectOption(label=f"{i}", value=str(i))
+                for i in range(1, selected_config.max_samples + 1)
+            ],
+            value=str(state.video_count),
+            on_selection_change=on_selection_change_video_count,
+            style=me.Style(width="100px"),
+        )
+        
         # Aspect Ratio Selector
         me.select(
             label="aspect",
@@ -138,6 +151,12 @@ def on_selection_change_length(e: me.SelectSelectionChangeEvent):
     """Adjust the video duration length in seconds based on user event"""
     state = me.state(PageState)
     state.video_length = int(e.value)
+
+
+def on_selection_change_video_count(e: me.SelectSelectionChangeEvent):
+    """Set number of videos to generate"""
+    state = me.state(PageState)
+    state.video_count = e.value
 
 
 def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):

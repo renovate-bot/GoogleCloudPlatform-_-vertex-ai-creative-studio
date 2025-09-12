@@ -65,7 +65,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     )
     gen_config_args = {
         "aspect_ratio": request.aspect_ratio,
-        "number_of_videos": 1,
+        "number_of_videos": request.video_count,
         "duration_seconds": request.duration_seconds,
         "enhance_prompt": enhance_prompt_for_api,
         "output_gcs_uri": f"gs://{config.VIDEO_BUCKET}",
@@ -135,9 +135,9 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
                 hasattr(operation.result, "generated_videos")
                 and operation.result.generated_videos
             ):
-                video_uri = operation.result.generated_videos[0].video.uri
-                print(f"Successfully generated video: {video_uri}")
-                return video_uri, request.resolution
+                video_uris = [v.video.uri for v in operation.result.generated_videos]
+                print(f"Successfully generated {len(video_uris)} videos.")
+                return video_uris, request.resolution
             else:
                 raise GenerationError(
                     "API reported success but no video URI was found in the response."
