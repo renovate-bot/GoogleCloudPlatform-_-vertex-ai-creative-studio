@@ -189,6 +189,15 @@ def get_media_item_by_id(
                 )
             except (ValueError, TypeError):
                 item_duration = None
+            
+            gcsuri: str = None
+            
+            if isinstance(raw_item_data.get("gcsuri"), list):
+                gcsuri = raw_item_data.get("gcsuri")[0] if raw_item_data.get("gcsuri") else None
+            elif raw_item_data.get("gcsuri") is not None:
+                gcsuri = str(raw_item_data.get("gcsuri"))
+            else:
+                gcsuri = None
 
             media_item = MediaItem(
                 id=doc.id,
@@ -198,9 +207,7 @@ def get_media_item_by_id(
                 aspect=str(raw_item_data.get("aspect"))
                 if raw_item_data.get("aspect") is not None
                 else None,
-                gcsuri=str(raw_item_data.get("gcsuri"))
-                if raw_item_data.get("gcsuri") is not None
-                else None,
+                gcsuri=gcsuri,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
                 prompt=str(raw_item_data.get("original_prompt"))
                 if raw_item_data.get("original_prompt") is not None
@@ -369,9 +376,19 @@ def get_media_for_page(
         all_fetched_items: List[MediaItem] = []
         for doc in query.limit(fetch_limit).stream():
             raw_item_data = doc.to_dict()
+            
             if raw_item_data is None:
                 print(f"Warning: doc.to_dict() returned None for doc ID: {doc.id}")
                 continue
+
+            gcsuri: str = None
+
+            if isinstance(raw_item_data.get("gcsuri"), list):
+                gcsuri = raw_item_data.get("gcsuri")[0] if raw_item_data.get("gcsuri") else None
+            elif raw_item_data.get("gcsuri") is not None:
+                gcsuri = str(raw_item_data.get("gcsuri"))
+            else:
+                gcsuri = None
 
             mime_type = raw_item_data.get("mime_type", "")
             error_message_present = bool(raw_item_data.get("error_message"))
@@ -442,9 +459,7 @@ def get_media_for_page(
                 aspect=str(raw_item_data.get("aspect"))
                 if raw_item_data.get("aspect") is not None
                 else None,
-                gcsuri=str(raw_item_data.get("gcsuri"))
-                if raw_item_data.get("gcsuri") is not None
-                else None,
+                gcsuri=gcsuri,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
                 source_images_gcs=raw_item_data.get("source_images_gcs", []),
                 prompt=str(raw_item_data.get("prompt"))
@@ -559,6 +574,13 @@ def get_media_for_page_optimized(
             if raw_item_data is None:
                 continue
 
+            if isinstance(raw_item_data.get("gcsuri"), list):
+                gcsuri = raw_item_data.get("gcsuri")[0] if raw_item_data.get("gcsuri") else None
+            elif raw_item_data.get("gcsuri") is not None:
+                gcsuri = str(raw_item_data.get("gcsuri"))
+            else:
+                gcsuri = None
+
             timestamp_iso_str: Optional[str] = None
             raw_timestamp = raw_item_data.get("timestamp")
             if isinstance(raw_timestamp, datetime.datetime):
@@ -591,9 +613,7 @@ def get_media_for_page_optimized(
                 aspect=str(raw_item_data.get("aspect"))
                 if raw_item_data.get("aspect") is not None
                 else None,
-                gcsuri=str(raw_item_data.get("gcsuri"))
-                if raw_item_data.get("gcsuri") is not None
-                else None,
+                gcsuri=gcsuri,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
                 source_images_gcs=raw_item_data.get("source_images_gcs", []),
                 prompt=str(raw_item_data.get("prompt"))
