@@ -17,6 +17,7 @@ import mesop as me
 from common.metadata import MediaItem
 from common.utils import gcs_uri_to_https_url
 from components.pill import pill
+from ..video_thumbnail.video_thumbnail import video_thumbnail
 
 
 @me.component
@@ -25,6 +26,8 @@ def render_video_pills(item: MediaItem):
     item_duration_str = f"{item.duration} sec" if item.duration is not None else "N/A"
 
     pill("Video", "media_type_video")
+    if item.gcs_uris and len(item.gcs_uris) > 1:
+        pill(f"{len(item.gcs_uris)}", "multi_video")
     pill(
         "t2v" if not item.reference_image else "i2v",
         "gen_t2v" if not item.reference_image else "gen_i2v",
@@ -81,24 +84,21 @@ def render_video_preview(item: MediaItem, item_url: str):
             align_items="center",
             justify_content="center",
             margin=me.Margin(top=8, bottom=8),
-            min_height="150px",
+            height="150px",  # Set a fixed height for the container
         )
     ):
         if item_url:
-            me.video(
-                src=item_url,
-                style=me.Style(
-                    width="100%",
-                    height="150px",
-                    border_radius=6,
-                    object_fit="cover",
-                ),
-            )
+            # Use the new, robust video_thumbnail component
+            with me.box(style=me.Style(width="100%", height="100%")): # Add a sized wrapper
+                video_thumbnail(
+                    video_src=item_url,
+                    # This component is not selectable in the grid, so on_click is not set
+                )
         else:
             me.text(
                 "Video not available.",
                 style=me.Style(
-                    height="150px",
+                    height="150px", # Match the container height
                     display="flex",
                     align_items="center",
                     justify_content="center",

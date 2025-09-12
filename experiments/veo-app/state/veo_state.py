@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import field
+
 import mesop as me
 
 
@@ -33,6 +35,7 @@ class PageState:
 
     original_prompt: str
 
+    video_count: int = 1
     aspect_ratio: str = "16:9"
     resolution: str = "720p"
     video_length: int = 5  # 5-8
@@ -64,7 +67,8 @@ class PageState:
     is_loading: bool = False
     show_error_dialog: bool = False
     error_message: str = ""
-    result_video: str
+    result_videos: list[str] = field(default_factory=list)
+    selected_video_url: str = ""
     timing: str
 
     person_generation: str = "Allow (All ages)"

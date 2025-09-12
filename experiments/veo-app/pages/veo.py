@@ -148,7 +148,7 @@ def veo_content(app_state: me.state):
 
             me.box(style=me.Style(height=50))
 
-            video_display()
+            video_display(on_thumbnail_click=on_thumbnail_click)
 
     with dialog(is_open=state.show_error_dialog):  # pylint: disable=not-context-manager
         me.text(
@@ -174,7 +174,8 @@ def on_blur_negative_prompt(e: me.InputBlurEvent):
 def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clear prompt and video."""
     state = me.state(PageState)
-    state.result_video = None
+    state.result_videos = []
+    state.selected_video_url = ""
     state.prompt = None
     state.negative_prompt = ""
     state.veo_prompt_input = None
@@ -231,6 +232,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         prompt=state.veo_prompt_input,
         negative_prompt=state.negative_prompt,
         duration_seconds=state.video_length,
+        video_count=state.video_count,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
         enhance_prompt=state.auto_enhance_prompt,
@@ -267,9 +269,14 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     )
 
     try:
-        gcs_uri, resolution = generate_video(request)
-        state.result_video = gcs_uri
-        item_to_log.gcsuri = gcs_uri
+        gcs_uris, resolution = generate_video(request)
+        state.result_videos = gcs_uris
+        if gcs_uris:
+            state.selected_video_url = gcs_uris[0]
+        
+        item_to_log.gcs_uris = gcs_uris
+        # For backward compatibility, also save the first URI to the old field
+        item_to_log.gcsuri = gcs_uris[0] if gcs_uris else None
         item_to_log.resolution = resolution
 
     except GenerationError as ge:
@@ -380,6 +387,12 @@ def subtle_veo_input():
                     me.icon("clear")
                     me.text("Clear")
 
+
+def on_thumbnail_click(e: me.ClickEvent):
+    """Sets the clicked thumbnail as the main selected video."""
+    state = me.state(PageState)
+    state.selected_video_url = e.key
+    yield
 
 def on_close_error_dialog(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Handler to close the error dialog."""

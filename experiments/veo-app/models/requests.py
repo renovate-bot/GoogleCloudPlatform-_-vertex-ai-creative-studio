@@ -26,6 +26,7 @@ class VideoGenerationRequest(BaseModel):
 
     prompt: str
     duration_seconds: int = Field(..., gt=0)
+    video_count: int
     aspect_ratio: str
     resolution: str
     enhance_prompt: bool

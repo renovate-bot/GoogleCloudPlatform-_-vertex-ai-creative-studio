@@ -17,6 +17,7 @@ import mesop as me
 from common.metadata import MediaItem
 from common.utils import gcs_uri_to_https_url
 from components.pill import pill
+from ..video_thumbnail.video_thumbnail import video_thumbnail
 
 
 @me.component
@@ -26,6 +27,9 @@ def video_grid_item(item: MediaItem):
     gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
     item_url = gcs_uri_to_https_url(gcs_uri)
 
+    # The user reported the pill was not showing. This debug line was added to investigate.
+    # It can be removed once the issue is confirmed fixed.
+    print(f"DEBUG: Grid item {item.id}, gcs_uris: {item.gcs_uris}, length: {len(item.gcs_uris) if item.gcs_uris else 0}")
     with me.box(
         style=me.Style(
             display="flex",
@@ -35,6 +39,8 @@ def video_grid_item(item: MediaItem):
         )
     ):
         pill("Video", "media_type_video")
+        if item.gcs_uris and len(item.gcs_uris) > 1:
+            pill(f"{len(item.gcs_uris)}", "multi_video")
         pill(
             "t2v" if not item.reference_image else "i2v",
             "gen_t2v" if not item.reference_image else "gen_i2v",
@@ -62,24 +68,20 @@ def video_grid_item(item: MediaItem):
             align_items="center",
             justify_content="center",
             margin=me.Margin(top=8, bottom=8),
-            min_height="150px",
+            min_height="100px", # Adjusted height
         )
     ):
         if item_url:
-            me.video(
-                src=item_url,
-                style=me.Style(
-                    width="100%",
-                    height="150px",
-                    border_radius=6,
-                    object_fit="cover",
-                ),
+            # Use the new, robust video_thumbnail component
+            video_thumbnail(
+                video_src=item_url,
+                # This component is not selectable in the grid, so on_click is not set
             )
         else:
             me.text(
                 "Video not available.",
                 style=me.Style(
-                    height="150px",
+                    height="100px", # Adjusted height
                     display="flex",
                     align_items="center",
                     justify_content="center",
