@@ -79,7 +79,7 @@ def generation_controls():
                 for i in (selected_config.supported_durations or range(selected_config.min_duration, selected_config.max_duration + 1))
             ],
             appearance="outline",
-            style=me.Style(),
+            style=me.Style(width="150px"),
             value=str(state.video_length),
             on_selection_change=on_selection_change_length,
             disabled=(
