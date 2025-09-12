@@ -40,7 +40,7 @@ def video_grid_item(item: MediaItem):
     ):
         pill("Video", "media_type_video")
         if item.gcs_uris and len(item.gcs_uris) > 1:
-            pill(f"{len(item.gcs_uris)} Videos", "multi_video")
+            pill(f"{len(item.gcs_uris)}", "multi_video")
         pill(
             "t2v" if not item.reference_image else "i2v",
             "gen_t2v" if not item.reference_image else "gen_i2v",
