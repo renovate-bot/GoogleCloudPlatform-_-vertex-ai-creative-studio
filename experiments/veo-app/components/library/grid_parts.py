@@ -84,19 +84,21 @@ def render_video_preview(item: MediaItem, item_url: str):
             align_items="center",
             justify_content="center",
             margin=me.Margin(top=8, bottom=8),
-            min_height="100px",  # Adjusted height for new component
+            height="150px",  # Set a fixed height for the container
         )
     ):
         if item_url:
-            video_thumbnail(
-                video_src=item_url,
-                # This component is not selectable in the grid, so on_click is not set
-            )
+            # Use the new, robust video_thumbnail component
+            with me.box(style=me.Style(width="100%", height="100%")): # Add a sized wrapper
+                video_thumbnail(
+                    video_src=item_url,
+                    # This component is not selectable in the grid, so on_click is not set
+                )
         else:
             me.text(
                 "Video not available.",
                 style=me.Style(
-                    height="100px",  # Adjusted height
+                    height="150px", # Match the container height
                     display="flex",
                     align_items="center",
                     justify_content="center",

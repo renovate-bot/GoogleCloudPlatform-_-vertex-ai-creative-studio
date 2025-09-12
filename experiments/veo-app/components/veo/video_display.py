@@ -105,12 +105,13 @@ def video_display(on_thumbnail_click: Callable):
             ):
                 for url in state.result_videos:
                     is_selected = url == main_video_url
-                    video_thumbnail(
-                        key=url,
-                        video_src=gcs_uri_to_https_url(url),
-                        selected=is_selected,
-                        on_click=on_thumbnail_click,
-                    )
+                    with me.box(style=me.Style(height="90px", width="160px")):
+                        video_thumbnail(
+                            key=url,
+                            video_src=gcs_uri_to_https_url(url),
+                            selected=is_selected,
+                            on_click=on_thumbnail_click,
+                        )
 
 
 def on_selection_change_extend_length(e: me.SelectSelectionChangeEvent):

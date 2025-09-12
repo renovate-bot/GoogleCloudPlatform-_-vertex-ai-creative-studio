@@ -30,6 +30,8 @@ class VideoThumbnail extends LitElement {
 
   static styles = css`
     .wrapper {
+      width: 100%;
+      height: 100%;
       display: inline-block;
       position: relative;
       cursor: pointer;
@@ -38,15 +40,16 @@ class VideoThumbnail extends LitElement {
       background-clip: content-box;
       transition: background-color 0.2s ease-in-out;
       background-color: transparent;
+      box-sizing: border-box;
     }
     .wrapper.selected {
       background-color: var(--mesop-theme-primary, #6200EE);
     }
     video {
       display: block;
-      width: 160px;
-      height: 90px;
-      object-fit: cover;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Ensures video covers the area without distortion */
       border-radius: 8px;
     }
   `;

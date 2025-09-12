@@ -70,12 +70,13 @@ def video_details(
             ):
                 for url in item.gcs_uris:
                     is_selected = url == selected_url
-                    video_thumbnail(
-                        key=url,
-                        video_src=gcs_uri_to_https_url(url),
-                        selected=is_selected,
-                        on_click=on_thumbnail_click,
-                    )
+                    with me.box(style=me.Style(height="90px", width="160px")):
+                        video_thumbnail(
+                            key=url,
+                            video_src=gcs_uri_to_https_url(url),
+                            selected=is_selected,
+                            on_click=on_thumbnail_click,
+                        )
 
         if item.error_message:
             me.text(
