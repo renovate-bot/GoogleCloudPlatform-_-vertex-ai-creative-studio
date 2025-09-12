@@ -25,6 +25,7 @@ from common.utils import gcs_uri_to_https_url
 from common.metadata import MediaItem, add_media_item_to_firestore
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
+from components.dialog import dialog
 from components.library.video_chooser_button import video_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
@@ -44,6 +45,9 @@ class PageState:
     selected_transition: str = "concat"
     show_snackbar: bool = False
     snackbar_message: str = ""
+    show_error_dialog: bool = False
+    dialog_title: str = ""
+    dialog_message: str = ""
 
 
 VIDEO_PLACEHOLDER_STYLE = me.Style(
@@ -97,7 +101,7 @@ def page_content():
                         me.video(
                             key=state.selected_videos["video_1"], # Add key to force re-render
                             src=gcs_uri_to_https_url(state.selected_videos["video_1"]),
-                            style=me.Style(height="100%", width="100%", border_radius=8),
+                            style=me.Style(height="100%", width="100%", border_radius=8, object_fit="contain"),
                         )
                     else:
                         me.icon("movie")
@@ -197,6 +201,12 @@ def show_snackbar(state: PageState, message: str):
     # The snackbar will be hidden on the next interaction.
 
 
+def on_close_dialog(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.show_error_dialog = False
+    yield
+
+
 def on_upload_video_1(e: me.UploadEvent):
     """Upload video 1 handler."""
     state = me.state(PageState)
@@ -241,15 +251,8 @@ def on_process_click(e: me.ClickEvent):
             state.selected_videos["video_1"],
             state.selected_videos["video_2"],
         ]
-        result = process_videos(video_uris_to_process, state.selected_transition)
-        processed_uri = result["gcs_uri"]
-        messages = result["messages"]
-
+        processed_uri = process_videos(video_uris_to_process, state.selected_transition)
         state.concatenated_video_url = processed_uri
-
-        # Show snackbar for any messages
-        if messages:
-            yield from show_snackbar(state, " ".join(messages))
 
         # Log to Firestore
         add_media_item_to_firestore(
@@ -264,7 +267,13 @@ def on_process_click(e: me.ClickEvent):
             )
         )
 
+    except ValueError as ex:
+        # Catch the specific resolution error and show a dialog
+        state.dialog_title = "Resolution Mismatch"
+        state.dialog_message = str(ex)
+        state.show_error_dialog = True
     except Exception as ex:
+        # Catch other generic errors
         state.error_message = f"An error occurred: {ex}"
     finally:
         state.is_loading = False
@@ -300,3 +309,4 @@ def on_convert_to_gif_click(e: me.ClickEvent):
     finally:
         state.is_converting_gif = False
         yield
+

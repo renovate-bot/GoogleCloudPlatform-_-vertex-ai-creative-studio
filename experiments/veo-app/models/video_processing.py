@@ -283,11 +283,10 @@ def process_videos(
     video_gcs_uris: list[str],
     transition: str = "concat",
     transition_duration: float = 1.0,
-) -> dict:
+) -> str:
     if not video_gcs_uris or len(video_gcs_uris) < 2:
         raise ValueError("At least two videos are required.")
 
-    messages = []
     with tempfile.TemporaryDirectory() as tmpdir:
         local_paths = _download_videos_to_temp(video_gcs_uris, tmpdir)
         clips = [VideoFileClip(path) for path in local_paths]
@@ -298,27 +297,37 @@ def process_videos(
         # Check for resolution mismatch before transitions that require it
         if transition in ["x-fade", "wipe"]:
             if clip1.size != clip2.size:
-                messages.append(f"Resized video 2 from {clip2.size} to {clip1.size} to match video 1.")
-                clip2 = clip2.resize(clip1.size)
+                messages.append(f"Resized video 2 from {clip2.size} to match video 1's resolution of {clip1.size} while preserving aspect ratio.")
+                
+                # Import necessary classes locally to avoid polluting the global scope
+                from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
+                from moviepy.video.VideoClip import ColorClip
 
-        try:
-            if transition == "concat":
-                final_clip = concatenate_videoclips(clips)
-            elif transition == "x-fade":
-                final_clip = crossfade(clip1, clip2, transition_duration)
-            elif transition == "wipe":
-                final_clip = wipe(clip1, clip2, transition_duration)
-            elif transition == "dipToBlack":
-                final_clip = dipToBlack(clip1, clip2, transition_duration)
-            else:
-                final_clip = concatenate_videoclips(clips)  # Default to concat
-        except ValueError as e:
-            if "broadcast" in str(e):
-                raise ValueError(
-                    "Error: This transition requires videos to have the same resolution."
-                ) from e
-            else:
-                raise e
+                # Resize clip2 to fit within clip1's dimensions, preserving aspect ratio
+                ratio = min(clip1.size[0] / clip2.size[0], clip1.size[1] / clip2.size[1])
+                resized_clip2 = clip2.resize(ratio)
+
+                # Create a black background clip with the size of clip1
+                background = ColorClip(size=clip1.size, color=(0, 0, 0), duration=resized_clip2.duration)
+                
+                # Composite the resized clip2 onto the center of the background
+                # This makes clip2 have the same dimensions as clip1, with black bars
+                clip2 = CompositeVideoClip([background, resized_clip2.set_position("center")])
+
+                # Ensure the new composite clip has the same audio properties
+                if resized_clip2.audio:
+                    clip2.audio = resized_clip2.audio
+
+        if transition == "concat":
+            final_clip = concatenate_videoclips(clips)
+        elif transition == "x-fade":
+            final_clip = crossfade(clip1, clip2, transition_duration)
+        elif transition == "wipe":
+            final_clip = wipe(clip1, clip2, transition_duration)
+        elif transition == "dipToBlack":
+            final_clip = dipToBlack(clip1, clip2, transition_duration)
+        else:
+            final_clip = concatenate_videoclips(clips)  # Default to concat
 
         output_filename = f"processed_{uuid.uuid4()}.mp4"
         final_clip_path = os.path.join(tmpdir, output_filename)
@@ -330,7 +339,7 @@ def process_videos(
             clip.close()
         final_clip.close()
 
-        return {"gcs_uri": final_gcs_uri, "messages": messages}
+        return final_gcs_uri
 
 
 # --- GIF Conversion --- #
