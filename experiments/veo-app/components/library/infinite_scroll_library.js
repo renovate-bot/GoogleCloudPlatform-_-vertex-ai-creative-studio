@@ -16,7 +16,7 @@
 
 import { LitElement, html, css } from 'https://esm.sh/lit';
 
-const GCS_PUBLIC_URL_PREFIX = 'https://storage.mtls.cloud.google.com/';
+const GCS_PUBLIC_URL_PREFIX = 'https://storage.cloud.google.com/';
 
 class InfiniteScrollLibrary extends LitElement {
   static properties = {

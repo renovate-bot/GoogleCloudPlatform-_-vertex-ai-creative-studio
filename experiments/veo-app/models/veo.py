@@ -250,10 +250,7 @@ def image_to_video(
     duration_seconds,
     model,
 ):
-    image_gcs_new = image_gcs.replace(
-        "gs://",
-        "https://storage.mtls.cloud.google.com/",
-    )
+    image_gcs_new = gcs_uri_to_https_url(image_gcs)
 
     """Image to video"""
     req = compose_videogen_request(

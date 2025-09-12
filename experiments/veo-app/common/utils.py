@@ -97,7 +97,7 @@ def print_keys(obj, prefix=""):
             # Current behavior: treats list items as potentially new objects to explore.
             print_keys(item, prefix + f"  [{i}] ")  # indicate list index in prefix
 
-GCS_PUBLIC_URL_PREFIX = "https://storage.mtls.cloud.google.com/"
+GCS_PUBLIC_URL_PREFIX = "https://storage.cloud.google.com/"
 
 
 def gcs_uri_to_https_url(gcs_uri: str | None) -> str:

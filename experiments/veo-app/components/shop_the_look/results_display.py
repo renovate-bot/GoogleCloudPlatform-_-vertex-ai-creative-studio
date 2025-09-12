@@ -16,6 +16,7 @@
 
 import mesop as me
 
+from common.utils import gcs_uri_to_https_url
 from models.shop_the_look_handlers import on_click_veo, on_click_vto_look
 from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
 from state.shop_the_look_state import PageState
@@ -86,10 +87,7 @@ def results_display():
                     ),
                 )
                 me.image(
-                    src=state.before_image_uri.replace(
-                        "gs://",
-                        "https://storage.mtls.cloud.google.com/",
-                    ),
+                    src=gcs_uri_to_https_url(state.before_image_uri),
                     style=me.Style(
                         width="200px",
                         height="200px",
@@ -221,10 +219,7 @@ def results_display():
                                 width="100%",
                             )
                         ):
-                            img = item.clothing_image.replace(
-                                "gs://",
-                                "https://storage.mtls.cloud.google.com/",
-                            )
+                            img = gcs_uri_to_https_url(item.clothing_image)
                             me.image(
                                 src=img,
                                 style=me.Style(
@@ -335,10 +330,7 @@ def results_display():
                                                     ),
                                                 )
                     me.image(
-                        src=state.result_image.replace(
-                            "gs://",
-                            "https://storage.mtls.cloud.google.com/",
-                        ),
+                        src=gcs_uri_to_https_url(state.result_image),
                         style=me.Style(
                             margin=me.Margin(left=10),
                             width=(
@@ -353,10 +345,7 @@ def results_display():
                         ),
                     )
                     if state.result_video:
-                        video_url = state.result_video.replace(
-                            "gs://",
-                            "https://storage.mtls.cloud.google.com/",
-                        )
+                        video_url = gcs_uri_to_https_url(state.result_video)
                         print(f"video_url: {video_url}")
 
                         with me.tooltip(message=state.veo_prompt_input):
@@ -387,10 +376,7 @@ def results_display():
                                 )
                             ):
                                 for img in state.alternate_images:
-                                    image_url = img.replace(
-                                        "gs://",
-                                        "https://storage.mtls.cloud.google.com/",
-                                    )
+                                    image_url = gcs_uri_to_https_url(img)
                                     me.image(
                                         src=image_url,
                                         style=me.Style(
@@ -404,10 +390,7 @@ def results_display():
                                     )
             else:
                 me.image(
-                    src=state.before_image_uri.replace(
-                        "gs://",
-                        "https://storage.mtls.cloud.google.com/",
-                    ),
+                    src=gcs_uri_to_https_url(state.before_image_uri),
                     style=me.Style(
                         margin=me.Margin(left=10),
                         width="500px",
@@ -443,10 +426,7 @@ def results_display():
                         )
                     ):
                         for img in p.progression_images:
-                            image_url = img.image_path.replace(
-                                "gs://",
-                                "https://storage.mtls.cloud.google.com/",
-                            )
+                            image_url = gcs_uri_to_https_url(img.image_path)
 
                             with me.box(
                                 style=me.Style(
@@ -512,10 +492,7 @@ def results_display():
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
                     with me.box(style=me.Style(height="100%")):
                         for img in state.alternate_progression_images:
-                            image_url = img.replace(
-                                "gs://",
-                                "https://storage.mtls.cloud.google.com/",
-                            )
+                            image_url = gcs_uri_to_https_url(img)
                             me.image(
                                 src=image_url,
                                 style=me.Style(
@@ -551,10 +528,7 @@ def results_display():
                         )
                     ):
                         for img in p.progression_images:
-                            image_url = img.image_path.replace(
-                                "gs://",
-                                "https://storage.mtls.cloud.google.com/",
-                            )
+                            image_url = gcs_uri_to_https_url(img.image_path)
 
                             with me.box(
                                 style=me.Style(

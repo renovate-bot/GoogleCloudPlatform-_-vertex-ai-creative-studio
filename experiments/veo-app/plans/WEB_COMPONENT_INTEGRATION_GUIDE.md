@@ -164,7 +164,7 @@ If your web component needs to perform initialization that communicates with the
 
 ### D. Accessing GCS Resources: Signed URLs are Essential
 
--   **The Problem:** Directly fetching GCS URLs (especially `gs://` or `https://storage.mtls.cloud.google.com`) from a web component will fail due to CORS and redirect issues, even if the bucket is public.
+-   **The Problem:** Directly fetching GCS URLs (especially `gs://` or `https://storage.cloud.google.com`) from a web component will fail due to CORS and redirect issues, even if the bucket is public.
 -   **The Solution:** The frontend must not use GCS URIs directly. Instead, create a FastAPI endpoint (e.g., `/api/get_signed_url`) that uses the Python GCS client library to generate a short-lived, signed URL. The web component then fetches this signed URL, which is designed for public, temporary access and will not have cross-origin issues.
 -   **Local Development vs. Cloud Run (IAP):** The implementation of the signed URL endpoint needs to be environment-aware.
     -   **Local:** Your local Application Default Credentials (ADC) must be configured to impersonate the application's service account using `gcloud auth application-default login --impersonate-service-account=<SA_EMAIL>`.

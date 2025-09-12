@@ -14,10 +14,10 @@
 
 import mesop as me
 
+from common.utils import gcs_uri_to_https_url
 from models import shop_the_look_workflow
 from state.shop_the_look_state import PageState
 from state.state import AppState
-
 
 @me.component
 def config_panel():
@@ -202,10 +202,7 @@ def config_panel():
                             align_items="left",
                         )
                     ):
-                        img = item.clothing_image.replace(
-                            "gs://",
-                            "https://storage.mtls.cloud.google.com/",
-                        )
+                        img = gcs_uri_to_https_url(item.clothing_image)
                         with me.box(
                             key=f"{item.item_id}-{item.article_type}",
                             style=me.Style(
@@ -268,10 +265,7 @@ def config_panel():
                             align_items="left",
                         )
                     ):
-                        img = model.model_image.replace(
-                            "gs://",
-                            "https://storage.mtls.cloud.google.com/",
-                        )
+                        img = gcs_uri_to_https_url(model.model_image)
                         with me.box(
                             style=me.Style(
                                 position="relative",

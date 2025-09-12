@@ -87,7 +87,7 @@ This section outlines the key architectural patterns and best practices that are
 ### Accessing GCS Resources from the Frontend
 
 *   **Problem:** You need to display a GCS object (like an image or video) in the browser, or a web component needs to fetch the data of a GCS object.
-*   **The Challenge:** Directly using `gs://` or even `https://storage.mtls.cloud.google.com` URLs in the frontend will fail due to browser security policies (CORS, CSP) and GCS redirects.
+*   **The Challenge:** Directly using `gs://` or even `https://storage.cloud.google.com` URLs in the frontend will fail due to browser security policies (CORS, CSP) and GCS redirects.
 *   **The Solution:** The correct and most secure pattern is to use **signed URLs**.
     1.  Create a FastAPI endpoint (e.g., `/api/get_signed_url`) that takes a `gs://` URI as input.
     2.  This endpoint uses the Python GCS client library to generate a short-lived, publicly accessible signed URL.

@@ -166,10 +166,7 @@ def content(app_state: me.state):  # pylint: disable=unused-argument
                                     [page_state.edit_uri],
                                 ):
                                     me.image(
-                                        src=uri.replace(
-                                            "gs://",
-                                            "https://storage.mtls.cloud.google.com/",
-                                        ),
+                                        src=helpers.gcs_uri_to_https_url(uri),
                                         style=me.Style(
                                             align_self="end",
                                             justify_content="center",

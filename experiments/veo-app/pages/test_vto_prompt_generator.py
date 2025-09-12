@@ -21,6 +21,7 @@ import mesop as me
 import mesop.labs as mel
 
 from common.metadata import add_media_item
+from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
 from models.image_models import generate_virtual_models
@@ -245,9 +246,7 @@ It is crucial to describe gender based on presentation rather than identity beca
                 for image_row in state.generated_images:
                     for image_url in image_row:
                         me.image(
-                            src=image_url.replace(
-                                "gs://", "https://storage.mtls.cloud.google.com/"
-                            ),
+                            src=gcs_uri_to_https_url(image_url),
                             style=me.Style(width="100%"),
                         )
 

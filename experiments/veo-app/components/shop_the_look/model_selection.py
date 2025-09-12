@@ -17,6 +17,7 @@ import uuid
 import mesop as me
 
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from config.default import Default
 from models import shop_the_look_workflow
 from state.shop_the_look_state import PageState
@@ -147,10 +148,7 @@ def model_selection():
                         on_click=on_model_click,
                     ):
                         me.image(
-                            src=model.model_image.replace(
-                                "gs://",
-                                "https://storage.mtls.cloud.google.com/",
-                            ),
+                            src=gcs_uri_to_https_url(model.model_image),
                             style=me.Style(
                                 object_fit="cover",
                                 border_radius="5px",
