@@ -20,7 +20,7 @@ variable "project_id" {
 
 variable "region" {
   description = "Location for load balancer and Cloud Run resources"
-  type = string
+  type        = string
   default     = "us-central1"
 }
 
@@ -38,38 +38,38 @@ variable "domain" {
 
 variable "initial_container_image" {
   description = "Container image to use for the Cloud Run service hosting Creative Studio. Because infra is deployed through Terraform this defaults to placeholder image; however, if you are applying Terraform template post initial deployment, use the latest built image to avoid reverting back to the placeholder."
-  type = string
-  default = "us-docker.pkg.dev/cloudrun/container/placeholder"
+  type        = string
+  default     = "us-docker.pkg.dev/cloudrun/container/placeholder"
 }
 
 variable "model_id" {
   description = "Veo model ID to use for video generation"
-  type = string
-  default = "gemini-2.5-flash"
+  type        = string
+  default     = "gemini-2.5-flash"
 }
 
 variable "veo_model_id" {
   description = "Veo model ID to use for video generation"
-  type = string
-  default = "veo-3.0-generate-001"
+  type        = string
+  default     = "veo-3.0-generate-001"
 }
 
 variable "veo_exp_model_id" {
   description = "Experimental Veo model ID to use for video generation"
-  type = string
-  default = "veo-3.0-generate-preview"
+  type        = string
+  default     = "veo-3.0-generate-preview"
 }
 
 variable "lyria_model_id" {
   description = "Lyria model ID to use for audio generation"
-  type = string
-  default = "lyria-002"
+  type        = string
+  default     = "lyria-002"
 }
 
 variable "edit_images_enabled" {
   description = "Feature flag for Edit Images feature"
-  type = bool
-  default = true
+  type        = bool
+  default     = true
 }
 
 variable "enable_data_deletion" {
@@ -80,7 +80,13 @@ variable "enable_data_deletion" {
 
 variable "initial_user" {
   description = "Email address of initial user that will be granted access to Creative Studio in IAP"
-  type = string
-  nullable = true
-  default = null
+  type        = string
+  nullable    = true
+  default     = null
+}
+
+variable "allow_local_domain_cors_requests" {
+  description = "Whether to allow local domain requests to the assets GCS bucket"
+  type        = bool
+  default     = false
 }
