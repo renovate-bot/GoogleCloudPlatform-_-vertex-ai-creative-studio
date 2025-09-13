@@ -137,6 +137,7 @@ resource "google_service_account" "creative_studio" {
 
 # Centralizing environment variables here and using for each in service declaration for simplicity
 locals {
+  asset_bucket_name = "creative-studio-${var.project_id}-assets"
   creative_studio_env_vars = {
     PROJECT_ID            = var.project_id
     LOCATION              = var.region
@@ -145,15 +146,18 @@ locals {
     VEO_EXP_MODEL_ID      = var.veo_exp_model_id
     LYRIA_MODEL_VERSION   = var.lyria_model_id
     LYRIA_PROJECT_ID      = var.project_id
-    GENMEDIA_BUCKET       = module.creative_studio_asset_bucket.bucket.name
-    VIDEO_BUCKET          = module.creative_studio_asset_bucket.bucket.name
-    MEDIA_BUCKET          = module.creative_studio_asset_bucket.bucket.name
-    IMAGE_BUCKET          = module.creative_studio_asset_bucket.bucket.name
-    GCS_ASSETS_BUCKET     = module.creative_studio_asset_bucket.bucket.name
+    GENMEDIA_BUCKET       = local.asset_bucket_name
+    VIDEO_BUCKET          = local.asset_bucket_name
+    MEDIA_BUCKET          = local.asset_bucket_name
+    IMAGE_BUCKET          = local.asset_bucket_name
+    GCS_ASSETS_BUCKET     = local.asset_bucket_name
     GENMEDIA_FIREBASE_DB  = google_firestore_database.create_studio_asset_metadata.name
     SERVICE_ACCOUNT_EMAIL = google_service_account.creative_studio.email
     EDIT_IMAGES_ENABLED   = var.edit_images_enabled
   }
+
+  deployed_domain = [var.use_lb ? "https://${var.domain}" : google_cloud_run_v2_service.creative_studio.uri]
+  cors_domains    = concat(local.deployed_domain, var.allow_local_domain_cors_requests ? ["http://localhost:8080", "http://0.0.0.0:8080"] : [])
 }
 
 resource "google_cloud_run_v2_service" "creative_studio" {
@@ -192,7 +196,7 @@ resource "google_cloud_run_v2_service" "creative_studio" {
     }
   }
   lifecycle {
-    ignore_changes = [template[0].containers[0].image, client]
+    ignore_changes = [template[0].containers[0].image, client, client_version]
   }
   depends_on = [
     google_service_account_iam_member.build_act_as_creative_studio,
@@ -218,7 +222,7 @@ module "creative_studio_asset_bucket" {
   source     = "terraform-google-modules/cloud-storage/google"
   version    = "~>11.0"
   project_id = var.project_id
-  names      = ["creative-studio-${var.project_id}-assets"]
+  names      = [local.asset_bucket_name]
   location   = var.region
   force_destroy = {
     "creative-studio-${var.project_id}-assets" = var.enable_data_deletion
@@ -234,6 +238,12 @@ module "creative_studio_asset_bucket" {
   viewers                  = [google_service_account.creative_studio.member]
   public_access_prevention = "enforced"
   depends_on               = [module.project-services]
+  cors = [{
+    origin          = local.cors_domains
+    method          = ["GET"]
+    response_header = ["Content-Type"]
+    max_age_seconds = 3600
+  }]
 }
 
 resource "google_storage_bucket_iam_member" "sa_bucket_viewer" {
