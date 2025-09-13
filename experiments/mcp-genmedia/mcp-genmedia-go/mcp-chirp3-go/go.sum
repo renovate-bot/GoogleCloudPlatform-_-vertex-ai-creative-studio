@@ -20,6 +20,8 @@ cloud.google.com/go/storage v1.56.1 h1:n6gy+yLnHn0hTwBFzNn8zJ1kqWfR91wzdM8hjRF4w
 cloud.google.com/go/storage v1.56.1/go.mod h1:C9xuCZgFl3buo2HZU/1FncgvvOgTAs/rnh4gF4lMg0s=
 cloud.google.com/go/texttospeech v1.13.0 h1:oWWFQp0yFl4EJOr3opDkKH9304wUsZjgPjrTDS6S1a8=
 cloud.google.com/go/texttospeech v1.13.0/go.mod h1:g/tW/m0VJnulGncDrAoad6WdELMTes8eb77Idz+4HCo=
+cloud.google.com/go/texttospeech v1.14.0 h1:ArOelKEIHCA0St/svzpl668gittbg9CZ1+DYCBRvJmQ=
+cloud.google.com/go/texttospeech v1.14.0/go.mod h1:l25ywjIgXS+mSE2f5LQdXdU7r3MOLwVOGaYZQMiYIWE=
 cloud.google.com/go/trace v1.11.6 h1:2O2zjPzqPYAHrn3OKl029qlqG6W8ZdYaOWRyr8NgMT4=
 cloud.google.com/go/trace v1.11.6/go.mod h1:GA855OeDEBiBMzcckLPE2kDunIpC72N+Pq8WFieFjnI=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 h1:UQUsRi8WTzhZntp5313l+CHIAT95ojUI2lpP/ExlZa4=
