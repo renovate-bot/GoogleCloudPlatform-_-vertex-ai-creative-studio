@@ -323,7 +323,7 @@ pygments==2.19.2
     #   pytest
 pyjwt==2.10.1
     # via firebase-admin
-pyparsing==3.2.3
+pyparsing==3.2.4
     # via
     #   httplib2
     #   matplotlib
