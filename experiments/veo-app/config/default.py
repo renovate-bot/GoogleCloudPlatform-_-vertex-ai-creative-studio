@@ -53,6 +53,8 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
+    VERSION: str = "1.0.0"
+
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
     # Gemini
     PROJECT_ID: str = os.environ.get("PROJECT_ID")
@@ -190,15 +192,29 @@ def get_welcome_page_config():
 
 
 def load_about_page_config():
+    env = os.environ.get("APP_ENV") # e.g., 'local', 'dev', 'prod'
+    env_config_path = f"config/about_content.{env}.json"
+    default_config_path = "config/about_content.json"
+
+    config_path = None
+    if env and os.path.exists(env_config_path):
+        config_path = env_config_path
+    elif os.path.exists(default_config_path):
+        config_path = default_config_path
+    else:
+        # Neither the environment-specific nor the default file was found
+        return None
+
     try:
-        with open("config/about_content.json", "r") as f:
+        with open(config_path, "r") as f:
             content = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return None
 
+    # The rest of the function that processes GCS URLs remains the same
     bucket_name = Default.GCS_ASSETS_BUCKET
     if not bucket_name:
-        return content  # Return content with local paths if bucket is not set
+        return content
 
     base_url = f"https://storage.googleapis.com/{bucket_name}"
 

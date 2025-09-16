@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "About GenMedia Creative Studio",
-    "introduction": "Welcome to GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our full complement of generative AI APIs for image, video, speech, and music generation.\n\nGenMedia Creative Studio is available on our [Vertex AI Creative Studio github repo](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/veo-app) for you and customers to install, customize and make their own generative AI magic."
+    "introduction": "Welcome to GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our full complement of generative AI APIs for image, video, speech, and music generation.\n\nGenMedia Creative Studio is available on Google Cloud's [Vertex AI Creative Studio github repo](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/veo-app) for you to install, customize and make your own generative AI magic."
   },
   "sections": [
     {
@@ -76,11 +76,6 @@
       "description": "This workflow allows you to generate a consistent character across multiple images. You provide one or more reference images of the character along with a the scene description for the character, and the model generates a series of images of that character in different poses and settings, chooses the best one that aligns with the reference images, and then creates a video of that character in the new scene.",
       "image": null,
       "video": null
-    },
-    {
-      "id": "feedback",
-      "title": "Feedback",
-      "description": "We're always looking for feedback, comments, and feature requests, please [fill out this form](https://docs.google.com/forms/d/e/1FAIpQLSeGyKL468Eam3PUfyV8R5I0g3iGc7_zuL87eimw4HITUYlUrw/viewform?usp=sharing)."
     }
   ]
 }

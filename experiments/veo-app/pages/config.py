@@ -80,6 +80,10 @@ def get_config_table(app_state: AppState):
         config_data["Config"].append("Lyria Model Version")
         config_data["Value"].append(Default.LYRIA_MODEL_VERSION)
 
+    # Version
+    config_data["Config"].append("Application Verison")
+    config_data["Value"].append(Default.VERSION)
+
     df = pd.DataFrame(data=config_data)
     return df
 
