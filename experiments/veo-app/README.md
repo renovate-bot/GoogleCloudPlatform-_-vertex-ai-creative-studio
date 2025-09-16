@@ -251,6 +251,28 @@ Only one environment variable is required:
 
 See the template dotenv.template file for the defaults and what environment variable options are available.
 
+### Environment-Specific Configuration
+
+The application can load different configurations for different environments (e.g., `local`, `dev`, `production`) for content on the "About" page. This is controlled by the `APP_ENV` environment variable.
+
+#### How it Works
+
+1.  **Set the `APP_ENV` Variable:** In your `.env` file, you can set the `APP_ENV` variable to the name of your current environment.
+    ```
+    # In your .env file
+    APP_ENV=local
+    ```
+
+2.  **Create a Specific Config File:** Create a JSON file in the `config/` directory that matches the environment name, following the pattern `about_content.<env>.json`. For the example above, you would create:
+    *   `config/about_content.local.json`
+
+3.  **Fallback Mechanism:**
+    *   When the application starts, it will look for a config file that matches the `APP_ENV` (e.g., `config/about_content.local.json`).
+    *   If it finds one, it will load it.
+    *   If `APP_ENV` is not set, or if the specific file does not exist, the application will safely fall back to loading the default `config/about_content.json`.
+
+This allows you to commit a generic `about_content.json` to the repository while using custom, uncommitted configurations for your specific environments. The environment-specific files (`config/about_content.*.json`) are already included in the `.gitignore` file to prevent them from being checked in.
+
 ## GenMedia Creative Studio - v.next
 
 ### Running
