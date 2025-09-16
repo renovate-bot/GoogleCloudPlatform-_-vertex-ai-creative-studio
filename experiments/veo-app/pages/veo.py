@@ -47,13 +47,13 @@ veo_model = VeoModelSetup.init()
 def on_veo_load(e: me.LoadEvent):
     """Handles page load events, including query parameters for deep linking."""
     state = me.state(PageState)
-    source_image_uri = me.query_params.get("source_image_uri")
+    image_uri = me.query_params.get("image_uri")
     veo_model_param = me.query_params.get("veo_model")
 
-    if source_image_uri:
+    if image_uri:
         # Set the image from the query parameter
-        state.reference_image_gcs = source_image_uri
-        state.reference_image_uri = gcs_uri_to_https_url(source_image_uri)
+        state.reference_image_gcs = image_uri
+        state.reference_image_uri = gcs_uri_to_https_url(image_uri)
         # Switch to the Image-to-Video tab
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
