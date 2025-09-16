@@ -53,5 +53,17 @@ IMAGE_ACTION_PRESETS = {
             "key": "hologram",
             "prompt": "turn this object into a 3d line art transparent hologram on a black background",
         },
+        {
+            "key": "1990's grunge",
+            "prompt": "analyze this photo and change the person or the person in it as if they're a 1990's grunge style person",
+        },
+        {
+            "key": "alien",
+            "prompt": "analyze this photo and have the person or persons posed next to a realistic looking alien holding two bubble guns blowing a thousand bubbles into the air, keep my pose and the location of the photo the same.",
+        },
+        {
+            "key": "hairstyle-bob",
+            "prompt": "give this persona a bob with bangs",
+        }
     ],
 }
