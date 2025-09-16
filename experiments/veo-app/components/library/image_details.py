@@ -24,6 +24,7 @@ import mesop as me
 from common.metadata import MediaItem
 from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
 from components.download_button.download_button import download_button
+from components.edit_button.edit_button import edit_button
 
 
 @me.stateclass
@@ -63,7 +64,7 @@ def on_send_to_veo(e: me.ClickEvent):
 
     me.navigate(
         url="/veo",
-        query_params={"source_image_uri": gcs_uri, "veo_model": "3.0-fast"},
+        query_params={"image_uri": gcs_uri, "veo_model": "3.0-fast"},
     )
     yield
 
@@ -251,3 +252,6 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
             ):
                 me.icon("slideshow")
                 me.text("Veo")
+
+            # Add the new reusable edit button
+            edit_button(gcs_uri=gcs_uri)

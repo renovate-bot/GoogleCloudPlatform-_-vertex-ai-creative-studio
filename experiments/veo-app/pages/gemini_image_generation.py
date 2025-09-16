@@ -66,6 +66,7 @@ class PageState:
     is_suggesting_transformations: bool = False
 
     info_dialog_open: bool = False
+    initial_load_complete: bool = False
 
 
 
@@ -802,14 +803,28 @@ def on_send_to_veo(e: me.ClickEvent):
 
     me.navigate(
         url="/veo",
-        query_params={"source_image_uri": gcs_uri, "veo_model": "3.0-fast"},
+        query_params={"image_uri": gcs_uri, "veo_model": "3.0-fast"},
     )
+    yield
+
+
+def on_load(e: me.LoadEvent):
+    """Handles the initial load of the page, checking for an image URI in the query parameters."""
+    state = me.state(PageState)
+    # This flag ensures the logic runs only once on initial page load,
+    # not on subsequent yields or interactions.
+    if not state.initial_load_complete:
+        image_uri = me.query_params.get("image_uri")
+        if image_uri and image_uri not in state.uploaded_image_gcs_uris:
+            state.uploaded_image_gcs_uris.append(image_uri)
+        state.initial_load_complete = True
     yield
 
 
 @me.page(
     path="/gemini_image_generation",
     title="Gemini Image Generation - GenMedia Creative Studio",
+    on_load=on_load,
 )
 def page():
     """Define the Mesop page route for Gemini Image Generation."""
