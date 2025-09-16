@@ -381,9 +381,9 @@ pytest-base-url==2.1.0 \
     --hash=sha256:02748589a54f9e63fcbe62301d6b0496da0d10231b753e950c63e03aee745d45 \
     --hash=sha256:3ad15611778764d451927b2a53240c1a7a591b521ea44cebfe45849d2d2812e6
     # via pytest-playwright
-pytest-mock==3.14.1 \
-    --hash=sha256:159e9edac4c451ce77a5cdb9fc5d1100708d2dd4ba3c3df572f14097351af80e \
-    --hash=sha256:178aefcd11307d874b4cd3100344e7e2d888d9791a6a1d9bfe90fbc1b74fd1d0
+pytest-mock==3.15.1 \
+    --hash=sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d \
+    --hash=sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f
     # via promptlandia
 pytest-playwright==0.7.0 \
     --hash=sha256:2516d0871fa606634bfe32afbcc0342d68da2dbff97fe3459849e9c428486da2 \
