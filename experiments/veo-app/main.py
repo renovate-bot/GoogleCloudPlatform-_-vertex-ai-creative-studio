@@ -195,10 +195,11 @@ def root_redirect(request: Request) -> RedirectResponse:
         # Before sending the response, set our cookie on it.
         # The browser will save this cookie for future visits.
         # max_age=31536000 sets the cookie to expire in 1 year.
+        # max_age=172800 sets the cookie to expire in 48 hours.
         response.set_cookie(
             key="has_visited_welcome",
             value="true",
-            max_age=31536000,
+            max_age=172800,
             httponly=True,
         )
         return response

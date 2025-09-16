@@ -63,7 +63,7 @@ def render_section(section_data: dict):
 
 def about_page_content():
     """About page."""
-    with page_frame():
+    with page_frame(): # pylint: disable=E1129:not-context-manager
         header("About This Application", "info")
 
         if ABOUT_PAGE_CONTENT:
@@ -86,5 +86,5 @@ def about_page_content():
     title="About - GenMedia Creative Studio",
 )
 def page():
-    with page_scaffold(page_name="about"):
+    with page_scaffold(page_name="about"): # pylint: disable=E1129:not-context-manager
         about_page_content()
