@@ -336,7 +336,7 @@ def gemini_image_gen_page_content():
                             me.button(
                                 "Suggest Transformations",
                                 on_click=on_suggest_transformations_click,
-                                type="stroked",
+                                #type="stroked",
                                 style=CHIP_STYLE,
                             )
 

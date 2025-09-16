@@ -53,5 +53,27 @@ IMAGE_ACTION_PRESETS = {
             "key": "hologram",
             "prompt": "turn this object into a 3d line art transparent hologram on a black background",
         },
+        {
+            "key": "1990's grunge",
+            "prompt": "analyze this photo and change the person or the person in it as if they're a 1990's grunge style person",
+        },
+        {
+            "key": "alien",
+            "prompt": "analyze this photo and have the person or persons posed next to a realistic looking alien holding two bubble guns blowing a thousand bubbles into the air, keep my pose and the location of the photo the same.",
+        },
+        {
+            "key": "hairstyle-bob",
+            "prompt": "give this persona a bob with bangs",
+        },
+        {
+            "key": "1-7th",
+            "label": "1/7th figurine",
+            "prompt": "Create a 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is a 3D modeling process of this figurine. Next to the computer screen is a toy packaging box, designed in a style reminiscent of high-quality collectible figures, printed with original artwork. The packaging features two-dimensional flat illustrations.",
+        },
+        {
+            "key": "restore-colorize",
+            "label": "restore & colorize",
+            "prompt": "restore and colorize this photo. Preserve the appearance, expression, and pose of the people.",
+        },
     ],
 }
