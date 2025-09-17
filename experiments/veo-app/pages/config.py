@@ -82,7 +82,7 @@ def get_config_table(app_state: AppState):
 
     # Version
     config_data["Config"].append("Application Verison")
-    config_data["Value"].append(Default.VERSION)
+    config_data["Value"].append(f"{Default.VERSION} {Default.APP_ENV}")
 
     df = pd.DataFrame(data=config_data)
     return df
