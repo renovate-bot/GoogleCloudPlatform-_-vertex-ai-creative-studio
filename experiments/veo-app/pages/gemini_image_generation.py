@@ -254,22 +254,7 @@ def gemini_image_gen_page_content():
                                 on_click=on_continue_click,
                                 type="stroked",
                             )
-                            with (
-                                me.content_button(
-                                    on_click=on_send_to_veo,
-                                    # type="flat",
-                                ),
-                                me.box(
-                                    style=me.Style(
-                                        display="flex",
-                                        flex_direction="row",
-                                        align_items="center",
-                                        gap=8,
-                                    )
-                                ),
-                            ):
-                                me.icon("slideshow")
-                                me.text("Veo")
+                            veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
 
 
                 # Image presets
@@ -791,22 +776,7 @@ def close_info_dialog(e: me.ClickEvent):
     yield
 
 
-def on_send_to_veo(e: me.ClickEvent):
-    """Navigates to the Veo page with the selected image as a query parameter."""
-    state = me.state(PageState)
-    if not state.selected_image_url:
-        yield from show_snackbar(state, "Please select an image to send.")
-        return
-
-    # Convert back to GCS URI to pass a clean identifier
-    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
-
-    me.navigate(
-        url="/veo",
-        query_params={"image_uri": gcs_uri, "veo_model": "3.0-fast"},
-    )
-    yield
-
+from components.veo_button.veo_button import veo_button
 
 def on_load(e: me.LoadEvent):
     """Handles the initial load of the page, checking for an image URI in the query parameters."""
