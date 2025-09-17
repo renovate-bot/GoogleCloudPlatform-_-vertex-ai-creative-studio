@@ -35,6 +35,8 @@ from models.vto import generate_vto_image
 from state.state import AppState
 from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
+from components.edit_button.edit_button import edit_button
+from components.veo_button.veo_button import veo_button
 
 config = Default()
 
@@ -68,7 +70,7 @@ class PageState:
     person_image_gcs: str = ""
     product_image_file: me.UploadedFile = None
     product_image_gcs: str = ""
-    result_images: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    result_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     vto_sample_count: int = 4
     vto_base_steps: int = 32
     is_loading: bool = False
@@ -180,9 +182,7 @@ def on_generate(e: me.ClickEvent):
             state.vto_base_steps,
         )
         print(f"Result GCS URIs: {result_gcs_uris}")
-        state.result_images = [
-            gcs_uri_to_https_url(uri) for uri in result_gcs_uris
-        ]
+        state.result_gcs_uris = result_gcs_uris
         add_media_item(
             user_email=app_state.user_email,
             model=config.VTO_MODEL_ID,
@@ -211,7 +211,7 @@ def on_clear(e: me.ClickEvent):
     state = me.state(PageState)
     state.person_image_gcs = ""
     state.product_image_gcs = ""
-    state.result_images = []
+    state.result_gcs_uris = []
     yield
 
 def open_info_dialog(e: me.ClickEvent):
@@ -394,8 +394,8 @@ def page():
                 ):
                     me.progress_spinner()
 
-            if state.result_images:
-                print(f"Images: {state.result_images}")
+            if state.result_gcs_uris:
+                print(f"Images: {state.result_gcs_uris}")
                 with me.box(
                     style=me.Style(
                         display="flex",
@@ -405,7 +405,11 @@ def page():
                         justify_content="center",
                     )
                 ):
-                    for image in state.result_images:
-                        me.image(
-                            src=image, style=me.Style(width="400px", border_radius=12)
-                        )
+                    for gcs_uri in state.result_gcs_uris:
+                        with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
+                            me.image(
+                                src=gcs_uri_to_https_url(gcs_uri), style=me.Style(width="400px", border_radius=12)
+                            )
+                            with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
+                                edit_button(gcs_uri=gcs_uri)
+                                veo_button(gcs_uri=gcs_uri)

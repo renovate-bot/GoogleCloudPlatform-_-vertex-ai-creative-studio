@@ -21,6 +21,8 @@ from common.metadata import add_media_item
 from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
+from components.edit_button.edit_button import edit_button
+from components.veo_button.veo_button import veo_button
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
@@ -46,7 +48,7 @@ class PageState:
     uploaded_images: list[me.UploadedFile] = field(default_factory=list)  # pylint: disable=invalid-field-call
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
-    result_images: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    result_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     recontext_sample_count: int = 4
     is_loading: bool = False
     error_message: str = ""
@@ -162,7 +164,7 @@ def recontextualize():
                     ):
                         me.progress_spinner()
 
-                if state.result_images:
+                if state.result_gcs_uris:
                     with me.box(
                         style=me.Style(
                             display="flex",
@@ -172,11 +174,15 @@ def recontextualize():
                             margin=me.Margin(top=16),
                         )
                     ):
-                        for image in state.result_images:
-                            me.image(
-                                src=image,
-                                style=me.Style(width="400px", border_radius=12),
-                            )
+                        for gcs_uri in state.result_gcs_uris:
+                            with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
+                                me.image(
+                                    src=gcs_uri_to_https_url(gcs_uri),
+                                    style=me.Style(width="400px", border_radius=12),
+                                )
+                                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
+                                    edit_button(gcs_uri=gcs_uri)
+                                    veo_button(gcs_uri=gcs_uri)
 
             with dialog(is_open=state.show_error_dialog):  # pylint: disable=not-context-manager
                 me.text("Generation Failed", style=me.Style(font_weight="bold"))
@@ -233,9 +239,7 @@ def on_generate(e: me.ClickEvent):
         result_gcs_uris = recontextualize_product_in_scene(
             state.uploaded_image_gcs_uris, state.prompt, state.recontext_sample_count
         )
-        state.result_images = [
-            gcs_uri_to_https_url(uri) for uri in result_gcs_uris
-        ]
+        state.result_gcs_uris = result_gcs_uris
         add_media_item(
             user_email=app_state.user_email,
             model=config.MODEL_IMAGEN_PRODUCT_RECONTEXT,
@@ -256,7 +260,7 @@ def on_generate(e: me.ClickEvent):
 def on_clear(e: me.ClickEvent):
     state = me.state(PageState)
     state.uploaded_image_gcs_uris = []
-    state.result_images = []
+    state.result_gcs_uris = []
     yield
 
 
