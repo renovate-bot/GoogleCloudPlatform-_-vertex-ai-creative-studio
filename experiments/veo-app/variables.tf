@@ -90,3 +90,9 @@ variable "allow_local_domain_cors_requests" {
   type        = bool
   default     = false
 }
+
+variable "sleep_time" {
+  description = "Amount of time to wait post service API enablement to allow for eventual consistency to trickly through GCP."
+  type        = number
+  default     = 45
+}
