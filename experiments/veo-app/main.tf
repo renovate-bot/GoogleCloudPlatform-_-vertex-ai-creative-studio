@@ -61,6 +61,13 @@ module "project-services" {
   ]
 }
 
+resource "null_resource" "sleep" {
+  depends_on = [module.project-services.project_id]
+  provisioner "local-exec" {
+    command = "sleep ${var.sleep_time}"
+  }
+}
+
 /********************************************
 *  Network Infra Resources Section
 *********************************************/
@@ -76,7 +83,7 @@ resource "google_iap_web_iam_member" "initial_user_iap_access" {
   count      = var.use_lb && var.initial_user != null ? 1 : 0
   role       = "roles/iap.httpsResourceAccessor"
   member     = "user:${var.initial_user}"
-  depends_on = [module.project-services]
+  depends_on = [null_resource.sleep]
 }
 
 resource "google_cloud_run_service_iam_member" "iap_cloudrun_access" {
@@ -113,7 +120,7 @@ module "lb-http" {
       }
     }
   }
-  depends_on = [module.project-services]
+  depends_on = [null_resource.sleep]
 }
 
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
@@ -124,7 +131,7 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
   cloud_run {
     service = google_cloud_run_v2_service.creative_studio.name
   }
-  depends_on = [module.project-services]
+  depends_on = [null_resource.sleep]
 }
 
 /********************************************
@@ -201,7 +208,7 @@ resource "google_cloud_run_v2_service" "creative_studio" {
   depends_on = [
     google_service_account_iam_member.build_act_as_creative_studio,
     google_project_iam_member.build_logs_writer,
-    module.project-services
+    null_resource.sleep
   ]
 }
 
@@ -237,7 +244,7 @@ module "creative_studio_asset_bucket" {
   bucket_viewers           = {}
   viewers                  = [google_service_account.creative_studio.member]
   public_access_prevention = "enforced"
-  depends_on               = [module.project-services]
+  depends_on               = [null_resource.sleep]
   cors = [{
     origin          = local.cors_domains
     method          = ["GET"]
@@ -275,7 +282,7 @@ resource "google_firestore_database" "create_studio_asset_metadata" {
   # Terraform docs / testing showed that deletion_policy is needed for db to be delete when using terraform destroy
   # See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/firestore_database#delete_protection_state-1
   deletion_policy = var.enable_data_deletion ? "DELETE" : "ABANDON"
-  depends_on      = [module.project-services]
+  depends_on      = [null_resource.sleep]
 }
 
 resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
@@ -348,7 +355,7 @@ module "source_bucket" {
   bucket_viewers           = {}
   viewers                  = [google_service_account.cloudbuild.member]
   public_access_prevention = "enforced"
-  depends_on               = [module.project-services]
+  depends_on               = [null_resource.sleep]
 }
 
 resource "google_artifact_registry_repository" "creative_studio" {
@@ -358,7 +365,7 @@ resource "google_artifact_registry_repository" "creative_studio" {
   vulnerability_scanning_config {
     enablement_config = "INHERITED"
   }
-  depends_on = [module.project-services]
+  depends_on = [null_resource.sleep]
 }
 
 resource "google_artifact_registry_repository_iam_member" "readers" {
