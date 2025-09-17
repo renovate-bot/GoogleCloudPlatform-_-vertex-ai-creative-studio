@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.0.0"
+    VERSION: str = "1.0.1"
     APP_ENV: str = os.environ.get("APP_ENV", "")
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
