@@ -21,6 +21,7 @@ import numpy as np
 from google.cloud import storage
 from moviepy import *
 from moviepy import VideoFileClip, afx, vfx
+from moviepy.audio.io.AudioFileClip import AudioFileClip
 from scipy.ndimage import gaussian_filter, map_coordinates
 from scipy.special import expit
 from skimage.transform import resize
@@ -338,6 +339,41 @@ def process_videos(
         for clip in clips:
             clip.close()
         final_clip.close()
+
+        return final_gcs_uri
+
+
+def layer_audio_on_video(video_gcs_uri: str, audio_gcs_uri: str) -> str:
+    """
+    Layers an audio track over a video file. If the video already has audio,
+    it will be replaced.
+    """
+    if not video_gcs_uri or not audio_gcs_uri:
+        raise ValueError("A video URI and an audio URI are required.")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Download both files
+        video_path = _download_videos_to_temp([video_gcs_uri], tmpdir)[0]
+        audio_path = _download_videos_to_temp([audio_gcs_uri], tmpdir)[0]
+
+        # Process with moviepy
+        video_clip = VideoFileClip(video_path)
+        audio_clip = AudioFileClip(audio_path)
+
+        # Set the audio of the video clip by direct attribute assignment
+        video_clip.audio = audio_clip
+
+        # Write the output file
+        output_filename = f"audio_layered_{uuid.uuid4()}.mp4"
+        final_clip_path = os.path.join(tmpdir, output_filename)
+        video_clip.write_videofile(final_clip_path, codec="libx264", audio_codec="aac")
+
+        # Upload to GCS
+        final_gcs_uri = _upload_to_gcs(final_clip_path, "processed_videos", "video/mp4")
+
+        # Clean up
+        video_clip.close()
+        audio_clip.close()
 
         return final_gcs_uri
 
