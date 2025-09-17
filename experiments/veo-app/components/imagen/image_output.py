@@ -19,6 +19,8 @@ from state.imagen_state import PageState
 from components.svg_icon.svg_icon import svg_icon
 
 from common.utils import gcs_uri_to_https_url
+from components.edit_button.edit_button import edit_button
+from components.veo_button.veo_button import veo_button
 
 
 @me.component
@@ -64,16 +66,20 @@ def image_output():
                 ):
                     for img_uri in state.image_output:
                         if img_uri:
-                            me.image(
-                                src=gcs_uri_to_https_url(img_uri),
-                                style=me.Style(
-                                    width="300px",
-                                    height="300px",
-                                    object_fit="contain",
-                                    border_radius="12px",
-                                    box_shadow="0 2px 4px rgba(0,0,0,0.1)",
-                                ),
-                            )
+                            with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
+                                me.image(
+                                    src=gcs_uri_to_https_url(img_uri),
+                                    style=me.Style(
+                                        width="300px",
+                                        height="300px",
+                                        object_fit="contain",
+                                        border_radius="12px",
+                                        box_shadow="0 2px 4px rgba(0,0,0,0.1)",
+                                    ),
+                                )
+                                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
+                                    edit_button(gcs_uri=img_uri)
+                                    veo_button(gcs_uri=img_uri)
                 if state.imagen_watermark:
                     with me.box(
                         style=me.Style(
