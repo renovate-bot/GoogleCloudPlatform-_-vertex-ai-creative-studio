@@ -63,7 +63,7 @@ IMAGE_ACTION_PRESETS = {
         },
         {
             "key": "hairstyle-bob",
-            "prompt": "give this persona a bob with bangs",
+            "prompt": "give this person or persons a bob with bangs",
         },
         {
             "key": "1-7th",

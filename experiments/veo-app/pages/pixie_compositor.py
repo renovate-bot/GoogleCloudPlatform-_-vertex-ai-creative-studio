@@ -27,9 +27,10 @@ from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.dialog import dialog
 from components.library.video_chooser_button import video_chooser_button
+from components.library.audio_chooser_button import audio_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
-from models.video_processing import process_videos, convert_mp4_to_gif
+from models.video_processing import process_videos, convert_mp4_to_gif, layer_audio_on_video
 from state.state import AppState
 
 
@@ -48,6 +49,9 @@ class PageState:
     show_error_dialog: bool = False
     dialog_title: str = ""
     dialog_message: str = ""
+    active_tab: str = "video_video"
+    selected_video_for_audio: str = ""
+    selected_audio: str = ""
 
 
 VIDEO_PLACEHOLDER_STYLE = me.Style(
@@ -75,10 +79,95 @@ def pixie_compositor_page():
             page_content()
 
 
+
+from dataclasses import dataclass
+from typing import Callable
+
+
+# Adapted from components/tab_nav.py
+@dataclass
+class Tab:
+    key: str
+    label: str
+    icon: str | None = None
+
+
+def on_tab_change(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.active_tab = e.key
+    yield
+
+
+@me.component
+def _tab_group(tabs: list[Tab], on_tab_click: Callable, selected_tab_key: str):
+    with me.box(
+        style=me.Style(
+            display="flex",
+            border=me.Border(
+                bottom=me.BorderSide(
+                    width=1, style="solid", color=me.theme_var("outline-variant")
+                )
+            ),
+        )
+    ):
+        for tab in tabs:
+            is_selected = tab.key == selected_tab_key
+            with me.box(
+                key=tab.key,
+                on_click=on_tab_click,
+                style=_make_tab_style(is_selected),
+            ):
+                if tab.icon:
+                    me.icon(tab.icon)
+                me.text(tab.label)
+
+
+def _make_tab_style(selected: bool) -> me.Style:
+    style = me.Style(
+        align_items="center",
+        color=me.theme_var("on-surface"),
+        display="flex",
+        cursor="pointer",
+        flex_grow=1,
+        justify_content="center",
+        line_height=1,
+        font_size=14,
+        font_weight="medium",
+        padding=me.Padding.all(16),
+        text_align="center",
+        gap=5,
+    )
+    if selected:
+        style.background = me.theme_var("surface-container")
+        style.border = me.Border(
+            bottom=me.BorderSide(width=2, style="solid", color=me.theme_var("primary"))
+        )
+        style.cursor = "default"
+    return style
+
+
 def page_content():
     state = me.state(PageState)
 
-    with me.box(style=me.Style(display="flex", flex_direction="column", gap=20)):
+    tabs = [
+        Tab(key="video_video", label="Video + Video", icon="movie"),
+        Tab(key="video_audio", label="Video + Audio", icon="music_video"),
+    ]
+
+    _tab_group(tabs=tabs, on_tab_click=on_tab_change, selected_tab_key=state.active_tab)
+
+    # Conditionally render tab content
+    if state.active_tab == "video_video":
+        render_video_video_tab()
+    elif state.active_tab == "video_audio":
+        render_video_audio_tab()
+    
+    snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
+
+
+def render_video_video_tab():
+    state = me.state(PageState)
+    with me.box(style=me.Style(display="flex", flex_direction="column", gap=20, margin=me.Margin(top=20))):
         me.text("Select two videos from the library to process.")
 
         # Video Selection Area
@@ -187,7 +276,152 @@ def page_content():
                     style=me.Style(width="100%", max_width="480px", border_radius=8),
                 )
         
-        snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
+
+
+
+def render_video_audio_tab():
+    state = me.state(PageState)
+    with me.box(style=me.Style(display="flex", flex_direction="column", gap=20, margin=me.Margin(top=20))):
+        me.text("Select a video and an audio file to layer.")
+
+        # Media Selection Area
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=20, justify_content="center")):
+            # Video Selector
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=10)):
+                me.text("Video")
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+                    me.uploader(
+                        label="Upload Video",
+                        on_upload=on_upload_video_for_audio,
+                        accepted_file_types=["video/mp4", "video/quicktime"],
+                        style=me.Style(width="100%"),
+                    )
+                    video_chooser_button(
+                        key="video_for_audio", on_library_select=on_video_select_for_audio
+                    )
+                with me.box(style=VIDEO_PLACEHOLDER_STYLE):
+                    if state.selected_video_for_audio:
+                        me.video(
+                            key=state.selected_video_for_audio, # Add key to force re-render
+                            src=gcs_uri_to_https_url(state.selected_video_for_audio),
+                            style=me.Style(height="100%", width="100%", border_radius=8, object_fit="contain"),
+                        )
+                    else:
+                        me.icon("movie")
+                        me.text("Select a Video")
+
+            # Audio Selector
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=10)):
+                me.text("Audio")
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+                    me.uploader(
+                        label="Upload Audio",
+                        on_upload=on_upload_audio,
+                        accepted_file_types=["audio/mpeg", "audio/wav"],
+                        style=me.Style(width="100%"),
+                    )
+                    audio_chooser_button(
+                        key="audio_1", on_library_select=on_audio_select_from_library
+                    )
+                    # Future: Add audio_chooser_button if created
+                with me.box(style=VIDEO_PLACEHOLDER_STYLE):
+                    if state.selected_audio:
+                        me.audio(
+                            src=gcs_uri_to_https_url(state.selected_audio),
+                        )
+                    else:
+                        me.icon("music_note")
+                        me.text("Select an Audio File")
+
+        # Controls
+        with me.box(
+            style=me.Style(
+                display="flex", gap=16, flex_direction="row",  align_items="center", justify_content="center"
+            ),
+        ):
+            me.button(
+                "Layer Audio on Video",
+                on_click=on_layer_audio_click,
+                disabled=not state.selected_video_for_audio or not state.selected_audio or state.is_loading,
+                type="raised",
+            )
+
+        # Result Area (reusing components from the other tab)
+        if state.is_loading:
+            with me.box(style=me.Style(display="flex", justify_content="center")):
+                me.progress_spinner()
+        
+        if state.error_message:
+            me.text(state.error_message, style=me.Style(color="red"))
+
+        if state.concatenated_video_url:
+            with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center", gap=10)):
+                me.video(
+                    src=gcs_uri_to_https_url(state.concatenated_video_url),
+                    style=me.Style(width="100%", max_width="720px", border_radius=8),
+                )
+
+def on_upload_video_for_audio(e: me.UploadEvent):
+    """Upload video handler for the audio tab."""
+    state = me.state(PageState)
+    gcs_url = store_to_gcs(
+        "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+    )
+    state.selected_video_for_audio = gcs_url
+    yield
+
+def on_video_select_for_audio(e: LibrarySelectionChangeEvent):
+    state = me.state(PageState)
+    state.selected_video_for_audio = e.gcs_uri
+    yield
+
+def on_upload_audio(e: me.UploadEvent):
+    """Upload audio handler for the audio tab."""
+    state = me.state(PageState)
+    gcs_url = store_to_gcs(
+        "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
+    )
+    state.selected_audio = gcs_url
+    yield
+
+def on_audio_select_from_library(e: LibrarySelectionChangeEvent):
+    state = me.state(PageState)
+    state.selected_audio = e.gcs_uri
+    yield
+
+def on_layer_audio_click(e: me.ClickEvent):
+    state = me.state(PageState)
+    app_state = me.state(AppState)
+    state.is_loading = True
+    state.concatenated_video_url = ""
+    state.gif_url = ""
+    state.error_message = ""
+    yield
+
+    try:
+        processed_uri = layer_audio_on_video(state.selected_video_for_audio, state.selected_audio)
+        state.concatenated_video_url = processed_uri
+
+        # Log to Firestore
+        add_media_item_to_firestore(
+            MediaItem(
+                gcsuri=processed_uri,
+                user_email=app_state.user_email,
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                mime_type="video/mp4",
+                source_images_gcs=[state.selected_video_for_audio, state.selected_audio],
+                comment="Produced by Pixie Compositor: Video + Audio",
+                model="pixie-compositor-v1-audio-layer",
+            )
+        )
+
+    except Exception as ex:
+        state.error_message = f"An error occurred: {ex}"
+    finally:
+        state.is_loading = False
+        yield
+
+
 
 
 def show_snackbar(state: PageState, message: str):
@@ -195,10 +429,6 @@ def show_snackbar(state: PageState, message: str):
     state.snackbar_message = message
     state.show_snackbar = True
     yield
-    time.sleep(3)
-    state.show_snackbar = False
-    yield
-    # The snackbar will be hidden on the next interaction.
 
 
 def on_close_dialog(e: me.ClickEvent):
