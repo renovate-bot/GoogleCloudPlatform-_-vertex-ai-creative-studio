@@ -55,18 +55,7 @@ def on_prev(e: me.ClickEvent) -> None:
     state.current_index -= 1
 
 
-def on_send_to_veo(e: me.ClickEvent):
-    """Navigates to the Veo page with the selected image as a query parameter."""
-    state = me.state(CarouselState)
-
-    # Convert back to GCS URI to pass a clean identifier
-    gcs_uri = https_url_to_gcs_uri(state.current_index_gcsuri)
-
-    me.navigate(
-        url="/veo",
-        query_params={"image_uri": gcs_uri, "veo_model": "3.0-fast"},
-    )
-    yield
+from components.veo_button.veo_button import veo_button
 
 
 @me.component
@@ -237,21 +226,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
             state.current_index_gcsuri = gcs_uri
             filename = os.path.basename(gcs_uri.split("?")[0])
             download_button(url=gcs_uri, filename=filename)
-            with (
-                me.content_button(
-                    on_click=on_send_to_veo,
-                ),
-                me.box(
-                    style=me.Style(
-                        display="flex",
-                        flex_direction="row",
-                        align_items="center",
-                        gap=8,
-                    )
-                ),
-            ):
-                me.icon("slideshow")
-                me.text("Veo")
+            veo_button(gcs_uri=gcs_uri)
 
             # Add the new reusable edit button
             edit_button(gcs_uri=gcs_uri)
