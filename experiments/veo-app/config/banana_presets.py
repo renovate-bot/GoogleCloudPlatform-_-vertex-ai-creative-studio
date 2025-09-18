@@ -75,5 +75,10 @@ IMAGE_ACTION_PRESETS = {
             "label": "restore & colorize",
             "prompt": "restore and colorize this photo. Preserve the appearance, expression, and pose of the people.",
         },
+        {
+            "key": "80s-highschool",
+            "label": "80's highschool headshot",
+            "prompt": "you make people's 80s yearbook photos from their image.\nMake sure it still looks exactly like their face, but you can change the background, hair, facial hair, and whatever else you think fits the scene. We want that glamour shots vibe (the one from the mall in the 80s), things like mullets, very big and fluffy hair, large glasses, amazing amazing 80s fashion, and of course, that foggy camera and fun backgrounds and soft lighting.\nNO TEXT should be in the image.",
+        },
     ],
 }

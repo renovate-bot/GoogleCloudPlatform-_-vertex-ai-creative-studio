@@ -71,6 +71,13 @@ class TransformationPrompts(BaseModel):
     )
 
 
+class Room(BaseModel):
+    room_name: str = Field(..., description="The name of a room identified in the floor plan, e.g., 'Living Room' or 'Bedroom 1'.")
+
+class RoomList(BaseModel):
+    rooms: list[Room] = Field(..., description="A list of rooms identified in the floor plan.")
+
+
 # Initialize client and default model ID for rewriter
 client = GeminiModelSetup.init()
 cfg = Default()  # Instantiate config
@@ -138,6 +145,38 @@ def generate_image_from_prompt_and_images(
     else:
         print("generate_image_from_prompt_and_images: no images")
     return gcs_uris, execution_time
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def extract_room_names_from_image(image_uri: str) -> list[str]:
+    """Analyzes a floor plan image and extracts the names of the rooms."""
+    model_name = cfg.MODEL_ID # Use a fast model for this analysis task
+
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=RoomList.model_json_schema(),
+        temperature=0.1, # Low temperature for factual extraction
+    )
+
+    prompt_text = "Analyze this floor plan image and identify all the labeled rooms. Return a JSON list of the room names."
+    
+    prompt_parts = [
+        prompt_text,
+        types.Part.from_uri(file_uri=image_uri, mime_type="image/png"),
+    ]
+
+    response = client.models.generate_content(
+        model=model_name, contents=prompt_parts, config=config
+    )
+    
+    room_list_obj = RoomList.model_validate_json(response.text)
+    
+    return [room.room_name for room in room_list_obj.rooms]
 
 
 

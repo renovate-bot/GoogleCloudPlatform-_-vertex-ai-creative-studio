@@ -49,6 +49,7 @@ from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
 from pages import veo
 from pages import vto as vto_page
+from pages import interior_design as interior_design_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
 from pages.test_character_consistency import page as test_character_consistency_page
