@@ -594,19 +594,8 @@ def on_image_action_click(e: me.ClickEvent):
     """Handles clicks on image action buttons, triggering a new generation."""
     state = me.state(PageState)
     app_state = me.state(AppState)
-    input_gcs_uri = ""
 
-    # Prioritize the selected generated image
-    if state.selected_image_url:
-        input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
-    # Fallback to the first uploaded image
-    elif state.uploaded_image_gcs_uris:
-        input_gcs_uri = state.uploaded_image_gcs_uris[0]
-    # No image available
-    else:
-        yield from show_snackbar(state, "Please upload or select an image first.")
-        return
-
+    # Find the preset that was clicked
     preset = None
     for category in IMAGE_ACTION_PRESETS.values():
         found = next((p for p in category if p["key"] == e.key), None)
@@ -618,6 +607,30 @@ def on_image_action_click(e: me.ClickEvent):
         yield from show_snackbar(state, f"Unknown action: {e.key}")
         return
 
+    # Assemble the list of input URIs, starting with the user's image
+    input_gcs_uris = []
+    user_image_uri = ""
+
+    # Prioritize the selected generated image
+    if state.selected_image_url:
+        user_image_uri = https_url_to_gcs_uri(state.selected_image_url)
+    # Fallback to the first uploaded image
+    elif state.uploaded_image_gcs_uris:
+        user_image_uri = state.uploaded_image_gcs_uris[0]
+
+    if user_image_uri:
+        input_gcs_uris.append(user_image_uri)
+
+    # Add reference images from the preset, if they exist
+    preset_references = preset.get("references", [])
+    if preset_references:
+        input_gcs_uris.extend(preset_references)
+
+    # If there are no images at all (neither from user nor preset), show an error
+    if not input_gcs_uris:
+        yield from show_snackbar(state, "Please upload or select an image first.")
+        return
+
     # Log the click event for analytics
     log_ui_click(
         element_id=f"preset_action_{preset['key']}",
@@ -625,9 +638,9 @@ def on_image_action_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    # The action uses the identified image as the sole input
+    # The action now uses the combined list of images
     yield from _generate_and_save(
-        base_prompt=preset["prompt"], input_gcs_uris=[input_gcs_uri]
+        base_prompt=preset["prompt"], input_gcs_uris=input_gcs_uris
     )
 
 
