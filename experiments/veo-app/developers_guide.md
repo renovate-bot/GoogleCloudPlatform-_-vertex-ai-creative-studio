@@ -69,6 +69,22 @@ This section outlines the key architectural patterns and best practices that are
     *   **Problem:** An event handler for an item in a list always receives data from the *last* item in the list, regardless of which item was clicked.
     *   **Solution:** When creating a list of clickable components inside a `for` loop, you often need to know which specific item was clicked. The standard Mesop pattern for this is to pass the unique identifier of the item (e.g., its ID or a GCS URI) to the `key` property of the clickable component (like `me.box`). The event handler function will then receive this identifier in the `e.key` attribute of the event object.
 
+6.  **Creating Reusable, Safe-Rendering Components**
+    *   **Problem:** A page crashes with a `TypeError: 'NoneType' object is not subscriptable` because it's trying to render a component with data that hasn't been configured or loaded yet.
+    *   **Solution:** Instead of adding `if data:` checks on every page, encapsulate this safety check into a reusable component. This component should accept the data as a parameter (e.g., `info_data: dict | None`) and internally handle the case where the data is `None` by rendering a default state or message.
+    *   **Example (`components/info_dialog/info_dialog.py`):** This application now includes a reusable `info_dialog` component. It is the preferred way to display page-specific information.
+        *   **How to Use:** Import it and call it from your page's render function, passing it the `is_open` state, the (potentially `None`) data object, and an `on_close` handler.
+            ```python
+            from components.info_dialog.info_dialog import info_dialog
+            # ...
+            info_dialog(
+                is_open=state.info_dialog_open,
+                info_data=MY_PAGE_INFO, # This can be None
+                on_close=close_info_dialog
+            )
+            ```
+        *   **Recommendation:** Any page that currently implements a manual info dialog (e.g., `pages/gemini_image_generation.py`) should be refactored to use this new, safer component for consistency and robustness.
+
 ### Data and Metadata Handling
 
 1.  **Favor Flexible Generalization Over Brittle Replacement:**
