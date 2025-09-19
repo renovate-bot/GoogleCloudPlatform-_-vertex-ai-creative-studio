@@ -14,21 +14,28 @@
 
 """Interior Design page."""
 
-from dataclasses import field
 import datetime
+from dataclasses import field
+import json
+
 import mesop as me
 
+from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url
 from components.header import header
+from components.dialog import dialog
+from components.info_dialog.info_dialog import info_dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.veo_button.veo_button import veo_button
-from models.gemini import generate_image_from_prompt_and_images, extract_room_names_from_image
-from common.metadata import MediaItem, add_media_item_to_firestore
-from state.state import AppState
 from config.default import Default as cfg
+from models.gemini import (
+    extract_room_names_from_image,
+    generate_image_from_prompt_and_images,
+)
+from state.state import AppState
 
 # Placeholder style for image dropzones
 IMAGE_PLACEHOLDER_STYLE = me.Style(
@@ -45,12 +52,26 @@ IMAGE_PLACEHOLDER_STYLE = me.Style(
     gap=8,
 )
 
+
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    INTERIOR_DESIGN_INFO = next(
+        (
+            s
+            for s in about_content["sections"]
+            if s.get("id") == "interior_design"
+        ),
+        None,
+    )
+    
+
 @me.stateclass
 class PageState:
     """State for the Interior Design page."""
+
     floor_plan_uri: str = ""
     generated_3d_view_uri: str = ""
-    room_names: list[str] = field(default_factory=list) # pylint: disable=E3701:invalid-field-call
+    room_names: list[str] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
     is_generating: bool = False
     error_message: str = ""
     zoomed_view_uri: str = ""
@@ -61,6 +82,9 @@ class PageState:
     is_designing: bool = False
     zoomed_view_media_id: str = ""
 
+    info_dialog_open: bool = False
+
+
 @me.page(
     path="/interior_design",
     title="Interior Design",
@@ -68,19 +92,51 @@ class PageState:
 def interior_design_page():
     with page_scaffold(page_name="interior_design"):  # pylint: disable=E1129:not-context-manager
         with page_frame():  # pylint: disable=E1129:not-context-manager
-            header("Interior Design", "chair")
+            header("Interior Design", "chair", show_info_button=True, on_info_click=open_info_dialog)
             page_content()
+
 
 def page_content():
     state = me.state(PageState)
+    print(f"DEBUG: page_content rendering, state.info_dialog_open = {state.info_dialog_open}")
+    
+    info_dialog(
+        is_open=state.info_dialog_open,
+        info_data=INTERIOR_DESIGN_INFO,
+        on_close=close_info_dialog,
+        default_title="Interior Design",
+    )
 
-    with me.box(style=me.Style(display="flex", flex_direction="column", gap=24, align_items="center")):
+    with me.box(
+        style=me.Style(
+            display="flex", flex_direction="column", gap=24, align_items="center"
+        )
+    ):
         # Input and Output Area
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=32, justify_content="center")):
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=32, justify_content="center"
+            )
+        ):
             # Input Floor Plan
-            with me.box(style=me.Style(display="flex", flex_direction="column", gap=10, align_items="center")):
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="column",
+                    gap=10,
+                    align_items="center",
+                )
+            ):
                 me.text("Floor Plan", type="headline-6")
-                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center", min_height=48)):
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=8,
+                        align_items="center",
+                        min_height=48,
+                    )
+                ):
                     me.uploader(
                         label="Upload Floor Plan",
                         on_upload=on_upload_floor_plan,
@@ -94,16 +150,36 @@ def page_content():
                     if state.floor_plan_uri:
                         me.image(
                             src=gcs_uri_to_https_url(state.floor_plan_uri),
-                            style=me.Style(height="100%", width="100%", border_radius=8, object_fit="contain"),
+                            style=me.Style(
+                                height="100%",
+                                width="100%",
+                                border_radius=8,
+                                object_fit="contain",
+                            ),
                         )
                     else:
                         me.icon("floorplan")
                         me.text("Add a floor plan")
 
             # Output 3D View
-            with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, align_items="center")):
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="column",
+                    gap=10,
+                    align_items="center",
+                )
+            ):
                 me.text("Generated 3D View", type="headline-6")
-                with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center", min_height=48)):
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=8,
+                        align_items="center",
+                        min_height=48,
+                    )
+                ):
                     me.button(
                         "Generate 3D View",
                         on_click=on_generate_3d_view_click,
@@ -116,7 +192,12 @@ def page_content():
                     elif state.generated_3d_view_uri:
                         me.image(
                             src=gcs_uri_to_https_url(state.generated_3d_view_uri),
-                            style=me.Style(height="100%", width="100%", border_radius=8, object_fit="contain"),
+                            style=me.Style(
+                                height="100%",
+                                width="100%",
+                                border_radius=8,
+                                object_fit="contain",
+                            ),
                         )
                     else:
                         me.icon("view_in_ar")
@@ -124,11 +205,28 @@ def page_content():
 
         # Room Name Buttons - now in the main column
         if state.room_names:
-            with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center", gap=10)):
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="column",
+                    align_items="center",
+                    gap=10,
+                )
+            ):
                 me.text("Identified Rooms", type="headline-6")
-                with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, flex_wrap="wrap", justify_content="center")):
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=10,
+                        flex_wrap="wrap",
+                        justify_content="center",
+                    )
+                ):
                     for room in state.room_names:
-                        with me.content_button(key=room, on_click=on_room_button_click, type="stroked"):
+                        with me.content_button(
+                            key=room, on_click=on_room_button_click, type="stroked"
+                        ):
                             if state.is_generating_zoom and state.selected_room == room:
                                 me.progress_spinner(diameter=18)
                             else:
@@ -136,23 +234,54 @@ def page_content():
 
         # Display the zoomed-in view and design controls
         if state.zoomed_view_uri:
-            with me.box(style=me.Style(display="flex", flex_direction="row", gap=24, margin=me.Margin(top=24), width="100%")):
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    gap=24,
+                    margin=me.Margin(top=24),
+                    width="100%",
+                )
+            ):
                 # Left side: Image
-                with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center", gap=10, flex_grow=1)):
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="column",
+                        align_items="center",
+                        gap=10,
+                        flex_grow=1,
+                    )
+                ):
                     me.text(f"Zoomed View: {state.selected_room}", type="headline-6")
                     me.image(
                         src=gcs_uri_to_https_url(state.zoomed_view_uri),
-                        style=me.Style(height="100%", width="100%", max_width="600px", border_radius=8, object_fit="contain"),
+                        style=me.Style(
+                            height="100%",
+                            width="100%",
+                            max_width="600px",
+                            border_radius=8,
+                            object_fit="contain",
+                        ),
                     )
                 # Right side: Controls
-                with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, width=300)):
+                with me.box(
+                    style=me.Style(
+                        display="flex", flex_direction="column", gap=16, width=300
+                    )
+                ):
                     me.text("Design Studio", type="headline-6")
                     me.textarea(
                         label="Design Modifications",
                         on_blur=on_design_prompt_blur,
                         style=me.Style(width="100%"),
                     )
-                    me.button("Design", on_click=on_design_click, type="raised", disabled=state.is_designing)
+                    me.button(
+                        "Design",
+                        on_click=on_design_click,
+                        type="raised",
+                        disabled=state.is_designing,
+                    )
                     veo_button(gcs_uri=state.zoomed_view_uri)
                     if state.is_designing:
                         me.progress_spinner()
@@ -162,6 +291,7 @@ def page_content():
 
 
 # --- Event Handlers ---
+
 
 def on_upload_floor_plan(e: me.UploadEvent):
     """Upload floor plan handler."""
@@ -178,6 +308,7 @@ def on_upload_floor_plan(e: me.UploadEvent):
     state.error_message = ""
     yield
 
+
 def on_select_floor_plan(e: LibrarySelectionChangeEvent):
     """Floor plan selection from library handler."""
     state = me.state(PageState)
@@ -188,10 +319,11 @@ def on_select_floor_plan(e: LibrarySelectionChangeEvent):
     state.error_message = ""
     yield
 
+
 def on_generate_3d_view_click(e: me.ClickEvent):
     """Handles the 3D view generation."""
     state = me.state(PageState)
-    app_state = me.state(AppState) # Need this for logging user email
+    app_state = me.state(AppState)  # Need this for logging user email
 
     state.is_generating = True
     state.generated_3d_view_uri = ""
@@ -203,7 +335,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
 
     try:
         prompt = "create a 3D version for the floor plan. make it realistic. keep the furnitures as per the floor plan and follow the measurement. retain the names of rooms in the appropriate location"
-        
+
         # Call the existing Gemini model function
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
@@ -220,7 +352,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
                 timestamp=datetime.datetime.now(datetime.timezone.utc),
                 prompt=prompt,
                 source_images_gcs=[state.floor_plan_uri],
-                mime_type="image/png", # Assuming PNG output
+                mime_type="image/png",  # Assuming PNG output
                 comment="Generated by Interior Design",
                 model=cfg().GEMINI_IMAGE_GEN_MODEL,
             )
@@ -247,6 +379,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
         state.is_generating = False
         yield
 
+
 def on_room_button_click(e: me.ClickEvent):
     """Handles the generation of a zoomed-in view for a specific room."""
     state = me.state(PageState)
@@ -261,10 +394,10 @@ def on_room_button_click(e: me.ClickEvent):
 
     try:
         prompt = f"Using the provided 3D rendering as a layout guide, create a photorealistic interior photograph. The photo should be from a first-person perspective, as if a person is standing in the hallway or adjacent room and looking through the doorway into the {room_name}. Capture the sense of entering the room for the first time on a house tour. Ensure the lighting and furniture placement are consistent with the 3D model."
-        
+
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
-            images=[state.generated_3d_view_uri], # Use the 3D view as input
+            images=[state.generated_3d_view_uri],  # Use the 3D view as input
             gcs_folder="interior_design_zoomed_views",
         )
 
@@ -296,10 +429,12 @@ def on_room_button_click(e: me.ClickEvent):
         state.selected_room = ""
         yield
 
+
 def on_design_prompt_blur(e: me.InputBlurEvent):
     """Updates the design prompt in the page state."""
     state = me.state(PageState)
     state.design_prompt = e.value
+
 
 def on_design_click(e: me.ClickEvent):
     """Handles the iterative design generation."""
@@ -318,14 +453,14 @@ def on_design_click(e: me.ClickEvent):
     try:
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=state.design_prompt,
-            images=[state.zoomed_view_uri], # Use the current zoomed view as input
+            images=[state.zoomed_view_uri],  # Use the current zoomed view as input
             gcs_folder="interior_design_iterations",
         )
 
         if gcs_uris:
             # Update the zoomed view with the new image, creating the loop
             state.zoomed_view_uri = gcs_uris[0]
-            
+
             # Log the new iteration to Firestore
             item_to_log = MediaItem(
                 gcsuri=gcs_uris[0],
@@ -353,3 +488,17 @@ def on_design_click(e: me.ClickEvent):
     finally:
         state.is_designing = False
         yield
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    print("DEBUG: open_info_dialog called")
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
+    yield
