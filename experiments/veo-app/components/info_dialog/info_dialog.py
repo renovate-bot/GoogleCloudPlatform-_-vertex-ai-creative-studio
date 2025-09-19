@@ -40,17 +40,18 @@ def info_dialog(
     # Always render the underlying dialog component and pass `is_open` to it.
     # The dialog component itself will handle its visibility.
     with dialog(is_open=is_open):
-            title = default_title
-            description = "Information for this page has not been configured yet. Please add an entry to `config/about_content.json`."
+        title = default_title
+        description = "Information for this page has not been configured yet. Please add an entry to `config/about_content.json`."
 
-            if info_data:
-                title = f"About {info_data.get('title', 'Untitled')}"
-                description = info_data.get(
-                    'description', "No description is available.",
-                )
+        if info_data:
+            title = f"About {info_data.get('title', 'Untitled')}"
+            description = info_data.get(
+                "description",
+                "No description is available.",
+            )
 
-            me.text(title, type="headline-6")
-            me.markdown(description)
-            me.divider()
-            with me.box(style=me.Style(margin=me.Margin(top=16))):
-                me.button("Close", on_click=on_close, type="flat")
+        me.text(title, type="headline-6")
+        me.markdown(description)
+        me.divider()
+        with me.box(style=me.Style(margin=me.Margin(top=16))):
+            me.button("Close", on_click=on_close, type="flat")

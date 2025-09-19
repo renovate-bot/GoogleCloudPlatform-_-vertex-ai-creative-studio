@@ -11,7 +11,7 @@ anyio==4.10.0
     #   starlette
 asttokens==3.0.0
     # via stack-data
-black==25.1.0
+black==25.9.0
     # via veo-app (pyproject.toml)
 blinker==1.9.0
     # via flask
@@ -28,7 +28,7 @@ cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
-click==8.2.1
+click==8.3.0
     # via
     #   black
     #   flask
@@ -89,7 +89,7 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.114.0
+google-cloud-aiplatform==1.115.0
     # via veo-app (pyproject.toml)
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
@@ -338,6 +338,8 @@ python-dotenv==1.1.1
     # via
     #   mesop
     #   moviepy
+pytokens==0.1.10
+    # via black
 pytz==2025.2
     # via pandas
 requests==2.32.5
@@ -349,7 +351,7 @@ requests==2.32.5
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.13.0
+ruff==0.13.1
     # via veo-app (pyproject.toml)
 scikit-image==0.25.2
     # via veo-app (pyproject.toml)
