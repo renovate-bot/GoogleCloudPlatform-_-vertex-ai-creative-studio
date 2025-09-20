@@ -1,8 +1,17 @@
+# GenMedia Creative Studio | Vertex AI
+
 > ###### _This is not an officially supported Google product. This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security). This project is intended for demonstration purposes only. It is not intended for use in a production environment._
+
+
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/da5ad223-aa6e-413c-b36e-5d63e5d5b758)
+
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/61977f3c-dbb6-4002-b8c0-77d57aa03cce)
+
 
 # Table of Contents
 - [Table of Contents](#table-of-contents)
-- [GenMedia Creative Studio: v.Next](#genmedia-creative-studio-vnext)
+- [GenMedia Creative Studio](#genmedia-creative-studio)
+  - [Experiments](#experiments)
 - [Deploying GenMedia Creative Studio](#deploying-genmedia-creative-studio)
   - [Prerequisites](#prerequisites)
     - [1. Download the source code for this project](#1-download-the-source-code-for-this-project)
@@ -36,25 +45,53 @@
 - [Disclaimer](#disclaimer)
 
 
-# GenMedia Creative Studio: v.Next
+# GenMedia Creative Studio
 
 This is the next gen version of GenMedia Creative Studio
 
-![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/da5ad223-aa6e-413c-b36e-5d63e5d5b758)
-
-![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/61977f3c-dbb6-4002-b8c0-77d57aa03cce)
-
 
 Current featureset
-* Image: Imagen 3, Imagen 4, Virtual Try-On, Gemini Image Generation
+* Image: Imagen 3, Imagen 4, Virtual Try-On, Gemini 2.5 Flash Image Generation
 * Video: Veo 2, Veo 3
 * Music: Lyria
 * Speech: Chirp 3 HD, Gemini Text to Speech
-* Workflows: Character Consistency, Shop the Look, Starter Pack Moodboard
+* Workflows: Character Consistency, Shop the Look, Starter Pack Moodboard, Interior Designer
 * Asset Library
 
 
 This is built using [Mesop](https://mesop-dev.github.io/mesop/) with [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).
+
+
+## Experiments
+
+
+The [Experimental folder](./experiments/) contains a variety of stand-alone applications and new and upcoming features that showcase cutting-edge capabilities with generative AI.
+
+Here's a glimpse of what you'll find:
+
+**MCP Tools**
+*   **MCP Tools for Genmedia:** Model Context Protocol servers for Veo, Imagen, Lyria, Chirp, and Gemini to bring creativity to your agents.
+
+**Combined Workflows**
+*   **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.
+*   **Storycraft:** An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.
+*   **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
+
+**Prompting Techniques**
+*   **Promptlandia:** A powerful web app to analyze, refine, and improve your prompts.
+*   **Veo Genetic Prompt Optimizer:** An automated system to evolve and refine high-level "metaprompts" for Veo.
+*   **Character & Item Consistency:** Workflows for maintaining consistency for characters and items across video scenes.
+
+**Image Generation & Analysis**
+*   **Virtual Try-On:** A notebook for virtually trying on outfits at scale.
+*   **Imagen Product Recontextualization:** Tools for large-scale product image recontextualization.
+*   **Arena:** A visual arena for rating and comparing images from different models.
+
+**Audio & Video**
+*   **Creative Podcast Assistant:** A notebook for creating a podcast with generative media.
+*   **Babel:** An experimental app for Chirp 3 HD voices.
+
+...and much more! For a full, detailed list of all experiments, please see the [Experiments README](./experiments/README.md). 
 
 # Deploying GenMedia Creative Studio
 
@@ -76,11 +113,10 @@ You'll need the following
 
 ### 1. Download the source code for this project
 
-Download the source and then change to this directory
+Download the source
 
 ```bash
 git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
-cd vertex-ai-creative-studio/experiments/veo-app/
 ```
 
 ### 2. Export Environment Variables
