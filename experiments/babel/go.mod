@@ -6,7 +6,7 @@ toolchain go1.25.1
 
 require (
 	cloud.google.com/go/storage v1.56.2
-	cloud.google.com/go/texttospeech v1.13.0
+	cloud.google.com/go/texttospeech v1.14.0
 	cloud.google.com/go/vertexai v0.15.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	google.golang.org/api v0.248.0
