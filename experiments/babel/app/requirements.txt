@@ -30,7 +30,7 @@ deprecated==1.2.18
     # via opentelemetry-api
 fastapi==0.116.2
     # via babel-web (pyproject.toml)
-fastapi-cli==0.0.12
+fastapi-cli==0.0.13
     # via babel-web (pyproject.toml)
 flask==3.1.2
     # via
