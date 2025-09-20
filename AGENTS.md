@@ -1,6 +1,6 @@
 # Agent Guidelines for veo-app
 
-This document provides guidelines for AI agents working on the `veo-app` codebase.
+This document provides guidelines for AI agents working on the GenMedia Creative Studio codebase.
 
 ## Styling
 - Prefer using shared styles from `components/styles.py` for common UI elements and layout structures.
