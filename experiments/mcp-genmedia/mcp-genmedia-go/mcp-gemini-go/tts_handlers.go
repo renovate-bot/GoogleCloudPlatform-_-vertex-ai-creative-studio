@@ -1,22 +1,19 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	texttospeech "cloud.google.com/go/texttospeech/apiv1"
+	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
 	"github.com/mark3labs/mcp-go/mcp"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -81,33 +78,6 @@ func geminiLanguageCodesHandler(ctx context.Context, request mcp.ReadResourceReq
 	}, nil
 }
 
-// --- API Request and Response Structs ---
-
-type geminiTTSRequest struct {
-	Input       geminiTTSInput       `json:"input"`
-	Voice       geminiTTSVoiceParams `json:"voice"`
-	AudioConfig geminiTTSAudioConfig `json:"audioConfig"`
-}
-
-type geminiTTSInput struct {
-	Text   string `json:"text"`
-	Prompt string `json:"prompt,omitempty"`
-}
-
-type geminiTTSVoiceParams struct {
-	LanguageCode string `json:"languageCode"`
-	Name         string `json:"name"`
-	ModelName    string `json:"model_name"`
-}
-
-type geminiTTSAudioConfig struct {
-	AudioEncoding string `json:"audioEncoding"`
-}
-
-type geminiTTSResponse struct {
-	AudioContent string `json:"audioContent"`
-}
-
 // --- Tool Handlers ---
 
 // listGeminiVoicesHandler handles the 'list_gemini_voices' tool request.
@@ -128,6 +98,26 @@ func listGeminiVoicesHandler(ctx context.Context, request mcp.CallToolRequest) (
 			mcp.TextContent{Type: "text", Text: string(voiceListJSON)},
 		},
 	}, nil
+}
+
+var audioEncodingToFileExtension = map[string]string{
+	"LINEAR16": ".wav",
+	"MP3":      ".mp3",
+	"OGG_OPUS": ".ogg",
+	"MULAW":    ".mulaw",
+	"ALAW":     ".alaw",
+	"PCM":      ".pcm",
+	"M4A":      ".m4a",
+}
+
+var audioEncodingToMIMEType = map[string]string{
+	"LINEAR16": "audio/wav",
+	"MP3":      "audio/mpeg",
+	"OGG_OPUS": "audio/ogg",
+	"MULAW":    "audio/mulaw",
+	"ALAW":     "audio/alaw",
+	"PCM":      "audio/pcm",
+	"M4A":      "audio/mp4",
 }
 
 // geminiAudioTTSHandler handles the 'gemini_audio_tts' tool request.
@@ -166,6 +156,11 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 		return mcp.NewToolResultError(fmt.Sprintf("invalid voice_name '%s'. Use 'list_gemini_voices' to see available voices", voiceName)), nil
 	}
 
+	audioEncoding, _ := request.GetArguments()["audio_encoding"].(string)
+	if audioEncoding == "" {
+		audioEncoding = "LINEAR16"
+	}
+
 	outputDir, _ := request.GetArguments()["output_directory"].(string)
 	filenamePrefix, _ := request.GetArguments()["output_filename_prefix"].(string)
 	if filenamePrefix == "" {
@@ -173,7 +168,7 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	}
 
 	// --- 2. Call the TTS API ---
-	audioBytes, err := callGeminiTTSAPI(ctx, text, prompt, voiceName, modelName)
+	audioBytes, err := callGeminiTTSAPIWithSDK(ctx, text, prompt, voiceName, modelName, audioEncoding)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("error calling Gemini TTS API: %v", err)), nil
 	}
@@ -182,21 +177,30 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	var contentItems []mcp.Content
 	var fileSaveMessage string
 
+	fileExtension, ok := audioEncodingToFileExtension[audioEncoding]
+	if !ok {
+		fileExtension = ".wav"
+	}
+	mimeType, ok := audioEncodingToMIMEType[audioEncoding]
+	if !ok {
+		mimeType = "audio/wav"
+	}
+
 	if outputDir != "" {
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
 			fileSaveMessage = fmt.Sprintf("Error creating directory %s: %v. Audio data will be returned in response instead.", outputDir, err)
 			log.Print(fileSaveMessage)
 			// Fallback to returning data in response
 			base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
-			contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"})
+			contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
 		} else {
-			filename := fmt.Sprintf("%s-%s-%s.wav", filenamePrefix, voiceName, time.Now().Format(timeFormatForTTSFilename))
+			filename := fmt.Sprintf("%s-%s-%s%s", filenamePrefix, voiceName, time.Now().Format(timeFormatForTTSFilename), fileExtension)
 			savedFilename := filepath.Join(outputDir, filename)
 			if err := os.WriteFile(savedFilename, audioBytes, 0644); err != nil {
 				fileSaveMessage = fmt.Sprintf("Error writing audio file %s: %v. Audio data will be returned in response instead.", savedFilename, err)
 				log.Print(fileSaveMessage)
 				base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
-				contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"})
+				contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
 			} else {
 				fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedFilename, len(audioBytes))
 				log.Printf(fileSaveMessage)
@@ -204,7 +208,7 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 		}
 	} else {
 		base64AudioData := base64.StdEncoding.EncodeToString(audioBytes)
-		contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: "audio/wav"})
+		contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
 		fileSaveMessage = "Audio data is included in the response."
 	}
 
@@ -216,87 +220,36 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 
 // --- API Helper Function ---
 
-func callGeminiTTSAPI(ctx context.Context, text, prompt, voiceName, modelName string) ([]byte, error) {
-	// --- 1. Get Project ID from environment ---
-	projectID := os.Getenv("PROJECT_ID")
-	if projectID == "" {
-		return nil, fmt.Errorf("PROJECT_ID environment variable must be set")
-	}
 
-	// --- 2. Create Authenticated HTTP Client ---
-	// The context passed in here is used for the token source.
-	tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+func callGeminiTTSAPIWithSDK(ctx context.Context, text, prompt, voiceName, modelName, audioEncoding string) ([]byte, error) {
+	client, err := texttospeech.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create token source: %w", err)
+		return nil, fmt.Errorf("failed to create texttospeech client: %w", err)
 	}
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: tokenSource,
-		},
-		Timeout: 30 * time.Second,
-	}
+	defer client.Close()
 
-	// --- 3. Construct the Request Body ---
-	reqBody := geminiTTSRequest{
-		Input: geminiTTSInput{
-			Text:   text,
-			Prompt: prompt,
+	req := &texttospeechpb.SynthesizeSpeechRequest{
+		Input: &texttospeechpb.SynthesisInput{
+			InputSource: &texttospeechpb.SynthesisInput_Text{Text: text},
 		},
-		Voice: geminiTTSVoiceParams{
-			LanguageCode: "en-US", // Currently only en-US is supported
+		Voice: &texttospeechpb.VoiceSelectionParams{
+			LanguageCode: "en-US",
 			Name:         voiceName,
 			ModelName:    modelName,
 		},
-		AudioConfig: geminiTTSAudioConfig{
-			AudioEncoding: "LINEAR16", // WAV format
+		AudioConfig: &texttospeechpb.AudioConfig{
+			AudioEncoding: texttospeechpb.AudioEncoding(texttospeechpb.AudioEncoding_value[audioEncoding]),
 		},
 	}
 
-	reqBytes, err := json.Marshal(reqBody)
+	if prompt != "" {
+		req.Input.Prompt = &prompt
+	}
+
+	resp, err := client.SynthesizeSpeech(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("failed to synthesize speech: %w", err)
 	}
 
-	// --- 4. Create and Send the HTTP Request ---
-	// Use a new context for the HTTP request itself to respect the client's timeout.
-	httpCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	httpReq, err := http.NewRequestWithContext(httpCtx, "POST", geminiTTSAPIEndpoint, bytes.NewBuffer(reqBytes))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("x-goog-user-project", projectID)
-
-	log.Printf("Sending Gemini TTS request to %s with model %s and voice %s", geminiTTSAPIEndpoint, modelName, voiceName)
-
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// --- 5. Process the Response ---
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status %s: %s", resp.Status, string(bodyBytes))
-	}
-
-	var ttsResp geminiTTSResponse
-	if err := json.NewDecoder(resp.Body).Decode(&ttsResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response body: %w", err)
-	}
-
-	if ttsResp.AudioContent == "" {
-		return nil, fmt.Errorf("API response did not contain audio content")
-	}
-
-	audioBytes, err := base64.StdEncoding.DecodeString(ttsResp.AudioContent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode base64 audio content: %w", err)
-	}
-
-	return audioBytes, nil
+	return resp.AudioContent, nil
 }
