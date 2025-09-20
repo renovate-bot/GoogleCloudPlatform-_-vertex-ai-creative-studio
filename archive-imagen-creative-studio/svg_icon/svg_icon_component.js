@@ -37,6 +37,4 @@ export class SVGIconComponent extends LitElement {
   
   }
   
-if (!customElements.get('svg-icon')) {
-    customElements.define('svg-icon', SVGIconComponent);
-}
+customElements.define('svg-icon', SVGIconComponent);
