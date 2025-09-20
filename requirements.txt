@@ -375,7 +375,7 @@ tenacity==9.1.2
     # via
     #   veo-app (pyproject.toml)
     #   google-genai
-tifffile==2025.9.9
+tifffile==2025.9.20
     # via scikit-image
 tqdm==4.67.1
     # via proglog
