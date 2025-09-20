@@ -35,7 +35,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.2.0"
+	version     = "0.3.0"
 )
 
 func init() {
@@ -131,6 +131,11 @@ func main() {
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to save the generated audio file to. If not provided, audio data is returned in the response."),
+		),
+		mcp.WithString("audio_encoding",
+			mcp.DefaultString("LINEAR16"),
+			mcp.Description("The format of the audio byte stream. Supported values: LINEAR16, MP3, OGG_OPUS, MULAW, ALAW, PCM, M4A."),
+			mcp.Enum("LINEAR16", "MP3", "OGG_OPUS", "MULAW", "ALAW", "PCM", "M4A"),
 		),
 	)
 	s.AddTool(ttsTool, geminiAudioTTSHandler)
