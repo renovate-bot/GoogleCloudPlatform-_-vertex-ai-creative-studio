@@ -49,7 +49,7 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.116.2
+fastapi==0.117.1
     # via veo-app (pyproject.toml)
 firebase-admin==6.9.0
     # via veo-app (pyproject.toml)
