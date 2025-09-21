@@ -125,6 +125,7 @@ This repository provides AI application samples for:
 
 *   [Google ADK (Agent Development Kit)](../sample-agents/adk/README.md)
 *   [Google Firebase Genkit](../sample-agents/genkit/README.md)
+*   [Google Gemini CLI](../sample-agents/geminicli/README.md)
 
 
 ## Available Go MCP Servers:
@@ -141,7 +142,8 @@ This repository provides AI application samples for:
 
 *   **`mcp-gemini-go`**:
     *   Provides a multimodal interface to Google's Gemini models.
-    *   Tool: `gemini_image_generation` for generating text and images from a prompt that can include text and images.
+    *   Tools include `gemini_image_generation` for generating text and images, and `gemini_audio_tts` for synthesizing speech with Gemini TTS models.
+    *   Also includes the `list_gemini_voices` helper tool and the `gemini://language_codes` resource.
     *   Output can be saved to a local directory or GCS.
 
 *   **`mcp-imagen-go`**:
@@ -168,10 +170,25 @@ This repository provides AI application samples for:
 
 All servers in this project are configured using environment variables. While some servers have unique variables, the following are common to most of them:
 
+### Using a `.env` File
+
+For easier local development, you can place a `.env` file in the directory where you run the MCP server. The server will automatically load environment variables from this file.
+
+**Precedence Order:**
+
+1.  **Environment variables set in the shell:** These take the highest precedence.
+2.  **Variables in the `.env` file:** These are loaded but will **not** override any variables already set in your shell.
+
+This allows you to have default values in your `.env` file and override them for specific cases by setting the variable in your terminal.
+
+**Available Variables:**
+
+The following variables can be defined in your `.env` file or as shell environment variables:
+
 *   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
 *   `LOCATION` (string): The Google Cloud location/region for Vertex AI services. Defaults to `us-central1` if not set.
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if a bucket is not specified in a tool request.
-*   `PORT` (string): Used for the port to listen on when started as a HTTP/SSE server. Defaults to `8080` if not set.
+*   `PORT` (string): Specifies the port for the `http` transport. If not set, it defaults to `8080`. Note that for the `sse` transport, most servers use a hardcoded port (typically `8081`) to avoid conflicts.
 
 *Example:*
 ```bash

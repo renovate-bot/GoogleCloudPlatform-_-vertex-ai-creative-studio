@@ -67,10 +67,16 @@ check_path() {
 main() {
 
   if [[ -z "${PROJECT_ID}" ]]; then
-    echo -e "${RED}ERROR: The PROJECT_ID environment variable is not set.${NC}"
-    echo "Please set it before running the installer, for example:"
-    echo -e "  ${BLUE}export PROJECT_ID=$(gcloud config get project)${NC}"
-    exit 1
+    echo -e "${YELLOW}PROJECT_ID not set, attempting to retrieve from gcloud config...${NC}"
+    PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+    if [[ -z "${PROJECT_ID}" ]]; then
+      echo -e "${RED}ERROR: Could not retrieve PROJECT_ID from gcloud. Please set it manually.${NC}"
+      echo "For example: export PROJECT_ID=your-gcp-project-id"
+      exit 1
+    else
+      echo -e "${GREEN}Successfully retrieved PROJECT_ID: ${PROJECT_ID}${NC}"
+      export PROJECT_ID
+    fi
   fi
 
   check_go_installation
@@ -83,7 +89,8 @@ main() {
         echo -e "${BLUE}Installing all MCP servers...${NC}"
         for d in $(find_mcp_servers); do
           echo "Installing $d..."
-          if ! (cd "$d" && go install); then
+          # Run go mod tidy to prevent checksum mismatch errors
+          if ! (cd "$d" && go mod tidy && go install); then
             echo -e "${RED}ERROR: Failed to install $d. Please check the output above for details.${NC}"
             exit 1
           fi
@@ -98,7 +105,8 @@ main() {
       *) 
         if [ -n "$server" ]; then
           echo -e "${BLUE}Installing $server...${NC}"
-          if (cd "$server" && go install); then
+                    # Run go mod tidy to prevent checksum mismatch errors
+          if (cd "$server" && go mod tidy && go install); then
             echo -e "${GREEN}$server has been installed successfully.${NC}"
           else
             echo -e "${RED}ERROR: Failed to install $server. Please check the output above for details.${NC}"
