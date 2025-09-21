@@ -11,7 +11,7 @@ cachetools==6.1.0
 certifi==2025.8.3
 cffi==1.17.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.3
-click==8.2.1
+click==8.3.0
 colorama==0.4.6 ; sys_platform == 'win32'
 cramjam==2.11.0
 cryptography==45.0.7
@@ -22,7 +22,7 @@ firebase-admin==7.0.0
 flask==3.1.2
 fsspec==2025.9.0
 google-api-core==2.25.1
-google-api-python-client==2.179.0
+google-api-python-client==2.182.0
 google-auth==2.40.3
 google-auth-httplib2==0.2.0
 google-cloud-aiplatform==1.111.0
@@ -39,8 +39,8 @@ googleapis-common-protos==1.70.0
 grapheme==0.6.0
 grpc-google-iam-v1==0.14.2
 grpc-interceptor==0.15.4
-grpcio==1.74.0
 grpcio-status==1.75.0
+grpcio==1.75.0
 gunicorn==23.0.0
 h11==0.16.0
 httpcore==1.0.9
@@ -66,7 +66,7 @@ pycparser==2.22 ; platform_python_implementation != 'PyPy'
 pydantic==2.11.9
 pydantic-core==2.39.0
 pyjwt==2.10.1
-pyparsing==3.2.4
+pyparsing==3.2.5
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 pytz==2025.2

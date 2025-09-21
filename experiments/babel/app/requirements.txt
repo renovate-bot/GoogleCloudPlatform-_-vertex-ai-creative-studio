@@ -16,7 +16,7 @@ certifi==2025.8.3
     # via requests
 charset-normalizer==3.4.3
     # via requests
-click==8.2.1
+click==8.3.0
     # via
     #   flask
     #   rich-toolkit
@@ -28,9 +28,9 @@ deepdiff==8.6.1
     # via mesop
 deprecated==1.2.18
     # via opentelemetry-api
-fastapi==0.116.2
+fastapi==0.117.1
     # via babel-web (pyproject.toml)
-fastapi-cli==0.0.12
+fastapi-cli==0.0.13
     # via babel-web (pyproject.toml)
 flask==3.1.2
     # via
@@ -64,7 +64,7 @@ googleapis-common-protos==1.70.0
     #   grpcio-status
 grpc-google-iam-v1==0.14.2
     # via google-cloud-logging
-grpcio==1.74.0
+grpcio==1.75.0
     # via
     #   google-api-core
     #   googleapis-common-protos

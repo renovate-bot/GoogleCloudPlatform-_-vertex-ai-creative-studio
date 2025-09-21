@@ -399,14 +399,20 @@ The application's navigation, including the side navigation and the categorized 
 ### How It Works: A Three-Step Process
 
 1.  **`config/navigation.json` (The Data Source)**
-    *   This file is the **single source of truth** for all possible navigation items.
-    *   Each item in the `pages` list defines a page with properties like `id` (for sorting), `display` (the user-facing name), `icon`, `route`, and `group`.
-    *   The **`group`** key is what defines the categories on the homepage (e.g., "foundation", "workflows", "app").
+    *   This file is the **single source of truth** for all possible navigation items. To add, remove, or modify a navigation link, simply edit this file.
+    *   Each item in the `pages` list is a JSON object with the following structure:
+        *   `id` (required, integer): A unique identifier for the navigation item. The list is sorted by this value.
+        *   `display` (required, string): The text that will be displayed for the link.
+        *   `icon` (required, string): The name of the [Material Symbol](https://fonts.google.com/icons) to display.
+        *   `route` (optional, string): The application route to navigate to (e.g., `/home`).
+        *   `group` (optional, string): The group the item belongs to (e.g., `foundation`, `workflows`, `app`). This is used to create categories on the homepage.
+        *   `align` (optional, string): Set to `bottom` to align the item to the bottom of the side navigation panel.
+        *   `feature_flag` (optional, string): A key to control the item's visibility via an environment variable.
 
 2.  **`config/default.py` (The Configuration Loader & Processor)**
     *   This file reads `navigation.json` and processes it using the `load_welcome_page_config` function.
     *   **Validation:** It uses Pydantic models (`NavItem`, `NavConfig`) to validate the JSON structure, preventing errors from malformed data.
-    *   **Filtering:** It checks for a `feature_flag` on each item. A page will only be included if its corresponding feature flag is enabled in the environment configuration. This allows you to toggle navigation links on or off.
+    *   **Filtering (Feature Flags):** It checks for a `feature_flag` on each item. A page will only be included if its corresponding feature flag is enabled in the environment configuration. This allows you to toggle navigation links on or off. See below for how to use this.
     *   **Sorting:** It sorts the final list of pages by their `id`.
     *   The processed list is stored in the `WELCOME_PAGE` constant, ready for the UI to consume.
 
@@ -417,7 +423,33 @@ The application's navigation, including the side navigation and the categorized 
 
 This system makes the navigation highly configurable and easy to manage.
 
-#### Homepage vs. Side Navigation Rendering
+### How to Control Navigation Items with Feature Flags
+
+You can temporarily hide or show a navigation item by using a feature flag in `navigation.json` and controlling it via your `.env` file.
+
+**1. Add the Feature Flag:**
+First, add a `feature_flag` key to the item you want to control in `config/navigation.json`. Give it a descriptive name, for example:
+
+```json
+{
+  "id": 40,
+  "display": "Motion Portraits",
+  "icon": "portrait",
+  "route": "/motion_portraits",
+  "group": "workflows",
+  "feature_flag": "MOTION_PORTRAITS_ENABLED"
+}
+```
+
+**2. Control Visibility via `.env` file:**
+Now, you can control whether this item appears in the navigation by setting the `MOTION_PORTRAITS_ENABLED` variable in your `.env` file.
+
+*   **To HIDE the page:** Either **do not** include `MOTION_PORTRAITS_ENABLED` in your `.env` file, or set it to `False`.
+*   **To SHOW the page:** Add `MOTION_PORTRAITS_ENABLED=True` to your `.env` file.
+
+The application will automatically show or hide the link when you restart it.
+
+### Homepage vs. Side Navigation Rendering
 
 It is critical to understand that different UI components use different keys from `navigation.json` to render their content. This separation of concerns allows for independent control over the homepage layout and the side navigation menu.
 
@@ -453,6 +485,28 @@ To modify the "About" page, you will need to:
 
 For local development, if you do not set the `GCS_ASSETS_BUCKET` variable, the page will use local paths. To make this work, you can temporarily add a `StaticFiles` mount to `main.py`:
 `app.mount("/assets", StaticFiles(directory="assets"), name="assets")`
+
+#### Environment-Specific "About" Page Content
+
+The application can load different configurations for different environments (e.g., `local`, `dev`, `production`) for content on the "About" page. This is controlled by the `APP_ENV` environment variable.
+
+##### How it Works
+
+1.  **Set the `APP_ENV` Variable:** In your `.env` file, you can set the `APP_ENV` variable to the name of your current environment.
+    ```
+    # In your .env file
+    APP_ENV=local
+    ```
+
+2.  **Create a Specific Config File:** Create a JSON file in the `config/` directory that matches the environment name, following the pattern `about_content.<env>.json`. For the example above, you would create:
+    *   `config/about_content.local.json`
+
+3.  **Fallback Mechanism:**
+    *   When the application starts, it will look for a config file that matches the `APP_ENV` (e.g., `config/about_content.local.json`).
+    *   If it finds one, it will load it.
+    *   If `APP_ENV` is not set, or if the specific file does not exist, the application will safely fall back to loading the default `config/about_content.json`.
+
+This allows you to commit a generic `about_content.json` to the repository while using custom, uncommitted configurations for your specific environments. The environment-specific files (`config/about_content.*.json`) are already included in the `.gitignore` file to prevent them from being checked in.
 
 ### Choosing an Image from the Library
 
