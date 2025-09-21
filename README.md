@@ -1,8 +1,17 @@
+# GenMedia Creative Studio | Vertex AI
+
 > ###### _This is not an officially supported Google product. This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security). This project is intended for demonstration purposes only. It is not intended for use in a production environment._
+
+
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/da5ad223-aa6e-413c-b36e-5d63e5d5b758)
+
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/61977f3c-dbb6-4002-b8c0-77d57aa03cce)
+
 
 # Table of Contents
 - [Table of Contents](#table-of-contents)
-- [GenMedia Creative Studio: v.Next](#genmedia-creative-studio-vnext)
+- [GenMedia Creative Studio](#genmedia-creative-studio)
+  - [Experiments](#experiments)
 - [Deploying GenMedia Creative Studio](#deploying-genmedia-creative-studio)
   - [Prerequisites](#prerequisites)
     - [1. Download the source code for this project](#1-download-the-source-code-for-this-project)
@@ -14,7 +23,7 @@
     - [4. Wait for certificate to go to provisioned state](#4-wait-for-certificate-to-go-to-provisioned-state)
   - [Deploying using Cloud Run Domain](#deploying-using-cloud-run-domain)
     - [1. Initialize Terraform](#1-initialize-terraform-1)
-    - [2. Build and Deploy Container Image](#2-build-and-deploy-container-image)
+    - [2. Build and Deploy Container Image](#2-build-and-deploy-container-image-1)
     - [3. Edit Cloud Run's IAP Policy to provide initial user's access](#3-edit-cloud-runs-iap-policy-to-provide-initial-users-access)
   - [Deploying to Cloud Shell for Testing](#deploying-to-cloud-shell-for-testing)
 - [Solution Design](#solution-design)
@@ -26,35 +35,58 @@
   - [Setting up your development environment](#setting-up-your-development-environment)
     - [Python virtual environment](#python-virtual-environment)
     - [Application Environment variables](#application-environment-variables)
-  - [GenMedia Creative Studio - v.next](#genmedia-creative-studio---vnext)
+  - [GenMedia Creative Studio - v.next](#genmedia-creative-studio---developing)
     - [Running](#running)
     - [Developing](#developing)
-  - [Navigation](#navigation)
-    - [How it Works](#how-it-works)
-    - [Modifying the Navigation](#modifying-the-navigation)
-    - [How to Control Navigation Items with Feature Flags](#how-to-control-navigation-items-with-feature-flags)
 - [Disclaimer](#disclaimer)
 
 
-# GenMedia Creative Studio: v.Next
+# GenMedia Creative Studio
 
-This is the next gen version of GenMedia Creative Studio
-
-![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/da5ad223-aa6e-413c-b36e-5d63e5d5b758)
-
-![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/61977f3c-dbb6-4002-b8c0-77d57aa03cce)
-
+GenMedia Creative Studio is a web application showcasing Google Cloud's generative media - Veo, Lyria, Chirp, Gemini 2.5 Flash Image Generation (nano-banana), and Gemini TTS along with custom workflows and techniques for creative exploration and inspiration. We're looking forward to see what you create!
 
 Current featureset
-* Image: Imagen 3, Imagen 4, Virtual Try-On, Gemini Image Generation
+* Image: Imagen 3, Imagen 4, Virtual Try-On, Gemini 2.5 Flash Image Generation
 * Video: Veo 2, Veo 3
 * Music: Lyria
 * Speech: Chirp 3 HD, Gemini Text to Speech
-* Workflows: Character Consistency, Shop the Look, Starter Pack Moodboard
+* Workflows: Character Consistency, Shop the Look, Starter Pack Moodboard, Interior Designer
 * Asset Library
 
 
-This is built using [Mesop](https://mesop-dev.github.io/mesop/) with [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).
+This is built using [Mesop](https://mesop-dev.github.io/mesop/), an open source Python framework used at Google for rapid AI app development, and the [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).
+
+
+## Experiments
+
+
+The [Experimental folder](./experiments/) contains a variety of stand-alone applications and new and upcoming features that showcase cutting-edge capabilities with generative AI.
+
+Here's a glimpse of what you'll find:
+
+**MCP Tools**
+*   **MCP Tools for Genmedia:** Model Context Protocol servers for Veo, Imagen, Lyria, Chirp, and Gemini to bring creativity to your agents.
+
+**Combined Workflows**
+*   **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.
+*   **Storycraft:** An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.
+*   **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
+
+**Prompting Techniques**
+*   **Promptlandia:** A powerful web app to analyze, refine, and improve your prompts.
+*   **Veo Genetic Prompt Optimizer:** An automated system to evolve and refine high-level "metaprompts" for Veo.
+*   **Character & Item Consistency:** Workflows for maintaining consistency for characters and items across video scenes.
+
+**Image Generation & Analysis**
+*   **Virtual Try-On:** A notebook for virtually trying on outfits at scale.
+*   **Imagen Product Recontextualization:** Tools for large-scale product image recontextualization.
+*   **Arena:** A visual arena for rating and comparing images from different models.
+
+**Audio & Video**
+*   **Creative Podcast Assistant:** A notebook for creating a podcast with generative media.
+*   **Babel:** An experimental app for Chirp 3 HD voices.
+
+...and much more! For a full, detailed list of all experiments, please see the [Experiments README](./experiments/README.md). 
 
 # Deploying GenMedia Creative Studio
 
@@ -76,11 +108,10 @@ You'll need the following
 
 ### 1. Download the source code for this project
 
-Download the source and then change to this directory
+Download the source
 
 ```bash
 git clone https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git
-cd vertex-ai-creative-studio/experiments/veo-app/
 ```
 
 ### 2. Export Environment Variables
@@ -251,29 +282,8 @@ Only one environment variable is required:
 
 See the template dotenv.template file for the defaults and what environment variable options are available.
 
-### Environment-Specific Configuration
 
-The application can load different configurations for different environments (e.g., `local`, `dev`, `production`) for content on the "About" page. This is controlled by the `APP_ENV` environment variable.
-
-#### How it Works
-
-1.  **Set the `APP_ENV` Variable:** In your `.env` file, you can set the `APP_ENV` variable to the name of your current environment.
-    ```
-    # In your .env file
-    APP_ENV=local
-    ```
-
-2.  **Create a Specific Config File:** Create a JSON file in the `config/` directory that matches the environment name, following the pattern `about_content.<env>.json`. For the example above, you would create:
-    *   `config/about_content.local.json`
-
-3.  **Fallback Mechanism:**
-    *   When the application starts, it will look for a config file that matches the `APP_ENV` (e.g., `config/about_content.local.json`).
-    *   If it finds one, it will load it.
-    *   If `APP_ENV` is not set, or if the specific file does not exist, the application will safely fall back to loading the default `config/about_content.json`.
-
-This allows you to commit a generic `about_content.json` to the repository while using custom, uncommitted configurations for your specific environments. The environment-specific files (`config/about_content.*.json`) are already included in the `.gitignore` file to prevent them from being checked in.
-
-## GenMedia Creative Studio - v.next
+## GenMedia Creative Studio - Developing
 
 ### Running
 Once you have your environment variables set, either on the command line or an in .env file:
@@ -283,6 +293,9 @@ uv run main.py
 ```
 
 ### Developing
+
+Please see the [Developer's Guide](./developers_guide.md) for more information on how this application was built, including specific information about [Mesop](https://mesop-dev.github.io/mesop/) and the [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).
+
 
 Using the Mesop app in a virtual environment provides the best debugging and building experience as it supports hot reload.
 
@@ -296,51 +309,15 @@ Start the app, use the Mesop command in your python virutal environment
 mesop main.py
 ```
 
-## Navigation
+## Contributing changes
 
-The application's side navigation is dynamically generated from the `config/navigation.json` file. This approach allows for easy updates to the navigation structure without modifying Python code.
+Interested in contributing? Please open an issue describing the intended change. Additionally, bug fixes are welcome, either as pull requests or as GitHub issues.
 
-### How it Works
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute.
 
-When the application starts, it reads `config/navigation.json` and uses Pydantic models to validate the structure of the navigation items. This ensures that each entry has the required fields and correct data types, preventing runtime errors.
+## Licensing
 
-### Modifying the Navigation
-
-To add, remove, or modify a navigation link, simply edit the `config/navigation.json` file. Each item in the `pages` list is a JSON object with the following structure:
-
-*   `id` (required, integer): A unique identifier for the navigation item. The list is sorted by this value.
-*   `display` (required, string): The text that will be displayed for the link.
-*   `icon` (required, string): The name of the [Material Symbol](https://fonts.google.com/icons) to display.
-*   `route` (optional, string): The application route to navigate to (e.g., `/home`).
-*   `group` (optional, string): The group the item belongs to (e.g., `foundation`, `workflows`, `app`).
-*   `align` (optional, string): Set to `bottom` to align the item to the bottom of the navigation panel.
-
-### How to Control Navigation Items with Feature Flags
-
-You can temporarily hide or show a navigation item by using a feature flag in `navigation.json` and controlling it via your `.env` file.
-
-**1. Add the Feature Flag:**
-First, add a `feature_flag` key to the item you want to control in `config/navigation.json`. Give it a descriptive name, for example:
-
-```json
-{
-  "id": 40,
-  "display": "Motion Portraits",
-  "icon": "portrait",
-  "route": "/motion_portraits",
-  "group": "workflows",
-  "feature_flag": "MOTION_PORTRAITS_ENABLED"
-}
-```
-
-**2. Control Visibility via `.env` file:**
-Now, you can control whether this item appears in the navigation by setting the `MOTION_PORTRAITS_ENABLED` variable in your `.env` file.
-
-*   **To HIDE the page:** Either **do not** include `MOTION_PORTRAITS_ENABLED` in your `.env` file, or set it to `False`.
-*   **To SHOW the page:** Add `MOTION_PORTRAITS_ENABLED=True` to your `.env` file.
-
-The application will automatically show or hide the link when you restart it.
-
+Code in this repository is licensed under the Apache 2.0. See [LICENSE](LICENSE).
 
 
 # Disclaimer

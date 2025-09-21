@@ -22,7 +22,7 @@ cffi==1.17.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
-click==8.2.1
+click==8.3.0
     # via
     #   google-adk
     #   uvicorn
@@ -36,9 +36,9 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
-fastapi==0.116.2
+fastapi==0.117.1
     # via google-adk
-google-adk==1.13.0
+google-adk==1.14.1
     # via adk-genmedia-agent
 google-api-core==2.25.1
     # via
@@ -53,7 +53,7 @@ google-api-core==2.25.1
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-api-python-client==2.179.0
+google-api-python-client==2.182.0
     # via google-adk
 google-auth==2.40.3
     # via
@@ -127,7 +127,7 @@ grpc-google-iam-v1==0.14.2
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
-grpcio==1.74.0
+grpcio==1.75.0
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -233,7 +233,7 @@ pydantic-core==2.39.0
     # via pydantic
 pydantic-settings==2.10.1
     # via mcp
-pyparsing==3.2.4
+pyparsing==3.2.5
     # via httplib2
 python-dateutil==2.9.0.post0
     # via google-cloud-bigquery
