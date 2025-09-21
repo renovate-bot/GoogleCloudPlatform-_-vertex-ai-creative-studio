@@ -9,7 +9,7 @@ anyio==4.10.0
     #   mcp
     #   sse-starlette
     #   starlette
-authlib==1.6.3
+authlib==1.6.4
     # via google-adk
 cachetools==6.1.0
     # via google-auth
@@ -22,7 +22,7 @@ cffi==1.17.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
-click==8.2.1
+click==8.3.0
     # via
     #   google-adk
     #   uvicorn
@@ -30,15 +30,15 @@ cloudpickle==3.1.1
     # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==45.0.6
+cryptography==45.0.7
     # via authlib
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
-fastapi==0.116.1
+fastapi==0.116.2
     # via google-adk
-google-adk==1.11.0
+google-adk==1.14.1
     # via adk-genmedia-agent
 google-api-core==2.25.1
     # via
@@ -73,13 +73,13 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.110.0
+google-cloud-aiplatform==1.111.0
     # via google-adk
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
 google-cloud-audit-log==0.3.2
     # via google-cloud-logging
-google-cloud-bigquery==3.35.1
+google-cloud-bigquery==3.36.0
     # via google-cloud-aiplatform
 google-cloud-core==2.4.3
     # via
@@ -141,7 +141,7 @@ h11==0.16.0
     #   uvicorn
 httpcore==1.0.9
     # via httpx
-httplib2==0.22.0
+httplib2==0.30.0
     # via
     #   google-api-python-client
     #   google-auth-httplib2
@@ -160,7 +160,7 @@ importlib-metadata==8.7.0
     # via opentelemetry-api
 mcp==1.13.1
     # via google-adk
-numpy==2.3.2
+numpy==2.3.3
     # via shapely
 opentelemetry-api==1.36.0
     # via
@@ -221,7 +221,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==2.22 ; platform_python_implementation != 'PyPy'
     # via cffi
-pydantic==2.11.7
+pydantic==2.11.9
     # via
     #   fastapi
     #   google-adk
@@ -233,7 +233,7 @@ pydantic-core==2.39.0
     # via pydantic
 pydantic-settings==2.10.1
     # via mcp
-pyparsing==3.2.3
+pyparsing==3.2.4
     # via httplib2
 python-dateutil==2.9.0.post0
     # via google-cloud-bigquery
@@ -270,7 +270,7 @@ starlette==0.47.3
     #   fastapi
     #   mcp
     #   sse-starlette
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   fastapi
     #   google-adk

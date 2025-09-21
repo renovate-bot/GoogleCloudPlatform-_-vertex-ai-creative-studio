@@ -66,6 +66,8 @@ cloud.google.com/go/storage v1.56.0 h1:iixmq2Fse2tqxMbWhLWC9HfBj1qdxqAmiK8/eqtsL
 cloud.google.com/go/storage v1.56.0/go.mod h1:Tpuj6t4NweCLzlNbw9Z9iwxEkrSem20AetIeH/shgVU=
 cloud.google.com/go/storage v1.56.1 h1:n6gy+yLnHn0hTwBFzNn8zJ1kqWfR91wzdM8hjRF4wP0=
 cloud.google.com/go/storage v1.56.1/go.mod h1:C9xuCZgFl3buo2HZU/1FncgvvOgTAs/rnh4gF4lMg0s=
+cloud.google.com/go/storage v1.56.2 h1:DzxQ4ppJe4OSTtZLtCqscC3knyW919eNl0zLLpojnqo=
+cloud.google.com/go/storage v1.56.2/go.mod h1:C9xuCZgFl3buo2HZU/1FncgvvOgTAs/rnh4gF4lMg0s=
 cloud.google.com/go/texttospeech v1.12.1 h1:IdYOIwagXmSjBuACNC86KTB3E/b7vgwyXzYzlLLxDhM=
 cloud.google.com/go/texttospeech v1.12.1/go.mod h1:f8vrD3OXAKTRr4eL0TPjZgYQhiN6ti/tKM3i1Uub5X0=
 cloud.google.com/go/texttospeech v1.13.0 h1:oWWFQp0yFl4EJOr3opDkKH9304wUsZjgPjrTDS6S1a8=
