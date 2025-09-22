@@ -46,6 +46,7 @@ class PageState:
     all_items_loaded: bool = False
     user_filter: str = "mine"  # "all" or "mine"
     type_filters: list[str] = field(default_factory=lambda: ["all"]) # "all", "images", "videos", "audio"
+    error_filter: str = "all" # "all", "no_errors", "only_errors"
 
 
 def on_load(e: me.LoadEvent):
@@ -66,6 +67,7 @@ def on_load(e: me.LoadEvent):
             if item:
                 pagestate.selected_media_item_id = media_id
                 pagestate.show_details_dialog = True
+    yield
 
 
 def _load_media(pagestate: PageState, is_filter_change: bool = False):
@@ -87,6 +89,7 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
         sort_by_timestamp=True,
         type_filters=pagestate.type_filters,
         filter_by_user_email=user_email_to_filter,
+        error_filter=pagestate.error_filter,
     )
 
     if not new_items:
@@ -131,6 +134,13 @@ def on_type_filter_change(e: me.ButtonToggleChangeEvent):
     yield from _load_media(pagestate, is_filter_change=True)
 
 
+def on_error_filter_change(e: me.ButtonToggleChangeEvent):
+    """Handles changes to the error filter."""
+    pagestate = me.state(PageState)
+    pagestate.error_filter = e.value
+    yield from _load_media(pagestate, is_filter_change=True)
+
+
 @me.page(
     path="/test_library",
     title="GenMedia Creative Studio - Library",
@@ -169,6 +179,15 @@ def library_content():
                 ],
                 on_change=on_user_filter_change,
             )
+            me.button_toggle(
+                value=pagestate.error_filter,
+                buttons=[
+                    me.ButtonToggleButton(label="Show All", value="all"),
+                    me.ButtonToggleButton(label="No Errors", value="no_errors"),
+                    me.ButtonToggleButton(label="Only Errors", value="only_errors"),
+                ],
+                on_change=on_error_filter_change,
+            )
 
         with me.box(
             style=me.Style(
@@ -191,10 +210,22 @@ def library_content():
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
                     https_url = gcs_uri_to_https_url(gcs_uri) if gcs_uri else ""
+                    
+                    render_type = item.media_type
+                    if item.media_type == "character_consistency":
+                        render_type = "video"
+                    elif not render_type and https_url:
+                        if ".mp4" in https_url or ".webm" in https_url:
+                            render_type = "video"
+                        elif ".wav" in https_url or ".mp3" in https_url:
+                            render_type = "audio"
+                        else:
+                            render_type = "image"
+
                     media_tile(
                         key=item.id,
                         on_click=on_media_item_click,
-                        media_type=item.media_type,
+                        media_type=render_type,
                         https_url=https_url,
                         pills_json=get_pills_for_item(item, https_url),
                     )
@@ -305,27 +336,24 @@ def library_dialog(pagestate: PageState):
 
             raw_metadata_json = json.dumps(item.raw_data, indent=2, default=str) if item.raw_data else "{}"
 
-            # Infer type if missing for robustness
-            main_url_for_type_inference = primary_urls[0] if primary_urls else ""
-            effective_media_type = item.media_type
-            if not effective_media_type and main_url_for_type_inference:
-                if (
-                    ".wav" in main_url_for_type_inference
-                    or ".mp3" in main_url_for_type_inference
-                ):
-                    effective_media_type = "audio"
-                elif (
-                    ".mp4" in main_url_for_type_inference
-                    or ".webm" in main_url_for_type_inference
-                ):
-                    effective_media_type = "video"
+            # Determine the render type for the detail view
+            render_type = item.media_type
+            if item.media_type == "character_consistency":
+                render_type = "video"
+            # Fallback for items with no media_type
+            elif not render_type and primary_urls:
+                main_url_for_type_inference = primary_urls[0]
+                if ".mp4" in main_url_for_type_inference or ".webm" in main_url_for_type_inference:
+                    render_type = "video"
+                elif ".wav" in main_url_for_type_inference or ".mp3" in main_url_for_type_inference:
+                    render_type = "audio"
                 else:
-                    effective_media_type = "image"
+                    render_type = "image"
 
             media_detail_viewer(
                 id=item.id,
                 key=item.id,
-                media_type=effective_media_type,
+                media_type=render_type,
                 primary_urls_json=primary_urls_json,
                 source_urls_json=source_urls_json,
                 metadata_json=metadata_json,
