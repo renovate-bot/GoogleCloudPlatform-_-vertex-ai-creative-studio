@@ -51,10 +51,10 @@ def page():
             "route": "/test_pixie_compositor",
         },
         {
-            "title": "New Library Page",
-            "description": "A test page for the new interactive library tile.",
-            "route": "/test_library",
-        },
+            "title": "Library v1",
+            "description": "Original Library page",
+            "route": "/library_v1",
+        }
     ]
 
     with me.box(
