@@ -11,7 +11,6 @@ class MediaTile extends LitElement {
       cursor: pointer;
       border: 1px solid var(--mesop-outline-variant-color);
       height: 250px;
-      /* Add a subtle background for definition on all themes */
       background-color: rgba(255, 255, 255, 0.05);
     }
 
@@ -27,7 +26,7 @@ class MediaTile extends LitElement {
     .preview video {
       width: 100%;
       height: 100%;
-      object-fit: cover; /* Use cover to fill the tile, looks less square */
+      object-fit: cover;
     }
 
     .preview .icon {
@@ -42,7 +41,6 @@ class MediaTile extends LitElement {
       left: 0;
       right: 0;
       bottom: 0;
-      /* Add a gradient scrim for text readability on hover */
       background: linear-gradient(
         to top,
         rgba(0, 0, 0, 0.7) 0%,
@@ -53,13 +51,13 @@ class MediaTile extends LitElement {
       flex-direction: column;
       justify-content: flex-end;
       padding: 12px;
-      pointer-events: none; /* Allow clicks to pass through the overlay */
-      opacity: 0; /* Hide the entire overlay by default */
+      pointer-events: none;
+      opacity: 0;
       transition: opacity 0.2s ease-in-out;
     }
 
     .overlay > * {
-      pointer-events: auto; /* The content itself is clickable */
+      pointer-events: auto;
     }
 
     :host(:hover) .overlay {
@@ -94,6 +92,7 @@ class MediaTile extends LitElement {
       thumbnailSrc: { type: String },
       audioSrc: { type: String },
       pillsJson: { type: String },
+      clickEvent: { type: String }, // Added to receive the event handler ID
     };
   }
 
@@ -103,6 +102,7 @@ class MediaTile extends LitElement {
     this.thumbnailSrc = "";
     this.audioSrc = "";
     this.pillsJson = "[]";
+    this.clickEvent = ""; // Initialize
     this.addEventListener("click", this.handleClick);
   }
 
@@ -112,11 +112,13 @@ class MediaTile extends LitElement {
   }
 
   handleClick(e) {
-    const event = new CustomEvent("clickEvent", {
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    console.log("media-tile clicked, dispatching MesopEvent");
+    if (!this.clickEvent) {
+      console.error("Mesop event handler ID for clickEvent is not set.");
+      return;
+    }
+    // Use the correct MesopEvent to communicate back to the server
+    this.dispatchEvent(new MesopEvent(this.clickEvent, {}));
   }
 
   renderPreview() {
