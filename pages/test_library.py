@@ -29,6 +29,7 @@ from components.media_detail_viewer.media_detail_viewer import media_detail_view
 from components.media_tile.media_tile import media_tile, get_pills_for_item
 from components.page_scaffold import page_frame, page_scaffold
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
+from state.state import AppState
 
 
 @me.stateclass
@@ -43,16 +44,15 @@ class PageState:
     initial_load_complete: bool = False
     current_page: int = 1
     all_items_loaded: bool = False
+    user_filter: str = "mine"  # "all" or "mine"
+    type_filters: list[str] = field(default_factory=lambda: ["all"]) # "all", "images", "videos", "audio"
 
 
 def on_load(e: me.LoadEvent):
     """Handles page load events for permalinks and initial data fetch."""
     pagestate = me.state(PageState)
     if not pagestate.initial_load_complete:
-        pagestate.media_items = get_media_for_page(
-            page=1, media_per_page=20, sort_by_timestamp=True
-        )
-        pagestate.is_loading = False
+        yield from _load_media(pagestate, is_filter_change=True)
         pagestate.initial_load_complete = True
 
         media_id = me.query_params.get("media_id")
@@ -66,6 +66,38 @@ def on_load(e: me.LoadEvent):
             if item:
                 pagestate.selected_media_item_id = media_id
                 pagestate.show_details_dialog = True
+
+
+def _load_media(pagestate: PageState, is_filter_change: bool = False):
+    """Central function to load media based on current filters and pagination."""
+    app_state = me.state(AppState)
+    user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
+
+    if is_filter_change:
+        pagestate.current_page = 1
+        pagestate.media_items = []
+        pagestate.all_items_loaded = False
+
+    pagestate.is_loading = True
+    yield
+
+    new_items = get_media_for_page(
+        page=pagestate.current_page,
+        media_per_page=20,
+        sort_by_timestamp=True,
+        type_filters=pagestate.type_filters,
+        filter_by_user_email=user_email_to_filter,
+    )
+
+    if not new_items:
+        pagestate.all_items_loaded = True
+    else:
+        if is_filter_change:
+            pagestate.media_items = new_items
+        else:
+            pagestate.media_items.extend(new_items)
+
+    pagestate.is_loading = False
     yield
 
 
@@ -75,21 +107,28 @@ def on_load_more(e: me.WebEvent):
     if pagestate.is_loading or pagestate.all_items_loaded:
         return
 
-    pagestate.is_loading = True
-    yield
-
     pagestate.current_page += 1
-    new_items = get_media_for_page(
-        page=pagestate.current_page, media_per_page=20, sort_by_timestamp=True
-    )
+    yield from _load_media(pagestate)
 
-    if not new_items:
-        pagestate.all_items_loaded = True
+
+def on_user_filter_change(e: me.ButtonToggleChangeEvent):
+    """Handles changes to the user filter."""
+    pagestate = me.state(PageState)
+    pagestate.user_filter = e.value
+    yield from _load_media(pagestate, is_filter_change=True)
+
+
+def on_type_filter_change(e: me.ButtonToggleChangeEvent):
+    """Handles changes to the media type filter."""
+    pagestate = me.state(PageState)
+    new_filters = e.values
+    if not new_filters:
+        pagestate.type_filters = ["all"]
+    elif "all" in new_filters and len(new_filters) > 1:
+        pagestate.type_filters = [val for val in new_filters if val != "all"]
     else:
-        pagestate.media_items.extend(new_items)
-    
-    pagestate.is_loading = False
-    yield
+        pagestate.type_filters = new_filters
+    yield from _load_media(pagestate, is_filter_change=True)
 
 
 @me.page(
@@ -107,12 +146,29 @@ def library_content():
     """The main content of the library page."""
     pagestate = me.state(PageState)
 
-    if not pagestate.initial_load_complete:
-        pagestate.is_loading = True
-        return
-
     with page_frame():
         header("Library", "perm_media")
+
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(bottom=20))):
+            me.button_toggle(
+                value=pagestate.type_filters,
+                buttons=[
+                    me.ButtonToggleButton(label="All Types", value="all"),
+                    me.ButtonToggleButton(label="Images", value="images"),
+                    me.ButtonToggleButton(label="Videos", value="videos"),
+                    me.ButtonToggleButton(label="Audio", value="audio"),
+                ],
+                multiple=True,
+                on_change=on_type_filter_change,
+            )
+            me.button_toggle(
+                value=pagestate.user_filter,
+                buttons=[
+                    me.ButtonToggleButton(label="All Users", value="all"),
+                    me.ButtonToggleButton(label="Mine Only", value="mine"),
+                ],
+                on_change=on_user_filter_change,
+            )
 
         with me.box(
             style=me.Style(
@@ -122,20 +178,11 @@ def library_content():
                 width="100%",
             )
         ):
-            if pagestate.is_loading and not pagestate.media_items:
-                with me.box(
-                    style=me.Style(
-                        display="flex",
-                        justify_content="center",
-                        padding=me.Padding.all(20),
-                    )
-                ):
-                    me.progress_spinner()
-            elif not pagestate.media_items:
+            if not pagestate.media_items and not pagestate.is_loading:
                 with me.box(
                     style=me.Style(padding=me.Padding.all(20), text_align="center")
                 ):
-                    me.text("No media items found.")
+                    me.text("No media items found for the selected filters.")
             else:
                 for item in pagestate.media_items:
                     gcs_uri = (
