@@ -1,4 +1,6 @@
 import { LitElement, css, html } from "https://esm.sh/lit";
+import { SvgIcon } from "../svg_icon/svg_icon.js";
+import "../download_button/download_button.js"; // Import the download button component
 
 class MediaDetailViewer extends LitElement {
   static styles = css`
@@ -89,8 +91,36 @@ class MediaDetailViewer extends LitElement {
     }
     .metadata-value {
       font-size: 1rem;
+      white-space: pre-wrap; /* Allow wrapping for long prompts */
+      word-wrap: break-word;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--mesop-outline-variant-color);
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab[active] {
+      border-bottom-color: var(--mesop-primary-color);
+      font-weight: bold;
+    }
+    .raw-json {
+      background-color: var(--mesop-surface-container-lowest-color);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
       white-space: pre-wrap;
       word-wrap: break-word;
+      font-size: 0.9rem;
     }
   `;
 
@@ -100,7 +130,12 @@ class MediaDetailViewer extends LitElement {
       primaryUrlsJson: { type: String },
       sourceUrlsJson: { type: String },
       metadataJson: { type: String },
+      rawMetadataJson: { type: String },
+      id: { type: String },
+      editClickEvent: { type: String },
+      veoClickEvent: { type: String },
       _currentIndex: { state: true },
+      _activeTab: { state: true },
     };
   }
 
@@ -110,7 +145,12 @@ class MediaDetailViewer extends LitElement {
     this.primaryUrlsJson = "[]";
     this.sourceUrlsJson = "[]";
     this.metadataJson = "{}";
+    this.rawMetadataJson = "{}";
+    this.id = "";
+    this.editClickEvent = "";
+    this.veoClickEvent = "";
     this._currentIndex = 0;
+    this._activeTab = "details";
   }
 
   _navigate(direction) {
@@ -119,6 +159,11 @@ class MediaDetailViewer extends LitElement {
     if (newIndex >= 0 && newIndex < urls.length) {
       this._currentIndex = newIndex;
     }
+  }
+
+  _dispatch(eventName) {
+    if (!eventName) return;
+    this.dispatchEvent(new MesopEvent(eventName, {}));
   }
 
   renderPrimaryAsset() {
@@ -200,16 +245,68 @@ class MediaDetailViewer extends LitElement {
     }
   }
 
+  renderRawMetadata() {
+    try {
+      const rawMetadata = JSON.parse(this.rawMetadataJson);
+      return html`<pre class="raw-json"><code>${JSON.stringify(rawMetadata, null, 2)}</code></pre>`;
+    } catch (e) {
+      return html`<p>Could not parse raw metadata.</p>`;
+    }
+  }
+
+  renderActions() {
+    const urls = JSON.parse(this.primaryUrlsJson);
+    if (urls.length === 0) return html``;
+    const currentUrl = urls[this._currentIndex];
+    // Convert https URL back to gs:// for the download button
+    const gcsUri = currentUrl.replace("https://storage.cloud.google.com/", "gs://");
+
+    const isImage = this.mediaType === 'image';
+
+    const handleCopyLink = () => {
+      if (!navigator.clipboard) {
+        alert("Copy to clipboard is only available on secure (HTTPS) sites.");
+        return;
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set("media_id", this.id);
+      navigator.clipboard.writeText(url.href).then(() => {
+        // Optional: show a temporary success message
+        const copyButton = this.shadowRoot.querySelector("#copy-link-btn");
+        if (copyButton) {
+          const originalText = copyButton.textContent;
+          copyButton.textContent = "Copied!";
+          setTimeout(() => {
+            copyButton.textContent = originalText;
+          }, 2000);
+        }
+      });
+    };
+
+    return html`
+      <div class="actions">
+        <download-button .url=${gcsUri} .filename=${gcsUri.split("/").pop()}></download-button>
+        ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent)}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
+        ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.veoClickEvent)}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Veo</mwc-button>` : ""}
+        <mwc-button id="copy-link-btn" outlined @click=${handleCopyLink}><svg-icon slot="icon" .iconName=${'link'}></svg-icon>Copy Link</mwc-button>
+      </div>
+    `;
+  }
+
   render() {
     return html`
       <div class="container">
         <div class="left-column">
           <div class="main-asset">${this.renderPrimaryAsset()}</div>
+          ${this.renderActions()}
           ${this.renderSourceImages()}
         </div>
         <div class="right-column">
-          <h3>Metadata</h3>
-          ${this.renderMetadata()}
+          <div class="tabs">
+            <div class="tab" ?active=${this._activeTab === 'details'} @click=${() => { this._activeTab = 'details' }}>Details</div>
+            <div class="tab" ?active=${this._activeTab === 'raw'} @click=${() => { this._activeTab = 'raw' }}>Raw</div>
+          </div>
+          ${this._activeTab === 'details' ? this.renderMetadata() : this.renderRawMetadata()}
         </div>
       </div>
     `;
