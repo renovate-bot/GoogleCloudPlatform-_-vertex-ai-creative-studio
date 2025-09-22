@@ -150,7 +150,7 @@
       "id": 60,
       "display": "Library",
       "icon": "perm_media",
-      "route": "/library",
+      "route": "/library_v2",
       "group": "studio",
       "description": "Browse your generated media."
     },
