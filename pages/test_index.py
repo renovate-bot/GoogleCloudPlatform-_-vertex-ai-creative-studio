@@ -51,9 +51,14 @@ def page():
             "route": "/test_pixie_compositor",
         },
         {
-            "title": "Library v1",
-            "description": "Original Library page",
-            "route": "/library_v1",
+            "title": "Library v2",
+            "description": "New Library page",
+            "route": "/library_v2",
+        },
+        {
+            "title": "Legacy Library",
+            "description": "Legacy Library page",
+            "route": "/legacy_library",
         }
     ]
 

@@ -142,7 +142,7 @@ def on_error_filter_change(e: me.ButtonToggleChangeEvent):
 
 
 @me.page(
-    path="/library",
+    path="/library_v2",
     title="GenMedia Creative Studio - Library",
     on_load=on_load,
 )

@@ -42,8 +42,8 @@ from pages import gemini_image_generation as gemini_image_generation_page
 from pages import gemini_tts as gemini_tts_page
 from pages import home as home_page
 from pages import imagen as imagen_page
-from pages.library import page as library_page
-from pages.library_v1 import page as library_v1_page
+from pages.library_v2 import page as library_v2_page
+from pages.legacy_library import page as legacy_library_page
 from pages import lyria as lyria_page
 from pages import portraits as motion_portraits
 from pages import recontextualize as recontextualize_page
