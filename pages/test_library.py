@@ -21,16 +21,12 @@ import mesop as me
 
 from common.metadata import MediaItem, get_media_for_page
 from common.utils import gcs_uri_to_https_url
-from components.dialog import dialog
 from components.header import header
-from components.library.audio_details import audio_details
-from components.library.character_consistency_details import \
-    character_consistency_details
-from components.library.image_details import CarouselState, image_details
-from components.library.video_details import video_details
+from components.lightbox_dialog.lightbox_dialog import lightbox_dialog
+from components.library.image_details import CarouselState
+from components.media_detail_viewer.media_detail_viewer import media_detail_viewer
 from components.media_tile.media_tile import media_tile, get_pills_for_item
 from components.page_scaffold import page_frame, page_scaffold
-from components.library import grid_parts
 
 
 @me.page(path="/test_library", title="GenMedia Creative Studio - Test Library")
@@ -49,8 +45,6 @@ class PageState:
     media_items: List[MediaItem] = field(default_factory=list)
     show_details_dialog: bool = False
     selected_media_item_id: Optional[str] = None
-    dialog_instance_key: int = 0
-    dialog_selected_video_url: str = ""
     initial_load_complete: bool = False
 
 
@@ -110,6 +104,7 @@ def library_content():
 
 
 def on_media_item_click(e: me.ClickEvent):
+    print(f"on_media_item_click received event for key: {e.key}")
     pagestate = me.state(PageState)
     item_id = e.key
     item = next((i for i in pagestate.media_items if i.id == item_id), None)
@@ -117,41 +112,23 @@ def on_media_item_click(e: me.ClickEvent):
         return
 
     pagestate.selected_media_item_id = item.id
-    if item.gcs_uris:
-        pagestate.dialog_selected_video_url = item.gcs_uris[0]
-    elif item.gcsuri:
-        pagestate.dialog_selected_video_url = item.gcsuri
-    else:
-        pagestate.dialog_selected_video_url = ""
     pagestate.show_details_dialog = True
-    pagestate.dialog_instance_key += 1
     yield
+
 
 def on_close_details_dialog(e: me.ClickEvent):
     pagestate = me.state(PageState)
     carousel_state = me.state(CarouselState)
     pagestate.show_details_dialog = False
     pagestate.selected_media_item_id = None
-    pagestate.dialog_selected_video_url = ""
     carousel_state.current_index = 0
     yield
-
-def on_dialog_thumbnail_click(e: me.ClickEvent):
-    pagestate = me.state(PageState)
-    pagestate.dialog_selected_video_url = e.key
-    yield
-
-def on_click_set_permalink(e: me.ClickEvent):
-    if e.key:
-        me.query_params["media_id"] = e.key
 
 
 @me.component
 def library_dialog(pagestate: PageState):
-    with dialog(
-        key=str(pagestate.dialog_instance_key),
-        is_open=pagestate.show_details_dialog,
-        dialog_style=me.Style(max_width="80vw", width="80vw", min_width="600px"),
+    with lightbox_dialog(
+        is_open=pagestate.show_details_dialog, on_close=on_close_details_dialog
     ):
         item_to_display = None
         if pagestate.selected_media_item_id:
@@ -166,68 +143,78 @@ def library_dialog(pagestate: PageState):
 
         if item_to_display:
             item = item_to_display
-            with me.box(
-                style=me.Style(
-                    display="flex",
-                    flex_direction="column",
-                    gap=12,
-                    width="100%",
-                    max_height="80vh",
-                    overflow_y="auto",
-                    padding=me.Padding.all(24),
-                )
-            ):
-                me.text(
-                    "Media Details",
-                    style=me.Style(
-                        font_size="1.5rem",
-                        font_weight="bold",
-                        margin=me.Margin(bottom=16),
-                        color=me.theme_var("on-surface-variant"),
-                        flex_shrink=0,
-                    ),
-                )
-                if item.media_type == "video":
-                    video_details(
-                        item=item,
-                        on_click_permalink=on_click_set_permalink,
-                        selected_url=pagestate.dialog_selected_video_url,
-                        on_thumbnail_click=on_dialog_thumbnail_click,
-                    )
-                elif item.media_type == "image":
-                    image_details(item, on_click_permalink=on_click_set_permalink)
-                elif item.media_type == "audio":
-                    audio_details(item=item, on_click_permalink=on_click_set_permalink)
-                elif item.media_type == "character_consistency":
-                    character_consistency_details(
-                        item=item, on_click_permalink=on_click_set_permalink
-                    )
-                else:
-                    me.text("Details for this media type are not yet implemented.")
 
-                if item.raw_data:
-                    with me.expansion_panel(
-                        key="raw_metadata_panel_dialog",
-                        title="Firestore Metadata",
-                        description=item.id or "N/A",
-                        icon="dataset",
-                    ):
-                        try:
-                            json_string = json.dumps(
-                                item.raw_data, indent=2, default=str
-                            )
-                            me.markdown(f"```json\n{json_string}\n```")
-                        except Exception:
-                            me.text("Could not display raw data (serialization error).")
+            # Prepare data for the detail viewer component
+            primary_urls = []
+            if item.gcs_uris:
+                primary_urls = [gcs_uri_to_https_url(uri) for uri in item.gcs_uris]
+            elif item.gcsuri:
+                primary_urls.append(gcs_uri_to_https_url(item.gcsuri))
+            primary_urls_json = json.dumps(primary_urls)
+
+            source_urls = []
+            if item.reference_image:
+                source_urls.append(gcs_uri_to_https_url(item.reference_image))
+            if item.last_reference_image:
+                source_urls.append(
+                    gcs_uri_to_https_url(item.last_reference_image)
+                )
+            source_urls_json = json.dumps(source_urls)
+
+            metadata_dict = {
+                "Prompt": getattr(item, "prompt", None),
+                "Model": item.raw_data.get("model") if item.raw_data else None,
+                "Timestamp": getattr(item, "timestamp", None),
+                "User": getattr(item, "user_email", None),
+                "Generation Time (s)": getattr(item, "generation_time", None),
+                "Aspect Ratio": getattr(item, "aspect", None),
+                "Duration (s)": getattr(item, "duration", None),
+            }
+            # Filter out keys where the value is None
+            filtered_metadata = {
+                k: v for k, v in metadata_dict.items() if v is not None
+            }
+            metadata_json = json.dumps(filtered_metadata, default=str)
+
+            # Infer type if missing for robustness
+            main_url_for_type_inference = primary_urls[0] if primary_urls else ""
+            effective_media_type = item.media_type
+            if not effective_media_type and main_url_for_type_inference:
+                if (
+                    ".wav" in main_url_for_type_inference
+                    or ".mp3" in main_url_for_type_inference
+                ):
+                    effective_media_type = "audio"
+                elif (
+                    ".mp4" in main_url_for_type_inference
+                    or ".webm" in main_url_for_type_inference
+                ):
+                    effective_media_type = "video"
                 else:
-                    me.text("Raw Firestore data not available.")
+                    effective_media_type = "image"
+
+            media_detail_viewer(
+                key=item.id,
+                media_type=effective_media_type,
+                primary_urls_json=primary_urls_json,
+                source_urls_json=source_urls_json,
+                metadata_json=metadata_json,
+            )
+
+            if item.raw_data:
+                with me.expansion_panel(
+                    key="raw_metadata_panel_dialog",
+                    title="Firestore Metadata",
+                    description=item.id or "N/A",
+                    icon="dataset",
+                ):
+                    try:
+                        json_string = json.dumps(item.raw_data, indent=2, default=str)
+                        me.markdown(f"```json\n{json_string}\n```")
+                    except Exception:
+                        me.text("Could not display raw data (serialization error).")
+            else:
+                me.text("Raw Firestore data not available.")
         else:
             with me.box(style=me.Style(padding=me.Padding.all(16))):
                 me.text("No media item selected or found for the given ID.")
-
-        me.button(
-            "Close",
-            on_click=on_close_details_dialog,
-            type="flat",
-            style=me.Style(margin=me.Margin(top=24)),
-        )
