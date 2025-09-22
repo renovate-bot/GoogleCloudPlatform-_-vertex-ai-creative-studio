@@ -25,6 +25,10 @@ def media_detail_viewer(
     primary_urls_json: str,
     source_urls_json: str,
     metadata_json: str,
+    id: str,
+    raw_metadata_json: str,
+    on_edit_click: typing.Callable[[me.WebEvent], None] | None = None,
+    on_veo_click: typing.Callable[[me.WebEvent], None] | None = None,
     key: str | None = None,
 ):
     """Defines the API for the media_detail_viewer web component."""
@@ -36,6 +40,13 @@ def media_detail_viewer(
             "primaryUrlsJson": primary_urls_json,
             "sourceUrlsJson": source_urls_json,
             "metadataJson": metadata_json,
+            "id": id,
+            "rawMetadataJson": raw_metadata_json,
+        },
+        events={
+            "editClickEvent": on_edit_click,
+            "veoClickEvent": on_veo_click,
         },
     )
+
 

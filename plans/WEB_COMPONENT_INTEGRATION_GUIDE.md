@@ -1,284 +1,132 @@
-# Guide: Integrating Interactive Lit Web Components in a FastAPI-based Mesop App
+# Guide: Integrating Lit Web Components in Mesop
 
-This document provides a comprehensive, definitive guide to correctly implementing and debugging custom, **interactive** Lit-based Web Components within a Mesop application that is served by a custom FastAPI server.
+This document provides definitive patterns for implementing custom, interactive Lit-based Web Components within this project. The lessons below were learned through the process of building the `media_tile` and `media_detail_viewer` components.
 
-**Last Updated:** 2025-08-10
+**The Golden Rule: Data In, Events Out**
+A web component is a "black box" to the Mesop server. Communication follows a strict contract:
+-   **Data In:** Python passes data via **simple, serializable properties** (strings, JSON).
+-   **Events Out:** The component sends events back to Python using `MesopEvent`.
 
-## 1. The Core Challenge: Two-Way Communication
+---
 
-Integrating a custom JavaScript component is straightforward when it only needs to receive data from Python. The challenge arises when the component needs to send events *back* to Python (e.g., from a click or a scroll event). This two-way communication requires a specific, non-obvious implementation pattern.
+## 1. The Definitive Pattern: The `media_tile` Example
 
-This guide outlines the definitive, working patterns discovered through a rigorous debugging process.
+This pattern is the foundation for all interactive components in this project.
 
-## 2. The Definitive Pattern: A Complete Example
+### A. The Lit Component (`media_tile.js`)
 
-Here is a complete, working example of an interactive component. The following sections will break down why each part is essential.
-
-### A. The Lit Component (`.js`)
+The JavaScript component handles **all rendering and UI logic**. It receives simple data and uses it to build the HTML.
 
 ```javascript
-// components/my_interactive_component.js
 import { LitElement, html } from 'https://esm.sh/lit';
+import { SvgIcon } from '../svg_icon/svg_icon.js'; // Convention: Use local SVG component
 
-class MyInteractiveComponent extends LitElement {
-  static properties = {
-    // 1. Receives data from Python.
-    items: { type: Array },
-    // 2. Receives a unique handler ID string from the Mesop framework.
-    itemClickEvent: { type: String },
-  };
+class MediaTile extends LitElement {
+  // Convention: Use static getter for properties
+  static get properties() {
+    return {
+      mediaType: { type: String },
+      thumbnailSrc: { type: String },
+      pillsJson: { type: String }, // Data is passed as a JSON string
+      clickEvent: { type: String },
+    };
+  }
 
-  // Use connectedCallback for initialization logic that needs Mesop.
-  connectedCallback() {
-    super.connectedCallback();
-    // Now it's safe to dispatch events.
+  constructor() {
+    super();
+    this.addEventListener('click', this._handleClick);
   }
 
   render() {
+    const pills = JSON.parse(this.pillsJson || '[]');
+    // All rendering logic is client-side
     return html`
-      <ul>
-        ${this.items.map(
-          (item) => html`<li @click=${() => this._handleClick(item)}>${item.name}</li>`
-        )}
-      </ul>
+      <div class="thumbnail">
+        ${this.mediaType === 'image' ? html`<img .src=${this.thumbnailSrc}>` : ''}
+        ${this.mediaType === 'audio' ? html`<svg-icon .iconName=${'music_note'}></svg-icon>` : ''}
+      </div>
+      <div class="overlay">
+        ${pills.map((p) => html`<div class="pill">${p.label}</div>`)}
+      </div>
     `;
   }
 
-  _handleClick(item) {
-    // 3. Check if the handler ID property was passed from Python.
-    if (!this.itemClickEvent) {
-      console.error("Mesop event handler ID for itemClickEvent is not set.");
-      return;
-    }
-    // 4. Dispatch a MesopEvent, using the handler ID as the event name.
-    // The MesopEvent class is globally available in the browser.
-    this.dispatchEvent(new MesopEvent(this.itemClickEvent, { clicked_item: item }));
+  _handleClick() {
+    if (!this.clickEvent) return;
+    // Convention: Use MesopEvent for all communication to Python
+    this.dispatchEvent(new MesopEvent(this.clickEvent, {}));
   }
 }
-customElements.define("my-interactive-component", MyInteractiveComponent);
+customElements.define("media-tile", MediaTile);
 ```
 
-### B. The Python Wrapper (`.py`)
+### B. The Python Wrapper (`media_tile.py`)
+
+The Python wrapper's job is to **prepare and serialize data**.
 
 ```python
-# components/my_interactive_component.py
 import mesop as me
 import typing
+import json
 
-@me.web_component(path="./my_interactive_component.js")
-def my_interactive_component(
+@me.web_component(path="./media_tile.js")
+def media_tile(
     *,
-    items: list[dict],
-    # 1. Define the event handler prop that the parent will provide.
-    on_item_click: typing.Callable[[me.WebEvent], None],
-    key: str | None = None,
+    item: MediaItem, // API can accept a complex object...
+    on_click: typing.Callable[[me.WebEvent], None],
 ):
-  """Defines the API for the interactive web component."""
-  # 2. Render the component, passing properties and the event mapping.
+  # ...but it must prepare simple properties for the web component.
   return me.insert_web_component(
-    key=key,
-    name="my-interactive-component", # Matches customElements.define()
-    properties={"items": items},
+    name="media-tile",
+    properties={
+      "mediaType": item.media_type,
+      "thumbnailSrc": gcs_uri_to_https_url(item.gcsuri),
+      "pillsJson": json.dumps(item.pills), // Serialize complex data
+    },
     events={
-      # 3. The key MUST be the exact name of the JS property.
-      "itemClickEvent": on_item_click,
+      "clickEvent": on_click, // Maps Python handler to JS property
     },
   )
 ```
 
-### C. The Parent Component (Usage)
+---
 
-```python
-# pages/my_page.py
-import mesop as me
-from .components.my_interactive_component import my_interactive_component
+## 2. Key Concepts & Best Practices
 
-@me.stateclass
-class State:
-    last_clicked: str = ""
+### A. Data Serialization is Mandatory
 
-@me.page(path="/my_page")
-def my_page():
-    state = me.state(State)
+-   **Problem:** Passing a Python `dataclass` instance as a property fails silently. The JS component receives `null`.
+-   **Solution:** The Python wrapper **must** transform complex objects into simple types. For lists or dicts, serialize them to a JSON string and parse the JSON in JavaScript. This is the pattern used by `media_tile` and `media_detail_viewer`.
 
-    # 1. Define the handler function.
-    def handle_click(e: me.WebEvent):
-        # 2. Access the data from the `e.value` attribute.
-        state.last_clicked = e.value["clicked_item"]["name"]
-        yield
+### B. Event Handling: `MesopEvent` is Required
 
-    # 3. Call the component, passing the handler to the `on_...` prop.
-    my_interactive_component(
-        items=[{"name": "Apple"}, {"name": "Banana"}],
-        on_item_click=handle_click,
-    )
-    if state.last_clicked:
-        me.text(f"You clicked: {state.last_clicked}")
-```
+-   **Problem:** Using a standard `CustomEvent` in JavaScript will not trigger a Python event handler.
+-   **Solution:** You **must** use the `MesopEvent` class, which is globally available. The first argument to `new MesopEvent()` must be the handler ID string that Mesop passes into the component's `events` property (e.g., `this.clickEvent`).
+-   **Reference:** `interactive_tile.js`, `pixie_compositor.js`, `media_tile.js`.
 
-## 3. Key Concepts & Lessons Learned
+### C. Client-Side Component Composition
 
-### A. Event Naming: The `events` Dictionary
-
-This is the most critical and subtle part of the integration.
-
--   The **key** in the `events` dictionary in the Python wrapper (e.g., `"itemClickEvent"`) must **exactly match** the property name in your Lit component that will receive the event handler ID.
--   The convention is to name the property in your Lit component `eventNameEvent`.
--   The `on_event_name` parameter in the Python wrapper function is what receives the handler from the parent page.
-
-Failure to follow this will result in the event handler ID property being `undefined` in your web component, and events will not be sent to the backend.
-
-### B. Lifecycle Timing: `connectedCallback` is Essential
-
-If your web component needs to perform initialization that communicates with the backend (e.g., dispatching a "load complete" event) or depends on a Mesop-provided global (like `MesopEvent`), you **must** delay this logic.
-
--   **DO NOT** perform this initialization in the component's `constructor()`.
--   **DO** perform this initialization in the `connectedCallback()` lifecycle method.
-
-`connectedCallback()` is guaranteed to run only after the component is attached to the DOM, by which time the Mesop framework has fully initialized and injected the necessary globals and properties.
-
-### C. Loading JavaScript Libraries (UMD, Workers, etc.)
-
--   **Web Worker Same-Origin Policy:** A script running on your server **cannot** load a Web Worker script from a different origin (e.g., a CDN). This is a fundamental browser security policy. Any library that uses Web Workers **must** be served from your own application.
--   **Loading UMD Scripts:** UMD scripts often create global variables (e.g., `window.FFmpegWASM`) instead of using standard ES module exports. You cannot use `import { ... } from ...` with these files. The correct way to load them from within a Lit component is to manually create a `<script>` tag and append it to the document, which executes it in the global scope.
-
-**Example:**
-```javascript
-  _loadScript(url) {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = url;
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-
-  async loadMyLibrary() {
-    await this._loadScript('/path/to/my-library.umd.js');
-    // Now access the library via the global window object
-    const myLibrary = window.MyLibraryGlobal;
-    // ...
-  }
-```
-
-### D. Accessing GCS Resources: Signed URLs are Essential
-
--   **The Problem:** Directly fetching GCS URLs (especially `gs://` or `https://storage.cloud.google.com`) from a web component will fail due to CORS and redirect issues, even if the bucket is public.
--   **The Solution:** The frontend must not use GCS URIs directly. Instead, create a FastAPI endpoint (e.g., `/api/get_signed_url`) that uses the Python GCS client library to generate a short-lived, signed URL. The web component then fetches this signed URL, which is designed for public, temporary access and will not have cross-origin issues.
--   **Local Development vs. Cloud Run (IAP):** The implementation of the signed URL endpoint needs to be environment-aware.
-    -   **Local:** Your local Application Default Credentials (ADC) must be configured to impersonate the application's service account using `gcloud auth application-default login --impersonate-service-account=<SA_EMAIL>`.
-    -   **Cloud Run (with IAP):** When deployed with IAP, the endpoint receives the end-user's identity, not the service account's. The code must explicitly impersonate the service account to get a credential with a private key for signing.
-
-**Robust, Environment-Aware Endpoint:**
-```python
-from google.auth import impersonated_credentials
-import google.auth
-
-@app.get("/api/get_signed_url")
-def get_signed_url(gcs_uri: str):
-    try:
-        storage_client = storage.Client()
-        # On Cloud Run, the default credentials are for the service account,
-        # but they don't have a private key. We need to impersonate.
-        if os.environ.get("K_SERVICE"):
-            source_credentials, project = google.auth.default()
-            storage_client = storage.Client(
-                credentials=impersonated_credentials.Credentials(
-                    source_credentials=source_credentials,
-                    target_principal=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
-                    target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
-                )
-            )
-
-        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-
-        signed_url = blob.generate_signed_url(
-            version="v4",
-            expiration=datetime.timedelta(minutes=15),
-            method="GET",
-            service_account_email=os.environ.get("SERVICE_ACCOUNT_EMAIL"),
-        )
-        return {"signed_url": signed_url}
-    except Exception as e:
-        return {"error": str(e)}, 500
-```
-
-### E. Content Security Policy (CSP)
-
-A global CSP, implemented as a FastAPI middleware in `main.py`, is the most robust way to manage security policies. It must be configured to allow all the resources your application and its components need.
-
-**Example Policy Directives:**
-```python
-"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh; "
-"connect-src 'self' https://storage.googleapis.com https://*.googleusercontent.com; "
-"media-src 'self' blob: https://storage.googleapis.com https://*.googleusercontent.com; "
-"worker-src 'self' blob:;"
-```
-
-### F. Theming and Styling (Passing CSS Variables)
-
--   **The Problem:** CSS Custom Properties (variables) from the main document, like Mesop's theme colors (`--mesop-theme-secondary-container`), may not reliably penetrate the Shadow DOM boundary of a web component. Relying on `var(...)` in your component's stylesheet can fail, causing it to use fallback values and appear visually inconsistent with the rest of the application.
-
--   **The Solution:** The most robust pattern is to pass the CSS variable *names* from Python into the web component as string properties. The component then uses these properties in inline styles, which guarantees the browser can resolve them against the main document's stylesheet.
-
-**Example Implementation:**
-
-1.  **Update the Python Wrapper (`.py`):** Add properties to accept the theme variable strings.
-
-    ```python
-    @me.web_component(path="./interactive_tile.js")
-    def interactive_tile(
-        # ... other properties
-        default_bg_color: str = "",
-        hover_bg_color: str = "",
-    ):
-        return me.insert_web_component(
-            # ...
-            properties={
-                # ... other properties
-                "defaultBgColor": default_bg_color,
-                "hoverBgColor": hover_bg_color,
-            },
-        )
-    ```
-
-2.  **Update the Parent/Usage (`.py`):** When you call the component, use `me.theme_var()` to pass the variable names.
-
-    ```python
-    import mesop.components.interactive_tile.interactive_tile as interactive_tile
-
-    interactive_tile.interactive_tile(
-        # ...
-        default_bg_color=me.theme_var("secondary-container"),
-        hover_bg_color=me.theme_var("tertiary-container"),
-    )
-    ```
-
-3.  **Update the Lit Component (`.js`):** Receive the properties and use them to dynamically build an inline style object.
-
+-   **Pattern:** Web components can be composed directly within other web components on the client side. This is more efficient than trying to compose them on the server.
+-   **Example:** The `media_detail_viewer` directly includes the `<download-button>` in its template, passing the required properties.
     ```javascript
-    class InteractiveTile extends LitElement {
-      static properties = {
-        // ...
-        defaultBgColor: { type: String },
-        hoverBgColor: { type: String },
-      };
-
-      render() {
-        const cardStyles = {};
-        // Apply the passed-in CSS variable name to the inline style.
-        cardStyles.backgroundColor = this.isHovered ? this.hoverBgColor : this.defaultBgColor;
-
-        return html`
-          <div class="card" style=${styleMap(cardStyles)}>
-            ...
-          </div>
-        `;
-      }
+    // media_detail_viewer.js
+    import './download_button/download_button.js';
+    // ...
+    render() {
+      return html`
+        <download-button .url=${this.gcsUri}></download-button>
+      `;
     }
     ```
 
-This pattern bypasses the Shadow DOM inheritance issue entirely and ensures visual consistency.
+### D. Accessing GCS Resources via Signed URLs
+
+-   **Problem:** A web component cannot fetch `gs://` URIs directly.
+-   **Solution:** The component must call a backend API endpoint (e.g., `/api/get_signed_url`) that uses the Python GCS library to generate a temporary, signed URL. 
+-   **Reference:** The `download_button.js` component is the canonical example of this pattern.
+
+### E. Follow Established Project Conventions
+
+-   **JS Imports:** Always import from the full CDN URL: `import { LitElement } from 'https://esm.sh/lit';`
+-   **JS Properties:** Always use the static getter: `static get properties() { return { ... } }`. Do not use `@property` decorators.
+-   **Icons:** Do not use Material Symbol font ligatures (e.g., `<span class="icon">music_note</span>`). Use the project's custom `<svg-icon>` component (`<svg-icon .iconName=${'music_note'}></svg-icon>`), which renders hardcoded SVG paths.
