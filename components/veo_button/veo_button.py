@@ -16,8 +16,17 @@
 
 import mesop as me
 
+from common.analytics import log_ui_click
+from state.state import AppState
+
 def on_send_to_veo(e: me.ClickEvent):
     """Navigates to the Veo page with the selected image as a query parameter."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
     gcs_uri = e.key
     me.navigate(
         url="/veo",

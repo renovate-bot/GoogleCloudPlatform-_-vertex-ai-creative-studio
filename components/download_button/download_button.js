@@ -36,10 +36,6 @@ class DownloadButton extends LitElement {
   }
 
   static styles = css`
-    mwc-button {
-      --mdc-theme-primary: var(--mdc-text-button-label-text-color, var(--mat-sys-color-on-surface));
-      --mdc-typography-button-text-transform: none;
-    }
     .error-message {
         color: var(--mat-sys-color-error, #B00020);
         font-size: 12px;
@@ -105,6 +101,7 @@ class DownloadButton extends LitElement {
 
     return html`
       <mwc-button
+        outlined
         @click="${this._handleDownload}"
         ?disabled="${this.loading}"
       >

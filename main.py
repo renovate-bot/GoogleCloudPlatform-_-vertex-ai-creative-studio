@@ -24,7 +24,7 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from google.auth import impersonated_credentials
 from google.cloud import storage
@@ -72,6 +72,11 @@ class UserInfo(BaseModel):
 # FastAPI server with Mesop
 router = APIRouter()
 app.include_router(router)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse("assets/favicon.ico")
 
 # Define allowed origins for CORS
 app.add_middleware(

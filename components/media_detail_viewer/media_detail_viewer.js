@@ -7,6 +7,7 @@ class MediaDetailViewer extends LitElement {
     :host {
       display: block;
       width: 100%;
+      --mdc-theme-primary: #1976d2;
     }
     .container {
       display: flex;
@@ -161,9 +162,9 @@ class MediaDetailViewer extends LitElement {
     }
   }
 
-  _dispatch(eventName) {
+  _dispatch(eventName, data) {
     if (!eventName) return;
-    this.dispatchEvent(new MesopEvent(eventName, {}));
+    this.dispatchEvent(new MesopEvent(eventName, data));
   }
 
   renderPrimaryAsset() {
@@ -231,15 +232,25 @@ class MediaDetailViewer extends LitElement {
   renderMetadata() {
     try {
       const metadata = JSON.parse(this.metadataJson);
-      return Object.entries(metadata).map(
-        ([key, value]) =>
-          html`
-            <div class="metadata-item">
-              <span class="metadata-key">${key}</span>
-              <span class="metadata-value">${value}</span>
-            </div>
-          `
-      );
+      return Object.entries(metadata).map(([key, value]) => {
+        console.log("key:", key, "value:", value, "typeof value:", typeof value);
+        let formattedValue = value;
+        if (key === 'Generation Time (s)' && value !== null && !isNaN(parseFloat(value))) {
+          console.log("is number:", !isNaN(parseFloat(value)));
+          formattedValue = Math.round(value * 100) / 100 + ' seconds';
+        } else if (key === 'Timestamp' && value) {
+          const date = new Date(value);
+          if (!isNaN(date)) {
+            formattedValue = date.toLocaleString();
+          }
+        }
+        return html`
+          <div class="metadata-item">
+            <span class="metadata-key">${key}</span>
+            <span class="metadata-value">${formattedValue}</span>
+          </div>
+        `;
+      });
     } catch (e) {
       return html`<p>Could not parse metadata.</p>`;
     }
@@ -248,7 +259,13 @@ class MediaDetailViewer extends LitElement {
   renderRawMetadata() {
     try {
       const rawMetadata = JSON.parse(this.rawMetadataJson);
-      return html`<pre class="raw-json"><code>${JSON.stringify(rawMetadata, null, 2)}</code></pre>`;
+      return html`
+        <div class="metadata-item">
+          <span class="metadata-key">Firestore Document ID</span>
+          <span class="metadata-value">${this.id}</span>
+        </div>
+        <pre class="raw-json"><code>${JSON.stringify(rawMetadata, null, 2)}</code></pre>
+      `;
     } catch (e) {
       return html`<p>Could not parse raw metadata.</p>`;
     }
@@ -286,8 +303,8 @@ class MediaDetailViewer extends LitElement {
     return html`
       <div class="actions">
         <download-button .url=${gcsUri} .filename=${gcsUri.split("/").pop()}></download-button>
-        ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent)}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
-        ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.veoClickEvent)}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Veo</mwc-button>` : ""}
+                ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
+        ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.veoClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Veo</mwc-button>` : ""}
         <mwc-button id="copy-link-btn" outlined @click=${handleCopyLink}><svg-icon slot="icon" .iconName=${'link'}></svg-icon>Copy Link</mwc-button>
       </div>
     `;
