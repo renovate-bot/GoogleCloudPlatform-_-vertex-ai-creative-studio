@@ -19,9 +19,10 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import mesop as me
+from common.analytics import log_ui_click
 
 from common.metadata import MediaItem, get_media_for_page, get_media_item_by_id
-from common.utils import gcs_uri_to_https_url
+from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
 from components.header import header
 from components.lightbox_dialog.lightbox_dialog import lightbox_dialog
 from components.library.image_details import CarouselState
@@ -260,26 +261,26 @@ def on_close_details_dialog(e: me.ClickEvent):
     yield
 
 
-def handle_edit_click(e: me.ClickEvent):
-    pagestate = me.state(PageState)
-    item = next(
-        (i for i in pagestate.media_items if i.id == pagestate.selected_media_item_id),
-        None,
+def handle_edit_click(e: me.WebEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="media_detail_viewer_edit_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
     )
-    if item:
-        gcs_uri = item.gcs_uris[0] if item.gcs_uris else item.gcsuri
-        me.navigate("/gemini_image_generation", query_params={"image_uri": gcs_uri})
+    gcs_uri = https_url_to_gcs_uri(e.value["url"])
+    me.navigate("/gemini_image_generation", query_params={"image_uri": gcs_uri})
 
 
-def handle_veo_click(e: me.ClickEvent):
-    pagestate = me.state(PageState)
-    item = next(
-        (i for i in pagestate.media_items if i.id == pagestate.selected_media_item_id),
-        None,
+def handle_veo_click(e: me.WebEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="media_detail_viewer_veo_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
     )
-    if item:
-        gcs_uri = item.gcs_uris[0] if item.gcs_uris else item.gcsuri
-        me.navigate("/veo", query_params={"image_uri": gcs_uri})
+    gcs_uri = https_url_to_gcs_uri(e.value["url"])
+    me.navigate("/veo", query_params={"image_uri": gcs_uri})
 
 
 @me.component
