@@ -50,11 +50,16 @@ def page():
             "description": "A test page for the Pixie Compositor web component.",
             "route": "/test_pixie_compositor",
         },
-         {
-            "title": "Pixie Compositor Videos",
-            "description": "A test page for the Pixie Compositor videos component.",
-            "route": "/pixie_compositor_videos",
+        {
+            "title": "Library v2",
+            "description": "New Library page",
+            "route": "/library_v2",
         },
+        {
+            "title": "Legacy Library",
+            "description": "Legacy Library page",
+            "route": "/legacy_library",
+        }
     ]
 
     with me.box(
