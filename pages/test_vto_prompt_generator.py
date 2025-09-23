@@ -24,6 +24,8 @@ from common.metadata import add_media_item
 from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
+from components.page_scaffold import on_theme_load
+from components.theme_manager.theme_manager import theme_manager
 from models.image_models import generate_virtual_models
 from models.virtual_model_generator import DEFAULT_PROMPT, VirtualModelGenerator
 from state.state import AppState

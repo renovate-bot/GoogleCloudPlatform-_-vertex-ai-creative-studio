@@ -23,6 +23,13 @@ from components.styles import (
     SIDENAV_MAX_WIDTH,
     SIDENAV_MIN_WIDTH,
 )
+from components.theme_manager.theme_manager import theme_manager
+
+def on_theme_load(e: me.WebEvent):
+    s = me.state(AppState)
+    s.theme_mode = e.value["theme"]
+    me.set_theme_mode(s.theme_mode)
+    yield
 
 
 @me.content_component
@@ -32,6 +39,8 @@ def page_scaffold(page_name: str):
     app_state = me.state(AppState)
     app_state.current_page = page_name
     log_page_view(page_name=page_name, session_id=app_state.session_id)
+
+    theme_manager(theme=app_state.theme_mode, on_theme_load=on_theme_load)
 
     sidenav("")
 

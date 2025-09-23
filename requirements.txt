@@ -113,7 +113,7 @@ google-cloud-storage==2.19.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
-google-cloud-texttospeech==2.29.0
+google-cloud-texttospeech==2.30.0
     # via veo-app (pyproject.toml)
 google-crc32c==1.7.1
     # via
@@ -401,11 +401,11 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.5.0
     # via requests
-uvicorn==0.35.0
+uvicorn==0.36.0
     # via veo-app (pyproject.toml)
 watchdog==6.0.0
     # via mesop
-wcwidth==0.2.13
+wcwidth==0.2.14
     # via prompt-toolkit
 websockets==15.0.1
     # via google-genai
