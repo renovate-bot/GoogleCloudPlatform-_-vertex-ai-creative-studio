@@ -234,6 +234,8 @@ app.mount(
     name="assets",
 )
 
+
+
 app.mount(
     "/",
     WSGIMiddleware(

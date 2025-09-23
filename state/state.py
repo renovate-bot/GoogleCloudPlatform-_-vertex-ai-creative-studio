@@ -21,7 +21,7 @@ class AppState:
     """Mesop Application State"""
 
     sidenav_open: bool = False
-    theme_mode: str = "light"
+    theme_mode: str = "dark"
     user_email: str = "anonymous@google.com"
     session_id: str = ""
     current_page: str = ""

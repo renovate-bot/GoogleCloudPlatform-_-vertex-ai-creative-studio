@@ -14,6 +14,9 @@
 
 import mesop as me
 from components.header import header
+from components.page_scaffold import on_theme_load
+from components.theme_manager.theme_manager import theme_manager
+from state.state import AppState
 
 
 def on_navigate(e: me.ClickEvent):
@@ -24,6 +27,9 @@ def on_navigate(e: me.ClickEvent):
     path="/labs",
 )
 def page():
+    app_state = me.state(AppState)
+    theme_manager(theme=app_state.theme_mode, on_theme_load=on_theme_load)
+
     test_pages = [
         {
             "title": "VTO Model Composite Card Generator",
