@@ -48,11 +48,11 @@ from components.library.video_grid_item import video_grid_item
 from components.library.grid_parts import render_video_pills, render_image_pills, render_audio_pills, render_video_preview, render_image_preview, render_audio_preview
 from state.state import AppState
 
-@me.page(path="/library", title="GenMedia Creative Studio - Library")
+@me.page(path="/legacy_library", title="GenMedia Creative Studio - Library (Legacy)")
 def library_page():
     """Main Page."""
     state = me.state(AppState)
-    with page_scaffold(page_name="library"):  # pylint: disable=not-context-manager
+    with page_scaffold(page_name="library_v1"):  # pylint: disable=not-context-manager
         library_content(state)
 
 
