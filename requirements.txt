@@ -4,7 +4,7 @@ absl-py==2.3.1
     # via mesop
 annotated-types==0.7.0
     # via pydantic
-anyio==4.10.0
+anyio==4.11.0
     # via
     #   google-genai
     #   httpx
@@ -70,7 +70,7 @@ google-api-core==2.25.1
     #   google-cloud-resource-manager
     #   google-cloud-storage
     #   google-cloud-texttospeech
-google-api-python-client==2.182.0
+google-api-python-client==2.183.0
     # via firebase-admin
 google-auth==2.40.3
     # via
@@ -233,7 +233,7 @@ numpy==2.3.3
     #   scipy
     #   shapely
     #   tifffile
-opencv-python==4.12.0.88
+opencv-python==4.11.0.86
     # via veo-app (pyproject.toml)
 opentelemetry-api==1.37.0
     # via google-cloud-logging
@@ -314,7 +314,7 @@ pydantic==2.11.9
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.39.0
+pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via
@@ -401,7 +401,7 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.5.0
     # via requests
-uvicorn==0.36.1
+uvicorn==0.37.0
     # via veo-app (pyproject.toml)
 watchdog==6.0.0
     # via mesop
