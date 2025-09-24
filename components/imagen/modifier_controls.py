@@ -130,8 +130,19 @@ def modifier_controls():
             )
 
 
+from common.analytics import log_ui_click
+from state.state import AppState
+
+
 def on_selection_change_modifier(e: me.SelectSelectionChangeEvent):
     """Handles selection change for image style modifiers."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id=f"imagen_modifier_{e.key}",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     print(f"Modifier changed: {e.key} = {e.value}")
     if hasattr(state, e.key):  # Ensure the key corresponds to a state attribute

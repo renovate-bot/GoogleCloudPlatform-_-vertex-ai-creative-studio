@@ -14,6 +14,8 @@
 
 import mesop as me
 
+from common.analytics import log_ui_click
+from state.state import AppState
 from state.imagen_state import PageState
 from config.imagen_models import get_imagen_model_config
 
@@ -77,11 +79,25 @@ def advanced_controls():
 
 def on_blur_image_negative_prompt(e: me.InputBlurEvent):
     """Negative image prompt blur event."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="imagen_negative_prompt",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     me.state(PageState).image_negative_prompt_input = e.value
 
 
 def on_select_image_count(e: me.SelectSelectionChangeEvent):
     """Handles selection change for the number of images."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="imagen_image_count",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     try:
         state.imagen_image_count = int(e.value)
@@ -94,11 +110,25 @@ def on_select_image_count(e: me.SelectSelectionChangeEvent):
 
 def on_advanced_toggle(e: me.ExpansionPanelToggleEvent):
     """Toggles visibility of advanced controls."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="imagen_advanced_toggle",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"opened": e.opened},
+    )
     me.state(PageState).show_advanced = e.opened
 
 
 def on_blur_imagen_seed(e: me.InputBlurEvent):
     """Handles blur event for the image seed input."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="imagen_seed",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     try:
         seed_value = int(e.value)
