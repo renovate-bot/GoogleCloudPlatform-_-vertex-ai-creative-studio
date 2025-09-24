@@ -18,6 +18,8 @@ from dataclasses import field
 import json
 
 import mesop as me
+
+from common.analytics import log_ui_click, track_click
 from google.genai import types
 from google.genai.types import GenerateContentConfig
 from tenacity import (
@@ -119,9 +121,7 @@ def motion_portraits_content(app_state: me.state):
     ]
     video_length_options = [
         me.SelectOption(label=f"{i} seconds", value=str(i))
-        for i in range(
-            selected_model_config.min_duration, selected_model_config.max_duration + 1
-        )
+        for i in (selected_model_config.supported_durations or range(selected_model_config.min_duration, selected_model_config.max_duration + 1))
     ]
     auto_enhance_disabled = not selected_model_config.supports_prompt_enhancement
 
@@ -485,95 +485,7 @@ def motion_portraits_content(app_state: me.state):
                         )
 
 
-def on_model_selection_change(e: me.SelectSelectionChangeEvent):
-    """Handles model selection change."""
-    state = me.state(PageState)
-    state.veo_model = e.value
-
-    selected_model_config = get_veo_model_config(state.veo_model)
-
-    # Validate aspect ratio
-    if state.aspect_ratio not in selected_model_config.supported_aspect_ratios:
-        state.aspect_ratio = selected_model_config.supported_aspect_ratios[0]
-
-    # Validate video length
-    if not (
-        selected_model_config.min_duration
-        <= state.video_length
-        <= selected_model_config.max_duration
-    ):
-        state.video_length = selected_model_config.default_duration
-
-    yield
-
-
-def on_modifier_click(e: me.ClickEvent):
-    """Handles click events for modifier content_buttons."""
-    state = me.state(PageState)
-    modifier_key = e.key.split("mod_btn_")[-1]
-
-    if not modifier_key:
-        print("Error: ClickEvent has no key associated with the content_button.")
-        return
-
-    # If the key is already selected, deselect it.
-    if modifier_key in state.modifier_array:
-        new_modifier_array = [
-            mod for mod in state.modifier_array if mod != modifier_key
-        ]
-        state.modifier_array = new_modifier_array
-    # If the key is not selected, add it, but only if less than 2 are already selected.
-    elif len(state.modifier_array) < 2:
-        state.modifier_array = [*state.modifier_array, modifier_key]
-    # If 2 are already selected, do nothing (or we could show a message).
-    else:
-        print("Maximum of 2 modifiers can be selected.")
-
-
-def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
-    """Toggle auto-enhance prompt"""
-    state = me.state(PageState)
-    state.auto_enhance_prompt = e.checked
-
-
-def on_selection_change_length(e: me.SelectSelectionChangeEvent):
-    """Adjust the video duration length in seconds based on user event"""
-    state = me.state(PageState)
-    state.video_length = int(e.value)
-
-
-def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
-    """Adjust aspect ratio based on user event."""
-    state = me.state(PageState)
-    state.aspect_ratio = e.value
-
-
-def on_click_upload(e: me.UploadEvent):
-    """Upload image to GCS"""
-    state = me.state(PageState)
-    state.reference_image_file = e.file
-    state.reference_image_mime_type = e.file.mime_type
-    contents = e.file.getvalue()
-    destination_blob_name = store_to_gcs(
-        "uploads", e.file.name, e.file.mime_type, contents
-    )
-    state.reference_image_gcs = destination_blob_name
-    # url
-    state.reference_image_uri = gcs_uri_to_https_url(destination_blob_name)
-    # log
-    print(
-        f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
-    )
-
-
-def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
-    """Portrait image from library handler."""
-    state = me.state(PageState)
-    state.reference_image_gcs = e.gcs_uri
-    state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
-    yield
-
-
+@track_click(element_id="portraits_clear_button")
 def on_click_clear_reference_image(e: me.ClickEvent):
     """Clear reference image"""
     print("clearing ...")
@@ -597,6 +509,146 @@ def on_click_clear_reference_image(e: me.ClickEvent):
     yield
 
 
+def on_model_selection_change(e: me.SelectSelectionChangeEvent):
+    """Handles model selection change."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_model_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
+    state = me.state(PageState)
+    state.veo_model = e.value
+
+    selected_model_config = get_veo_model_config(state.veo_model)
+
+    # Validate aspect ratio
+    if state.aspect_ratio not in selected_model_config.supported_aspect_ratios:
+        state.aspect_ratio = selected_model_config.supported_aspect_ratios[0]
+
+    # Validate video length
+    if selected_model_config.supported_durations:
+        if state.video_length not in selected_model_config.supported_durations:
+            state.video_length = selected_model_config.default_duration
+    elif not (
+        selected_model_config.min_duration
+        <= state.video_length
+        <= selected_model_config.max_duration
+    ):
+        state.video_length = selected_model_config.default_duration
+
+    yield
+
+
+def on_modifier_click(e: me.ClickEvent):
+    """Handles click events for modifier content_buttons."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_modifier_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"key": e.key},
+    )
+    state = me.state(PageState)
+    modifier_key = e.key.split("mod_btn_")[-1]
+
+    if not modifier_key:
+        print("Error: ClickEvent has no key associated with the content_button.")
+        return
+
+    # If the key is already selected, deselect it.
+    if modifier_key in state.modifier_array:
+        new_modifier_array = [
+            mod for mod in state.modifier_array if mod != modifier_key
+        ]
+        state.modifier_array = new_modifier_array
+    # If the key is not selected, add it, but only if less than 2 are already selected.
+    elif len(state.modifier_array) < 2:
+        state.modifier_array = [*state.modifier_array, modifier_key]
+    # If 2 are already selected, do nothing (or we could show a message).
+    else:
+        print("Maximum of 2 modifiers can be selected.")
+
+
+def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
+    """Toggle auto-enhance prompt"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_auto_enhance_prompt",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"checked": e.checked},
+    )
+    state = me.state(PageState)
+    state.auto_enhance_prompt = e.checked
+
+
+def on_selection_change_length(e: me.SelectSelectionChangeEvent):
+    """Adjust the video duration length in seconds based on user event"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_length_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
+    state = me.state(PageState)
+    state.video_length = int(e.value)
+
+
+def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
+    """Adjust aspect ratio based on user event."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_aspect_ratio_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
+    state = me.state(PageState)
+    state.aspect_ratio = e.value
+
+
+def on_click_upload(e: me.UploadEvent):
+    """Upload image to GCS"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_upload_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
+    state = me.state(PageState)
+    state.reference_image_file = e.file
+    state.reference_image_mime_type = e.file.mime_type
+    contents = e.file.getvalue()
+    destination_blob_name = store_to_gcs(
+        "uploads", e.file.name, e.file.mime_type, contents
+    )
+    state.reference_image_gcs = destination_blob_name
+    # url
+    state.reference_image_uri = gcs_uri_to_https_url(destination_blob_name)
+    # log
+    print(
+        f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
+    )
+
+
+def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
+    """Portrait image from library handler."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="portraits_library_chooser_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
+    state = me.state(PageState)
+    state.reference_image_gcs = e.gcs_uri
+    state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
+    yield
+
+
+@track_click(element_id="portraits_create_button")
 def on_click_motion_portraits(e: me.ClickEvent):
     """Create the motion portrait"""
     app_state = me.state(AppState)

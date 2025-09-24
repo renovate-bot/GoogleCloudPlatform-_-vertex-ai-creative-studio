@@ -15,6 +15,8 @@
 import mesop as me
 import mesop.labs as mel
 
+from common.analytics import log_ui_click, track_click
+
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
@@ -224,6 +226,13 @@ def starter_pack_to_look_content():
         )
 
 def on_tab_click(e: me.ClickEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="starter_pack_tab",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"key": e.key},
+    )
     state = me.state(StarterPackState)
     _, tab_index = e.key.split("-")
     state.selected_tab_index = int(tab_index)
@@ -294,6 +303,7 @@ def on_click_generate_virtual_model(e: me.ClickEvent):
     state.is_generating_virtual_model = False
     yield
 
+@track_click(element_id="starter_pack_generate_starter_pack_button")
 def on_click_generate_starter_pack(e: me.ClickEvent):
     state = me.state(StarterPackState)
     app_state = me.state(AppState)
@@ -315,6 +325,7 @@ def on_click_generate_starter_pack(e: me.ClickEvent):
     state.is_generating_starter_pack = False
     yield
 
+@track_click(element_id="starter_pack_generate_look_button")
 def on_click_generate_look(e: me.ClickEvent):
     state = me.state(StarterPackState)
     app_state = me.state(AppState)
@@ -337,12 +348,14 @@ def on_click_generate_look(e: me.ClickEvent):
     state.is_generating_look = False
     yield
 
+@track_click(element_id="starter_pack_clear_starter_pack_button")
 def on_click_clear_starter_pack(e: me.ClickEvent):
     state = me.state(StarterPackState)
     state.look_image_uri = ""
     state.generated_starter_pack_uri = ""
     yield
 
+@track_click(element_id="starter_pack_clear_look_button")
 def on_click_clear_look(e: me.ClickEvent):
     state = me.state(StarterPackState)
     state.starter_pack_image_uri = ""

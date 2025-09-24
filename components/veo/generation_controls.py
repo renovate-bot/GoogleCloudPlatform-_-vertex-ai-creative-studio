@@ -14,6 +14,8 @@
 
 import mesop as me
 
+from common.analytics import log_ui_click
+from state.state import AppState
 from state.veo_state import PageState
 from config.veo_models import VEO_MODELS, get_veo_model_config
 
@@ -142,6 +144,13 @@ def generation_controls():
 
 def on_selection_change_person_generation(e: me.SelectSelectionChangeEvent):
     """Handles changes to the person generation setting."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_person_generation",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.person_generation = e.value
     yield
@@ -149,30 +158,65 @@ def on_selection_change_person_generation(e: me.SelectSelectionChangeEvent):
 
 def on_selection_change_length(e: me.SelectSelectionChangeEvent):
     """Adjust the video duration length in seconds based on user event"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_length",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.video_length = int(e.value)
 
 
 def on_selection_change_video_count(e: me.SelectSelectionChangeEvent):
     """Set number of videos to generate"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_video_count",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.video_count = e.value
 
 
 def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
     """Adjust aspect ratio based on user event."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_aspect_ratio",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.aspect_ratio = e.value
 
 
 def on_selection_change_resolution(e: me.SelectSelectionChangeEvent):
     """Adjust resolution based on user event."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_resolution",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.resolution = e.value
 
 
 def on_selection_change_model(e: me.SelectSelectionChangeEvent):
     """Adjust model based on user event and apply its constraints."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_model",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.veo_model = e.value
     
@@ -181,5 +225,12 @@ def on_selection_change_model(e: me.SelectSelectionChangeEvent):
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
     """Toggle auto-enhance prompt"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_auto_enhance_prompt",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"checked": e.checked},
+    )
     state = me.state(PageState)
     state.auto_enhance_prompt = e.checked
