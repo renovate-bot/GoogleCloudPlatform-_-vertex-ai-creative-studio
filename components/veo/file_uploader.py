@@ -16,6 +16,8 @@ import functools
 
 import mesop as me
 
+from common.analytics import log_ui_click
+from state.state import AppState
 from state.veo_state import PageState
 from components.library.library_chooser_button import library_chooser_button
 from config.veo_models import get_veo_model_config
@@ -120,12 +122,25 @@ def _image_uploader(last_image: bool, on_upload_image, on_upload_last_image, on_
 
 def on_selection_change_veo_mode(e: me.ButtonToggleChangeEvent):
     """toggle veo mode"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_mode",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.veo_mode = e.value
 
 
 def on_click_clear_reference_image(e: me.ClickEvent):
     """Clear reference image"""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_clear_reference_image",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
     state = me.state(PageState)
     state.reference_image_file = None
     state.reference_image_file_key += 1

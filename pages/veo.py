@@ -18,7 +18,7 @@ import time
 
 import mesop as me
 
-from common.analytics import track_model_call
+from common.analytics import track_click, track_model_call
 from common.error_handling import GenerationError
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.storage import store_to_gcs
@@ -171,6 +171,7 @@ def on_blur_negative_prompt(e: me.InputBlurEvent):
     state.negative_prompt = e.value
     yield
 
+@track_click(element_id="veo_clear_button")
 def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clear prompt and video."""
     state = me.state(PageState)
@@ -193,6 +194,7 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     yield
 
 
+@track_click(element_id="veo_rewrite_button")
 def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Veo custom rewriter."""
     state = me.state(PageState)
@@ -208,6 +210,7 @@ def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argume
     yield
 
 
+@track_click(element_id="veo_create_button")
 def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Veo generate request handler."""
     app_state = me.state(AppState)

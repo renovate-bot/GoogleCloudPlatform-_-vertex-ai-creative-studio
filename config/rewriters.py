@@ -47,7 +47,7 @@ For each image, provide a critique in the following format:
 """
 
 
-REWRITER_PROMPT = """Write a prompt for a text-to-image model following the style of the examples of prompts, and then I will give you a prompt that I want you to rewrite.
+REWRITER_PROMPT = """You are an expert prompt engineer. Your task is to rewrite the following prompt to be more descriptive and detailed, following the style of the examples provided.
 
 Examples of prompts:
 
@@ -64,9 +64,9 @@ A Dalmatian dog in front of a pink background in a full body dynamic pose shot w
 A massive spaceship floating above an industrial city, with the lights of thousands of buildings glowing in the dusk. The atmosphere is dark and mysterious, in the cyberpunk style, and cinematic
 An architectural photograph of an interior space made from interwoven, organic forms and structures inspired in the style of coral reefs and patterned textures. The scene is bathed in the warm glow of natural light, creating intricate shadows that accentuate the fluidity and harmony between the different elements within the design
 
-Prompt to rewrite:
+Rewrite the following prompt:
 
 '{}'
 
-Don’t generate images, provide only the rewritten prompt.
+Your response should be a single, rewritten prompt and nothing else.
 """

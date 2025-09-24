@@ -19,6 +19,7 @@ import uuid
 import json
 
 import mesop as me
+from common.analytics import log_ui_click, track_click
 
 import common.storage as storage
 from common.metadata import MediaItem, add_media_item_to_firestore
@@ -212,33 +213,67 @@ def page():
 
 def on_blur_text(e: me.InputBlurEvent):
     """Handles text input."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="gemini_tts_text_input",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(GeminiTtsState)
     state.text = e.value
 
 def on_blur_prompt(e: me.InputBlurEvent):
     """Handles prompt input."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="gemini_tts_prompt_input",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(GeminiTtsState)
     state.prompt = e.value
 
 def on_select_model(e: me.SelectSelectionChangeEvent):
     """Handles model selection."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="gemini_tts_model_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(GeminiTtsState)
     state.selected_model = e.value
 
-
 def on_select_voice(e: me.SelectSelectionChangeEvent):
     """Handles voice selection."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="gemini_tts_voice_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(GeminiTtsState)
     state.selected_voice = e.value
 
-
 def on_select_language(e: me.SelectSelectionChangeEvent):
     """Handles language selection."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="gemini_tts_language_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(GeminiTtsState)
     state.selected_language = e.value
     yield
 
 
+@track_click(element_id="gemini_tts_preset_button")
 def on_click_preset(e: me.ClickEvent):
     """Handles preset button click."""
     state = me.state(GeminiTtsState)
@@ -253,6 +288,7 @@ def on_click_preset(e: me.ClickEvent):
     yield
 
 
+@track_click(element_id="gemini_tts_clear_button")
 def on_click_clear(e: me.ClickEvent):
     """Resets the page state to its default values."""
     state = me.state(GeminiTtsState)
@@ -267,6 +303,7 @@ def on_click_clear(e: me.ClickEvent):
     yield
 
 
+@track_click(element_id="gemini_tts_generate_button")
 def on_click_generate(e: me.ClickEvent):
     """Handles generate button click."""
     state = me.state(GeminiTtsState)
