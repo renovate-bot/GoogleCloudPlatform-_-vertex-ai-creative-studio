@@ -20,6 +20,7 @@ import json
 from dataclasses import field
 
 import mesop as me
+from common.analytics import log_ui_click, track_click
 
 import common.storage as storage
 from common.metadata import MediaItem, add_media_item_to_firestore
@@ -230,39 +231,96 @@ def page():
                         me.text("Generated audio will appear here.")
 
 def on_blur_text(e: me.InputBlurEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_text_input",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(Chirp3hdState)
     state.text = e.value
 
 def on_blur_phrase(e: me.InputBlurEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_phrase_input",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(Chirp3hdState)
     state.current_phrase_input = e.value
 
 def on_blur_pronunciation(e: me.InputBlurEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_pronunciation_input",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(Chirp3hdState)
     state.current_pronunciation_input = e.value
 
 def on_select_voice(e: me.SelectSelectionChangeEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_voice_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(Chirp3hdState)
     state.selected_voice = e.value
 
 def on_select_language(e: me.SelectSelectionChangeEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_language_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(Chirp3hdState)
     state.selected_language = e.value
     yield
 
 def on_select_encoding(e: me.SelectSelectionChangeEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_encoding_select",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(Chirp3hdState)
     state.selected_encoding = e.value
 
 def on_change_pace(e: me.SliderValueChangeEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_pace_slider",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     me.state(Chirp3hdState).speaking_rate = e.value
 
 # def on_change_pitch(e: me.SliderValueChangeEvent):
 #     me.state(Chirp3hdState).pitch = e.value
 
 def on_change_volume(e: me.SliderValueChangeEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="chirp_volume_slider",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     me.state(Chirp3hdState).volume_gain_db = e.value
 
+@track_click(element_id="chirp_add_pronunciation_button")
 def on_add_pronunciation(e: me.ClickEvent):
     state = me.state(Chirp3hdState)
     if state.current_phrase_input and state.current_pronunciation_input:
@@ -274,32 +332,14 @@ def on_add_pronunciation(e: me.ClickEvent):
         state.current_pronunciation_input = ""
         yield
 
+@track_click(element_id="chirp_remove_pronunciation_button")
 def on_remove_pronunciation(e: me.ClickEvent):
     state = me.state(Chirp3hdState)
     index_to_remove = int(e.key)
     state.custom_pronunciations.pop(index_to_remove)
     yield
 
-def on_click_clear(e: me.ClickEvent):
-    """Resets the page state to its default values."""
-    state = me.state(Chirp3hdState)
-    state.text = "Hello, Chirp is the latest generation of Google's Text-to-Speech technology."
-    state.selected_voice = "Orus"
-    state.selected_language = "en-US"
-    state.speaking_rate = 1.0
-    # state.pitch = 0.0
-    state.volume_gain_db = 0.0
-    state.custom_pronunciations = []
-    state.current_phrase_input = ""
-    state.current_pronunciation_input = ""
-    state.selected_encoding = "PHONETIC_ENCODING_X_SAMPA"
-    state.audio_url = ""
-    state.error_message = ""
-    state.show_error_dialog = False
-    state.is_generating = False
-    yield
-
-
+@track_click(element_id="chirp_generate_button")
 def on_click_generate(e: me.ClickEvent):
     """Handles generate button click."""
     state = me.state(Chirp3hdState)
@@ -374,6 +414,27 @@ def on_click_generate(e: me.ClickEvent):
         except Exception as ex:
             print(f"CRITICAL: Failed to store metadata: {ex}")
             me.state(AppState).snackbar_message = "Error saving audio to library"
+
+
+@track_click(element_id="chirp_clear_button")
+def on_click_clear(e: me.ClickEvent):
+    """Resets the page state to its default values."""
+    state = me.state(Chirp3hdState)
+    state.text = "Hello, Chirp is the latest generation of Google's Text-to-Speech technology."
+    state.selected_voice = "Orus"
+    state.selected_language = "en-US"
+    state.speaking_rate = 1.0
+    # state.pitch = 0.0
+    state.volume_gain_db = 0.0
+    state.custom_pronunciations = []
+    state.current_phrase_input = ""
+    state.current_pronunciation_input = ""
+    state.selected_encoding = "PHONETIC_ENCODING_X_SAMPA"
+    state.audio_url = ""
+    state.error_message = ""
+    state.show_error_dialog = False
+    state.is_generating = False
+    yield
 
 
 def open_info_dialog(e: me.ClickEvent):

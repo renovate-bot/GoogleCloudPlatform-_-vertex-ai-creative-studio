@@ -21,6 +21,8 @@ from pathlib import Path
 
 import mesop as me
 
+from common.analytics import log_ui_click, track_click
+
 from common.metadata import add_media_item
 from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url
@@ -125,6 +127,7 @@ def on_upload_product(e: me.UploadEvent):
     yield
 
 
+@track_click(element_id="vto_generate_person_button")
 def on_click_generate_person(e: me.ClickEvent):
     """Generate person image handler."""
     state = me.state(PageState)
@@ -167,6 +170,7 @@ def on_click_generate_person(e: me.ClickEvent):
         yield
 
 
+@track_click(element_id="vto_generate_button")
 def on_generate(e: me.ClickEvent):
     """Generate VTO handler."""
     app_state = me.state(AppState)
@@ -202,11 +206,19 @@ def on_generate(e: me.ClickEvent):
 
 def on_sample_count_change(e: me.SliderValueChangeEvent):
     """Handles changes to the sample count slider."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="vto_sample_count_slider",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.vto_sample_count = int(e.value)
     yield
 
 
+@track_click(element_id="vto_clear_button")
 def on_clear(e: me.ClickEvent):
     state = me.state(PageState)
     state.person_image_gcs = ""
