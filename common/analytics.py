@@ -61,7 +61,7 @@ def log_page_view(page_name: str, session_id: str = None):
     }
     analytics_logger.info(f"Page view: {page_name}", extra={'extra_data': extra_data})
 
-def log_ui_click(element_id: str, page_name: str, session_id: str = None):
+def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras: dict = None):
     """Logs a UI click event."""
     extra_data = {
         "event_type": "ui_click",
@@ -69,6 +69,8 @@ def log_ui_click(element_id: str, page_name: str, session_id: str = None):
         "page_name": page_name,
         "session_id": session_id,
     }
+    if extras:
+        extra_data.update(extras)
     analytics_logger.info(f"UI Click: {element_id} on {page_name}", extra={'extra_data': extra_data})
 
 def log_model_call(model_name: str, status: str, duration_ms: float = 0, details: dict = None):
