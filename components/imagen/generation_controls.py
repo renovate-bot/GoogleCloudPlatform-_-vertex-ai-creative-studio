@@ -265,6 +265,7 @@ def on_click_generate_images(e: me.ClickEvent):
     yield
 
 
+@track_click(element_id="imagen_random_button")
 def random_prompt_generator(e: me.ClickEvent):
     """Click Event to generate a random prompt."""
     state = me.state(PageState)
@@ -300,6 +301,7 @@ def random_prompt_generator(e: me.ClickEvent):
     yield
 
 
+@track_click(element_id="imagen_clear_button")
 def on_click_clear_images(e: me.ClickEvent):
     """Clears image prompt, output, and related fields."""
     state = me.state(PageState)
@@ -316,6 +318,7 @@ def on_click_clear_images(e: me.ClickEvent):
     # ... etc. for other modifiers
 
 
+@track_click(element_id="imagen_rewrite_button")
 def on_click_rewrite_prompt(e: me.ClickEvent):
     """Click Event to rewrite prompt using Gemini."""
     state = me.state(PageState)

@@ -20,6 +20,8 @@ import json
 
 import mesop as me
 
+from common.analytics import log_ui_click, track_click
+
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url
@@ -295,6 +297,12 @@ def page_content():
 
 def on_upload_floor_plan(e: me.UploadEvent):
     """Upload floor plan handler."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="interior_design_upload_floor_plan",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
     state = me.state(PageState)
     # Assuming single file upload for simplicity
     file = e.files[0]
@@ -311,6 +319,12 @@ def on_upload_floor_plan(e: me.UploadEvent):
 
 def on_select_floor_plan(e: LibrarySelectionChangeEvent):
     """Floor plan selection from library handler."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="interior_design_select_floor_plan",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
     state = me.state(PageState)
     state.floor_plan_uri = e.gcs_uri
     # Clear previous results when a new image is selected
@@ -320,6 +334,7 @@ def on_select_floor_plan(e: LibrarySelectionChangeEvent):
     yield
 
 
+@track_click(element_id="interior_design_generate_3d_view_button")
 def on_generate_3d_view_click(e: me.ClickEvent):
     """Handles the 3D view generation."""
     state = me.state(PageState)
@@ -380,6 +395,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
         yield
 
 
+@track_click(element_id="interior_design_room_button")
 def on_room_button_click(e: me.ClickEvent):
     """Handles the generation of a zoomed-in view for a specific room."""
     state = me.state(PageState)
@@ -436,6 +452,7 @@ def on_design_prompt_blur(e: me.InputBlurEvent):
     state.design_prompt = e.value
 
 
+@track_click(element_id="interior_design_design_button")
 def on_design_click(e: me.ClickEvent):
     """Handles the iterative design generation."""
     state = me.state(PageState)
@@ -497,6 +514,7 @@ def open_info_dialog(e: me.ClickEvent):
     yield
 
 
+@track_click(element_id="interior_design_close_info_dialog_button")
 def close_info_dialog(e: me.ClickEvent):
     """Close the info dialog."""
     state = me.state(PageState)

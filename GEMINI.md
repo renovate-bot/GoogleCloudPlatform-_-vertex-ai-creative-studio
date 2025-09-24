@@ -356,6 +356,26 @@ def on_generate_click(e: me.ClickEvent):
     yield
 ```
 
+### Other UI Interactions
+For UI elements that don't have a simple click event (e.g., sliders, selects, text inputs), you can use the `log_ui_click` function directly inside the event handler.
+
+**Example:**
+```python
+from common.analytics import log_ui_click
+from state.state import AppState
+
+def on_slider_change(e: me.SliderValueChangeEvent):
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="my_page_slider",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
+    # Your event handler logic here
+    yield
+```
+
 ### Model Calls
 To track the performance and status of calls to generative models, use the `track_model_call` context manager.
 
