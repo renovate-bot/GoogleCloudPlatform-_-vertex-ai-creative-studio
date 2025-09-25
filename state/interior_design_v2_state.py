@@ -15,6 +15,10 @@ class PageState:
     is_generating_zoom: bool = False
     is_designing: bool = False
     is_generating_video: bool = False
+    video_generation_status: str = ""
+    show_snackbar: bool = False
+    snackbar_message: str = ""
+    final_video_uri: str = ""
     error_message: str = ""
     design_prompt: str = ""
     design_image_uri: str = ""

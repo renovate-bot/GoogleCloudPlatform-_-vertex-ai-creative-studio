@@ -25,11 +25,13 @@ from common.analytics import log_ui_click, track_click
 
 from common.metadata import MediaItem, add_media_item_to_firestore, save_storyboard
 from common.storage import store_to_gcs
+from common.utils import gcs_uri_to_https_url
 from components.header import header
 from components.dialog import dialog
 from components.info_dialog.info_dialog import info_dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.page_scaffold import page_frame, page_scaffold
+from components.snackbar import snackbar
 from components.interior_design.floor_plan_uploader import floor_plan_uploader
 from components.interior_design.generated_3d_view import generated_3d_view
 from components.interior_design.room_selector import room_selector
@@ -41,7 +43,9 @@ from models.gemini import (
     extract_room_names_from_image,
     generate_image_from_prompt_and_images,
 )
+from models.requests import VideoGenerationRequest
 from models.veo import generate_video
+from models.video_processing import process_videos
 from state.state import AppState
 
 
@@ -61,9 +65,27 @@ from state.state import AppState
 from state.interior_design_v2_state import PageState
 
 
+def on_load(e: me.LoadEvent):
+    """Loads a storyboard from Firestore if an ID is provided in the URL."""
+    state = me.state(PageState)
+    storyboard_id = me.query_params.get("storyboard_id")
+    if storyboard_id:
+        from config.firebase_config import FirebaseClient
+        db = FirebaseClient().get_client()
+        doc_ref = db.collection("interior_design_storyboards").document(storyboard_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            state.storyboard = doc.to_dict()
+            print(f"Loaded storyboard {storyboard_id} from Firestore.")
+        else:
+            yield from show_snackbar(state, f"Could not find storyboard with ID: {storyboard_id}")
+    yield
+
+
 @me.page(
     path="/interior_design",
-    title="Interior Design V2",
+    title="Interior Design",
+    on_load=on_load,
 )
 def interior_design_page():
     with page_scaffold(page_name="interior_design_v2"):  # pylint: disable=E1129:not-context-manager
@@ -74,6 +96,8 @@ def interior_design_page():
 
 def page_content():
     state = me.state(PageState)
+
+    snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
     info_dialog(
         is_open=state.info_dialog_open,
@@ -159,8 +183,7 @@ def page_content():
                     on_design_click=on_design_click,
                 )
 
-        if state.error_message:
-            me.text(state.error_message, style=me.Style(color="red"))
+
 
         # Storyboard Carousel
         if state.storyboard and state.storyboard.get("storyboard_items"):
@@ -195,9 +218,19 @@ def page_content():
                         disabled=state.is_generating_video or not state.storyboard.get("storyboard_items"),
                     ):
                         if state.is_generating_video:
-                            me.progress_spinner(diameter=18)
+                            with me.box(style=me.Style(display="flex", align_items="center", gap=8)):
+                                me.progress_spinner(diameter=18)
+                                me.text(state.video_generation_status)
                         else:
                             me.text("Generate Video")
+
+                final_video_uri = state.storyboard.get("final_video_uri")
+                if final_video_uri:
+                    with me.box(style=me.Style(margin=me.Margin(top=24), display="flex", justify_content="center")):
+                        me.video(
+                            src=gcs_uri_to_https_url(final_video_uri),
+                            style=me.Style(width="100%", max_width="720px", border_radius=8),
+                        )
 
 
 # --- Event Handlers ---
@@ -274,7 +307,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
             state.error_message = "Image generation failed to return a result."
 
     except Exception as ex:
-        state.error_message = f"An error occurred during generation: {ex}"
+        yield from show_snackbar(state, f"An error occurred during generation: {ex}")
     finally:
         state.is_generating = False
         state.storyboard = save_storyboard(state.storyboard)
@@ -315,7 +348,7 @@ def on_room_button_click(e: me.ClickEvent):
             state.error_message = "Zoomed view generation failed to return a result."
 
     except Exception as ex:
-        state.error_message = f"An error occurred during zoom generation: {ex}"
+        yield from show_snackbar(state, f"An error occurred during zoom generation: {ex}")
     finally:
         state.is_generating_zoom = False
         state.storyboard = save_storyboard(state.storyboard)
@@ -367,8 +400,7 @@ def on_design_click(e: me.ClickEvent):
     state = me.state(PageState)
 
     if not state.design_prompt:
-        state.error_message = "Please enter a design modification prompt."
-        yield
+        yield from show_snackbar(state, "Please enter a design modification prompt.")
         return
 
     state.is_designing = True
@@ -379,8 +411,7 @@ def on_design_click(e: me.ClickEvent):
         # Find the current storyboard item
         storyboard_item = next((item for item in state.storyboard["storyboard_items"] if item["room_name"] == state.storyboard["selected_room"]), None)
         if not storyboard_item:
-            state.error_message = "Could not find the current room to style."
-            yield
+            yield from show_snackbar(state, "Could not find the current room to style.")
             return
 
         images = [storyboard_item["styled_image_uri"]]
@@ -405,7 +436,7 @@ def on_design_click(e: me.ClickEvent):
             state.error_message = "Design generation failed to return a result."
 
     except Exception as ex:
-        state.error_message = f"An error occurred during design generation: {ex}"
+        yield from show_snackbar(state, f"An error occurred during design generation: {ex}")
     finally:
         state.is_designing = False
         state.storyboard = save_storyboard(state.storyboard)
@@ -424,26 +455,50 @@ def on_generate_video_click(e: me.ClickEvent):
     state = me.state(PageState)
     state.is_generating_video = True
     state.error_message = ""
+    state.video_generation_status = "Starting video generation..."
     yield
 
     try:
         video_clips = []
         for item in state.storyboard["storyboard_items"]:
             if item["styled_image_uri"]:
-                # Generate a short video clip for each room
-                video_uri = generate_video(
+                state.video_generation_status = f"Generating video for {item['room_name']}..."
+                yield
+                # Create a request object for the video generation
+                request = VideoGenerationRequest(
+                    model_version_id="2.0",  # Assuming a default
+                    reference_image_gcs=item["styled_image_uri"],
+                    reference_image_mime_type="image/png",
+                    duration_seconds=5,  # Use 5s, the minimum for Veo 2.0
                     prompt="A slow, gentle panning shot of the room.",
-                    image_uri=item["styled_image_uri"],
-                    duration=3, # 3-second clip per room
+                    aspect_ratio="16:9",
+                    video_count=1,
+                    enhance_prompt=False,
+                    resolution="720p",
+                    person_generation="allow_all",
                 )
-                if video_uri:
-                    video_clips.append(video_uri)
-        
+                # Generate a short video clip for each room
+                video_uris, _ = generate_video(request=request)
+                if video_uris:
+                    video_clips.extend(video_uris)
+
         print(f"Generated video clips: {video_clips}")
-        # TODO: Concatenate the clips
+        state.video_generation_status = "Concatenating video clips..."
+        yield
+
+        # Concatenate the clips into a single video
+        final_video_uri = process_videos(video_clips, "concat")
+        state.final_video_uri = final_video_uri
+
+        # Save the final video URI to the storyboard
+        state.storyboard["final_video_uri"] = final_video_uri
+        state.storyboard = save_storyboard(state.storyboard)
+
+        state.video_generation_status = "Video tour complete!"
 
     except Exception as ex:
-        state.error_message = f"An error occurred during video generation: {ex}"
+        yield from show_snackbar(state, f"An error occurred during video generation: {ex}")
+        state.video_generation_status = "An error occurred."
     finally:
         state.is_generating_video = False
         yield
@@ -461,4 +516,11 @@ def close_info_dialog(e: me.ClickEvent):
     """Close the info dialog."""
     state = me.state(PageState)
     state.info_dialog_open = False
+    yield
+
+
+def show_snackbar(state: PageState, message: str):
+    """Displays a snackbar message at the bottom of the page."""
+    state.snackbar_message = message
+    state.show_snackbar = True
     yield
