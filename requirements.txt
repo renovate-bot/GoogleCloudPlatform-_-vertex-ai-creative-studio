@@ -359,7 +359,7 @@ scipy==1.16.2
     # via
     #   veo-app (pyproject.toml)
     #   scikit-image
-shapely==2.1.1
+shapely==2.1.2
     # via google-cloud-aiplatform
 shortuuid==1.0.13
     # via veo-app (pyproject.toml)
