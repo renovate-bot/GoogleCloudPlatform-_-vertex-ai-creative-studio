@@ -9,7 +9,12 @@ __pycache__
 .vscode
 .DS_Store
 samples/
+# gemini-cli settings
 .gemini/
+
+# GitHub App credentials
+gha-creds-*.json
+
 .commit.txt
 local/
 node_modules
