@@ -13,10 +13,10 @@
 # limitations under the License.
 """metadata implementation"""
 
+from dataclasses import dataclass, field, asdict
 import datetime
-
-# from models.model_setup import ModelSetup
-from dataclasses import dataclass, field
+import uuid
+from config.firebase_config import FirebaseClient
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -103,47 +103,30 @@ class MediaItem:
 
 
 def add_media_item_to_firestore(item: MediaItem):
-    """Adds a MediaItem to Firestore. Sets timestamp if not already present."""
-    if not db:
-        print("Firestore client (db) is not initialized. Cannot add media item.")
-        # Or raise an exception: raise ConnectionError("Firestore client not initialized")
-        return
-
-    # Prepare data for Firestore, excluding None values and the 'id' field
-    firestore_data = {}
-    for f in field_names(item):
-        if f == "id":  # Exclude id from direct storage
-            continue
-        value = getattr(item, f)
-        if value is not None:
-            if f == "timestamp" and isinstance(value, str): # If timestamp is already string, try to parse
-                try:
-                    firestore_data[f] = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-                except ValueError:
-                    print(f"Warning: Could not parse timestamp string '{value}' to datetime. Storing as is or consider handling.")
-                    firestore_data[f] = value # Or handle error, or ensure it's always datetime
-            else:
-                firestore_data[f] = value
-
-    # Ensure timestamp is set
-    if "timestamp" not in firestore_data or firestore_data["timestamp"] is None:
-        firestore_data["timestamp"] = datetime.datetime.now(datetime.timezone.utc)
-    elif isinstance(firestore_data["timestamp"], datetime.datetime) and firestore_data["timestamp"].tzinfo is None:
-        # If datetime is naive, assume UTC (or local, then convert to UTC)
-        # For consistency, Firestore often expects UTC.
-        firestore_data["timestamp"] = firestore_data["timestamp"].replace(tzinfo=datetime.timezone.utc)
+    """Adds a new media item to the Firestore collection."""
+    db = FirebaseClient().get_client()
+    doc_ref = db.collection("media_items").document(item.id)
+    doc_ref.set(asdict(item))
 
 
-    try:
-        doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
-        doc_ref.set(firestore_data)
-        item.id = doc_ref.id # Set the ID back to the item
-        print(f"MediaItem data stored in Firestore with document ID: {doc_ref.id}")
-        print(f"Stored data: {firestore_data}")
-    except Exception as e:
-        print(f"Error storing MediaItem to Firestore: {e}")
-        # Optionally re-raise or handle more gracefully
-        raise
+def save_storyboard(storyboard: dict) -> dict:
+    """
+    Creates or updates an InteriorDesignStoryboard document in Firestore.
+
+    Args:
+        storyboard: A dictionary representing the storyboard.
+
+    Returns:
+        The storyboard dictionary, now with an 'id' if it was new.
+    """
+    db = FirebaseClient().get_client()
+    if "id" not in storyboard or not storyboard.get("id"):
+        storyboard["id"] = str(uuid.uuid4())
+
+    doc_ref = db.collection("interior_design_storyboards").document(storyboard["id"])
+    doc_ref.set(storyboard)
+    print(f"Storyboard saved to Firestore with ID: {storyboard['id']}")
+    return storyboard
 
 def field_names(dataclass_instance):
     """Helper to get field names of a dataclass instance."""

@@ -14,6 +14,7 @@ class PageState:
     is_generating: bool = False
     is_generating_zoom: bool = False
     is_designing: bool = False
+    is_generating_video: bool = False
     error_message: str = ""
     design_prompt: str = ""
     design_image_uri: str = ""
