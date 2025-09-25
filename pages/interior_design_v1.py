@@ -83,12 +83,13 @@ class PageState:
     design_prompt: str = ""
     is_designing: bool = False
     zoomed_view_media_id: str = ""
+    design_image_uri: str = ""
 
     info_dialog_open: bool = False
 
 
 @me.page(
-    path="/interior_design",
+    path="/interior_design_v1",
     title="Interior Design",
 )
 def interior_design_page():
@@ -273,17 +274,35 @@ def page_content():
                     )
                 ):
                     me.text("Design Studio", type="headline-6")
+                    me.uploader(
+                        label="Upload Design Image",
+                        on_upload=on_upload_design_image,
+                        style=me.Style(width="100%"),
+                        accepted_file_types=["image/jpeg", "image/png", "image/webp"],
+                    )
+                    library_chooser_button(
+                        key="design_image_library_chooser",
+                        on_library_select=on_select_design_image,
+                        button_label="Add from Library",
+                    )
+                    if state.design_image_uri:
+                        me.image(
+                            src=gcs_uri_to_https_url(state.design_image_uri),
+                            style=me.Style(width="100%", border_radius=8, margin=me.Margin(top=8)),
+                        )
                     me.textarea(
                         label="Design Modifications",
                         on_blur=on_design_prompt_blur,
                         style=me.Style(width="100%"),
                     )
-                    me.button(
-                        "Design",
-                        on_click=on_design_click,
-                        type="raised",
-                        disabled=state.is_designing,
-                    )
+                    with me.box(style=me.Style(display="flex", flex_direction="row", gap=8)):
+                        me.button("Clear", on_click=on_clear_design, type="stroked")
+                        me.button(
+                            "Design",
+                            on_click=on_design_click,
+                            type="raised",
+                            disabled=state.is_designing,
+                        )
                     veo_button(gcs_uri=state.zoomed_view_uri)
                     if state.is_designing:
                         me.progress_spinner()
@@ -448,8 +467,41 @@ def on_room_button_click(e: me.ClickEvent):
 
 def on_design_prompt_blur(e: me.InputBlurEvent):
     """Updates the design prompt in the page state."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="interior_design_design_prompt",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"value": e.value},
+    )
     state = me.state(PageState)
     state.design_prompt = e.value
+
+
+def on_upload_design_image(e: me.UploadEvent):
+    """Upload design image handler."""
+    state = me.state(PageState)
+    file = e.files[0]
+    gcs_url = store_to_gcs(
+        "interior_design_uploads", file.name, file.mime_type, file.getvalue()
+    )
+    state.design_image_uri = gcs_url
+    yield
+
+
+def on_select_design_image(e: LibrarySelectionChangeEvent):
+    """Design image selection from library handler."""
+    state = me.state(PageState)
+    state.design_image_uri = e.gcs_uri
+    yield
+
+
+def on_clear_design(e: me.ClickEvent):
+    """Clear design prompt and image."""
+    state = me.state(PageState)
+    state.design_prompt = ""
+    state.design_image_uri = ""
+    yield
 
 
 @track_click(element_id="interior_design_design_button")
@@ -468,9 +520,13 @@ def on_design_click(e: me.ClickEvent):
     yield
 
     try:
+        images = [state.zoomed_view_uri]
+        if state.design_image_uri:
+            images.append(state.design_image_uri)
+
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=state.design_prompt,
-            images=[state.zoomed_view_uri],  # Use the current zoomed view as input
+            images=images,  # Use the current zoomed view as input
             gcs_folder="interior_design_iterations",
         )
 
@@ -485,7 +541,7 @@ def on_design_click(e: me.ClickEvent):
                 user_email=app_state.user_email,
                 timestamp=datetime.datetime.now(datetime.timezone.utc),
                 prompt=state.design_prompt,
-                source_images_gcs=[state.zoomed_view_uri],
+                source_images_gcs=[state.zoomed_view_uri, state.design_image_uri],
                 related_media_item_id=state.zoomed_view_media_id,
                 mime_type="image/png",
                 comment="Interior Design Iteration",
@@ -497,6 +553,7 @@ def on_design_click(e: me.ClickEvent):
             state.zoomed_view_media_id = item_to_log.id
             # Clear the prompt for the next input
             state.design_prompt = ""
+            state.design_image_uri = ""
         else:
             state.error_message = "Design generation failed to return a result."
 

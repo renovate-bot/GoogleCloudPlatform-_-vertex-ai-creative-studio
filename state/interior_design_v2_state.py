@@ -1,0 +1,21 @@
+"""
+State for the Interior Design V2 page.
+"""
+
+from dataclasses import field
+import mesop as me
+
+
+@me.stateclass
+class PageState:
+    """State for the Interior Design page."""
+
+    storyboard: dict = field(default_factory=dict)
+    is_generating: bool = False
+    is_generating_zoom: bool = False
+    is_designing: bool = False
+    error_message: str = ""
+    design_prompt: str = ""
+    design_image_uri: str = ""
+
+    info_dialog_open: bool = False

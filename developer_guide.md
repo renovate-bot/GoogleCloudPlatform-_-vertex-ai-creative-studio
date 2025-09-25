@@ -71,3 +71,31 @@ from common.analytics import track_model_call
 with track_model_call("my-generative-model-v1", prompt_length=len(prompt)):
     model.generate_content(...)
 ```
+
+## State Management
+
+### Working with Dataclasses
+
+When using dataclasses in the Mesop state, it's important to be aware of how they are serialized. Mesop's state management system does not automatically serialize dataclasses that contain non-serializable objects, such as `datetime.datetime`.
+
+To work around this, you have two options:
+
+1.  **Use simple types:** The simplest solution is to use only simple types (e.g., `str`, `int`, `float`, `bool`, `list`, `dict`) in your dataclasses. For example, instead of using a `datetime.datetime` object for a timestamp, you can use an ISO 8601 string.
+
+2.  **Use `asdict`:** If you need to use complex types in your dataclasses, you can use the `asdict` function from Python's `dataclasses` module to convert the dataclass instance to a dictionary before assigning it to the state.
+
+    **Example:**
+
+    ```python
+    from dataclasses import asdict
+
+    # ...
+
+    state.my_dataclass = asdict(MyDataClass(timestamp=datetime.datetime.now()))
+    ```
+
+    When you access the dataclass from the state, you will need to access it as a dictionary:
+
+    ```python
+    timestamp = state.my_dataclass["timestamp"]
+    ```
