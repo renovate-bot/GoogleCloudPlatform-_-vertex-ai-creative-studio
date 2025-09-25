@@ -89,7 +89,7 @@ google-auth==2.40.3
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.115.0
+google-cloud-aiplatform==1.117.0
     # via veo-app (pyproject.toml)
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
@@ -113,13 +113,13 @@ google-cloud-storage==2.19.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
-google-cloud-texttospeech==2.30.0
+google-cloud-texttospeech==2.31.0
     # via veo-app (pyproject.toml)
 google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.38.0
+google-genai==1.39.0
     # via
     #   veo-app (pyproject.toml)
     #   google-cloud-aiplatform
@@ -351,7 +351,7 @@ requests==2.32.5
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.13.1
+ruff==0.13.2
     # via veo-app (pyproject.toml)
 scikit-image==0.25.2
     # via veo-app (pyproject.toml)
@@ -359,7 +359,7 @@ scipy==1.16.2
     # via
     #   veo-app (pyproject.toml)
     #   scikit-image
-shapely==2.1.1
+shapely==2.1.2
     # via google-cloud-aiplatform
 shortuuid==1.0.13
     # via veo-app (pyproject.toml)

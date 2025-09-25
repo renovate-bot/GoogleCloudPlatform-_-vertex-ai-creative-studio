@@ -23,7 +23,7 @@ import mesop as me
 
 from common.analytics import log_ui_click, track_click
 
-from common.metadata import MediaItem, add_media_item_to_firestore
+from common.metadata import MediaItem, add_media_item_to_firestore, save_storyboard
 from common.storage import store_to_gcs
 from components.header import header
 from components.dialog import dialog
@@ -35,11 +35,13 @@ from components.interior_design.generated_3d_view import generated_3d_view
 from components.interior_design.room_selector import room_selector
 from components.interior_design.room_view import room_view
 from components.interior_design.design_studio import design_studio
+from components.interior_design.storyboard_item_tile import storyboard_item_tile
 from config.default import Default as cfg
 from models.gemini import (
     extract_room_names_from_image,
     generate_image_from_prompt_and_images,
 )
+from models.veo import generate_video
 from state.state import AppState
 
 
@@ -160,6 +162,43 @@ def page_content():
         if state.error_message:
             me.text(state.error_message, style=me.Style(color="red"))
 
+        # Storyboard Carousel
+        if state.storyboard and state.storyboard.get("storyboard_items"):
+            with me.box(
+                style=me.Style(
+                    width="100%",
+                    margin=me.Margin(top=32),
+                )
+            ):
+                me.text("Storyboard", type="headline-6", style=me.Style(margin=me.Margin(bottom=16), text_align="center"))
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=16,
+                        overflow_x="auto",
+                        padding=me.Padding(bottom=16), # for scrollbar
+                    )
+                ):
+                    for item in state.storyboard["storyboard_items"]:
+                        if item["styled_image_uri"]:
+                            storyboard_item_tile(
+                                key=item["room_name"],
+                                image_url=item["styled_image_uri"],
+                                room_name=item["room_name"],
+                                on_click=on_storyboard_item_click,
+                            )
+                with me.box(style=me.Style(width="100%", text_align="center", margin=me.Margin(top=24))):
+                    with me.content_button(
+                        on_click=on_generate_video_click,
+                        type="raised",
+                        disabled=state.is_generating_video or not state.storyboard.get("storyboard_items"),
+                    ):
+                        if state.is_generating_video:
+                            me.progress_spinner(diameter=18)
+                        else:
+                            me.text("Generate Video")
+
 
 # --- Event Handlers ---
 
@@ -180,6 +219,7 @@ def on_upload_floor_plan(e: me.UploadEvent):
         "storyboard_items": [],
         "selected_room": "",
     }
+    state.storyboard = save_storyboard(state.storyboard)
     print(f"storyboard created: {state.storyboard}")
     yield
 
@@ -196,6 +236,7 @@ def on_select_floor_plan(e: LibrarySelectionChangeEvent):
         "storyboard_items": [],
         "selected_room": "",
     }
+    state.storyboard = save_storyboard(state.storyboard)
     print(f"storyboard created: {state.storyboard}")
     yield
 
@@ -236,6 +277,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
         state.error_message = f"An error occurred during generation: {ex}"
     finally:
         state.is_generating = False
+        state.storyboard = save_storyboard(state.storyboard)
         yield
 
 
@@ -276,6 +318,7 @@ def on_room_button_click(e: me.ClickEvent):
         state.error_message = f"An error occurred during zoom generation: {ex}"
     finally:
         state.is_generating_zoom = False
+        state.storyboard = save_storyboard(state.storyboard)
         yield
 
 
@@ -365,6 +408,44 @@ def on_design_click(e: me.ClickEvent):
         state.error_message = f"An error occurred during design generation: {ex}"
     finally:
         state.is_designing = False
+        state.storyboard = save_storyboard(state.storyboard)
+        yield
+
+
+def on_storyboard_item_click(e: me.ClickEvent):
+    """Sets the selected room when a storyboard tile is clicked."""
+    state = me.state(PageState)
+    state.storyboard["selected_room"] = e.key
+    yield
+
+
+def on_generate_video_click(e: me.ClickEvent):
+    """Generates a video from the storyboard."""
+    state = me.state(PageState)
+    state.is_generating_video = True
+    state.error_message = ""
+    yield
+
+    try:
+        video_clips = []
+        for item in state.storyboard["storyboard_items"]:
+            if item["styled_image_uri"]:
+                # Generate a short video clip for each room
+                video_uri = generate_video(
+                    prompt="A slow, gentle panning shot of the room.",
+                    image_uri=item["styled_image_uri"],
+                    duration=3, # 3-second clip per room
+                )
+                if video_uri:
+                    video_clips.append(video_uri)
+        
+        print(f"Generated video clips: {video_clips}")
+        # TODO: Concatenate the clips
+
+    except Exception as ex:
+        state.error_message = f"An error occurred during video generation: {ex}"
+    finally:
+        state.is_generating_video = False
         yield
 
 def open_info_dialog(e: me.ClickEvent):
