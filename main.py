@@ -50,7 +50,7 @@ from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
 from pages import veo
 from pages import vto as vto_page
-from pages import interior_design as interior_design_page
+from pages import interior_design_v2 as interior_design_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
 from pages.test_character_consistency import page as test_character_consistency_page
@@ -60,6 +60,7 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
+from pages.test_svg import test_svg_page
 from pages import pixie_compositor as pixie_compositor_page
 from state.state import AppState
 import google.auth
@@ -184,6 +185,9 @@ me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
 )
 me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
     test_worsfold_encoder_page
+)
+me.page(path="/test_svg", title="Test SVG")(
+    test_svg_page
 )
 
 
