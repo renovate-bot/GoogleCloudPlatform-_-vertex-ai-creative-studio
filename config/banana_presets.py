@@ -80,12 +80,5 @@ IMAGE_ACTION_PRESETS = {
             "label": "80's highschool headshot",
             "prompt": "you make people's 80s yearbook photos from their image.\nMake sure it still looks exactly like their face, but you can change the background, hair, facial hair, and whatever else you think fits the scene. We want that glamour shots vibe (the one from the mall in the 80s), things like mullets, very big and fluffy hair, large glasses, amazing amazing 80s fashion, and of course, that foggy camera and fun backgrounds and soft lighting.\nNO TEXT should be in the image.",
         },
-        {
-            "key": "labubu",
-            "prompt": "Create a plush animation render this photo (person) into a Labubu figure, strictly based on the provided reference photo. The figure should artistically reflect the characteristic styles from the photo as if they were a single Labubu figurine. High detail, studio lighting, photorealistic texture, pure white background.",
-            "references": [
-                "gs://genai-blackbelt-fishfooding-assets/references/labubu.jpg",                               ],
-            "attribution": "ghchinoy",
-        },
     ],
 }
