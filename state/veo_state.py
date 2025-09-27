@@ -20,6 +20,8 @@ import mesop as me
 @me.stateclass
 class PageState:
     """Mesop Page State"""
+    
+    # pylint: disable=E3701:invalid-field-call
 
     veo_model: str = "2.0"
     veo_prompt_input: str = ""
@@ -53,6 +55,12 @@ class PageState:
     last_reference_image_gcs: str
     last_reference_image_uri: str
     last_reference_image_mime_type: str = ""
+
+    # R2V reference images
+    r2v_reference_images: list[str] = field(default_factory=list)
+    r2v_reference_mime_types: list[str] = field(default_factory=list)
+    r2v_style_image: str | None = None
+    r2v_style_image_mime_type: str | None = None
 
     info_dialog_open: bool = False
 

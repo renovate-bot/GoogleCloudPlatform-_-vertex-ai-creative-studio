@@ -430,7 +430,19 @@ def render_default_detail_dialog(item: MediaItem):
     elif item.gcsuri:
         urls_to_process.append(item.gcsuri)
     primary_urls = [gcs_uri_to_https_url(uri) for uri in urls_to_process]
-    source_urls = [gcs_uri_to_https_url(uri) for uri in item.source_images_gcs]
+    # Consolidate all potential source images into a single list
+    all_source_uris = []
+    if item.source_images_gcs:
+        all_source_uris.extend(item.source_images_gcs)
+    if item.r2v_reference_images:
+        all_source_uris.extend(item.r2v_reference_images)
+    if item.r2v_style_image:
+        all_source_uris.append(item.r2v_style_image)
+    # Add other single reference images as well
+    if item.reference_image:
+        all_source_uris.append(item.reference_image)
+
+    source_urls = [gcs_uri_to_https_url(uri) for uri in all_source_uris]
     # Handle case where timestamp might be a string from Firestore
     timestamp_display = "N/A"
     if isinstance(item.timestamp, datetime.datetime):
