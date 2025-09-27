@@ -131,6 +131,7 @@ class Default:
     )
 
     # Lyria
+    LYRIA_LOCATION: str = os.environ.get("LYRIA_LOCATION", "us-central1")
     LYRIA_MODEL_VERSION: str = os.environ.get("LYRIA_MODEL_VERSION", "lyria-002")
     LYRIA_PROJECT_ID: str = os.environ.get("LYRIA_PROJECT_ID", PROJECT_ID)
     MEDIA_BUCKET: str = os.environ.get("MEDIA_BUCKET", f"{PROJECT_ID}-assets")
