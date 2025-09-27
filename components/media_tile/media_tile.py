@@ -37,6 +37,8 @@ def get_pills_for_item(item: MediaItem, https_url: str) -> str:
         pills.append({"label": "Audio"})
         if item.duration is not None:
             pills.append({"label": f"{item.duration} sec"})
+    elif effective_media_type == "interior_design_tour":
+        pills.append({"label": "Interior Design"})
 
     return json.dumps(pills)
 
