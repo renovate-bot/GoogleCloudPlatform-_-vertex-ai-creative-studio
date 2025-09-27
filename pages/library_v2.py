@@ -423,7 +423,13 @@ def render_tour_detail_dialog(storyboard: dict):
 @me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
-    primary_urls = [gcs_uri_to_https_url(uri) for uri in item.gcs_uris]
+    # Consolidate the primary URI(s) into a single list for processing.
+    urls_to_process = []
+    if item.gcs_uris:
+        urls_to_process.extend(item.gcs_uris)
+    elif item.gcsuri:
+        urls_to_process.append(item.gcsuri)
+    primary_urls = [gcs_uri_to_https_url(uri) for uri in urls_to_process]
     source_urls = [gcs_uri_to_https_url(uri) for uri in item.source_images_gcs]
     # Handle case where timestamp might be a string from Firestore
     timestamp_display = "N/A"
