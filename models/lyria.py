@@ -37,19 +37,13 @@ def generate_music_with_lyria(prompt: str):
         Exception: For other unexpected errors during the process.
     """
 
-    LOCATION = cfg.LOCATION
     MODEL_VERSION = cfg.LYRIA_MODEL_VERSION
-    PROJECT_ID = cfg.LYRIA_PROJECT_ID # Ensure this is the correct project ID for Lyria model access
-    LYRIA_ENDPOINT = f"projects/{PROJECT_ID}/locations/{LOCATION}/publishers/google/models/{MODEL_VERSION}"
+    PROJECT_ID = cfg.LYRIA_PROJECT_ID
+    # The model resource path uses 'global'
+    LYRIA_ENDPOINT = f"projects/{PROJECT_ID}/locations/global/publishers/google/models/{MODEL_VERSION}"
 
-    # Initialize aiplatform within the function if it's specific to this call,
-    # or ensure it's initialized globally if appropriate.
-    # aiplatform.init(project=PROJECT_ID, location=LOCATION) # This might be redundant if already initialized globally
-
-    instances = [{"prompt": prompt}] # Simplified instance creation
-    parameters = {"sampleCount": 1}
-
-    api_regional_endpoint = f"{LOCATION}-aiplatform.googleapis.com"
+    # The serving endpoint is defined by the new config variable
+    api_regional_endpoint = f"{cfg.LYRIA_LOCATION}-aiplatform.googleapis.com"
     client_options = {"api_endpoint": api_regional_endpoint}
     # It's good practice to handle client creation within a try/except if it can fail
     try:
@@ -60,10 +54,13 @@ def generate_music_with_lyria(prompt: str):
 
 
     print(
-        f"Prediction client initiated on project {PROJECT_ID} in {LOCATION}: {LYRIA_ENDPOINT}."
+        f"Prediction client initiated on project {PROJECT_ID} in {cfg.LYRIA_LOCATION}: {LYRIA_ENDPOINT}."
     )
 
     destination_blob_name = None  # Initialize to None
+
+    instances = [{"prompt": prompt}]
+    parameters = {"sampleCount": 1}
 
     try:
         response = client.predict(
