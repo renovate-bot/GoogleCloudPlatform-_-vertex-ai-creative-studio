@@ -14,9 +14,10 @@
 """metadata implementation"""
 
 import datetime
+import uuid
 
 # from models.model_setup import ModelSetup
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -37,45 +38,64 @@ class MediaItem:
     """Represents a single media item in the library for Firestore storage and retrieval."""
 
     id: Optional[str] = None  # Firestore document ID
-    related_media_item_id: Optional[str] = None # For linking generation sequences
+    related_media_item_id: Optional[str] = None  # For linking generation sequences
     user_email: Optional[str] = None
-    timestamp: Optional[datetime.datetime] = None # Store as datetime object
+    timestamp: Optional[datetime.datetime] = None  # Store as datetime object
 
     # Common fields across media types
     prompt: Optional[str] = None  # The final prompt used for generation
     original_prompt: Optional[str] = None  # User's initial prompt if rewriting occurred
-    rewritten_prompt: Optional[str] = None  # The prompt after any rewriter (Gemini, etc.)
-    model: Optional[str] = None # Specific model ID used (e.g., "imagen-3.0-fast", "veo-2.0")
-    mime_type: Optional[str] = None # e.g., "video/mp4", "image/png", "audio/wav"
+    rewritten_prompt: Optional[str] = (
+        None  # The prompt after any rewriter (Gemini, etc.)
+    )
+    model: Optional[str] = (
+        None  # Specific model ID used (e.g., "imagen-3.0-fast", "veo-2.0")
+    )
+    mime_type: Optional[str] = None  # e.g., "video/mp4", "image/png", "audio/wav"
     generation_time: Optional[float] = None  # Seconds for generation
-    error_message: Optional[str] = None # If any error occurred during generation
+    error_message: Optional[str] = None  # If any error occurred during generation
 
     # URI fields
-    gcsuri: Optional[str] = None  # For single file media (video, audio) -> gs://bucket/path
-    gcs_uris: List[str] = field(default_factory=list)  # For multi-file media (e.g., multiple images) -> list of gs://bucket/path
-    source_images_gcs: List[str] = field(default_factory=list) # For multi-file input media (e.g., recontext) -> list of gs://bucket/path
+    gcsuri: Optional[str] = (
+        None  # For single file media (video, audio) -> gs://bucket/path
+    )
+    gcs_uris: List[str] = field(
+        default_factory=list
+    )  # For multi-file media (e.g., multiple images) -> list of gs://bucket/path
+    source_images_gcs: List[str] = field(
+        default_factory=list
+    )  # For multi-file input media (e.g., recontext) -> list of gs://bucket/path
+    thumbnail_uri: Optional[str] = None
 
     # Video specific (some may also apply to Image/Audio)
     aspect: Optional[str] = None  # e.g., "16:9", "1:1" (also for Image)
-    resolution: Optional[str] = None # e.g., "720p", "1080p"
+    resolution: Optional[str] = None  # e.g., "720p", "1080p"
     duration: Optional[float] = None  # Seconds (also for Audio)
     reference_image: Optional[str] = None
     last_reference_image: Optional[str] = None
     negative_prompt: Optional[str] = None
     enhanced_prompt_used: bool = False
-    comment: Optional[str] = None # General comment field, e.g., for video generation type
+    comment: Optional[str] = (
+        None  # General comment field, e.g., for video generation type
+    )
 
     # Image specific
     # aspect is shared with Video
-    modifiers: List[str] = field(default_factory=list) # e.g., ["photorealistic", "wide angle"]
+    modifiers: List[str] = field(
+        default_factory=list
+    )  # e.g., ["photorealistic", "wide angle"]
     negative_prompt: Optional[str] = None
-    num_images: Optional[int] = None # Number of images generated in a batch
-    seed: Optional[int] = None # Seed used for generation (also potentially for video/audio)
-    critique: Optional[str] = None # Gemini-generated critique for images
+    num_images: Optional[int] = None  # Number of images generated in a batch
+    seed: Optional[int] = (
+        None  # Seed used for generation (also potentially for video/audio)
+    )
+    critique: Optional[str] = None  # Gemini-generated critique for images
 
     # Music specific
     # duration is shared with Video
-    audio_analysis: Optional[Dict] = None # Structured analysis from Gemini, stored as a map
+    audio_analysis: Optional[Dict] = (
+        None  # Structured analysis from Gemini, stored as a map
+    )
 
     # This field is for loading raw data from Firestore, not for writing.
     # It helps in debugging and displaying all stored fields if needed.
@@ -98,56 +118,83 @@ class MediaItem:
     volume_gain_db: Optional[float] = None
     language_code: Optional[str] = None
     style_prompt: Optional[str] = None
-
-
+    
+    # Interior Design Storyboard
+    storyboard_id: Optional[str] = None
 
 
 def add_media_item_to_firestore(item: MediaItem):
-    """Adds a MediaItem to Firestore. Sets timestamp if not already present."""
+    """
+    Creates or updates a MediaItem in Firestore.
+    If item.id is None, a new document is created with a Firestore-generated ID.
+    If item.id is provided, the existing document with that ID is updated.
+    """
     if not db:
         print("Firestore client (db) is not initialized. Cannot add media item.")
-        # Or raise an exception: raise ConnectionError("Firestore client not initialized")
         return
 
-    # Prepare data for Firestore, excluding None values and the 'id' field
-    firestore_data = {}
-    for f in field_names(item):
-        if f == "id":  # Exclude id from direct storage
-            continue
-        value = getattr(item, f)
-        if value is not None:
-            if f == "timestamp" and isinstance(value, str): # If timestamp is already string, try to parse
-                try:
-                    firestore_data[f] = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-                except ValueError:
-                    print(f"Warning: Could not parse timestamp string '{value}' to datetime. Storing as is or consider handling.")
-                    firestore_data[f] = value # Or handle error, or ensure it's always datetime
-            else:
-                firestore_data[f] = value
+    # Prepare data for Firestore using asdict
+    firestore_data = asdict(item)
 
-    # Ensure timestamp is set
+    # Ensure timestamp is handled correctly
     if "timestamp" not in firestore_data or firestore_data["timestamp"] is None:
         firestore_data["timestamp"] = datetime.datetime.now(datetime.timezone.utc)
-    elif isinstance(firestore_data["timestamp"], datetime.datetime) and firestore_data["timestamp"].tzinfo is None:
-        # If datetime is naive, assume UTC (or local, then convert to UTC)
-        # For consistency, Firestore often expects UTC.
-        firestore_data["timestamp"] = firestore_data["timestamp"].replace(tzinfo=datetime.timezone.utc)
-
+    elif isinstance(firestore_data["timestamp"], str):
+        try:
+            firestore_data["timestamp"] = datetime.datetime.fromisoformat(
+                firestore_data["timestamp"].replace("Z", "+00:00")
+            )
+        except ValueError:
+            print(f"Warning: Could not parse timestamp string '{firestore_data['timestamp']}'. Setting to now().")
+            firestore_data["timestamp"] = datetime.datetime.now(datetime.timezone.utc)
 
     try:
-        doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
-        doc_ref.set(firestore_data)
-        item.id = doc_ref.id # Set the ID back to the item
-        print(f"MediaItem data stored in Firestore with document ID: {doc_ref.id}")
-        print(f"Stored data: {firestore_data}")
+        if item.id:
+            # If an ID is provided, update the existing document
+            doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(item.id)
+            # We can remove the 'id' field before setting, as it's the doc's name
+            if 'id' in firestore_data:
+                del firestore_data['id']
+            doc_ref.set(firestore_data, merge=True) # Use merge=True to update fields
+            print(f"Successfully updated MediaItem in Firestore with ID: {item.id}")
+        else:
+            # If no ID is provided, create a new document
+            doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
+            if 'id' in firestore_data:
+                del firestore_data['id']
+            doc_ref.set(firestore_data)
+            # Set the new Firestore-generated ID back on the object
+            item.id = doc_ref.id
+            print(f"Successfully created MediaItem in Firestore with new ID: {item.id}")
+
     except Exception as e:
-        print(f"Error storing MediaItem to Firestore: {e}")
-        # Optionally re-raise or handle more gracefully
-        raise
+        print(f"CRITICAL: Failed to save MediaItem to Firestore. Error: {e}")
+        raise e
+
+def save_storyboard(storyboard: dict) -> dict:
+    """
+    Creates or updates an InteriorDesignStoryboard document in Firestore.
+
+    Args:
+        storyboard: A dictionary representing the storyboard.
+
+    Returns:
+        The storyboard dictionary, now with an 'id' if it was new.
+    """
+    db = FirebaseClient().get_client()
+    if "id" not in storyboard or not storyboard.get("id"):
+        storyboard["id"] = str(uuid.uuid4())
+
+    doc_ref = db.collection("interior_design_storyboards").document(storyboard["id"])
+    doc_ref.set(storyboard)
+    print(f"Storyboard saved to Firestore with ID: {storyboard['id']}")
+    return storyboard
+
 
 def field_names(dataclass_instance):
     """Helper to get field names of a dataclass instance."""
     return [f.name for f in dataclass_instance.__dataclass_fields__.values()]
+
 
 def get_media_item_by_id(
     item_id: str,
@@ -169,7 +216,9 @@ def get_media_item_by_id(
             raw_timestamp = raw_item_data.get("timestamp")
             if isinstance(raw_timestamp, str):
                 timestamp_iso_str = raw_timestamp
-            elif hasattr(raw_timestamp, "isoformat"):  # Handles both datetime and firestore.Timestamp
+            elif hasattr(
+                raw_timestamp, "isoformat"
+            ):  # Handles both datetime and firestore.Timestamp
                 timestamp_iso_str = raw_timestamp.isoformat()
 
             try:
@@ -189,11 +238,15 @@ def get_media_item_by_id(
                 )
             except (ValueError, TypeError):
                 item_duration = None
-            
+
             gcsuri: str = None
-            
+
             if isinstance(raw_item_data.get("gcsuri"), list):
-                gcsuri = raw_item_data.get("gcsuri")[0] if raw_item_data.get("gcsuri") else None
+                gcsuri = (
+                    raw_item_data.get("gcsuri")[0]
+                    if raw_item_data.get("gcsuri")
+                    else None
+                )
             elif raw_item_data.get("gcsuri") is not None:
                 gcsuri = str(raw_item_data.get("gcsuri"))
             else:
@@ -201,62 +254,96 @@ def get_media_item_by_id(
 
             media_item = MediaItem(
                 id=doc.id,
-                model=str(raw_item_data.get("model"))
-                if raw_item_data.get("model") is not None
-                else None,
-                aspect=str(raw_item_data.get("aspect"))
-                if raw_item_data.get("aspect") is not None
-                else None,
+                model=(
+                    str(raw_item_data.get("model"))
+                    if raw_item_data.get("model") is not None
+                    else None
+                ),
+                aspect=(
+                    str(raw_item_data.get("aspect"))
+                    if raw_item_data.get("aspect") is not None
+                    else None
+                ),
                 gcsuri=gcsuri,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
-                prompt=str(raw_item_data.get("original_prompt"))
-                if raw_item_data.get("original_prompt") is not None
-                else str(raw_item_data.get("prompt")),
+                prompt=(
+                    str(raw_item_data.get("original_prompt"))
+                    if raw_item_data.get("original_prompt") is not None
+                    else str(raw_item_data.get("prompt"))
+                ),
                 generation_time=gen_time,
                 timestamp=timestamp_iso_str,
-                reference_image=str(raw_item_data.get("reference_image"))
-                if raw_item_data.get("reference_image") is not None
-                else None,
-                last_reference_image=str(raw_item_data.get("last_reference_image"))
-                if raw_item_data.get("last_reference_image") is not None
-                else None,
-                negative_prompt=str(raw_item_data.get("negative_prompt"))
-                if raw_item_data.get("negative_prompt") is not None
-                else None,
+                reference_image=(
+                    str(raw_item_data.get("reference_image"))
+                    if raw_item_data.get("reference_image") is not None
+                    else None
+                ),
+                last_reference_image=(
+                    str(raw_item_data.get("last_reference_image"))
+                    if raw_item_data.get("last_reference_image") is not None
+                    else None
+                ),
+                negative_prompt=(
+                    str(raw_item_data.get("negative_prompt"))
+                    if raw_item_data.get("negative_prompt") is not None
+                    else None
+                ),
                 enhanced_prompt_used=raw_item_data.get("enhanced_prompt_used", False),
                 duration=item_duration,
-                error_message=str(raw_item_data.get("error_message"))
-                if raw_item_data.get("error_message") is not None
-                else None,
-                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
-                if raw_item_data.get("rewritten_prompt") is not None
-                else None,
-                critique=str(raw_item_data.get("critique"))
-                if raw_item_data.get("critique") is not None
-                else None,
-                resolution=str(raw_item_data.get("resolution"))
-                if raw_item_data.get("resolution") is not None
-                else None,
-                media_type=str(raw_item_data.get("media_type"))
-                if raw_item_data.get("media_type") is not None
-                else None,
-                source_character_images=raw_item_data.get("source_character_images", []),
-                character_description=str(raw_item_data.get("character_description"))
-                if raw_item_data.get("character_description") is not None
-                else None,
-                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
-                if raw_item_data.get("imagen_prompt") is not None
-                else None,
-                veo_prompt=str(raw_item_data.get("veo_prompt"))
-                if raw_item_data.get("veo_prompt") is not None
-                else None,
+                error_message=(
+                    str(raw_item_data.get("error_message"))
+                    if raw_item_data.get("error_message") is not None
+                    else None
+                ),
+                rewritten_prompt=(
+                    str(raw_item_data.get("rewritten_prompt"))
+                    if raw_item_data.get("rewritten_prompt") is not None
+                    else None
+                ),
+                critique=(
+                    str(raw_item_data.get("critique"))
+                    if raw_item_data.get("critique") is not None
+                    else None
+                ),
+                resolution=(
+                    str(raw_item_data.get("resolution"))
+                    if raw_item_data.get("resolution") is not None
+                    else None
+                ),
+                media_type=(
+                    str(raw_item_data.get("media_type"))
+                    if raw_item_data.get("media_type") is not None
+                    else None
+                ),
+                source_character_images=raw_item_data.get(
+                    "source_character_images", []
+                ),
+                character_description=(
+                    str(raw_item_data.get("character_description"))
+                    if raw_item_data.get("character_description") is not None
+                    else None
+                ),
+                imagen_prompt=(
+                    str(raw_item_data.get("imagen_prompt"))
+                    if raw_item_data.get("imagen_prompt") is not None
+                    else None
+                ),
+                veo_prompt=(
+                    str(raw_item_data.get("veo_prompt"))
+                    if raw_item_data.get("veo_prompt") is not None
+                    else None
+                ),
                 candidate_images=raw_item_data.get("candidate_images", []),
-                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
-                if raw_item_data.get("best_candidate_image") is not None
-                else None,
-                outpainted_image=str(raw_item_data.get("outpainted_image"))
-                if raw_item_data.get("outpainted_image") is not None
-                else None,
+                best_candidate_image=(
+                    str(raw_item_data.get("best_candidate_image"))
+                    if raw_item_data.get("best_candidate_image") is not None
+                    else None
+                ),
+                outpainted_image=(
+                    str(raw_item_data.get("outpainted_image"))
+                    if raw_item_data.get("outpainted_image") is not None
+                    else None
+                ),
                 raw_data=raw_item_data,
             )
             return media_item
@@ -314,6 +401,7 @@ def get_total_media_count():
     count = len([doc.to_dict() for doc in media_ref.stream()])
     return count
 
+
 def add_vto_metadata(
     person_image_gcs: str,
     product_image_gcs: str,
@@ -338,6 +426,7 @@ def add_vto_metadata(
     )
 
     print(f"VTO data stored in Firestore with document ID: {doc_ref.id}")
+
 
 def get_media_for_page(
     page: int,
@@ -376,7 +465,7 @@ def get_media_for_page(
         all_fetched_items: List[MediaItem] = []
         for doc in query.limit(fetch_limit).stream():
             raw_item_data = doc.to_dict()
-            
+
             if raw_item_data is None:
                 print(f"Warning: doc.to_dict() returned None for doc ID: {doc.id}")
                 continue
@@ -384,7 +473,11 @@ def get_media_for_page(
             gcsuri: str = None
 
             if isinstance(raw_item_data.get("gcsuri"), list):
-                gcsuri = raw_item_data.get("gcsuri")[0] if raw_item_data.get("gcsuri") else None
+                gcsuri = (
+                    raw_item_data.get("gcsuri")[0]
+                    if raw_item_data.get("gcsuri")
+                    else None
+                )
             elif raw_item_data.get("gcsuri") is not None:
                 gcsuri = str(raw_item_data.get("gcsuri"))
             else:
@@ -421,7 +514,10 @@ def get_media_for_page(
                 continue
 
             # Apply user email filter
-            if filter_by_user_email and raw_item_data.get("user_email") != filter_by_user_email:
+            if (
+                filter_by_user_email
+                and raw_item_data.get("user_email") != filter_by_user_email
+            ):
                 continue
 
             # Construct MediaItem if all filters pass
@@ -456,62 +552,102 @@ def get_media_for_page(
 
             media_item = MediaItem(
                 id=doc.id,
-                aspect=str(raw_item_data.get("aspect"))
-                if raw_item_data.get("aspect") is not None
-                else None,
+                storyboard_id=(
+                    str(raw_item_data.get("storyboard_id"))
+                    if raw_item_data.get("storyboard_id") is not None
+                    else None
+                ),
+                thumbnail_uri=(
+                    str(raw_item_data.get("thumbnail_url"))
+                    if raw_item_data.get("thumbnail_url") is not None
+                    else None
+                ),
+                aspect=(
+                    str(raw_item_data.get("aspect"))
+                    if raw_item_data.get("aspect") is not None
+                    else None
+                ),
                 gcsuri=gcsuri,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
                 source_images_gcs=raw_item_data.get("source_images_gcs", []),
-                prompt=str(raw_item_data.get("prompt"))
-                if raw_item_data.get("prompt") is not None
-                else None,
+                prompt=(
+                    str(raw_item_data.get("prompt"))
+                    if raw_item_data.get("prompt") is not None
+                    else None
+                ),
                 generation_time=gen_time,
                 timestamp=timestamp_iso_str,
-                reference_image=str(raw_item_data.get("reference_image"))
-                if raw_item_data.get("reference_image") is not None
-                else None,
-                last_reference_image=str(raw_item_data.get("last_reference_image"))
-                if raw_item_data.get("last_reference_image") is not None
-                else None,
-                negative_prompt=str(raw_item_data.get("negative_prompt"))
-                if raw_item_data.get("negative_prompt") is not None
-                else None,
+                reference_image=(
+                    str(raw_item_data.get("reference_image"))
+                    if raw_item_data.get("reference_image") is not None
+                    else None
+                ),
+                last_reference_image=(
+                    str(raw_item_data.get("last_reference_image"))
+                    if raw_item_data.get("last_reference_image") is not None
+                    else None
+                ),
+                negative_prompt=(
+                    str(raw_item_data.get("negative_prompt"))
+                    if raw_item_data.get("negative_prompt") is not None
+                    else None
+                ),
                 enhanced_prompt_used=raw_item_data.get("enhanced_prompt"),
                 duration=item_duration,
-                error_message=str(raw_item_data.get("error_message"))
-                if raw_item_data.get("error_message") is not None
-                else None,
-                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
-                if raw_item_data.get("rewritten_prompt") is not None
-                else None,
-                comment=str(raw_item_data.get("comment"))
-                if raw_item_data.get("comment") is not None
-                else None,
-                resolution=str(raw_item_data.get("resolution"))
-                if raw_item_data.get("resolution") is not None
-                else None,
-                media_type=str(raw_item_data.get("media_type"))
-                if raw_item_data.get("media_type") is not None
-                else None,
+                error_message=(
+                    str(raw_item_data.get("error_message"))
+                    if raw_item_data.get("error_message") is not None
+                    else None
+                ),
+                rewritten_prompt=(
+                    str(raw_item_data.get("rewritten_prompt"))
+                    if raw_item_data.get("rewritten_prompt") is not None
+                    else None
+                ),
+                comment=(
+                    str(raw_item_data.get("comment"))
+                    if raw_item_data.get("comment") is not None
+                    else None
+                ),
+                resolution=(
+                    str(raw_item_data.get("resolution"))
+                    if raw_item_data.get("resolution") is not None
+                    else None
+                ),
+                media_type=(
+                    str(raw_item_data.get("media_type"))
+                    if raw_item_data.get("media_type") is not None
+                    else None
+                ),
                 source_character_images=raw_item_data.get(
                     "source_character_images", []
                 ),
-                character_description=str(raw_item_data.get("character_description"))
-                if raw_item_data.get("character_description") is not None
-                else None,
-                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
-                if raw_item_data.get("imagen_prompt") is not None
-                else None,
-                veo_prompt=str(raw_item_data.get("veo_prompt"))
-                if raw_item_data.get("veo_prompt") is not None
-                else None,
+                character_description=(
+                    str(raw_item_data.get("character_description"))
+                    if raw_item_data.get("character_description") is not None
+                    else None
+                ),
+                imagen_prompt=(
+                    str(raw_item_data.get("imagen_prompt"))
+                    if raw_item_data.get("imagen_prompt") is not None
+                    else None
+                ),
+                veo_prompt=(
+                    str(raw_item_data.get("veo_prompt"))
+                    if raw_item_data.get("veo_prompt") is not None
+                    else None
+                ),
                 candidate_images=raw_item_data.get("candidate_images", []),
-                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
-                if raw_item_data.get("best_candidate_image") is not None
-                else None,
-                outpainted_image=str(raw_item_data.get("outpainted_image"))
-                if raw_item_data.get("outpainted_image") is not None
-                else None,
+                best_candidate_image=(
+                    str(raw_item_data.get("best_candidate_image"))
+                    if raw_item_data.get("best_candidate_image") is not None
+                    else None
+                ),
+                outpainted_image=(
+                    str(raw_item_data.get("outpainted_image"))
+                    if raw_item_data.get("outpainted_image") is not None
+                    else None
+                ),
                 raw_data=raw_item_data,
             )
             all_fetched_items.append(media_item)
@@ -575,7 +711,11 @@ def get_media_for_page_optimized(
                 continue
 
             if isinstance(raw_item_data.get("gcsuri"), list):
-                gcsuri = raw_item_data.get("gcsuri")[0] if raw_item_data.get("gcsuri") else None
+                gcsuri = (
+                    raw_item_data.get("gcsuri")[0]
+                    if raw_item_data.get("gcsuri")
+                    else None
+                )
             elif raw_item_data.get("gcsuri") is not None:
                 gcsuri = str(raw_item_data.get("gcsuri"))
             else:
@@ -610,74 +750,99 @@ def get_media_for_page_optimized(
 
             media_item = MediaItem(
                 id=doc.id,
-                aspect=str(raw_item_data.get("aspect"))
-                if raw_item_data.get("aspect") is not None
-                else None,
+                aspect=(
+                    str(raw_item_data.get("aspect"))
+                    if raw_item_data.get("aspect") is not None
+                    else None
+                ),
                 gcsuri=gcsuri,
                 gcs_uris=raw_item_data.get("gcs_uris", []),
                 source_images_gcs=raw_item_data.get("source_images_gcs", []),
-                prompt=str(raw_item_data.get("prompt"))
-                if raw_item_data.get("prompt") is not None
-                else None,
+                prompt=(
+                    str(raw_item_data.get("prompt"))
+                    if raw_item_data.get("prompt") is not None
+                    else None
+                ),
                 generation_time=gen_time,
                 timestamp=timestamp_iso_str,
-                reference_image=str(raw_item_data.get("reference_image"))
-                if raw_item_data.get("reference_image") is not None
-                else None,
-                last_reference_image=str(raw_item_data.get("last_reference_image"))
-                if raw_item_data.get("last_reference_image") is not None
-                else None,
-                negative_prompt=str(raw_item_data.get("negative_prompt"))
-                if raw_item_data.get("negative_prompt") is not None
-                else None,
+                reference_image=(
+                    str(raw_item_data.get("reference_image"))
+                    if raw_item_data.get("reference_image") is not None
+                    else None
+                ),
+                last_reference_image=(
+                    str(raw_item_data.get("last_reference_image"))
+                    if raw_item_data.get("last_reference_image") is not None
+                    else None
+                ),
+                negative_prompt=(
+                    str(raw_item_data.get("negative_prompt"))
+                    if raw_item_data.get("negative_prompt") is not None
+                    else None
+                ),
                 enhanced_prompt_used=raw_item_data.get("enhanced_prompt"),
                 duration=item_duration,
-                error_message=str(raw_item_data.get("error_message"))
-                if raw_item_data.get("error_message") is not None
-                else None,
-                rewritten_prompt=str(raw_item_data.get("rewritten_prompt"))
-                if raw_item_data.get("rewritten_prompt") is not None
-                else None,
-                comment=str(raw_item_data.get("comment"))
-                if raw_item_data.get("comment") is not None
-                else None,
-                resolution=str(raw_item_data.get("resolution"))
-                if raw_item_data.get("resolution") is not None
-                else None,
-                media_type=str(raw_item_data.get("media_type"))
-                if raw_item_data.get("media_type") is not None
-                else None,
+                error_message=(
+                    str(raw_item_data.get("error_message"))
+                    if raw_item_data.get("error_message") is not None
+                    else None
+                ),
+                rewritten_prompt=(
+                    str(raw_item_data.get("rewritten_prompt"))
+                    if raw_item_data.get("rewritten_prompt") is not None
+                    else None
+                ),
+                comment=(
+                    str(raw_item_data.get("comment"))
+                    if raw_item_data.get("comment") is not None
+                    else None
+                ),
+                resolution=(
+                    str(raw_item_data.get("resolution"))
+                    if raw_item_data.get("resolution") is not None
+                    else None
+                ),
+                media_type=(
+                    str(raw_item_data.get("media_type"))
+                    if raw_item_data.get("media_type") is not None
+                    else None
+                ),
                 source_character_images=raw_item_data.get(
                     "source_character_images", []
                 ),
-                character_description=str(raw_item_data.get("character_description"))
-                if raw_item_data.get("character_description") is not None
-                else None,
-                imagen_prompt=str(raw_item_data.get("imagen_prompt"))
-                if raw_item_data.get("imagen_prompt") is not None
-                else None,
-                veo_prompt=str(raw_item_data.get("veo_prompt"))
-                if raw_item_data.get("veo_prompt") is not None
-                else None,
+                character_description=(
+                    str(raw_item_data.get("character_description"))
+                    if raw_item_data.get("character_description") is not None
+                    else None
+                ),
+                imagen_prompt=(
+                    str(raw_item_data.get("imagen_prompt"))
+                    if raw_item_data.get("imagen_prompt") is not None
+                    else None
+                ),
+                veo_prompt=(
+                    str(raw_item_data.get("veo_prompt"))
+                    if raw_item_data.get("veo_prompt") is not None
+                    else None
+                ),
                 candidate_images=raw_item_data.get("candidate_images", []),
-                best_candidate_image=str(raw_item_data.get("best_candidate_image"))
-                if raw_item_data.get("best_candidate_image") is not None
-                else None,
-                outpainted_image=str(raw_item_data.get("outpainted_image"))
-                if raw_item_data.get("outpainted_image") is not None
-                else None,
+                best_candidate_image=(
+                    str(raw_item_data.get("best_candidate_image"))
+                    if raw_item_data.get("best_candidate_image") is not None
+                    else None
+                ),
+                outpainted_image=(
+                    str(raw_item_data.get("outpainted_image"))
+                    if raw_item_data.get("outpainted_image") is not None
+                    else None
+                ),
                 raw_data=raw_item_data,
             )
             media_items.append(media_item)
-        
+
         last_doc = docs[-1] if docs else None
         return media_items, last_doc
 
     except Exception as e:
         print(f"Error fetching media from Firestore (optimized): {e}")
         return [], None
-
-
-
-
-

@@ -15,8 +15,9 @@
 
 import json
 import urllib.parse
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import List, Optional
+import datetime
 
 import mesop as me
 from common.analytics import log_ui_click
@@ -29,6 +30,8 @@ from components.library.image_details import CarouselState
 from components.media_detail_viewer.media_detail_viewer import media_detail_viewer
 from components.media_tile.media_tile import media_tile, get_pills_for_item
 from components.page_scaffold import page_frame, page_scaffold
+from components.dialog import dialog
+from components.interior_design.storyboard_video_tile import storyboard_video_tile
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from state.state import AppState
 
@@ -46,8 +49,10 @@ class PageState:
     current_page: int = 1
     all_items_loaded: bool = False
     user_filter: str = "mine"  # "all" or "mine"
-    type_filters: list[str] = field(default_factory=lambda: ["all"]) # "all", "images", "videos", "audio"
-    error_filter: str = "all" # "all", "no_errors", "only_errors"
+    type_filters: list[str] = field(
+        default_factory=lambda: ["all"]
+    )  # "all", "images", "videos", "audio"
+    error_filter: str = "all"  # "all", "no_errors", "only_errors"
 
 
 def on_load(e: me.LoadEvent):
@@ -64,7 +69,7 @@ def on_load(e: me.LoadEvent):
                 item = get_media_item_by_id(media_id)
                 if item:
                     pagestate.media_items.insert(0, item)
-            
+
             if item:
                 pagestate.selected_media_item_id = media_id
                 pagestate.show_details_dialog = True
@@ -74,7 +79,9 @@ def on_load(e: me.LoadEvent):
 def _load_media(pagestate: PageState, is_filter_change: bool = False):
     """Central function to load media based on current filters and pagination."""
     app_state = me.state(AppState)
-    user_email_to_filter = app_state.user_email if pagestate.user_filter == "mine" else None
+    user_email_to_filter = (
+        app_state.user_email if pagestate.user_filter == "mine" else None
+    )
 
     if is_filter_change:
         pagestate.current_page = 1
@@ -149,18 +156,25 @@ def on_error_filter_change(e: me.ButtonToggleChangeEvent):
 )
 def page():
     """Main Page."""
-    with page_scaffold(page_name="library"):
-        library_content()
+    with page_scaffold(page_name="library"):  # pylint: disable=E1129:not-context-manager
+        library_content()  # pylint: disable=E1129:not-context-manager
 
 
 def library_content():
     """The main content of the library page."""
     pagestate = me.state(PageState)
 
-    with page_frame():
+    with page_frame():  # pylint: disable=E1129:not-context-manager
         header("Library", "perm_media")
 
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(bottom=20))):
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                gap=10,
+                margin=me.Margin(bottom=20),
+            )
+        ):
             me.button_toggle(
                 value=pagestate.type_filters,
                 buttons=[
@@ -211,17 +225,20 @@ def library_content():
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
                     https_url = gcs_uri_to_https_url(gcs_uri) if gcs_uri else ""
-                    
-                    render_type = item.media_type
-                    if item.media_type == "character_consistency":
-                        render_type = "video"
-                    elif not render_type and https_url:
+
+                    # Determine the render type based on mime_type for reliability
+                    render_type = "image" # Default to image
+                    if item.mime_type:
+                        if item.mime_type.startswith("video/"):
+                            render_type = "video"
+                        elif item.mime_type.startswith("audio/"):
+                            render_type = "audio"
+                    # Fallback to URL check if mime_type is missing
+                    elif https_url:
                         if ".mp4" in https_url or ".webm" in https_url:
                             render_type = "video"
                         elif ".wav" in https_url or ".mp3" in https_url:
                             render_type = "audio"
-                        else:
-                            render_type = "image"
 
                     media_tile(
                         key=item.id,
@@ -230,7 +247,7 @@ def library_content():
                         https_url=https_url,
                         pills_json=get_pills_for_item(item, https_url),
                     )
-        
+
         scroll_sentinel(
             on_visible=on_load_more,
             is_loading=pagestate.is_loading,
@@ -250,6 +267,37 @@ def on_media_item_click(e: me.ClickEvent):
     pagestate.selected_media_item_id = item.id
     pagestate.show_details_dialog = True
     yield
+
+
+@me.component
+def library_dialog(pagestate: PageState):
+    item_to_display = None
+    if pagestate.selected_media_item_id:
+        item_to_display = next(
+            (v for v in pagestate.media_items if v.id == pagestate.selected_media_item_id),
+            None,
+        )
+
+    with lightbox_dialog(
+        is_open=pagestate.show_details_dialog, on_close=on_close_details_dialog
+    ):
+        if not item_to_display:
+            with me.box(style=me.Style(padding=me.Padding.all(16))):
+                me.text("No media item selected or found for the given ID.")
+            return
+
+        # If the item has a storyboard_id, fetch the data and render the tour dialog.
+        if item_to_display.storyboard_id:
+            from config.firebase_config import FirebaseClient
+            db = FirebaseClient().get_client()
+            doc_ref = db.collection("interior_design_storyboards").document(item_to_display.storyboard_id)
+            doc = doc_ref.get()
+            if doc.exists:
+                render_tour_detail_dialog(storyboard=doc.to_dict())
+            else:
+                me.text(f"Error: Could not find storyboard with ID: {item_to_display.storyboard_id}")
+        else:
+            render_default_detail_dialog(item=item_to_display)
 
 
 def on_close_details_dialog(e: me.ClickEvent):
@@ -272,98 +320,181 @@ def handle_edit_click(e: me.WebEvent):
     me.navigate("/gemini_image_generation", query_params={"image_uri": gcs_uri})
 
 
-def handle_veo_click(e: me.WebEvent):
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="media_detail_viewer_veo_button",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
+def on_veo_click(e: me.WebEvent):
+    """Event handler for when the VEO button is clicked in the detail viewer."""
+    state = me.state(PageState)
+    selected_item = next(
+        (i for i in state.media_items if i.id == state.selected_media_item_id), None
     )
-    gcs_uri = https_url_to_gcs_uri(e.value["url"])
-    me.navigate("/veo", query_params={"image_uri": gcs_uri})
+    if selected_item:
+        image_uri = selected_item.gcs_uris[0]
+        me.navigate(f"/veo?image_uri={image_uri}")
+    yield
+
+
+def json_default_serializer(o):
+    """A default serializer for json.dumps to handle datetimes."""
+    if isinstance(o, (datetime.datetime, datetime.date)):
+        return o.isoformat()
+    raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
+
+
+@me.component
+def render_tour_detail_dialog(storyboard: dict):
+    """Renders a dedicated dialog for viewing Interior Design Tours."""
+
+    if not storyboard:
+        return
+
+    with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):
+        me.text(f"Interior Design Tour", type="headline-5")
+
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=24, margin=me.Margin(top=16))):
+            # Left Column: Video and Carousel
+            with me.box(style=me.Style(flex_grow=1, display="flex", flex_direction="column", gap=16)):
+                final_video_uri = storyboard.get("final_video_uri")
+                if final_video_uri:
+                    me.video(
+                        src=gcs_uri_to_https_url(final_video_uri),
+                        style=me.Style(width="100%", border_radius=8),
+                    )
+
+                with me.box():
+                    me.text("Storyboard Clips", type="headline-6")
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=16,
+                            overflow_x="auto",
+                            padding=me.Padding(top=8, bottom=16),
+                        )
+                    ):
+                        for item in storyboard.get("storyboard_items", []):
+                            if item.get("generated_video_uri"):
+                                storyboard_video_tile(
+                                    key=item["room_name"],
+                                    video_url=item["generated_video_uri"],
+                                    room_name=item["room_name"],
+                                    on_click=lambda e: None,
+                                )
+            
+            # Right Column: Metadata
+            with me.box(style=me.Style(width=300, flex_shrink=0)):
+                me.text("Details", type="headline-6")
+                with me.box(style=me.Style(margin=me.Margin(top=8, bottom=16))):
+                    me.text(f"Storyboard ID: {storyboard.get('id')}")
+                    me.text(f"Created: {storyboard.get('timestamp')}")
+                    # You can add more metadata here as needed
+
+                me.divider()
+
+                me.text("Raw Metadata", type="headline-6", style=me.Style(margin=me.Margin(top=16)))
+                with me.box(style=me.Style(background=me.theme_var("surface-container"), border_radius=8, padding=me.Padding.all(8), margin=me.Margin(top=8))):
+                    me.code(json.dumps(storyboard, indent=2), language="json")
+
+        with me.box(
+            style=me.Style(
+                display="flex",
+                justify_content="flex-end",
+                gap=8,
+                margin=me.Margin(top=24),
+            )
+        ):
+            me.button("Close", on_click=on_close_details_dialog, type="stroked")
+            me.button(
+                "Continue Styling", on_click=on_continue_styling_click, key=storyboard.get("id"), type="raised"
+            )
+
+
+@me.component
+def render_default_detail_dialog(item: MediaItem):
+    """Renders the default detail view for standard media items."""
+    primary_urls = [gcs_uri_to_https_url(uri) for uri in item.gcs_uris]
+    source_urls = [gcs_uri_to_https_url(uri) for uri in item.source_images_gcs]
+    # Handle case where timestamp might be a string from Firestore
+    timestamp_display = "N/A"
+    if isinstance(item.timestamp, datetime.datetime):
+        timestamp_display = item.timestamp.isoformat()
+    elif isinstance(item.timestamp, str):
+        timestamp_display = item.timestamp
+
+    metadata = {
+        "Prompt": item.prompt,
+        "Model": item.model,
+        "Timestamp": timestamp_display,
+        "Generation Time (s)": item.generation_time,
+    }
+
+        # Determine the render type based on mime_type for reliability
+    render_type = "image" # Default to image
+    if item.mime_type:
+        if item.mime_type.startswith("video/"):
+            render_type = "video"
+        elif item.mime_type.startswith("audio/"):
+            render_type = "audio"
+    # Fallback to URL check if mime_type is missing
+    elif primary_urls:
+        url = primary_urls[0]
+        if ".mp4" in url or ".webm" in url:
+            render_type = "video"
+        elif ".wav" in url or ".mp3" in url:
+            render_type = "audio"
+
+    media_detail_viewer(
+        media_type=render_type,
+        primary_urls_json=json.dumps(primary_urls),
+        source_urls_json=json.dumps(source_urls),
+        metadata_json=json.dumps(metadata),
+        id=item.id,
+        raw_metadata_json=json.dumps(
+            asdict(item), indent=2, default=json_default_serializer
+        ),
+        on_edit_click=handle_edit_click,
+        on_veo_click=on_veo_click,
+    )
+
+
+def on_continue_styling_click(e: me.ClickEvent):
+    """Navigates the user to the interior design page to continue styling."""
+    storyboard_id = e.key
+    if storyboard_id:
+        me.navigate(
+            url="/interior_design",
+            query_params={
+                "storyboard_id": f"{storyboard_id}",
+            },
+        )
+                
+    yield
 
 
 @me.component
 def library_dialog(pagestate: PageState):
+    item_to_display = None
+    if pagestate.selected_media_item_id:
+        item_to_display = next(
+            (v for v in pagestate.media_items if v.id == pagestate.selected_media_item_id),
+            None,
+        )
+
     with lightbox_dialog(
         is_open=pagestate.show_details_dialog, on_close=on_close_details_dialog
     ):
-        item_to_display = None
-        if pagestate.selected_media_item_id:
-            item_to_display = next(
-                (
-                    v
-                    for v in pagestate.media_items
-                    if v.id == pagestate.selected_media_item_id
-                ),
-                None,
-            )
-
-        if item_to_display:
-            item = item_to_display
-
-            # Prepare data for the detail viewer component
-            primary_urls = []
-            if item.gcs_uris:
-                primary_urls = [gcs_uri_to_https_url(uri) for uri in item.gcs_uris]
-            elif item.gcsuri:
-                primary_urls.append(gcs_uri_to_https_url(item.gcsuri))
-            primary_urls_json = json.dumps(primary_urls)
-
-            source_urls = []
-            if item.reference_image:
-                source_urls.append(gcs_uri_to_https_url(item.reference_image))
-            if item.last_reference_image:
-                source_urls.append(gcs_uri_to_https_url(item.last_reference_image))
-            if item.raw_data and item.raw_data.get("source_images_gcs"):
-                for uri in item.raw_data["source_images_gcs"]:
-                    source_urls.append(gcs_uri_to_https_url(uri))
-            source_urls_json = json.dumps(source_urls)
-
-            metadata_dict = {
-                "Prompt": getattr(item, "prompt", None),
-                "Model": item.raw_data.get("model") if item.raw_data else None,
-                "Timestamp": getattr(item, "timestamp", None),
-                "User": getattr(item, "user_email", None),
-                "Generation Time (s)": getattr(item, "generation_time", None),
-                "Aspect Ratio": getattr(item, "aspect", None),
-                "Duration (s)": getattr(item, "duration", None),
-            }
-            # Filter out keys where the value is None
-            filtered_metadata = {
-                k: v for k, v in metadata_dict.items() if v is not None
-            }
-            metadata_json = json.dumps(filtered_metadata, default=str)
-
-            raw_metadata_json = json.dumps(item.raw_data, indent=2, default=str) if item.raw_data else "{}"
-
-            # Determine the render type for the detail view
-            render_type = item.media_type
-            if item.media_type == "character_consistency":
-                render_type = "video"
-            # Fallback for items with no media_type
-            elif not render_type and primary_urls:
-                main_url_for_type_inference = primary_urls[0]
-                if ".mp4" in main_url_for_type_inference or ".webm" in main_url_for_type_inference:
-                    render_type = "video"
-                elif ".wav" in main_url_for_type_inference or ".mp3" in main_url_for_type_inference:
-                    render_type = "audio"
-                else:
-                    render_type = "image"
-
-            media_detail_viewer(
-                id=item.id,
-                key=item.id,
-                media_type=render_type,
-                primary_urls_json=primary_urls_json,
-                source_urls_json=source_urls_json,
-                metadata_json=metadata_json,
-                raw_metadata_json=raw_metadata_json,
-                on_edit_click=handle_edit_click,
-                on_veo_click=handle_veo_click,
-            )
-
-
-        else:
+        if not item_to_display:
             with me.box(style=me.Style(padding=me.Padding.all(16))):
                 me.text("No media item selected or found for the given ID.")
+            return
+
+        # If the item has a storyboard_id, fetch the data and render the tour dialog.
+        if item_to_display.storyboard_id:
+            from config.firebase_config import FirebaseClient
+            db = FirebaseClient().get_client()
+            doc_ref = db.collection("interior_design_storyboards").document(item_to_display.storyboard_id)
+            doc = doc_ref.get()
+            if doc.exists:
+                render_tour_detail_dialog(storyboard=doc.to_dict())
+            else:
+                me.text(f"Error: Could not find storyboard with ID: {item_to_display.storyboard_id}")
+        else:
+            render_default_detail_dialog(item=item_to_display)
