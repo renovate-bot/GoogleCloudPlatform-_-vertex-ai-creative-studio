@@ -24,7 +24,7 @@ from common.utils import gcs_uri_to_https_url
 from common.error_handling import GenerationError
 from config.default import Default
 from config.veo_models import get_veo_model_config
-from models.requests import VideoGenerationRequest
+from models.requests import APIReferenceImage, VideoGenerationRequest
 
 import google.auth
 import google.auth.transport.requests
@@ -60,9 +60,15 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         )
 
     # Prepare Generation Configuration
-    enhance_prompt_for_api = (
-        True if request.model_version_id.startswith("3.") else request.enhance_prompt
-    )
+    # Start with the default from the model config
+    enhance_prompt_for_api = model_config.default_prompt_enhancement
+    # If the model supports enhancement, then allow the user's choice to override it
+    if model_config.supports_prompt_enhancement:
+        enhance_prompt_for_api = request.enhance_prompt
+
+    # R2V has a mandatory requirement for prompt enhancement
+    if request.r2v_references or request.r2v_style_image:
+        enhance_prompt_for_api = True
     gen_config_args = {
         "aspect_ratio": request.aspect_ratio,
         "number_of_videos": request.video_count,
@@ -79,8 +85,29 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     # Prepare Image and Video Inputs
     image_input = None
+    if request.r2v_style_image:
+        print("Mode: Reference-to-Video (r2v) - Style")
+        print(f" reference: {request.r2v_style_image.gcs_uri}")
+        gen_config_args["reference_images"] = [
+            types.VideoGenerationReferenceImage(
+                image=types.Image(
+                    gcs_uri=request.r2v_style_image.gcs_uri,
+                    mime_type=request.r2v_style_image.mime_type,
+                ),
+                reference_type="style",
+            )
+        ]
+    elif request.r2v_references:
+        print("Mode: Reference-to-Video (r2v) - Asset")
+        gen_config_args["reference_images"] = [
+            types.VideoGenerationReferenceImage(
+                image=types.Image(gcs_uri=ref.gcs_uri, mime_type=ref.mime_type),
+                reference_type="asset",
+            )
+            for ref in request.r2v_references
+        ]
     # Check for interpolation (first and last frame)
-    if request.reference_image_gcs and request.last_reference_image_gcs:
+    elif request.reference_image_gcs and request.last_reference_image_gcs:
         print("Mode: Interpolation")
         image_input = types.Image(
             gcs_uri=request.reference_image_gcs,
