@@ -18,7 +18,7 @@ def design_studio(
     is_designing: bool,
     on_upload_design_image: Callable,
     on_select_design_image: Callable,
-    on_design_prompt_blur: Callable,
+    on_design_prompt_input: Callable, # Changed from on_blur
     on_clear_design: Callable,
     on_design_click: Callable,
 ):
@@ -52,7 +52,8 @@ def design_studio(
             )
         me.textarea(
             label="Design Modifications",
-            on_blur=on_design_prompt_blur,
+            on_input=on_design_prompt_input,
+            value=storyboard_item.get("design_prompt", ""),
             style=me.Style(width="100%"),
         )
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=8)):
