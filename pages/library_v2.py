@@ -100,6 +100,11 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
         error_filter=pagestate.error_filter,
     )
 
+    # Sanitize items before adding to state to prevent deserialization errors.
+    for item in new_items:
+        if isinstance(item.audio_analysis, dict):
+            item.audio_analysis = json.dumps(item.audio_analysis)
+
     if not new_items:
         pagestate.all_items_loaded = True
     else:
@@ -258,46 +263,54 @@ def library_content():
 
 
 def on_media_item_click(e: me.ClickEvent):
+    """Saves the selected item's ID to the state and opens the dialog."""
     pagestate = me.state(PageState)
-    item_id = e.key
-    item = next((i for i in pagestate.media_items if i.id == item_id), None)
-    if not item:
-        return
-
-    pagestate.selected_media_item_id = item.id
+    pagestate.selected_media_item_id = e.key
     pagestate.show_details_dialog = True
     yield
 
 
 @me.component
 def library_dialog(pagestate: PageState):
-    item_to_display = None
-    if pagestate.selected_media_item_id:
-        item_to_display = next(
-            (v for v in pagestate.media_items if v.id == pagestate.selected_media_item_id),
-            None,
-        )
+    """
+    Renders the details dialog. Fetches the item on-demand to avoid state issues.
+    """
+    # The dialog is always in the DOM, just hidden/shown via is_open.
+    # We only fetch and render the content if an item is selected.
+    if pagestate.show_details_dialog and pagestate.selected_media_item_id:
+        # FETCH ON DEMAND
+        item_to_display = get_media_item_by_id(pagestate.selected_media_item_id)
 
-    with lightbox_dialog(
-        is_open=pagestate.show_details_dialog, on_close=on_close_details_dialog
-    ):
-        if not item_to_display:
-            with me.box(style=me.Style(padding=me.Padding.all(16))):
-                me.text("No media item selected or found for the given ID.")
-            return
+        with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):
+            if not item_to_display:
+                with me.box(style=me.Style(padding=me.Padding.all(16))):
+                    me.text("Error: Could not load media item details.")
+                return
 
-        # If the item has a storyboard_id, fetch the data and render the tour dialog.
-        if item_to_display.storyboard_id:
-            from config.firebase_config import FirebaseClient
-            db = FirebaseClient().get_client()
-            doc_ref = db.collection("interior_design_storyboards").document(item_to_display.storyboard_id)
-            doc = doc_ref.get()
-            if doc.exists:
-                render_tour_detail_dialog(storyboard=doc.to_dict())
+            # If the item has a storyboard_id, fetch the data and render the tour dialog.
+            if item_to_display.storyboard_id:
+                from config.firebase_config import FirebaseClient
+
+                db = FirebaseClient().get_client()
+                doc_ref = db.collection("interior_design_storyboards").document(
+                    item_to_display.storyboard_id
+                )
+                doc = doc_ref.get()
+                if doc.exists:
+                    # Pass the fetched storyboard dict as a parameter
+                    render_tour_detail_dialog(storyboard=doc.to_dict())
+                else:
+                    me.text(
+                        f"Error: Could not find storyboard with ID: {item_to_display.storyboard_id}"
+                    )
             else:
-                me.text(f"Error: Could not find storyboard with ID: {item_to_display.storyboard_id}")
-        else:
-            render_default_detail_dialog(item=item_to_display)
+                # Pass the freshly fetched item as a parameter
+                render_default_detail_dialog(item=item_to_display)
+    else:
+        # Render an empty, closed dialog if nothing is selected.
+        # This is important so the dialog can be opened by changing the state.
+        with lightbox_dialog(is_open=False, on_close=on_close_details_dialog):
+            pass  # Render nothing inside the closed dialog
 
 
 def on_close_details_dialog(e: me.ClickEvent):
@@ -410,7 +423,13 @@ def render_tour_detail_dialog(storyboard: dict):
 @me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
-    primary_urls = [gcs_uri_to_https_url(uri) for uri in item.gcs_uris]
+    # Consolidate the primary URI(s) into a single list for processing.
+    urls_to_process = []
+    if item.gcs_uris:
+        urls_to_process.extend(item.gcs_uris)
+    elif item.gcsuri:
+        urls_to_process.append(item.gcsuri)
+    primary_urls = [gcs_uri_to_https_url(uri) for uri in urls_to_process]
     source_urls = [gcs_uri_to_https_url(uri) for uri in item.source_images_gcs]
     # Handle case where timestamp might be a string from Firestore
     timestamp_display = "N/A"
@@ -469,32 +488,4 @@ def on_continue_styling_click(e: me.ClickEvent):
     yield
 
 
-@me.component
-def library_dialog(pagestate: PageState):
-    item_to_display = None
-    if pagestate.selected_media_item_id:
-        item_to_display = next(
-            (v for v in pagestate.media_items if v.id == pagestate.selected_media_item_id),
-            None,
-        )
 
-    with lightbox_dialog(
-        is_open=pagestate.show_details_dialog, on_close=on_close_details_dialog
-    ):
-        if not item_to_display:
-            with me.box(style=me.Style(padding=me.Padding.all(16))):
-                me.text("No media item selected or found for the given ID.")
-            return
-
-        # If the item has a storyboard_id, fetch the data and render the tour dialog.
-        if item_to_display.storyboard_id:
-            from config.firebase_config import FirebaseClient
-            db = FirebaseClient().get_client()
-            doc_ref = db.collection("interior_design_storyboards").document(item_to_display.storyboard_id)
-            doc = doc_ref.get()
-            if doc.exists:
-                render_tour_detail_dialog(storyboard=doc.to_dict())
-            else:
-                me.text(f"Error: Could not find storyboard with ID: {item_to_display.storyboard_id}")
-        else:
-            render_default_detail_dialog(item=item_to_display)
