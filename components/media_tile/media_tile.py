@@ -22,7 +22,12 @@ def get_pills_for_item(item: MediaItem, https_url: str) -> str:
         pills.append({"label": "Video"})
         if item.gcs_uris and len(item.gcs_uris) > 1:
             pills.append({"label": f"{len(item.gcs_uris)}"})
-        pills.append({"label": "t2v" if not item.reference_image else "i2v"})
+        if item.r2v_reference_images or item.r2v_style_image:
+            pills.append({"label": "r2v"})
+        elif item.mode:
+            pills.append({"label": item.mode})
+        else:
+            pills.append({"label": "t2v" if not item.reference_image else "i2v"})
         if item.aspect:
             pills.append({"label": item.aspect})
         if item.duration is not None:

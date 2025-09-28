@@ -365,20 +365,14 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
 
     item_to_log = MediaItem(
         user_email=app_state.user_email,
-        timestamp=datetime.datetime.now(datetime.timezone.utc),
+        timestamp=datetime.datetime.now(datetime.UTC),
         prompt=request.prompt,
         original_prompt=(
             state.original_prompt if state.original_prompt else request.prompt
         ),
-        #model=(
-        #    config.VEO_EXP_MODEL_ID
-        #    if request.model_version_id == "3.0"
-        #    else config.VEO_EXP_FAST_MODEL_ID
-        #    if request.model_version_id == "3.0-fast"
-        #    else config.VEO_MODEL_ID
-        #),
         model=get_veo_model_config(request.model_version_id).model_name,
         mime_type="video/mp4",
+        mode=state.veo_mode,
         aspect=request.aspect_ratio,
         duration=float(request.duration_seconds),
         reference_image=request.reference_image_gcs,
