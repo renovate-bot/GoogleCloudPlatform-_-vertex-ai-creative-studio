@@ -54,6 +54,7 @@ class MediaItem:
     mime_type: Optional[str] = None  # e.g., "video/mp4", "image/png", "audio/wav"
     generation_time: Optional[float] = None  # Seconds for generation
     error_message: Optional[str] = None  # If any error occurred during generation
+    mode: Optional[str] = None
 
     # URI fields
     gcsuri: Optional[str] = (
@@ -275,6 +276,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         rewritten_prompt=raw_item_data.get("rewritten_prompt"),
         model=raw_item_data.get("model"),
         mime_type=raw_item_data.get("mime_type"),
+        mode=raw_item_data.get("mode"),
         generation_time=gen_time,
         error_message=raw_item_data.get("error_message"),
         gcsuri=gcsuri,

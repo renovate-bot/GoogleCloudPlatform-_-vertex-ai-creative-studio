@@ -518,8 +518,9 @@ def on_generate_video_click(e: me.ClickEvent):
         media_item = MediaItem(
             id=media_item_id,
             user_email=app_state.user_email,
-            timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(), # Convert to string
+            timestamp=datetime.datetime.now(datetime.UTC).isoformat(), # Convert to string
             media_type="video",
+            mode="Interior Design",
             gcs_uris=[final_video_uri],
             thumbnail_uri=final_video_uri,
             storyboard_id=state.storyboard["id"],
@@ -555,13 +556,13 @@ def item_detail_dialog(on_close: Callable):
         me.text("Error: Could not find selected item.")
         return
 
-    with dialog(is_open=True):
+    with dialog(is_open=True):  # pylint: disable=E1129:not-context-manager
         me.text(f"Details for {item['room_name']}", type="headline-6")
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, margin=me.Margin(top=16))):
             with me.box(style=me.Style(flex_grow=1)):
                 me.text("Source Image", type="headline-5")
                 me.image(src=gcs_uri_to_https_url(item["styled_image_uri"]), style=me.Style(width="100%", border_radius=8))
-            
+
             with me.box(style=me.Style(flex_grow=1)):
                 me.text("Generated Video", type="headline-5")
                 if item.get("generated_video_uri"):
