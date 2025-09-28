@@ -66,8 +66,8 @@ def generation_controls(
             value=state.veo_model,
             on_selection_change=on_selection_change_veo_model,
         )
-        
-        # Count of videos
+
+        # Number of videos
         me.select(
             label="count",
             appearance="outline",
@@ -121,7 +121,7 @@ def generation_controls(
             on_selection_change=on_change_video_length_select,
             style=me.Style(width="150px"),
         )
-        
+
         # Auto-enhance prompt
         if selected_config.supports_prompt_enhancement:
             me.checkbox(
@@ -142,4 +142,3 @@ def generation_controls(
             value=state.person_generation,
             on_selection_change=on_selection_change_person_generation,
         )
-

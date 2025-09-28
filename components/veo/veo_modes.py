@@ -160,8 +160,6 @@ def _r2v_uploader(
                         disabled=style_uploader_disabled,
                     )
 
-        me.button("Clear All", on_click=on_click_clear)
-
 
 @me.component
 def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disabled: bool):

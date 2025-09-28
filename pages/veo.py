@@ -210,9 +210,9 @@ def veo_content(app_state: me.state):
                     on_r2v_asset_remove=on_r2v_asset_remove,
                     on_r2v_style_add=on_r2v_style_add,
                     on_r2v_style_remove=on_r2v_style_remove,
+                    on_click_clear=on_click_clear,
                     on_clear_first_image=on_clear_first_image,
                     on_clear_last_image=on_clear_last_image,
-                    on_click_clear=on_click_clear,
                 )
 
             # --- SECOND ROW ---
