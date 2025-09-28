@@ -32,6 +32,9 @@ def veo_modes(
     on_r2v_asset_remove,
     on_r2v_style_add,
     on_r2v_style_remove,
+    on_clear_first_image,
+    on_clear_last_image,
+    on_click_clear,
 ):
     """File uploader for I2V and interpolation, driven by model configuration."""
     state = me.state(PageState)
@@ -71,6 +74,8 @@ def veo_modes(
                 on_upload_image=on_upload_image,
                 on_upload_last_image=on_upload_last_image,
                 on_library_select=on_library_select,
+                on_clear_first_image=on_clear_first_image,
+                on_clear_last_image=on_clear_last_image,
             )
         elif state.veo_mode == "interpolation":
             _image_uploader(
@@ -78,6 +83,8 @@ def veo_modes(
                 on_upload_image=on_upload_image,
                 on_upload_last_image=on_upload_last_image,
                 on_library_select=on_library_select,
+                on_clear_first_image=on_clear_first_image,
+                on_clear_last_image=on_clear_last_image,
             )
         elif state.veo_mode == "r2v":
             _r2v_uploader(
@@ -153,7 +160,7 @@ def _r2v_uploader(
                         disabled=style_uploader_disabled,
                     )
 
-        me.button("Clear All", on_click=on_click_clear_reference_image)
+        me.button("Clear All", on_click=on_click_clear)
 
 
 @me.component
@@ -216,74 +223,51 @@ def _empty_placeholder():
 
 @me.component
 def _image_uploader(
-    last_image: bool, on_upload_image, on_upload_last_image, on_library_select
+    last_image: bool,
+    on_upload_image,
+    on_upload_last_image,
+    on_library_select,
+    on_clear_first_image,
+    on_clear_last_image,
 ):
     state = me.state(PageState)
-    if state.reference_image_uri:
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
-            me.image(
-                src=state.reference_image_uri,
-                style=me.Style(
-                    height=150,
-                    border_radius=12,
-                ),
-                key=str(state.reference_image_file_key),
-            )
-            if last_image and state.last_reference_image_uri:
-                me.image(
-                    src=state.last_reference_image_uri,
-                    style=me.Style(
-                        height=150,
-                        border_radius=12,
-                    ),
-                    key=str(state.last_reference_image_file_key),
+    with me.box(style=me.Style(display="flex", flex_direction="row", gap=15)):
+        # First Frame
+        with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
+            me.text("First Frame", style=me.Style(font_size="10pt"))
+            if state.reference_image_uri:
+                image_thumbnail(
+                    image_uri=state.reference_image_gcs,
+                    index=0,
+                    on_remove=on_clear_first_image,
+                    icon_size=16,
                 )
-    else:
-        me.image(src=None, style=me.Style(height=200))
-    with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
+            else:
+                _uploader_placeholder(
+                    on_upload=on_upload_image,
+                    on_library_select=on_library_select,
+                    key_prefix="i2v",
+                    disabled=False,
+                )
+
+        # Last Frame (for interpolation)
         if last_image:
-            me.uploader(
-                label="Upload first",
-                accepted_file_types=["image/jpeg", "image/png"],
-                on_upload=on_upload_image,
-                type="raised",
-                color="primary",
-                style=me.Style(font_weight="bold"),
-            )
-            library_chooser_button(
-                key="first_frame_library_chooser",
-                on_library_select=on_library_select,
-                button_type="icon",
-            )
-            me.uploader(
-                label="Upload last",
-                key="last",
-                accepted_file_types=["image/jpeg", "image/png"],
-                on_upload=on_upload_last_image,
-                type="raised",
-                color="primary",
-                style=me.Style(font_weight="bold"),
-            )
-            library_chooser_button(
-                key="last_frame_library_chooser",
-                on_library_select=on_library_select,
-                button_type="icon",
-            )
-        else:
-            me.uploader(
-                label="Upload",
-                accepted_file_types=["image/jpeg", "image/png"],
-                on_upload=on_upload_image,
-                type="raised",
-                color="primary",
-                style=me.Style(font_weight="bold"),
-            )
-            library_chooser_button(
-                key="i2v_library_chooser",
-                on_library_select=on_library_select,
-                button_type="icon",
-            )
-        me.button(label="Clear", on_click=on_click_clear_reference_image)
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
+                me.text("Last Frame", style=me.Style(font_size="10pt"))
+                if state.last_reference_image_uri:
+                    image_thumbnail(
+                        image_uri=state.last_reference_image_gcs,
+                        index=0,
+                        on_remove=on_clear_last_image,
+                        icon_size=16,
+                    )
+                else:
+                    _uploader_placeholder(
+                        on_upload=on_upload_last_image,
+                        on_library_select=on_library_select,
+                        key_prefix="interpolation_last",
+                        disabled=False,
+                    )
 
 
 def on_selection_change_veo_mode(e: me.ButtonToggleChangeEvent):

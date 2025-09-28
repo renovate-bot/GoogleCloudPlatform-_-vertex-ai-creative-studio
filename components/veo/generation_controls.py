@@ -67,9 +67,9 @@ def generation_controls(
             on_selection_change=on_selection_change_veo_model,
         )
         
-        # Number of videos
+        # Count of videos
         me.select(
-            label="# of videos",
+            label="count",
             appearance="outline",
             options=[
                 me.SelectOption(label=str(i), value=str(i))

@@ -92,8 +92,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_duration=8,
         max_samples=4,
         default_samples=1,
-        supports_prompt_enhancement=False,
-        default_prompt_enhancement=False,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
     ),
     VeoModelConfig(
@@ -108,8 +108,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_duration=8,
         max_samples=4,
         default_samples=1,
-        supports_prompt_enhancement=False,
-        default_prompt_enhancement=False,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
     ),
 ]
