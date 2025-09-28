@@ -13,11 +13,21 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+
+@dataclass
+class ModeOverride:
+    """Defines specific overrides for a particular mode."""
+
+    supported_durations: Optional[List[int]] = None
+    default_duration: Optional[int] = None
+
 
 @dataclass
 class VeoModelConfig:
     """Configuration for a specific VEO model version."""
+
     version_id: str
     model_name: str
     display_name: str
@@ -30,7 +40,9 @@ class VeoModelConfig:
     max_samples: int
     default_samples: int
     supports_prompt_enhancement: bool
+    default_prompt_enhancement: bool = True
     supported_durations: Optional[List[int]] = None
+    mode_overrides: Optional[Dict[str, ModeOverride]] = None
 
 
 # This list is the single source of truth for all VEO model configurations.
@@ -48,6 +60,25 @@ VEO_MODELS: List[VeoModelConfig] = [
         max_samples=4,
         default_samples=1,
         supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
+    ),
+    VeoModelConfig(
+        version_id="2.0-exp",
+        model_name="veo-2.0-generate-exp",
+        display_name="Veo 2.0 Exp",
+        supported_modes=["t2v", "i2v", "interpolation", "r2v"],
+        supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["720p"],
+        min_duration=5,
+        max_duration=8,
+        default_duration=5,
+        max_samples=4,
+        default_samples=1,
+        supports_prompt_enhancement=False,
+        default_prompt_enhancement=False,
+        mode_overrides={
+            "r2v": ModeOverride(supported_durations=[8], default_duration=8)
+        },
     ),
     VeoModelConfig(
         version_id="3.0",
@@ -61,7 +92,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_duration=8,
         max_samples=4,
         default_samples=1,
-        supports_prompt_enhancement=False,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
     ),
     VeoModelConfig(
@@ -76,7 +108,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_duration=8,
         max_samples=4,
         default_samples=1,
-        supports_prompt_enhancement=False,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
     ),
 ]

@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class APIReferenceImage(BaseModel):
+    """Represents a single reference image for the API request."""
+
+    gcs_uri: str
+    mime_type: str
 
 
 class VideoGenerationRequest(BaseModel):
@@ -33,7 +40,13 @@ class VideoGenerationRequest(BaseModel):
     model_version_id: str
     person_generation: str
     negative_prompt: Optional[str] = None
+
+    # For I2V and Interpolation
     reference_image_gcs: Optional[str] = None
     last_reference_image_gcs: Optional[str] = None
     reference_image_mime_type: Optional[str] = None
     last_reference_image_mime_type: Optional[str] = None
+
+    # For R2V
+    r2v_references: Optional[List[APIReferenceImage]] = None
+    r2v_style_image: Optional[APIReferenceImage] = None
