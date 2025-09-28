@@ -335,13 +335,12 @@ def handle_edit_click(e: me.WebEvent):
 
 def on_veo_click(e: me.WebEvent):
     """Event handler for when the VEO button is clicked in the detail viewer."""
-    state = me.state(PageState)
-    selected_item = next(
-        (i for i in state.media_items if i.id == state.selected_media_item_id), None
-    )
-    if selected_item:
-        image_uri = selected_item.gcs_uris[0]
-        me.navigate(f"/veo?image_uri={image_uri}")
+    # The event value contains the https URL of the currently displayed image
+    https_url = e.value["url"]
+    if https_url:
+        # Convert the HTTPS URL back to a GCS URI to pass as a query param
+        gcs_uri = https_url_to_gcs_uri(https_url)
+        me.navigate(url="/veo", query_params={"image_uri": gcs_uri})
     yield
 
 

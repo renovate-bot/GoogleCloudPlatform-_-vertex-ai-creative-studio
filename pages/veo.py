@@ -210,6 +210,9 @@ def veo_content(app_state: me.state):
                     on_r2v_asset_remove=on_r2v_asset_remove,
                     on_r2v_style_add=on_r2v_style_add,
                     on_r2v_style_remove=on_r2v_style_remove,
+                    on_clear_first_image=on_clear_first_image,
+                    on_clear_last_image=on_clear_last_image,
+                    on_click_clear=on_click_clear,
                 )
 
             # --- SECOND ROW ---
@@ -267,8 +270,29 @@ def on_click_clear(e: me.ClickEvent):
     state.is_loading = False
     state.auto_enhance_prompt = False
     state.veo_model = "2.0"
+    # Clear all image types
     state.reference_image_gcs = None
     state.reference_image_uri = None
+    state.last_reference_image_gcs = None
+    state.last_reference_image_uri = None
+    state.r2v_reference_images = []
+    state.r2v_reference_mime_types = []
+    state.r2v_style_image = None
+    state.r2v_style_image_mime_type = None
+    yield
+
+
+def on_clear_first_image(e: me.ClickEvent):
+    """Clears the first reference image for i2v or interpolation."""
+    state = me.state(PageState)
+    state.reference_image_gcs = None
+    state.reference_image_uri = None
+    yield
+
+
+def on_clear_last_image(e: me.ClickEvent):
+    """Clears the last reference image for interpolation."""
+    state = me.state(PageState)
     state.last_reference_image_gcs = None
     state.last_reference_image_uri = None
     yield
@@ -534,13 +558,10 @@ def on_r2v_style_remove(e: me.ClickEvent):
 def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     """VEO image from library handler."""
     state = me.state(PageState)
-    if (
-        e.chooser_id == "i2v_library_chooser"
-        or e.chooser_id == "first_frame_library_chooser"
-    ):
+    if e.chooser_id.startswith("i2v") or e.chooser_id.startswith("first_frame"):
         state.reference_image_gcs = e.gcs_uri
         state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
-    elif e.chooser_id == "last_frame_library_chooser":
+    elif e.chooser_id.startswith("interpolation_last"):
         state.last_reference_image_gcs = e.gcs_uri
         state.last_reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
     elif e.chooser_id.startswith("r2v_asset_library_chooser"):
