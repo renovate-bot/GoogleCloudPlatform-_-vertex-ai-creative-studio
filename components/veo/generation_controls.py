@@ -15,7 +15,7 @@
 import mesop as me
 
 from common.analytics import log_ui_click
-from config.veo_models import get_veo_model_config
+from config.veo_models import get_veo_model_config, VEO_MODELS
 from state.state import AppState
 from state.veo_state import PageState
 
@@ -58,10 +58,8 @@ def generation_controls(
             label="Model",
             appearance="outline",
             options=[
-                me.SelectOption(label="Veo 2.0", value="2.0"),
-                me.SelectOption(label="Veo 2.0 Exp", value="2.0-exp"),
-                me.SelectOption(label="Veo 3.0", value="3.0"),
-                me.SelectOption(label="Veo 3.0 Fast", value="3.0-fast"),
+                me.SelectOption(label=model.display_name, value=model.version_id)
+                for model in VEO_MODELS
             ],
             value=state.veo_model,
             on_selection_change=on_selection_change_veo_model,
