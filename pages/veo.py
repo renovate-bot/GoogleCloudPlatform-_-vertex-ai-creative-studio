@@ -32,12 +32,12 @@ from components.veo.veo_modes import veo_modes
 from components.veo.video_display import video_display
 from config.default import ABOUT_PAGE_CONTENT, Default
 from config.rewriters import VIDEO_REWRITER
+from config.veo_models import get_veo_model_config
 from models.gemini import rewriter
 from models.model_setup import VeoModelSetup
 from models.veo import APIReferenceImage, VideoGenerationRequest, generate_video
 from state.state import AppState
 from state.veo_state import PageState
-from config.veo_models import get_veo_model_config
 
 config = Default()
 
@@ -78,6 +78,7 @@ def veo_page():
 
 
 from components.veo.prompt_inputs import prompt_inputs
+
 
 def on_selection_change_person_generation(e: me.SelectSelectionChangeEvent):
     """Handles changes to the person generation setting."""
@@ -173,10 +174,10 @@ def veo_content(app_state: me.state):
             me.text(f"Model: {state.veo_model}")
             me.text(f"Duration: {state.video_length}s")
             me.text(f"Input Image: {state.reference_image_gcs}")
-            with dialog_actions(): # pylint: disable=E1129:not-context-manager
+            with dialog_actions():  # pylint: disable=E1129:not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    with page_frame(): # pylint: disable=E1129:not-context-manager
+    with page_frame():  # pylint: disable=E1129:not-context-manager
         header("Veo", "movie", show_info_button=True, on_info_click=open_info_dialog)
 
         # Main container with a column direction
@@ -255,7 +256,7 @@ def on_blur_negative_prompt(e: me.InputBlurEvent):
 
 
 @track_click(element_id="veo_clear_button")
-def on_click_clear(e: me.ClickEvent):
+def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clear prompt and video."""
     state = me.state(PageState)
     state.result_videos = []
@@ -282,7 +283,7 @@ def on_click_clear(e: me.ClickEvent):
     yield
 
 
-def on_clear_first_image(e: me.ClickEvent):
+def on_clear_first_image(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clears the first reference image for i2v or interpolation."""
     state = me.state(PageState)
     state.reference_image_gcs = None
@@ -290,7 +291,7 @@ def on_clear_first_image(e: me.ClickEvent):
     yield
 
 
-def on_clear_last_image(e: me.ClickEvent):
+def on_clear_last_image(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clears the last reference image for interpolation."""
     state = me.state(PageState)
     state.last_reference_image_gcs = None
@@ -299,7 +300,7 @@ def on_clear_last_image(e: me.ClickEvent):
 
 
 @track_click(element_id="veo_rewrite_button")
-def on_click_custom_rewriter(e: me.ClickEvent):
+def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Veo custom rewriter."""
     state = me.state(PageState)
     if not state.veo_prompt_input:
@@ -313,7 +314,7 @@ def on_click_custom_rewriter(e: me.ClickEvent):
 
 
 @track_click(element_id="veo_create_button")
-def on_click_veo(e: me.ClickEvent):
+def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Veo generate request handler."""
     app_state = me.state(AppState)
     state = me.state(PageState)
