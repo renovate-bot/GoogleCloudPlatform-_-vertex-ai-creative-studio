@@ -196,7 +196,7 @@ kiwisolver==1.4.9
     # via matplotlib
 lazy-loader==0.4
     # via scikit-image
-markupsafe==3.0.2
+markupsafe==3.0.3
     # via
     #   flask
     #   jinja2
@@ -233,7 +233,7 @@ numpy==2.3.3
     #   scipy
     #   shapely
     #   tifffile
-opencv-python==4.12.0.88
+opencv-python==4.11.0.86
     # via veo-app (pyproject.toml)
 opentelemetry-api==1.37.0
     # via google-cloud-logging
@@ -314,7 +314,7 @@ pydantic==2.11.9
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.39.0
+pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via

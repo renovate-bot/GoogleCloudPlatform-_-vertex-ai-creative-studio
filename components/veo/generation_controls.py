@@ -15,222 +15,128 @@
 import mesop as me
 
 from common.analytics import log_ui_click
+from config.veo_models import get_veo_model_config, VEO_MODELS
 from state.state import AppState
 from state.veo_state import PageState
-from config.veo_models import VEO_MODELS, get_veo_model_config
 
 
 @me.component
-def generation_controls():
-    """Video generation controls, driven by the selected model's configuration."""
+def generation_controls(
+    on_selection_change_veo_model,
+    on_selection_change_aspect_ratio,
+    on_selection_change_resolution,
+    on_change_video_length_select,
+    on_selection_change_video_count,
+    on_selection_change_person_generation,
+    on_change_auto_enhance_prompt,
+):
+    """Generation controls for VEO."""
     state = me.state(PageState)
     selected_config = get_veo_model_config(state.veo_model)
 
     if not selected_config:
-        me.text("Error: No model configuration found.")
         return
 
-    # Correct state if it's inconsistent with the new model's configuration.
-    if state.aspect_ratio not in selected_config.supported_aspect_ratios:
-        state.aspect_ratio = selected_config.supported_aspect_ratios[0]
-    
-    # Handle duration correction
-    if selected_config.supported_durations:
-        if state.video_length not in selected_config.supported_durations:
-            state.video_length = selected_config.default_duration
-    elif not (selected_config.min_duration <= state.video_length <= selected_config.max_duration):
-        state.video_length = selected_config.default_duration
+    # Check for mode-specific overrides
+    min_duration = selected_config.min_duration
+    max_duration = selected_config.max_duration
+    supported_durations = selected_config.supported_durations
 
-    if state.resolution not in selected_config.resolutions:
-        state.resolution = selected_config.resolutions[0]
-    if state.veo_mode not in selected_config.supported_modes:
-        state.veo_mode = selected_config.supported_modes[0]
+    if (
+        selected_config.mode_overrides
+        and state.veo_mode in selected_config.mode_overrides
+    ):
+        override = selected_config.mode_overrides[state.veo_mode]
+        if override.supported_durations:
+            supported_durations = override.supported_durations
+            min_duration = min(supported_durations)
+            max_duration = max(supported_durations)
 
-    with me.box(style=me.Style(display="flex", flex_basis="row", gap=5)):
-        # Number of Videos Selector
+    with me.box(style=me.Style(display="flex", flex_direction="row", gap=10)):
+        # Model selection
+        me.select(
+            label="Model",
+            appearance="outline",
+            options=[
+                me.SelectOption(label=model.display_name, value=model.version_id)
+                for model in VEO_MODELS
+            ],
+            value=state.veo_model,
+            on_selection_change=on_selection_change_veo_model,
+        )
+
+        # Number of videos
         me.select(
             label="count",
             appearance="outline",
             options=[
-                me.SelectOption(label=f"{i}", value=str(i))
+                me.SelectOption(label=str(i), value=str(i))
                 for i in range(1, selected_config.max_samples + 1)
             ],
             value=str(state.video_count),
             on_selection_change=on_selection_change_video_count,
             style=me.Style(width="100px"),
         )
-        
-        # Aspect Ratio Selector
+
+        # Aspect ratio
         me.select(
-            label="aspect",
+            label="Aspect Ratio",
             appearance="outline",
             options=[
-                me.SelectOption(label=f"{ratio} {'widescreen' if ratio == '16:9' else 'portrait'}", value=ratio)
+                me.SelectOption(label=ratio, value=ratio)
                 for ratio in selected_config.supported_aspect_ratios
             ],
             value=state.aspect_ratio,
-            on_selection_change=on_selection_change_aspect,
-            disabled=len(selected_config.supported_aspect_ratios) <= 1,
+            on_selection_change=on_selection_change_aspect_ratio,
         )
 
-        # Video Length Selector
+        # Resolution
         me.select(
-            label="length",
-            options=[
-                me.SelectOption(label=f"{i} seconds", value=str(i))
-                for i in (selected_config.supported_durations or range(selected_config.min_duration, selected_config.max_duration + 1))
-            ],
+            label="Resolution",
             appearance="outline",
-            style=me.Style(width="150px"),
-            value=str(state.video_length),
-            on_selection_change=on_selection_change_length,
-            disabled=(
-                len(selected_config.supported_durations) <= 1
-                if selected_config.supported_durations
-                else selected_config.min_duration == selected_config.max_duration
-            ),
-        )
-
-        # Resolution Selector
-        me.select(
-            label="resolution",
             options=[
                 me.SelectOption(label=res, value=res)
                 for res in selected_config.resolutions
             ],
-            appearance="outline",
-            style=me.Style(),
             value=state.resolution,
             on_selection_change=on_selection_change_resolution,
-            disabled=len(selected_config.resolutions) <= 1,
-        )
-
-        # Prompt Enhancement Checkbox
-        me.checkbox(
-            label="auto-enhance prompt",
-            checked=state.auto_enhance_prompt,
-            on_change=on_change_auto_enhance_prompt,
-            disabled=not selected_config.supports_prompt_enhancement,
-        )
-
-        # Model Selector
-        me.select(
-            label="model",
-            options=[
-                me.SelectOption(label=model.display_name, value=model.version_id)
-                for model in VEO_MODELS
-            ],
-            appearance="outline",
             style=me.Style(),
-            value=state.veo_model,
-            on_selection_change=on_selection_change_model,
         )
 
-        # Person Generation Selector
+        # Video length
         me.select(
-            label="person generation",
+            label="Video length",
+            appearance="outline",
+            options=[
+                me.SelectOption(label=f"{d}s", value=str(d))
+                for d in (
+                    supported_durations
+                    if supported_durations
+                    else range(min_duration, max_duration + 1)
+                )
+            ],
+            value=str(state.video_length),
+            on_selection_change=on_change_video_length_select,
+            style=me.Style(width="150px"),
+        )
+
+        # Auto-enhance prompt
+        if selected_config.supports_prompt_enhancement:
+            me.checkbox(
+                label="Auto-enhance prompt",
+                on_change=on_change_auto_enhance_prompt,
+                checked=state.auto_enhance_prompt,
+            )
+
+        # Person generation
+        me.select(
+            label="Person Generation",
             appearance="outline",
             options=[
                 me.SelectOption(label="Allow (All ages)", value="Allow (All ages)"),
-                me.SelectOption(
-                    label="Allow (Adults only)", value="Allow (Adults only)"
-                ),
+                me.SelectOption(label="Allow (Adults only)", value="Allow (Adults only)"),
                 me.SelectOption(label="Don't Allow", value="Don't Allow"),
             ],
             value=state.person_generation,
             on_selection_change=on_selection_change_person_generation,
         )
-
-
-def on_selection_change_person_generation(e: me.SelectSelectionChangeEvent):
-    """Handles changes to the person generation setting."""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_person_generation",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"value": e.value},
-    )
-    state = me.state(PageState)
-    state.person_generation = e.value
-    yield
-
-
-def on_selection_change_length(e: me.SelectSelectionChangeEvent):
-    """Adjust the video duration length in seconds based on user event"""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_length",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"value": e.value},
-    )
-    state = me.state(PageState)
-    state.video_length = int(e.value)
-
-
-def on_selection_change_video_count(e: me.SelectSelectionChangeEvent):
-    """Set number of videos to generate"""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_video_count",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"value": e.value},
-    )
-    state = me.state(PageState)
-    state.video_count = e.value
-
-
-def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
-    """Adjust aspect ratio based on user event."""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_aspect_ratio",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"value": e.value},
-    )
-    state = me.state(PageState)
-    state.aspect_ratio = e.value
-
-
-def on_selection_change_resolution(e: me.SelectSelectionChangeEvent):
-    """Adjust resolution based on user event."""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_resolution",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"value": e.value},
-    )
-    state = me.state(PageState)
-    state.resolution = e.value
-
-
-def on_selection_change_model(e: me.SelectSelectionChangeEvent):
-    """Adjust model based on user event and apply its constraints."""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_model",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"value": e.value},
-    )
-    state = me.state(PageState)
-    state.veo_model = e.value
-    
-    yield
-
-
-def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
-    """Toggle auto-enhance prompt"""
-    app_state = me.state(AppState)
-    log_ui_click(
-        element_id="veo_auto_enhance_prompt",
-        page_name=app_state.current_page,
-        session_id=app_state.session_id,
-        extras={"checked": e.checked},
-    )
-    state = me.state(PageState)
-    state.auto_enhance_prompt = e.checked

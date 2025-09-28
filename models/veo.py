@@ -14,24 +14,24 @@
 
 import os
 import time
+
+import google.auth
+import google.auth.transport.requests
 import requests
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from common.utils import gcs_uri_to_https_url
-
+from common.analytics import get_logger
 from common.error_handling import GenerationError
+from common.utils import gcs_uri_to_https_url
 from config.default import Default
 from config.veo_models import get_veo_model_config
-from models.requests import VideoGenerationRequest
-
-import google.auth
-import google.auth.transport.requests
-
+from models.requests import APIReferenceImage, VideoGenerationRequest
 
 config = Default()
 
+logger = get_logger(__name__)
 
 load_dotenv(override=True)
 
@@ -60,9 +60,15 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
         )
 
     # Prepare Generation Configuration
-    enhance_prompt_for_api = (
-        True if request.model_version_id.startswith("3.") else request.enhance_prompt
-    )
+    # Start with the default from the model config
+    enhance_prompt_for_api = model_config.default_prompt_enhancement
+    # If the model supports enhancement, then allow the user's choice to override it
+    if model_config.supports_prompt_enhancement:
+        enhance_prompt_for_api = request.enhance_prompt
+
+    # R2V and Veo 3.0 have a mandatory requirement for prompt enhancement
+    if request.r2v_references or request.r2v_style_image or request.model_version_id.startswith("3."):
+        enhance_prompt_for_api = True
     gen_config_args = {
         "aspect_ratio": request.aspect_ratio,
         "number_of_videos": request.video_count,
@@ -79,9 +85,30 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     # Prepare Image and Video Inputs
     image_input = None
+    if request.r2v_style_image:
+        logger.info("Mode: Reference-to-Video (r2v) - Style")
+        logger.info(f" reference: {request.r2v_style_image.gcs_uri}")
+        gen_config_args["reference_images"] = [
+            types.VideoGenerationReferenceImage(
+                image=types.Image(
+                    gcs_uri=request.r2v_style_image.gcs_uri,
+                    mime_type=request.r2v_style_image.mime_type,
+                ),
+                reference_type="style",
+            )
+        ]
+    elif request.r2v_references:
+        logger.info("Mode: Reference-to-Video (r2v) - Asset")
+        gen_config_args["reference_images"] = [
+            types.VideoGenerationReferenceImage(
+                image=types.Image(gcs_uri=ref.gcs_uri, mime_type=ref.mime_type),
+                reference_type="asset",
+            )
+            for ref in request.r2v_references
+        ]
     # Check for interpolation (first and last frame)
-    if request.reference_image_gcs and request.last_reference_image_gcs:
-        print("Mode: Interpolation")
+    elif request.reference_image_gcs and request.last_reference_image_gcs:
+        logger.info("Mode: Interpolation")
         image_input = types.Image(
             gcs_uri=request.reference_image_gcs,
             mime_type=request.reference_image_mime_type,
@@ -93,13 +120,13 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     # Check for standard image-to-video
     elif request.reference_image_gcs:
-        print("Mode: Image-to-Video")
+        logger.info("Mode: Image-to-Video")
         image_input = types.Image(
             gcs_uri=request.reference_image_gcs,
             mime_type=request.reference_image_mime_type,
         )
     else:
-        print("Mode: Text-to-Video")
+        logger.info("Mode: Text-to-Video")
 
     gen_config = types.GenerateVideosConfig(**gen_config_args)
 
@@ -112,15 +139,15 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             image=image_input,
         )
 
-        print("Polling video generation operation...")
+        logger.info("Polling video generation operation...")
         while not operation.done:
             time.sleep(10)
             operation = client.operations.get(operation)
-            print(f"Operation in progress: {operation.name}")
+            logger.info(f"Operation in progress: {operation.name}")
 
         if operation.error:
             error_details = str(operation.error)
-            print(f"Video generation failed with error: {error_details}")
+            logger.info(f"Video generation failed with error: {error_details}")
             raise GenerationError(f"API Error: {error_details}")
 
         if operation.response:
@@ -136,7 +163,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
                 and operation.result.generated_videos
             ):
                 video_uris = [v.video.uri for v in operation.result.generated_videos]
-                print(f"Successfully generated {len(video_uris)} videos.")
+                logger.info(f"Successfully generated {len(video_uris)} videos.")
                 return video_uris, request.resolution
             else:
                 raise GenerationError(
@@ -148,7 +175,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             )
 
     except Exception as e:
-        print(f"An unexpected error occurred in generate_video: {e}")
+        logger.info(f"An unexpected error occurred in generate_video: {e}")
         raise GenerationError(f"An unexpected error occurred: {e}") from e
 
 
@@ -193,7 +220,7 @@ def compose_videogen_request(
             "enhancePrompt": enhance_prompt,
         },
     }
-    print(f"VEO REQUEST IS {request}")
+    logger.info("VEO REQUEST IS %s", request)
     return request
 
 
@@ -227,14 +254,14 @@ def send_request_to_google_api(api_endpoint, data=None):
 
 def fetch_operation(fetch_endpoint, lro_name):
     """Long Running Operation fetch"""
-    print(f"fetching from: {fetch_endpoint}")
+    logger.info(f"fetching from: {fetch_endpoint}")
     request = {"operationName": lro_name}
     # The generation usually takes 2 minutes. Loop 30 times, around 5 minutes.
     for i in range(60):
         resp = send_request_to_google_api(fetch_endpoint, request)
         if "done" in resp and resp["done"]:
-            print("FOUND RESPONSE")
-            print(resp)
+            logger.info("FOUND RESPONSE")
+            logger.info(resp)
             return resp
         time.sleep(10)
 
@@ -265,7 +292,7 @@ def image_to_video(
         None,
     )
 
-    print(f"REQUEST {image_gcs}")
+    logger.info("REQUEST %s", image_gcs)
 
     prediction_endpoint = t2v_prediction_endpoint
     fetch_ep = fetch_endpoint
@@ -273,11 +300,11 @@ def image_to_video(
     if model == "3.0":
         prediction_endpoint = t2v_prediction_endpoint_exp
         fetch_ep = fetch_endpoint_exp
-    print(f"Fetch EP: {fetch_ep}")
-    print(req)
-    print(prediction_endpoint)
-    print(fetch_ep)
+    logger.info("Fetch EP: %s", fetch_ep)
+    logger.info(req)
+    logger.info(prediction_endpoint)
+    logger.info(fetch_ep)
 
     resp = send_request_to_google_api(prediction_endpoint, req)
-    print(resp)
+    logger.info(resp)
     return fetch_operation(fetch_ep, resp["name"])
