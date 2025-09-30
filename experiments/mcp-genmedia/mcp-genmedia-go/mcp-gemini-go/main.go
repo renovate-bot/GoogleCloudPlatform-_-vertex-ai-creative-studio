@@ -35,7 +35,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.3.0"
+	version     = "0.3.1"
 )
 
 func init() {

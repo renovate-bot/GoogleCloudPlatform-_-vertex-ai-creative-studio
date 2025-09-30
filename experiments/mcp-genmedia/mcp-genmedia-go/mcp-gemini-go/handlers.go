@@ -42,6 +42,9 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 	}
 
 	model, _ := request.GetArguments()["model"].(string)
+	if model == "nano-banana" || model == "nano banana" {
+		model = "gemini-2.5-flash-image-preview"
+	}
 
 	outputDir := ""
 	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
