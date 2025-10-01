@@ -35,7 +35,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.3.0"
+	version     = "0.3.1" // Disable OTel by default
 )
 
 func init() {
@@ -58,11 +58,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -123,7 +125,11 @@ func main() {
 		mcp.WithString("model_name",
 			mcp.DefaultString(defaultGeminiTTSModel),
 			mcp.Description("The model to use."),
-			mcp.Enum("gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts"),
+			mcp.Enum("gemini-2.5-flash-tts", "gemini-2.5-pro-tts"),
+		),
+		mcp.WithString("language_code",
+			mcp.DefaultString("en-US"),
+			mcp.Description("Optional. The language code to use for the synthesis. Defaults to en-US."),
 		),
 		mcp.WithString("output_filename_prefix",
 			mcp.DefaultString("gemini_tts_audio"),

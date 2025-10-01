@@ -44,7 +44,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "1.10.0" // Add prompt support
+	version     = "1.10.1" // Disable OTel by default
 )
 
 func init() {
@@ -62,11 +62,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)

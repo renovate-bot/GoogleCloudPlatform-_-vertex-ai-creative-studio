@@ -52,7 +52,7 @@ var (
 
 const (
 	serviceName                 = "mcp-lyria-go"
-	version                     = "1.3.0" // Add prompt support
+	version                     = "1.3.1" // Disable OTel by default
 	defaultPublisher            = "google"
 	defaultLyriaModelID         = "lyria-002"
 	defaultSampleCount          = 1
@@ -79,11 +79,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Println("Initializing global AI Platform Prediction client...")
 	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", appConfig.Location)

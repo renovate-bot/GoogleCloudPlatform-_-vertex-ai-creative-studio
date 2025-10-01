@@ -386,3 +386,7 @@ from common.analytics import track_model_call
 with track_model_call("my-generative-model-v1", prompt_length=len(prompt)):
     model.generate_content(...)
 ```
+
+# Tool Usage
+
+- **No Command Substitution:** You are not allowed to use command substitution (e.g., `$(...)` or `` `...` ``) within the `run_shell_command` tool for security reasons. If you need the output of one command as an argument for another, you must run them as two separate tool calls.
