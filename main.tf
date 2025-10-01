@@ -40,6 +40,10 @@ provider "google-beta" {
   }
 }
 
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 module "project-services" {
   source                      = "terraform-google-modules/project-factory/google//modules/project_services"
   version                     = "~>18.0"
@@ -163,7 +167,7 @@ locals {
     EDIT_IMAGES_ENABLED   = var.edit_images_enabled
   }
 
-  deployed_domain = [var.use_lb ? "https://${var.domain}" : google_cloud_run_v2_service.creative_studio.uri]
+  deployed_domain = var.use_lb ? ["https://${var.domain}"] : google_cloud_run_v2_service.creative_studio.urls
   cors_domains    = concat(local.deployed_domain, var.allow_local_domain_cors_requests ? ["http://localhost:8080", "http://0.0.0.0:8080"] : [])
 }
 
@@ -225,42 +229,51 @@ resource "google_project_iam_member" "vertex_sa_access" {
   member  = google_project_service_identity.vertex_sa.member
 }
 
-module "creative_studio_asset_bucket" {
-  source     = "terraform-google-modules/cloud-storage/google"
-  version    = "~>11.0"
-  project_id = var.project_id
-  names      = [local.asset_bucket_name]
-  location   = var.region
-  force_destroy = {
-    "creative-studio-${var.project_id}-assets" = var.enable_data_deletion
+resource "google_storage_bucket" "assets" {
+  name                        = local.asset_bucket_name
+  project                     = var.project_id
+  location                    = var.region
+  force_destroy               = var.enable_data_deletion
+  public_access_prevention    = "enforced"
+  uniform_bucket_level_access = true
+  default_event_based_hold    = false
+  autoclass {
+    enabled = false
   }
-  set_admin_roles          = true
-  bucket_admins            = {}
-  admins                   = ["user:${var.initial_user}"]
-  set_creator_roles        = true
-  bucket_creators          = {}
-  creators                 = [google_service_account.creative_studio.member]
-  set_viewer_roles         = true
-  bucket_viewers           = {}
-  viewers                  = [google_service_account.creative_studio.member]
-  public_access_prevention = "enforced"
-  depends_on               = [null_resource.sleep]
-  cors = [{
+  cors {
     origin          = local.cors_domains
     method          = ["GET"]
     response_header = ["Content-Type"]
     max_age_seconds = 3600
-  }]
+  }
+}
+
+resource "google_storage_bucket_iam_member" "admins" {
+  bucket = google_storage_bucket.assets.name
+  role   = "roles/storage.objectAdmin"
+  member = "user:${var.initial_user}"
+}
+
+resource "google_storage_bucket_iam_member" "creators" {
+  bucket = google_storage_bucket.assets.name
+  role   = "roles/storage.objectCreator"
+  member = google_service_account.creative_studio.member
+}
+
+resource "google_storage_bucket_iam_member" "viewers" {
+  bucket = google_storage_bucket.assets.name
+  role   = "roles/storage.objectViewer"
+  member = google_service_account.creative_studio.member
 }
 
 resource "google_storage_bucket_iam_member" "sa_bucket_viewer" {
-  bucket = module.creative_studio_asset_bucket.bucket.name
+  bucket = google_storage_bucket.assets.name
   role   = "roles/storage.bucketViewer"
   member = google_service_account.creative_studio.member
 }
 
 resource "google_storage_bucket_iam_member" "sa_object_user" {
-  bucket = module.creative_studio_asset_bucket.bucket.name
+  bucket = google_storage_bucket.assets.name
   role   = "roles/storage.objectUser"
   member = google_service_account.creative_studio.member
 }
