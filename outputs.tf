@@ -15,21 +15,21 @@
 */
 
 output "load-balancer-ip" {
-  value = var.use_lb ? module.lb-http[0].external_ip : ""
+  value       = var.use_lb ? module.lb-http[0].external_ip : ""
   description = "IP Address that should be used for DNS A record for the domain provided."
 }
 
 output "cloud-run-app-url" {
-  value = !var.use_lb ? google_cloud_run_v2_service.creative_studio.uri : ""
+  value       = !var.use_lb ? "https://${google_cloud_run_v2_service.creative_studio.name}-${data.google_project.project.number}.${google_cloud_run_v2_service.creative_studio.location}.run.app" : ""
   description = "The Cloud Run URL where the website can be reached."
 }
 
 output "builds-service-account" {
-  value = google_service_account.cloudbuild.email
+  value       = google_service_account.cloudbuild.email
   description = "Service Account used for Cloud Build"
 }
 
 output "application-service-account" {
-  value = google_service_account.creative_studio.email
+  value       = google_service_account.creative_studio.email
   description = "Service Account used by the Creative Studio web application"
 }
