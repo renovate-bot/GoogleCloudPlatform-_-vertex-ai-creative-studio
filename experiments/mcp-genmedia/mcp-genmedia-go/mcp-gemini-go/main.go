@@ -35,7 +35,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.3.1" // Disable OTel by default
+	version     = "0.3.2" // nano-banana alias
 )
 
 func init() {
