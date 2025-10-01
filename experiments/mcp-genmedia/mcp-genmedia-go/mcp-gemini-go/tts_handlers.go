@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	geminiTTSAPIEndpoint         = "https://texttospeech.googleapis.com/v1/text:synthesize"
-	defaultGeminiTTSModel        = "gemini-2.5-flash-preview-tts"
-	defaultGeminiTTSVoice        = "Callirrhoe"
-	timeFormatForTTSFilename     = "20060102-150405"
+	geminiTTSAPIEndpoint     = "https://texttospeech.googleapis.com/v1/text:synthesize"
+	defaultGeminiTTSModel    = "gemini-2.5-flash-tts"
+	defaultGeminiTTSVoice    = "Callirrhoe"
+	timeFormatForTTSFilename = "20060102-150405"
 )
 
 // hardcoded list of voices based on documentation
@@ -219,7 +219,6 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 }
 
 // --- API Helper Function ---
-
 
 func callGeminiTTSAPIWithSDK(ctx context.Context, text, prompt, voiceName, modelName, audioEncoding string) ([]byte, error) {
 	client, err := texttospeech.NewClient(ctx)
