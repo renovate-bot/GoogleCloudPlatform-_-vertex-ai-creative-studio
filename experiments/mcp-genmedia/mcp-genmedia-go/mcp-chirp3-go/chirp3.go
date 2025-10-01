@@ -31,7 +31,7 @@ var (
 	availableVoices     []*texttospeechpb.Voice
 	transport           string
 	port                string
-	version             = "0.1.0" // Add prompt support
+	version             = "0.1.1" // Disable OTel by default
 )
 
 const (
@@ -202,11 +202,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize tracer provider: %v", err)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		}()
+	}
 
 	log.Printf("Initializing global Text-to-Speech client...")
 	startupCtx, startupCancel := context.WithTimeout(context.Background(), 1*time.Minute)
