@@ -40,7 +40,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.10.0" // Fix: Honor GENMEDIA_BUCKET env var
+	version     = "1.10.1" // Disable OTel by default
 )
 
 // init handles command-line flags and initial logging setup.
@@ -48,7 +48,6 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
-	flag.BoolVar(&otel_enabled, "otel", true, "Enable OpenTelemetry")
 	flag.Parse()
 }
 
@@ -62,15 +61,17 @@ func main() {
 
 	// Initialize OpenTelemetry
 	if otel_enabled {
-		tp, err := common.InitTracerProvider(serviceName, version)
-		if err != nil {
-			log.Fatalf("failed to initialize tracer provider: %v", err)
-		}
+	tp, err := common.InitTracerProvider(serviceName, version)
+	if err != nil {
+		log.Fatalf("failed to initialize tracer provider: %v", err)
+	}
+	if tp != nil {
 		defer func() {
 			if err := tp.Shutdown(context.Background()); err != nil {
 				log.Printf("Error shutting down tracer provider: %v", err)
 			}
 		}()
+	}
 	}
 
 	log.Printf("Initializing global GenAI client...")

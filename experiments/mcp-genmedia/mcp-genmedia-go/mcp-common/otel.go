@@ -19,6 +19,10 @@ import (
 // service name and version attributes. This is crucial for observability, allowing
 // for distributed tracing of requests as they flow through the system.
 func InitTracerProvider(serviceName, serviceVersion string) (*sdktrace.TracerProvider, error) {
+	if os.Getenv("OTEL_ENABLED") != "true" {
+		log.Println("OpenTelemetry tracing is disabled. Set OTEL_ENABLED=true to enable.")
+		return nil, nil // Return nil to indicate that tracing is disabled.
+	}
 	ctx := context.Background()
 
 	// --- Recommended Configuration Logic ---
