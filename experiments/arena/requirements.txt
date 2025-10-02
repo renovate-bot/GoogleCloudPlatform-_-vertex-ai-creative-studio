@@ -49,7 +49,7 @@ httpx==0.28.1
 idna==3.10
 itsdangerous==2.2.0
 jinja2==3.1.6
-markupsafe==3.0.2
+markupsafe==3.0.3
 mesop==1.1.0
 msgpack==1.1.1
 numpy==2.3.3
