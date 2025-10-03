@@ -30,7 +30,7 @@ def on_send_to_gemini_image_gen(e: me.ClickEvent):
     # The gcs_uri is passed via the key of the button
     gcs_uri = e.key
     me.navigate(
-        url="/gemini_image_generation",
+        url="/nano-banana",
         query_params={"image_uri": gcs_uri},
     )
     yield
