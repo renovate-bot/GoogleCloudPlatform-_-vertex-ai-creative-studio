@@ -47,7 +47,7 @@ def synthesize_chirp_speech(
             input_dict["custom_pronunciations"] = texttospeech.CustomPronunciations(
                 pronunciations=custom_pronunciation_entries
             )
-    
+
     synthesis_input = texttospeech.SynthesisInput(input_dict)
 
     # Construct the full voice name required by the Text-to-Speech API

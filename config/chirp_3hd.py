@@ -4,6 +4,6 @@
 # Gemini TTS configuration, as they are compatible with Chirp3 HD.
 from .gemini_tts import (
     GEMINI_TTS_VOICES as CHIRP3_HD_VOICES,
-    GEMINI_TTS_LANGUAGES as CHIRP3_HD_LANGUAGES,
+    CHIRP3_HD_LANGUAGES,
     GEMINI_TTS_ENCODINGS as CHIRP3_HD_ENCODINGS,
 )
