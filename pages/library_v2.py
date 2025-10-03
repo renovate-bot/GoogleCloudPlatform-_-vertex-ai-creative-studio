@@ -281,7 +281,7 @@ def library_dialog(pagestate: PageState):
         # FETCH ON DEMAND
         item_to_display = get_media_item_by_id(pagestate.selected_media_item_id)
 
-        with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):
+        with lightbox_dialog(is_open=True, on_close=on_close_details_dialog): # pylint: disable=E1129:not-context-manager
             if not item_to_display:
                 with me.box(style=me.Style(padding=me.Padding.all(16))):
                     me.text("Error: Could not load media item details.")
@@ -309,7 +309,7 @@ def library_dialog(pagestate: PageState):
     else:
         # Render an empty, closed dialog if nothing is selected.
         # This is important so the dialog can be opened by changing the state.
-        with lightbox_dialog(is_open=False, on_close=on_close_details_dialog):
+        with lightbox_dialog(is_open=False, on_close=on_close_details_dialog):  # pylint: disable=E1129:not-context-manager
             pass  # Render nothing inside the closed dialog
 
 
@@ -330,7 +330,7 @@ def handle_edit_click(e: me.WebEvent):
         session_id=app_state.session_id,
     )
     gcs_uri = https_url_to_gcs_uri(e.value["url"])
-    me.navigate("/gemini_image_generation", query_params={"image_uri": gcs_uri})
+    me.navigate("/nano-banana", query_params={"image_uri": gcs_uri})
 
 
 def on_veo_click(e: me.WebEvent):
@@ -358,7 +358,7 @@ def render_tour_detail_dialog(storyboard: dict):
     if not storyboard:
         return
 
-    with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):
+    with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):  # pylint: disable=E1129:not-context-manager
         me.text(f"Interior Design Tour", type="headline-5")
 
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=24, margin=me.Margin(top=16))):

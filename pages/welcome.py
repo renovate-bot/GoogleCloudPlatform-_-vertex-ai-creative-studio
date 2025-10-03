@@ -48,7 +48,7 @@ def page():
     tiles_data = [
         {"icon": "home", "route": "/home"},
         {"label": "Veo", "route": "/veo"},
-        {"label": "Gemini Image Generation", "icon": "banana", "route": "/gemini_image_generation"},
+        {"label": "Gemini Image Generation", "icon": "banana", "route": "/nano-banana"},
         {"label": "Lyria", "route": "/lyria"},
         {"label": "Speech", "route": "/home"},
         {"label": "Workflows", "route": "/home"},

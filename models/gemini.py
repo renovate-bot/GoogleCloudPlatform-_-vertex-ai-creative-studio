@@ -87,8 +87,10 @@ REWRITER_MODEL_ID = cfg.MODEL_ID  # Use default model from config for rewriter
 def generate_image_from_prompt_and_images(
     prompt: str,
     images: list[str],
+    aspect_ratio: str,
     gcs_folder: str = "generated_images",
     file_prefix: str = "image",
+    candidate_count: int = 1,
 ) -> tuple[list[str], float]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
@@ -108,7 +110,11 @@ def generate_image_from_prompt_and_images(
         model=model_name,
         contents=contents,
         config=types.GenerateContentConfig(
-            response_modalities=["TEXT", "IMAGE"],
+            response_modalities=["IMAGE"],
+            image_config=types.ImageConfig(
+                aspect_ratio=aspect_ratio,
+            ),
+            #candiate_count=candidate_count,
         ),
     )
     
