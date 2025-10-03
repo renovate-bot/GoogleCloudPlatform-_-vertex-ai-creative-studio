@@ -39,7 +39,7 @@ def page():
     """Main Page."""
     state = me.state(AppState)
     with page_scaffold(page_name="home"):  # pylint: disable=E1129:not-context-manager
-        with page_frame():
+        with page_frame():  # pylint: disable=E1129:not-context-manager
             home_page_content(state)
 
 
