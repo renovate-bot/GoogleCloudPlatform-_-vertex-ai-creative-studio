@@ -42,7 +42,7 @@
       "display": "Gemini Image Generation",
       "icon": "spark",
       "icon_family": "Google Symbols",
-      "route": "/gemini_image_generation",
+      "route": "/nano-banana",
       "group": "foundation",
       "mode": "image",
       "description": "Generate images from text prompts using Gemini.",
