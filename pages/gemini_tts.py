@@ -15,23 +15,23 @@
 """Gemini TTS page."""
 
 import datetime
-import uuid
 import json
+import uuid
 
 import mesop as me
-from common.analytics import log_ui_click, track_click
 
 import common.storage as storage
+from common.analytics import log_ui_click, track_click
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from config.gemini_tts import (
-    GEMINI_TTS_MODELS,
-    GEMINI_TTS_MODEL_NAMES,
-    GEMINI_TTS_VOICES,
     GEMINI_TTS_LANGUAGES,
+    GEMINI_TTS_MODEL_NAMES,
+    GEMINI_TTS_MODELS,
+    GEMINI_TTS_VOICES,
 )
 from models.gemini_tts import synthesize_speech
 from state.state import AppState
@@ -69,8 +69,8 @@ def page():
     """Renders the Gemini TTS page."""
     state = me.state(GeminiTtsState)
 
-    with page_scaffold(page_name="gemini-tts"):
-        with page_frame():
+    with page_scaffold(page_name="gemini-tts"):  # pylint: disable=E1129:not-context-manager
+        with page_frame():  # pylint: disable=E1129:not-context-manager
             header(
                 "Gemini Text-to-Speech",
                 "record_voice_over",
@@ -154,7 +154,6 @@ def page():
                         ],
                         on_selection_change=on_select_language,
                         value=state.selected_language,
-                        disabled=True,
                     )
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=16)
