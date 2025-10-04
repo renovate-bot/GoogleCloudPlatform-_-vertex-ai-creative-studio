@@ -50,6 +50,9 @@ def on_veo_load(e: me.LoadEvent):
     image_uri = me.query_params.get("image_uri")
     veo_model_param = me.query_params.get("veo_model")
 
+    if veo_model_param:
+        _update_state_for_new_model(veo_model_param)
+
     if image_uri:
         # Set the image from the query parameter
         state.reference_image_gcs = image_uri
@@ -58,9 +61,6 @@ def on_veo_load(e: me.LoadEvent):
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
         state.veo_prompt_input = "Animate this image with subtle motion."
-
-    if veo_model_param:
-        state.veo_model = veo_model_param
 
     yield
 
@@ -122,31 +122,40 @@ def on_selection_change_video_count(e: me.SelectSelectionChangeEvent):
     yield
 
 
-def on_selection_change_veo_model(e: me.SelectSelectionChangeEvent):
-    """Handles changes to the VEO model selection."""
+def _update_state_for_new_model(model_version_id: str):
+    """Update state when the model changes."""
     state = me.state(PageState)
-    state.veo_model = e.value
-    # Reset mode to default 't2v' when model changes to avoid invalid states
-    state.veo_mode = "t2v"
+    state.veo_model = model_version_id
 
     # Get the config for the NEW model
-    new_model_config = get_veo_model_config(e.value)
+    new_model_config = get_veo_model_config(model_version_id)
     if new_model_config:
-        # Check if the current video length is valid for the new model
-        min_dur = new_model_config.min_duration
-        max_dur = new_model_config.max_duration
+        # If the current mode is not supported by the new model, reset to default 't2v'.
+        if state.veo_mode not in new_model_config.supported_modes:
+            state.veo_mode = "t2v"
+
+        # If the new model has a specific list of supported durations (discontinuous values)
         if new_model_config.supported_durations:
-            min_dur = min(new_model_config.supported_durations)
-            max_dur = max(new_model_config.supported_durations)
+            # Check if the current video length is in the allowed list.
+            if state.video_length not in new_model_config.supported_durations:
+                # If not, reset to the model's default duration.
+                state.video_length = new_model_config.default_duration
+        # Otherwise, use the continuous min/max range
+        else:
+            min_dur = new_model_config.min_duration
+            max_dur = new_model_config.max_duration
+            if not (min_dur <= state.video_length <= max_dur):
+                state.video_length = new_model_config.default_duration
 
-        if not (min_dur <= state.video_length <= max_dur):
-            state.video_length = new_model_config.default_duration
 
+def on_selection_change_veo_model(e: me.SelectSelectionChangeEvent):
+    """Handle changes to the Veo model selection."""
+    _update_state_for_new_model(e.value)
     yield
 
 
 def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
-    """Toggle auto-enhance prompt"""
+    """Toggle auto-enhance prompt."""
     app_state = me.state(AppState)
     log_ui_click(
         element_id="veo_auto_enhance_prompt",
