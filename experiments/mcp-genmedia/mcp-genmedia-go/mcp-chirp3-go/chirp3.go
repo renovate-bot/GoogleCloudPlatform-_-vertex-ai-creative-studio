@@ -1,3 +1,5 @@
+// Package main implements an MCP server for Google's Chirp3 text-to-speech models.
+
 package main
 
 import (
@@ -26,7 +28,6 @@ import (
 )
 
 var (
-	projectID, location string
 	ttsClient           *texttospeech.Client // Global Text-to-Speech client
 	availableVoices     []*texttospeechpb.Voice
 	transport           string
@@ -422,7 +423,7 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 	}
 
 	// Handle custom pronunciations
-	pronunciationsParam, _ := request.GetArguments()["pronunciations"] // This will be []interface{} or nil
+	pronunciationsParam := request.GetArguments()["pronunciations"] // This will be []interface{} or nil
 	pronunciationEncodingStr, _ := request.GetArguments()["pronunciation_encoding"].(string)
 	if pronunciationEncodingStr == "" { // Apply default if not provided
 		pronunciationEncodingStr = "ipa"

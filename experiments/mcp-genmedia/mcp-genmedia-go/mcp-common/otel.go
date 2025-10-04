@@ -1,3 +1,5 @@
+// Package common provides shared utilities for the MCP Genmedia servers.
+
 package common
 
 import (
@@ -11,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"google.golang.org/grpc"
 )
 
 // InitTracerProvider initializes and configures the OpenTelemetry tracer provider.
@@ -37,7 +38,6 @@ func InitTracerProvider(serviceName, serviceVersion string) (*sdktrace.TracerPro
 	// Default to a secure connection.
 	opts := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(endpoint),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	}
 
 	// Check for the standard environment variable to enable insecure mode.
