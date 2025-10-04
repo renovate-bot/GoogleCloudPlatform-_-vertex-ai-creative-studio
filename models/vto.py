@@ -67,7 +67,11 @@ def generate_vto_image(
     """Generates a VTO image."""
 
     try:
-        client_options = {"api_endpoint": f"{cfg.LOCATION}-aiplatform.googleapis.com"}
+        if cfg.LOCATION == "global":
+            api_endpoint = "aiplatform.googleapis.com"
+        else:
+            api_endpoint = f"{cfg.LOCATION}-aiplatform.googleapis.com"
+        client_options = {"api_endpoint": api_endpoint}
         client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
     except Exception as client_err:
         print(f"Failed to create PredictionServiceClient: {client_err}")
@@ -76,6 +80,7 @@ def generate_vto_image(
         ) from client_err
 
     model_endpoint = f"projects/{cfg.PROJECT_ID}/locations/{cfg.LOCATION}/publishers/google/models/{cfg.VTO_MODEL_ID}"
+    logging.info("Attempting to call VTO model endpoint: %s", model_endpoint)
 
     instance = {
         "personImage": {
