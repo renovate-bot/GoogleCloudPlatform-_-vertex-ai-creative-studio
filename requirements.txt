@@ -89,7 +89,7 @@ google-auth==2.41.1
     #   google-genai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-cloud-aiplatform==1.118.0
+google-cloud-aiplatform==1.119.0
     # via veo-app (pyproject.toml)
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
@@ -308,7 +308,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==2.23
     # via cffi
-pydantic==2.11.9
+pydantic==2.11.10
     # via
     #   fastapi
     #   google-cloud-aiplatform

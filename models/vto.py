@@ -32,7 +32,7 @@ cfg = Default()
 def generate_vto_image_genai(
     person_gcs_url: str, product_gcs_url: str, sample_count: int
 ) -> list[str]:
-    """Generates a VTO image using the google.genai client."""
+    """Generate a VTO image using the google.genai client."""
     client = GeminiModelSetup.init()
     model_name = f"publishers/google/models/{cfg.VTO_MODEL_ID}"
 
@@ -64,8 +64,7 @@ def generate_vto_image_genai(
 def generate_vto_image(
     person_gcs_url: str, product_gcs_url: str, sample_count: int, base_steps: int
 ) -> list[str]:
-    """Generates a VTO image."""
-
+    """Generate a VTO image."""
     try:
         if cfg.LOCATION == "global":
             api_endpoint = "aiplatform.googleapis.com"
