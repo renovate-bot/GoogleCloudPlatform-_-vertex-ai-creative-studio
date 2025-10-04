@@ -213,21 +213,6 @@ class MediaDetailViewer extends LitElement {
     `;
   }
 
-  renderSourceImages() {
-    try {
-      const sourceUrls = JSON.parse(this.sourceUrlsJson);
-      if (sourceUrls.length === 0) return html``;
-
-      return html`
-        <h3>Source Images</h3>
-        <div class="source-images">
-          ${sourceUrls.map((url) => html`<img .src=${url} />`)}
-        </div>
-      `;
-    } catch (e) {
-      return html``;
-    }
-  }
 
   renderMetadata() {
     try {
@@ -316,7 +301,6 @@ class MediaDetailViewer extends LitElement {
         <div class="left-column">
           <div class="main-asset">${this.renderPrimaryAsset()}</div>
           ${this.renderActions()}
-          ${this.renderSourceImages()}
         </div>
         <div class="right-column">
           <div class="tabs">
