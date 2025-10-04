@@ -100,11 +100,6 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
         error_filter=pagestate.error_filter,
     )
 
-    # Sanitize items before adding to state to prevent deserialization errors.
-    for item in new_items:
-        if isinstance(item.audio_analysis, dict):
-            item.audio_analysis = json.dumps(item.audio_analysis)
-
     if not new_items:
         pagestate.all_items_loaded = True
     else:
