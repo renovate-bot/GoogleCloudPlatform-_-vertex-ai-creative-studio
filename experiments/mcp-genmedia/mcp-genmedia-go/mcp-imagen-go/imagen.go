@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements an MCP server for Google's Imagen models.
+
 package main
 
 import (
@@ -274,8 +276,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	modelDetails := common.SupportedImagenModels[model]
 
 	var numberOfImages int32 = 1
-	numImagesArg, ok := request.GetArguments()["num_images"].(interface{})
-	if ok {
+	if numImagesArg, ok := request.GetArguments()["num_images"]; ok {
 		if numImagesFloat, okFloat := numImagesArg.(float64); okFloat {
 			numberOfImages = int32(numImagesFloat)
 		} else {
@@ -405,7 +406,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 
 	if response == nil || len(response.GeneratedImages) == 0 {
 		noImageText := fmt.Sprintf("Sorry, I couldn't generate any images for the prompt \"%s\".", prompt)
-		log.Printf(noImageText)
+		log.Print(noImageText)
 		contentItems = append(contentItems, mcp.TextContent{Type: "text", Text: noImageText})
 		return &mcp.CallToolResult{Content: contentItems}, nil
 	}

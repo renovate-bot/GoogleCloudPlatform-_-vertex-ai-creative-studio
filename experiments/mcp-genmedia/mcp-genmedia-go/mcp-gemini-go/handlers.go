@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements an MCP server for Google's Gemini models.
+
 package main
 
 import (

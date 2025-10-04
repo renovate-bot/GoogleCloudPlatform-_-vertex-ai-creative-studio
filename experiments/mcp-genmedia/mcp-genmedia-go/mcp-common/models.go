@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package common provides shared utilities for the MCP Genmedia servers.
+
 package common
 
 import (
