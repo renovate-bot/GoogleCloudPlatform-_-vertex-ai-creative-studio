@@ -723,6 +723,7 @@ def get_media_for_chooser(
             db.collection(config.GENMEDIA_COLLECTION_NAME)
             .where("mime_type", ">=", mime_prefix)
             .where("mime_type", "<", mime_prefix_end)
+            .order_by("mime_type", direction=firestore.Query.ASCENDING)
             .order_by("timestamp", direction=firestore.Query.DESCENDING)
         )
 
