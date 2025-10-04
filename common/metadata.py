@@ -66,6 +66,9 @@ class MediaItem:
     source_images_gcs: List[str] = field(
         default_factory=list
     )  # For multi-file input media (e.g., recontext) -> list of gs://bucket/path
+    source_uris: List[str] = field(
+        default_factory=list
+    )  # For generic source media of any type (e.g., Pixie compositor)
     thumbnail_uri: Optional[str] = None
 
     # Video specific (some may also apply to Image/Audio)
@@ -119,7 +122,7 @@ class MediaItem:
     volume_gain_db: Optional[float] = None
     language_code: Optional[str] = None
     style_prompt: Optional[str] = None
-    
+
     # Interior Design Storyboard
     storyboard_id: Optional[str] = None
 
@@ -282,6 +285,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         gcsuri=gcsuri,
         gcs_uris=raw_item_data.get("gcs_uris", []),
         source_images_gcs=raw_item_data.get("source_images_gcs", []),
+        source_uris=raw_item_data.get("source_uris", []),
         thumbnail_uri=thumbnail,
         aspect=raw_item_data.get("aspect"),
         resolution=raw_item_data.get("resolution"),
