@@ -93,7 +93,7 @@ func main() {
 	tool := mcp.NewTool("gemini_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini 2.5 Flash Image generation. This model is also called nano-banana."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
-		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image-preview"), mcp.Description("The specific Gemini model to use.")),
+		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image"), mcp.Description("The specific Gemini model to use.")),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input images.")),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
