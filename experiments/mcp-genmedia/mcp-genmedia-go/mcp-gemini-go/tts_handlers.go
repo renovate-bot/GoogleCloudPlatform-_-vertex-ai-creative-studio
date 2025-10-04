@@ -1,3 +1,5 @@
+// Package main implements an MCP server for Google's Gemini models.
+
 package main
 
 import (
@@ -294,7 +296,7 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 				contentItems = append(contentItems, mcp.AudioContent{Type: "audio", Data: base64AudioData, MIMEType: mimeType})
 			} else {
 				fileSaveMessage = fmt.Sprintf("Audio saved to: %s (%d bytes).", savedFilename, len(audioBytes))
-				log.Printf(fileSaveMessage)
+				log.Print(fileSaveMessage)
 			}
 		}
 	} else {
