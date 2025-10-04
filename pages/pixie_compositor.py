@@ -409,7 +409,7 @@ def on_layer_audio_click(e: me.ClickEvent):
                 user_email=app_state.user_email,
                 timestamp=datetime.datetime.now(datetime.timezone.utc),
                 mime_type="video/mp4",
-                source_images_gcs=[state.selected_video_for_audio, state.selected_audio],
+                source_uris=[state.selected_video_for_audio, state.selected_audio],
                 comment="Produced by Pixie Compositor: Video + Audio",
                 model="pixie-compositor-v1-audio-layer",
             )
@@ -491,7 +491,7 @@ def on_process_click(e: me.ClickEvent):
                 user_email=app_state.user_email,
                 timestamp=datetime.datetime.now(datetime.timezone.utc),
                 mime_type="video/mp4",
-                source_images_gcs=video_uris_to_process,
+                source_uris=video_uris_to_process,
                 comment=f"Produced by Pixie Compositor with {state.selected_transition} transition",
                 model="pixie-compositor-v1",
             )

@@ -429,19 +429,20 @@ def render_default_detail_dialog(item: MediaItem):
     elif item.gcsuri:
         urls_to_process.append(item.gcsuri)
     primary_urls = [gcs_uri_to_https_url(uri) for uri in urls_to_process]
-    # Consolidate all potential source images into a single list
+
+    # Consolidate all potential source assets into a single list for backward compatibility
     all_source_uris = []
+    if item.source_uris:
+        all_source_uris.extend(item.source_uris)
     if item.source_images_gcs:
         all_source_uris.extend(item.source_images_gcs)
     if item.r2v_reference_images:
         all_source_uris.extend(item.r2v_reference_images)
     if item.r2v_style_image:
         all_source_uris.append(item.r2v_style_image)
-    # Add other single reference images as well
     if item.reference_image:
         all_source_uris.append(item.reference_image)
 
-    source_urls = [gcs_uri_to_https_url(uri) for uri in all_source_uris]
     # Handle case where timestamp might be a string from Firestore
     timestamp_display = "N/A"
     if isinstance(item.timestamp, datetime.datetime):
@@ -456,8 +457,8 @@ def render_default_detail_dialog(item: MediaItem):
         "Generation Time (s)": item.generation_time,
     }
 
-        # Determine the render type based on mime_type for reliability
-    render_type = "image" # Default to image
+    # Determine the render type based on mime_type for reliability
+    render_type = "image"  # Default to image
     if item.mime_type:
         if item.mime_type.startswith("video/"):
             render_type = "video"
@@ -471,10 +472,11 @@ def render_default_detail_dialog(item: MediaItem):
         elif ".wav" in url or ".mp3" in url:
             render_type = "audio"
 
+    # The main detail viewer now only shows the primary asset and metadata
     media_detail_viewer(
         media_type=render_type,
         primary_urls_json=json.dumps(primary_urls),
-        source_urls_json=json.dumps(source_urls),
+        source_urls_json="[]",  # Pass empty list as sources are rendered below
         metadata_json=json.dumps(metadata),
         id=item.id,
         raw_metadata_json=json.dumps(
@@ -483,6 +485,38 @@ def render_default_detail_dialog(item: MediaItem):
         on_edit_click=handle_edit_click,
         on_veo_click=on_veo_click,
     )
+
+    # New section to render source assets using media_tile
+    if all_source_uris:
+        with me.box(style=me.Style(margin=me.Margin(top=24))):
+            me.text("Source Assets", type="headline-6")
+            with me.box(
+                style=me.Style(
+                    display="grid",
+                    grid_template_columns="repeat(auto-fill, minmax(200px, 1fr))",
+                    gap="16px",
+                    margin=me.Margin(top=16),
+                )
+            ):
+                for source_uri in all_source_uris:
+                    https_url = gcs_uri_to_https_url(source_uri)
+                    # Determine media type from URL extension
+                    render_type = "image"  # Default
+                    if ".mp4" in https_url or ".webm" in https_url:
+                        render_type = "video"
+                    elif ".wav" in https_url or ".mp3" in https_url:
+                        render_type = "audio"
+
+                    # Create a dummy MediaItem for pill generation
+                    source_item = MediaItem(gcsuri=source_uri, media_type=render_type)
+                    media_tile(
+                        key=source_uri,
+                        media_type=render_type,
+                        https_url=https_url,
+                        pills_json=get_pills_for_item(source_item, https_url),
+                        # Not clickable for now, but could be in the future
+                        on_click=None,
+                    )
 
 
 def on_continue_styling_click(e: me.ClickEvent):
