@@ -176,8 +176,24 @@ def render_chooser_dialog():
             with me.box(
                 style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
             ):
-                me.text(f"Select a {state.dialog_media_type.capitalize()} from Library", type="headline-6")
+                # Dialog header with title and close button
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        justify_content="space-between",
+                        align_items="center",
+                        width="100%",
+                    )
+                ):
+                    me.text(f"Select a {state.dialog_media_type.capitalize()} from Library", type="headline-6")
+                    with me.content_button(
+                        type="icon",
+                        on_click=lambda e: setattr(state, "show_dialog", False),
+                    ):
+                        me.icon("close")
 
+                # Main content area with grid and scroller
                 with me.box(style=me.Style(flex_grow=1, overflow_y="auto", padding=me.Padding.all(10))):
                     if state.is_loading and not state.media_items:
                         with me.box(style=me.Style(display="flex", justify_content="center", align_items="center", height="100%")):
@@ -208,10 +224,3 @@ def render_chooser_dialog():
                             is_loading=state.is_loading,
                             all_items_loaded=state.all_items_loaded,
                         )
-
-                with me.box(style=me.Style(display="flex", justify_content="flex-end", margin=me.Margin(top=24))):
-                    me.button(
-                        "Cancel",
-                        on_click=lambda e: setattr(state, "show_dialog", False),
-                        type="stroked",
-                    )
