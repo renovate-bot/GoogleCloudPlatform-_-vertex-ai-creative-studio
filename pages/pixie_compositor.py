@@ -32,7 +32,6 @@ from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
-from components.library.audio_chooser_button import audio_chooser_button
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.media_chooser_button import media_chooser_button
 from components.media_tile.media_tile import media_tile, get_pills_for_item
@@ -196,6 +195,26 @@ def open_video_chooser(e: me.ClickEvent):
     yield
 
     items, last_doc = get_media_for_chooser(media_type="video", page_size=20)
+    state.chooser_media_items = items
+    state.chooser_last_doc_id = last_doc.id if last_doc else ""
+    if not last_doc:
+        state.chooser_all_items_loaded = True
+    state.chooser_is_loading = False
+    yield
+
+
+def open_audio_chooser(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.show_chooser_dialog = True
+    state.chooser_dialog_media_type = "audio"
+    state.chooser_dialog_key = e.key
+    state.chooser_is_loading = True
+    state.chooser_media_items = []
+    state.chooser_all_items_loaded = False
+    state.chooser_last_doc_id = ""
+    yield
+
+    items, last_doc = get_media_for_chooser(media_type="audio", page_size=20)
     state.chooser_media_items = items
     state.chooser_last_doc_id = last_doc.id if last_doc else ""
     if not last_doc:
@@ -431,8 +450,8 @@ def render_video_audio_tab():
                         accepted_file_types=["audio/mpeg", "audio/wav"],
                         style=me.Style(width="100%"),
                     )
-                    audio_chooser_button(
-                        key="audio_1", on_library_select=on_audio_select_from_library
+                    media_chooser_button(
+                        key="audio_1", on_click=open_audio_chooser, media_type="audio"
                     )
                     # Future: Add audio_chooser_button if created
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
@@ -500,6 +519,8 @@ def render_chooser_dialog():
             state.selected_videos["video_2"] = gcs_uri
         elif state.chooser_dialog_key == "video_for_audio":
             state.selected_video_for_audio = gcs_uri
+        elif state.chooser_dialog_key == "audio_1":
+            state.selected_audio = gcs_uri
 
         state.show_chooser_dialog = False
         yield
