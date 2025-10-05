@@ -18,7 +18,7 @@ from dataclasses import field
 
 import mesop as me
 
-from common.metadata import MediaItem, get_media_for_chooser, db, config
+from common.metadata import MediaItem, config, db, get_media_for_chooser
 from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
@@ -41,7 +41,7 @@ class PageState:
     dialog_media_type: str = ""  # To control the dialog's content
     dialog_chooser_id: str = ""  # To know which button opened the dialog
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)
+    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
     last_doc_id: str = ""  # For pagination, store only the ID
     all_items_loaded: bool = False
 
@@ -52,8 +52,8 @@ class PageState:
 )
 def page():
     """Main test page."""
-    with page_scaffold(page_name="test_media_chooser"):
-        with page_frame():
+    with page_scaffold(page_name="test_media_chooser"):  # pylint: disable=E1129:not-context-manager
+        with page_frame():  # pylint: disable=E1129:not-context-manager
             header("Test Media Chooser", "science")
             page_content()
             # The dialog is now part of the page, not the button.
@@ -65,7 +65,9 @@ def page_content():
     state = me.state(PageState)
 
     def open_dialog_for(e: me.ClickEvent, media_type: str):
-        print(f"<-- LOGGER: Button with key '{e.key}' clicked. Opening dialog for media_type: '{media_type}' -->")
+        print(
+            f"<-- LOGGER: Button with key '{e.key}' clicked. Opening dialog for media_type: '{media_type}' -->"
+        )
         state.show_dialog = True
         state.dialog_media_type = media_type
         state.dialog_chooser_id = e.key
@@ -92,7 +94,9 @@ def page_content():
 
         # Test the video chooser
         with me.box(
-            style=me.Style(display="flex", flex_direction="row", gap=16, align_items="center")
+            style=me.Style(
+                display="flex", flex_direction="row", gap=16, align_items="center"
+            )
         ):
             media_chooser_button(
                 key="video_chooser_1",
@@ -104,7 +108,9 @@ def page_content():
 
         # Test the audio chooser
         with me.box(
-            style=me.Style(display="flex", flex_direction="row", gap=16, align_items="center")
+            style=me.Style(
+                display="flex", flex_direction="row", gap=16, align_items="center",
+            )
         ):
             media_chooser_button(
                 key="audio_chooser_1",
@@ -116,7 +122,9 @@ def page_content():
 
         # Test the image chooser
         with me.box(
-            style=me.Style(display="flex", flex_direction="row", gap=16, align_items="center")
+            style=me.Style(
+                display="flex", flex_direction="row", gap=16, align_items="center"
+            )
         ):
             media_chooser_button(
                 key="image_chooser_1",
@@ -134,15 +142,17 @@ def render_chooser_dialog():
 
     def handle_item_selected(e: me.ClickEvent):
         gcs_uri = e.key
-        print(f"<-- LOGGER: Item selected. Chooser ID: '{state.dialog_chooser_id}'. GCS URI: {gcs_uri} -->")
-        
+        print(
+            f"<-- LOGGER: Item selected. Chooser ID: '{state.dialog_chooser_id}'. GCS URI: {gcs_uri} -->"
+        )
+
         if state.dialog_chooser_id == "video_chooser_1":
             state.selected_video_uri = gcs_uri
         elif state.dialog_chooser_id == "audio_chooser_1":
             state.selected_audio_uri = gcs_uri
         elif state.dialog_chooser_id == "image_chooser_1":
             state.selected_image_uri = gcs_uri
-        
+
         state.show_dialog = False
         yield
 
@@ -155,7 +165,11 @@ def render_chooser_dialog():
         yield
 
         # Re-fetch the snapshot from the stored ID to use as a cursor
-        last_doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(state.last_doc_id).get()
+        last_doc_ref = (
+            db.collection(config.GENMEDIA_COLLECTION_NAME)
+            .document(state.last_doc_id)
+            .get()
+        )
 
         new_items, last_doc = get_media_for_chooser(
             media_type=state.dialog_media_type, page_size=20, start_after=last_doc_ref
@@ -171,10 +185,12 @@ def render_chooser_dialog():
         width="95vw", height="80vh", display="flex", flex_direction="column"
     )
 
-    with dialog(is_open=state.show_dialog, dialog_style=dialog_style):
+    with dialog(is_open=state.show_dialog, dialog_style=dialog_style):  # pylint: disable=E1129:not-context-manager
         if state.show_dialog:
             with me.box(
-                style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+                style=me.Style(
+                    display="flex", flex_direction="column", gap=16, flex_grow=1,
+                )
             ):
                 # Dialog header with title and close button
                 with me.box(
@@ -186,7 +202,10 @@ def render_chooser_dialog():
                         width="100%",
                     )
                 ):
-                    me.text(f"Select a {state.dialog_media_type.capitalize()} from Library", type="headline-6")
+                    me.text(
+                        f"Select a {state.dialog_media_type.capitalize()} from Library",
+                        type="headline-6",
+                    )
                     with me.content_button(
                         type="icon",
                         on_click=lambda e: setattr(state, "show_dialog", False),
@@ -194,9 +213,20 @@ def render_chooser_dialog():
                         me.icon("close")
 
                 # Main content area with grid and scroller
-                with me.box(style=me.Style(flex_grow=1, overflow_y="auto", padding=me.Padding.all(10))):
+                with me.box(
+                    style=me.Style(
+                        flex_grow=1, overflow_y="auto", padding=me.Padding.all(10)
+                    )
+                ):
                     if state.is_loading and not state.media_items:
-                        with me.box(style=me.Style(display="flex", justify_content="center", align_items="center", height="100%")):
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                justify_content="center",
+                                align_items="center",
+                                height="100%",
+                            )
+                        ):
                             me.progress_spinner()
                     else:
                         with me.box(
@@ -206,16 +236,25 @@ def render_chooser_dialog():
                                 gap="16px",
                             )
                         ):
-                            items_to_render = state.media_items # No need to filter, query does it now
+                            items_to_render = (
+                                state.media_items
+                            )  # No need to filter, query does it now
                             if not items_to_render and not state.is_loading:
-                                me.text(f"No items of type '{state.dialog_media_type}' found in your library.")
+                                me.text(
+                                    f"No items of type '{state.dialog_media_type}' found in your library."
+                                )
                             else:
                                 for item in items_to_render:
-                                    https_url = gcs_uri_to_https_url(item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else ""))
+                                    https_url = gcs_uri_to_https_url(
+                                        item.gcsuri
+                                        or (item.gcs_uris[0] if item.gcs_uris else "")
+                                    )
                                     media_tile(
-                                        key=item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else ""),
+                                        key=item.gcsuri
+                                        or (item.gcs_uris[0] if item.gcs_uris else ""),
                                         on_click=handle_item_selected,
-                                        media_type=item.media_type or state.dialog_media_type,
+                                        media_type=item.media_type
+                                        or state.dialog_media_type,
                                         https_url=https_url,
                                         pills_json=get_pills_for_item(item, https_url),
                                     )
