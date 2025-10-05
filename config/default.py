@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.0.8" # Library fixes
+    VERSION: str = "1.0.9" # New media chooser
     APP_ENV: str = os.environ.get("APP_ENV", "")
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")

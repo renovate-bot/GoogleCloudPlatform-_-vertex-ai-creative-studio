@@ -304,11 +304,28 @@ resource "google_firestore_index" "genmedia_library_mime_type_timestamp" {
   query_scope = "COLLECTION"
 
   fields {
+    field_path = "mime_type"
+    order      = "ASCENDING"
+  }
+
+  fields {
     field_path = "timestamp"
     order      = "DESCENDING"
   }
+}
+
+resource "google_firestore_index" "genmedia_chooser_media_type_timestamp" {
+  collection  = "genmedia"
+  database    = google_firestore_database.create_studio_asset_metadata.name
+  query_scope = "COLLECTION"
+
   fields {
-    field_path = "mime_type"
+    field_path = "media_type"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
     order      = "DESCENDING"
   }
 }

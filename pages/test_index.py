@@ -65,6 +65,11 @@ def page():
             "title": "Legacy Library",
             "description": "Legacy Library page",
             "route": "/legacy_library",
+        },
+        {
+            "title": "Media Chooser Test",
+            "description": "A test page for the generic, high-performance media chooser component.",
+            "route": "/test_media_chooser",
         }
     ]
 
