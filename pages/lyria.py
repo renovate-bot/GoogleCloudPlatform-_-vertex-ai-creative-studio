@@ -508,7 +508,7 @@ def on_click_lyria(e: me.ClickEvent):
             generation_time=execution_time,
             error_message=lyria_error_message_for_metadata if lyria_error_message_for_metadata else None,
             gcsuri=gcs_uri_for_analysis_and_metadata if generated_successfully and gcs_uri_for_analysis_and_metadata else None,
-            audio_analysis=analysis_dict_for_metadata if analysis_dict_for_metadata else None,
+            audio_analysis=json.dumps(analysis_dict_for_metadata) if analysis_dict_for_metadata else None,
             # duration might be available if analysis_dict_for_metadata contains it, or if Lyria API provides it
         )
         add_media_item_to_firestore(item)

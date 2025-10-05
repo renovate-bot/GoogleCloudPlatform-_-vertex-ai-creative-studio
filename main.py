@@ -61,6 +61,7 @@ from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_worsfold_encoder import test_worsfold_encoder_page
 from pages.test_svg import test_svg_page
+from pages.test_media_chooser import page as test_media_chooser_page
 from pages import pixie_compositor as pixie_compositor_page
 from state.state import AppState
 import google.auth
@@ -188,6 +189,9 @@ me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
 )
 me.page(path="/test_svg", title="Test SVG")(
     test_svg_page
+)
+me.page(path="/test_media_chooser", title="Test Media Chooser")(
+    test_media_chooser_page
 )
 
 

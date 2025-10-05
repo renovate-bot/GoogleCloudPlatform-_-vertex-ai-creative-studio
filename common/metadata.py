@@ -14,6 +14,7 @@
 """metadata implementation"""
 
 import datetime
+import json
 import uuid
 
 # from models.model_setup import ModelSetup
@@ -97,8 +98,8 @@ class MediaItem:
 
     # Music specific
     # duration is shared with Video
-    audio_analysis: Optional[Dict] = (
-        None  # Structured analysis from Gemini, stored as a map
+    audio_analysis: Optional[str] = (
+        None  # Structured analysis from Gemini, stored as a JSON string
     )
 
     # This field is for loading raw data from Firestore, not for writing.
@@ -129,6 +130,12 @@ class MediaItem:
     # R2V specific
     r2v_reference_images: List[str] = field(default_factory=list)
     r2v_style_image: Optional[str] = None
+
+    def __post_init__(self):
+        # Ensure audio_analysis is always a JSON string for state serialization.
+        # This handles cases where raw data from Firestore might be a dict.
+        if isinstance(self.audio_analysis, dict):
+            self.audio_analysis = json.dumps(self.audio_analysis)
 
 
 def add_media_item_to_firestore(item: MediaItem):
@@ -692,4 +699,70 @@ def get_media_for_page_optimized(
 
     except Exception as e:
         print(f"Error fetching media from Firestore (optimized): {e}")
+        return [], None
+
+def get_media_for_chooser(
+    media_type: str, page_size: int, start_after=None
+) -> tuple[list[MediaItem], Optional[firestore.DocumentSnapshot]]:
+    """Fetches media items for the chooser, using a hybrid query strategy."""
+    if not db:
+        return [], None
+
+    try:
+        # Query 1: For new data with the media_type field
+        query1 = (
+            db.collection(config.GENMEDIA_COLLECTION_NAME)
+            .where("media_type", "==", media_type)
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+        )
+
+        # Query 2: For legacy data using mime_type
+        mime_prefix = f"{media_type}/"
+        mime_prefix_end = f"{media_type}0"
+        query2 = (
+            db.collection(config.GENMEDIA_COLLECTION_NAME)
+            .where("mime_type", ">=", mime_prefix)
+            .where("mime_type", "<", mime_prefix_end)
+            .order_by("mime_type", direction=firestore.Query.ASCENDING)
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+        )
+
+        if start_after:
+            query1 = query1.start_after(start_after)
+            query2 = query2.start_after(start_after)
+
+        query1 = query1.limit(page_size)
+        query2 = query2.limit(page_size)
+
+        # Execute queries and merge results
+        docs1 = list(query1.stream())
+        docs2 = list(query2.stream())
+
+        merged_docs = {doc.id: doc for doc in docs1}
+        for doc in docs2:
+            if doc.id not in merged_docs:
+                merged_docs[doc.id] = doc
+
+        # Sort merged results by timestamp
+        sorted_docs = sorted(
+            merged_docs.values(),
+            key=lambda doc: doc.to_dict().get("timestamp"),
+            reverse=True,
+        )
+
+        # Paginate the final sorted list
+        paginated_docs = sorted_docs[:page_size]
+
+        media_items = [
+            _create_media_item_from_dict(doc.id, doc.to_dict())
+            for doc in paginated_docs
+        ]
+
+        # Determine the correct `last_doc` for pagination
+        last_doc = paginated_docs[-1] if paginated_docs else None
+
+        return media_items, last_doc
+
+    except Exception as e:
+        print(f"Error fetching media for chooser: {e}")
         return [], None

@@ -12,24 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from typing import Optional
 
 import mesop as me
 
-from common.metadata import MediaItem, get_media_for_page_optimized, db, config
+from common.metadata import MediaItem, config, db, get_media_for_page_optimized
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
-from components.library.video_infinite_scroll_library import video_infinite_scroll_library
+from components.library.video_infinite_scroll_library import (
+    video_infinite_scroll_library,
+)
 
 
 @me.stateclass
 class State:
     """Local mesop state for the infinite scroll chooser button."""
+
     show_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)
+    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
     has_more_items: bool = True
 
 
@@ -69,14 +73,16 @@ def video_chooser_button(
         yield
 
         last_item_id = state.media_items[-1].id
-        last_doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(last_item_id).get()
+        last_doc_ref = (
+            db.collection(config.GENMEDIA_COLLECTION_NAME).document(last_item_id).get()
+        )
 
         new_items, last_doc = get_media_for_page_optimized(
             20, ["videos"], start_after=last_doc_ref
         )
         if new_items:
             state.media_items.extend(new_items)
-        
+
         if not last_doc:
             state.has_more_items = False
         state.is_loading = False
@@ -93,15 +99,23 @@ def video_chooser_button(
         yield
 
     with me.content_button(on_click=open_dialog, type=button_type, key=key):
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=8, align_items="center"
+            )
+        ):
             me.icon("video_library")
             if button_label:
                 me.text(button_label)
 
-    dialog_style = me.Style(width="95vw", height="80vh", display="flex", flex_direction="column")
+    dialog_style = me.Style(
+        width="95vw", height="80vh", display="flex", flex_direction="column"
+    )
 
-    with dialog(is_open=state.show_dialog, dialog_style=dialog_style):
-        with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)):
+    with dialog(is_open=state.show_dialog, dialog_style=dialog_style):  # pylint: disable=E1129:not-context-manager
+        with me.box(
+            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+        ):
             me.text("Select a Video from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
                 if state.is_loading and not state.media_items:
@@ -130,7 +144,11 @@ def video_chooser_button(
                         on_load_more=handle_load_more,
                         on_image_selected=handle_image_selected,
                     )
-            with me.box(style=me.Style(display="flex", justify_content="flex-end", margin=me.Margin(top=24))):
+            with me.box(
+                style=me.Style(
+                    display="flex", justify_content="flex-end", margin=me.Margin(top=24)
+                )
+            ):
                 me.button(
                     "Cancel",
                     on_click=lambda e: setattr(state, "show_dialog", False),
