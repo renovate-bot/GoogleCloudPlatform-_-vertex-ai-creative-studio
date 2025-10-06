@@ -303,6 +303,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
             images=[state.storyboard["original_floor_plan_uri"]],
+            aspect_ratio="16:9",
             gcs_folder="interior_design_generations",
         )
 
@@ -352,6 +353,7 @@ def on_room_button_click(e: me.ClickEvent):
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
             images=[state.storyboard["generated_3d_view_uri"]],
+            aspect_ratio="16:9",
             gcs_folder="interior_design_zoomed_views",
         )
 
@@ -427,6 +429,7 @@ def on_design_click(e: me.ClickEvent):
         gcs_uris, _ = generate_image_from_prompt_and_images(
             prompt=state.design_prompt,
             images=images,
+            aspect_ratio="16:9",
             gcs_folder="interior_design_iterations",
         )
 
