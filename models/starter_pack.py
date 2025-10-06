@@ -28,6 +28,7 @@ def generate_starter_pack_from_look(look_image_uri: str) -> str:
     generated_images, _ = gemini.generate_image_from_prompt_and_images(
         prompt=prompt,
         images=[look_image_uri],
+        aspect_ratio="1:1",
         gcs_folder="starter_pack_generations",
         file_prefix="starter_pack_from_look",
     )
@@ -43,6 +44,7 @@ def generate_look_from_starter_pack(
     generated_images, _ = gemini.generate_image_from_prompt_and_images(
         prompt=prompt,
         images=[starter_pack_uri, model_image_uri],
+        aspect_ratio="1:1",
         gcs_folder="starter_pack_generations",
         file_prefix="look_from_starter_pack",
     )

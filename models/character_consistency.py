@@ -146,6 +146,7 @@ def generate_character_video(
             generate_image_from_prompt_and_images,
             final_prompt,
             reference_image_gcs_uris,
+            aspect_ratio="1:1",
             gcs_folder="character_consistency_candidates",
             file_prefix="candidate",
         )
