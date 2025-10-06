@@ -141,7 +141,7 @@ Because you are using a custom domain, you will need to export one more variable
 export DOMAIN_NAME=creativestudio.example.com
 ```
 
-Make sure your command line is in the folder containing this README (i.e., experiments/veo-app). Then create the `terraform.tfvars` using the following command:
+Make sure your command line is in the folder containing this README (i.e., in the root of the main repository, /). Then create the `terraform.tfvars` using the following command:
 
 ```bash
 cat > terraform.tfvars << EOF
@@ -183,7 +183,7 @@ If you are unable to create a DNS record in your corporate domain, you can also 
 
 ### 1. Initialize Terraform
 
-Make sure your command line is in the folder containing this README (i.e., experiments/veo-app). Then create the `terraform.tfvars` using the following command:
+Make sure your command line is in the folder containing this README (i.e., in the root of the main repository, /). Then create the `terraform.tfvars` using the following command:
 
 ```bash
 cat > terraform.tfvars << EOF
@@ -226,7 +226,7 @@ Congratulations, you can now navigate to the address provided in the `cloud-run-
 ## Deploying to Cloud Shell for Testing
 Use this option if you want to quickly run the UI without having to setup a local development environment. To get started, use Cloud Shell and follow the tutorial instructions.
 
-  [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git&cloudshell_workspace=experiments/veo-app&cloudshell_tutorial=tutorial.md)
+  [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git&cloudshell_tutorial=tutorial.md)
 
 # Solution Design
 There are two way to deploy this solution. One using a custom domain with a load balancer and IAP integration. The other is using Cloud Run's default URL and integrating IAP with Cloud Run. The below diagrams depict the components used for each option.
