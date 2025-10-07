@@ -261,7 +261,11 @@ def recontextualize_product_in_scene(
 ) -> list[str]:
     """Recontextualizes a product in a scene and returns a list of GCS URIs."""
     cfg = Default()
-    client_options = {"api_endpoint": f"{cfg.LOCATION}-aiplatform.googleapis.com"}
+    if cfg.LOCATION == "global":
+        api_endpoint = "aiplatform.googleapis.com"
+    else:
+        api_endpoint = f"{cfg.LOCATION}-aiplatform.googleapis.com"
+    client_options = {"api_endpoint": api_endpoint}
     client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
 
     model_endpoint = f"projects/{cfg.PROJECT_ID}/locations/{cfg.LOCATION}/publishers/google/models/{cfg.MODEL_IMAGEN_PRODUCT_RECONTEXT}"

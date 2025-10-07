@@ -19,7 +19,7 @@ cachecontrol==0.14.3
     # via firebase-admin
 cachetools==6.2.0
     # via google-auth
-certifi==2025.8.3
+certifi==2025.10.5
     # via
     #   httpcore
     #   httpx
@@ -375,7 +375,7 @@ tenacity==9.1.2
     # via
     #   veo-app (pyproject.toml)
     #   google-genai
-tifffile==2025.9.30
+tifffile==2025.10.4
     # via scikit-image
 tqdm==4.67.1
     # via proglog

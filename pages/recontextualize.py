@@ -31,6 +31,7 @@ from components.image_thumbnail import image_thumbnail
 from config.default import Default, ABOUT_PAGE_CONTENT
 from models.image_models import recontextualize_product_in_scene
 from state.state import AppState
+from common.analytics import track_model_call
 
 config = Default()
 
@@ -236,9 +237,15 @@ def on_generate(e: me.ClickEvent):
 
     print(f"Generating recontext image with sources: {state.uploaded_image_gcs_uris}")
     try:
-        result_gcs_uris = recontextualize_product_in_scene(
-            state.uploaded_image_gcs_uris, state.prompt, state.recontext_sample_count
-        )
+        with track_model_call(
+            model_name=config.MODEL_IMAGEN_PRODUCT_RECONTEXT,
+            prompt=state.prompt,
+            sample_count=state.recontext_sample_count,
+            source_images=state.uploaded_image_gcs_uris,
+        ):
+            result_gcs_uris = recontextualize_product_in_scene(
+                state.uploaded_image_gcs_uris, state.prompt, state.recontext_sample_count
+            )
         state.result_gcs_uris = result_gcs_uris
         add_media_item(
             user_email=app_state.user_email,
