@@ -264,7 +264,7 @@ pillow==11.3.0
     #   mediapy
     #   moviepy
     #   scikit-image
-platformdirs==4.4.0
+platformdirs==4.5.0
     # via black
 pluggy==1.6.0
     # via pytest
