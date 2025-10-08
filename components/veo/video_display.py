@@ -48,18 +48,29 @@ def video_display(on_thumbnail_click: Callable):
         # Determine the main video to display
         main_video_url = state.selected_video_url if state.selected_video_url else state.result_videos[0]
 
-        # Main video player
-        me.video(
-            key=main_video_url, # Add key to force re-render
-            src=gcs_uri_to_https_url(main_video_url),
+        # Parse aspect ratio string "w:h" into "w / h" for CSS
+        aspect_ratio_css = state.aspect_ratio.replace(":", " / ")
+
+        # Main video player container
+        with me.box(
             style=me.Style(
-                border_radius=12,
                 width="100%",
                 max_width="90vh",
-                display="block",
+                max_height="85vh",
                 margin=me.Margin(left="auto", right="auto"),
-            ),
-        )
+                aspect_ratio=aspect_ratio_css,
+            )
+        ):
+            me.video(
+                key=main_video_url,
+                src=gcs_uri_to_https_url(main_video_url),
+                style=me.Style(
+                    border_radius=12,
+                    width="100%",
+                    height="100%",
+                    display="block",
+                ),
+            )
 
         # Generation time and Extend functionality
         with me.box(
