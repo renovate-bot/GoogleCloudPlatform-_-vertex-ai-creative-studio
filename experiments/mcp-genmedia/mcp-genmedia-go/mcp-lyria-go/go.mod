@@ -3,7 +3,7 @@ module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-
 go 1.24.3
 
 require (
-	cloud.google.com/go/aiplatform v1.102.0
+	cloud.google.com/go/aiplatform v1.104.0
 	github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20251008031531-ca221c476ed6
 	github.com/mark3labs/mcp-go v0.40.0
 	github.com/rs/cors v1.11.1
