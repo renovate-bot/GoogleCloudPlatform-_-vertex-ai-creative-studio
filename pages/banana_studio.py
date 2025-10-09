@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Gemini 2.5 Flash Image Generation - nano-banana."""
+"""Banana Studio - an experimental page."""
 
 import json
 import time
@@ -34,11 +34,11 @@ from components.svg_icon.svg_icon import svg_icon
 from config.banana_presets import IMAGE_ACTION_PRESETS
 from config.default import Default as cfg
 from models.gemini import (
+    describe_image,
     generate_image_from_prompt_and_images,
     generate_transformation_prompts,
 )
 from state.state import AppState
-
 
 CHIP_STYLE = me.Style(
     padding=me.Padding(top=4, right=12, bottom=4, left=12),
@@ -47,12 +47,95 @@ CHIP_STYLE = me.Style(
     height=32,
 )
 
+MAX_IMAGES = 3
+
+
+@me.component
+def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disabled: bool):
+    """A placeholder box with uploader and library chooser buttons."""
+    with me.box(
+        style=me.Style(
+            height=100,
+            width=100,
+            border=me.Border.all(
+                me.BorderSide(
+                    width=1,
+                    style="dashed",
+                    color=me.theme_var("outline"),
+                )
+            ),
+            border_radius=8,
+            display="flex",
+            flex_direction="column",
+            align_items="center",
+            justify_content="center",
+            gap=8,
+            opacity=0.5 if disabled else 1.0,
+        )
+    ):
+        me.uploader(
+            label="Add Image",
+            on_upload=on_upload,
+            accepted_file_types=["image/jpeg", "image/png", "image/webp"],
+            key=f"{key_prefix}_uploader",
+            disabled=disabled,
+            multiple=True,  # Allow multiple file selection in one go
+        )
+        library_chooser_button(
+            key=f"{key_prefix}_library_chooser",
+            on_library_select=on_library_select,
+            button_type="icon",
+        )
+
+
+@me.component
+def _empty_placeholder():
+    """An empty, non-interactive placeholder box."""
+    me.box(
+        style=me.Style(
+            height=100,
+            width=100,
+            border=me.Border.all(
+                me.BorderSide(
+                    width=1, style="dashed", color=me.theme_var("outline")
+                )
+            ),
+            border_radius=8,
+            opacity=0.5,
+        )
+    )
+
+@me.component
+def _image_upload_slots(on_upload, on_library_select, on_remove_image):
+    """The new image upload UI with 3 slots."""
+    state = me.state(PageState)
+    with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(bottom=16), justify_content="center")):
+        for i in range(MAX_IMAGES):
+            if i < len(state.uploaded_image_gcs_uris):
+                image_uri = state.uploaded_image_gcs_uris[i]
+                image_thumbnail(
+                    image_uri=image_uri,
+                    index=i,
+                    on_remove=on_remove_image,
+                    icon_size=18,
+                )
+            elif i == len(state.uploaded_image_gcs_uris):
+                _uploader_placeholder(
+                    on_upload=on_upload,
+                    on_library_select=on_library_select,
+                    key_prefix=f"image_slot_{i}",
+                    disabled=False,
+                )
+            else:
+                _empty_placeholder()
+
 
 @me.stateclass
 class PageState:
     """Gemini Image Generation Page State"""
 
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    image_descriptions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
     generated_image_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_generating: bool = False
@@ -69,8 +152,6 @@ class PageState:
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
-
-
 
 
 NUM_IMAGES_PROMPTS = {
@@ -107,7 +188,7 @@ def gemini_image_gen_page_content():
     with page_frame():  # pylint: disable=E1129
         header(
             "Gemini Image Generation",
-            "spark",
+            "banana",
             show_info_button=True,
             on_info_click=open_info_dialog,
         )
@@ -128,43 +209,7 @@ def gemini_image_gen_page_content():
                         margin=me.Margin(bottom=16),
                     ),
                 )
-                with me.box(
-                    style=me.Style(
-                        display="flex",
-                        flex_direction="row",
-                        gap=16,
-                        margin=me.Margin(bottom=16),
-                        justify_content="center",
-                    ),
-                ):
-                    me.uploader(
-                        label="Upload Images",
-                        on_upload=on_upload,
-                        multiple=True,
-                        accepted_file_types=["image/jpeg", "image/png", "image/webp"],
-                        style=me.Style(width="100%"),
-                    )
-                    library_chooser_button(
-                        on_library_select=on_library_select,
-                        button_label="Choose from Library",
-                    )
-                if state.uploaded_image_gcs_uris:
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            flex_wrap="wrap",
-                            gap=10,
-                            justify_content="center",
-                            margin=me.Margin(bottom=16),
-                        ),
-                    ):
-                        for i, uri in enumerate(state.uploaded_image_gcs_uris):
-                            image_thumbnail(
-                                image_uri=uri,
-                                index=i,
-                                on_remove=on_remove_image,
-                                icon_size=18,
-                            )
+
                 me.textarea(
                     label="Prompt",
                     rows=3,
@@ -175,18 +220,37 @@ def gemini_image_gen_page_content():
                     style=me.Style(width="100%", margin=me.Margin(bottom=16)),
                 )
 
+                _image_upload_slots(
+                    on_upload=on_upload,
+                    on_library_select=on_library_select,
+                    on_remove_image=on_remove_image,
+                )
+
+                # Display image descriptions
+                if state.image_descriptions:
+                    with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, margin=me.Margin(top=16))):
+                        for i, description in enumerate(state.image_descriptions):
+                            me.textarea(
+                                label=f"Image {i+1} Description",
+                                value=description,
+                                readonly=True,
+                                rows=2,
+                                autosize=True,
+                                style=me.Style(width="100%"),
+                            )
+
                 me.select(
                     label="Aspect Ratio",
                     options=[
-                         me.SelectOption(label="1:1", value="1:1"),
-                         me.SelectOption(label="3:2", value="3:2"),
-                         me.SelectOption(label="2:3", value="2:3"),
-                         me.SelectOption(label="3:4", value="3:4"),
-                         me.SelectOption(label="4:3", value="4:3"),
-                         me.SelectOption(label="4:5", value="4:5"),
-                         me.SelectOption(label="9:16", value="9:16"),
-                         me.SelectOption(label="16:9", value="16:9"),
-                         me.SelectOption(label="21:9", value="21:9"),
+                        me.SelectOption(label="1:1", value="1:1"),
+                        me.SelectOption(label="3:2", value="3:2"),
+                        me.SelectOption(label="2:3", value="2:3"),
+                        me.SelectOption(label="3:4", value="3:4"),
+                        me.SelectOption(label="4:3", value="4:3"),
+                        me.SelectOption(label="4:5", value="4:5"),
+                        me.SelectOption(label="9:16", value="9:16"),
+                        me.SelectOption(label="16:9", value="16:9"),
+                        me.SelectOption(label="21:9", value="21:9"),
                     ],
                     on_selection_change=on_aspect_ratio_change,
                     value=str(state.aspect_ratio),
@@ -273,8 +337,9 @@ def gemini_image_gen_page_content():
                                 on_click=on_continue_click,
                                 type="stroked",
                             )
-                            veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
-
+                            veo_button(
+                                gcs_uri=https_url_to_gcs_uri(state.selected_image_url)
+                            )
 
                 # Image presets
                 if state.generated_image_urls or state.uploaded_image_gcs_uris:
@@ -286,7 +351,7 @@ def gemini_image_gen_page_content():
                             margin=me.Margin(top=16),
                         ),
                     ):
-                        #me.text("Image Presets", style=me.Style(font_weight="bold"))
+                        # me.text("Image Presets", style=me.Style(font_weight="bold"))
 
                         for category_name, presets in IMAGE_ACTION_PRESETS.items():
                             if not presets:
@@ -295,7 +360,8 @@ def gemini_image_gen_page_content():
                             me.text(
                                 f"{category_name.capitalize()} Actions",
                                 style=me.Style(
-                                    font_size=14, margin=me.Margin(top=8),
+                                    font_size=14,
+                                    margin=me.Margin(top=8),
                                 ),
                             )
                             with me.box(
@@ -316,7 +382,6 @@ def gemini_image_gen_page_content():
                                         key=preset["key"],
                                         style=CHIP_STYLE,
                                     )
-
 
                 # Suggest transformations button
                 if (
@@ -341,7 +406,7 @@ def gemini_image_gen_page_content():
                             me.button(
                                 "Suggest Transformations",
                                 on_click=on_suggest_transformations_click,
-                                #type="stroked",
+                                # type="stroked",
                                 style=CHIP_STYLE,
                             )
 
@@ -491,7 +556,14 @@ def gemini_image_gen_page_content():
 def on_upload(e: me.UploadEvent):
     """Handles file uploads, stores them in GCS, and updates the state."""
     state = me.state(PageState)
+    if len(state.uploaded_image_gcs_uris) >= MAX_IMAGES:
+        yield from show_snackbar(state, f"You can upload a maximum of {MAX_IMAGES} images.")
+        return
+
     for file in e.files:
+        if len(state.uploaded_image_gcs_uris) >= MAX_IMAGES:
+            yield from show_snackbar(state, f"You can upload a maximum of {MAX_IMAGES} images. Some files were not uploaded.")
+            break
         gcs_url = store_to_gcs(
             "gemini_image_gen_references",
             file.name,
@@ -499,6 +571,15 @@ def on_upload(e: me.UploadEvent):
             file.getvalue(),
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
+
+        # Generate description for the new image
+        try:
+            description = describe_image(gcs_url)
+            state.image_descriptions.append(description)
+        except Exception as ex:
+            print(f"ERROR: Failed to describe image {gcs_url}. Details: {ex}")
+            state.image_descriptions.append("Failed to generate description.")
+
     yield
 
 
@@ -510,9 +591,13 @@ def on_library_select(e: LibrarySelectionChangeEvent):
 
 
 def on_remove_image(e: me.ClickEvent):
-    """Removes an image from the `uploaded_image_gcs_uris` list based on its index."""
+    """Removes an image and its description from the state."""
     state = me.state(PageState)
-    del state.uploaded_image_gcs_uris[int(e.key)]
+    index_to_remove = int(e.key)
+    if 0 <= index_to_remove < len(state.uploaded_image_gcs_uris):
+        del state.uploaded_image_gcs_uris[index_to_remove]
+        if index_to_remove < len(state.image_descriptions):
+            del state.image_descriptions[index_to_remove]
     yield
 
 
@@ -544,6 +629,7 @@ def on_clear_click(e: me.ClickEvent):
     state.generated_image_urls = []
     state.prompt = ""
     state.uploaded_image_gcs_uris = []
+    state.image_descriptions = []
     state.selected_image_url = ""
     state.generation_time = 0.0
     state.generation_complete = False
@@ -719,7 +805,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     # Clear previous suggestions before generating new ones
     state.suggested_transformations = []
 
-    #final_prompt = _get_appended_prompt(base_prompt, state.num_images_to_generate)
+    # final_prompt = _get_appended_prompt(base_prompt, state.num_images_to_generate)
     final_prompt = base_prompt
 
     state.is_generating = True
@@ -731,8 +817,8 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             model_name=cfg().GEMINI_IMAGE_GEN_MODEL,
             prompt_length=len(final_prompt),
             aspect_ratio=state.aspect_ratio,
-            #num_input_images=len(input_gcs_uris),
-            #num_images_generated=state.num_images_to_generate,
+            # num_input_images=len(input_gcs_uris),
+            # num_images_generated=state.num_images_to_generate,
         ):
             gcs_uris, execution_time = generate_image_from_prompt_and_images(
                 prompt=final_prompt,
@@ -764,9 +850,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 "No images were generated, but the attempt was logged to the library.",
             )
         else:
-            state.generated_image_urls = [
-                gcs_uri_to_https_url(uri) for uri in gcs_uris
-            ]
+            state.generated_image_urls = [gcs_uri_to_https_url(uri) for uri in gcs_uris]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 
@@ -800,7 +884,8 @@ def generate_images(e: me.ClickEvent):
     """Event handler for the main 'Generate Images' button."""
     state = me.state(PageState)
     yield from _generate_and_save(
-        base_prompt=state.prompt, input_gcs_uris=state.uploaded_image_gcs_uris,
+        base_prompt=state.prompt,
+        input_gcs_uris=state.uploaded_image_gcs_uris,
     )
 
 
@@ -820,6 +905,7 @@ def close_info_dialog(e: me.ClickEvent):
 
 from components.veo_button.veo_button import veo_button
 
+
 def on_load(e: me.LoadEvent):
     """Handles the initial load of the page, checking for an image URI in the query parameters."""
     state = me.state(PageState)
@@ -832,17 +918,13 @@ def on_load(e: me.LoadEvent):
         state.initial_load_complete = True
     yield
 
+
 @me.page(
-    path="/gemini_image_generation",
-    title="Gemini Image Generation - GenMedia Creative Studio",
-    on_load=on_load,
-)
-@me.page(
-    path="/nano-banana",
-    title="Gemini Image Generation - GenMedia Creative Studio",
+    path="/banana-studio",
+    title="Banana Studio - GenMedia Creative Studio",
     on_load=on_load,
 )
 def page():
     """Define the Mesop page route for Gemini Image Generation."""
-    with page_scaffold(page_name="gemini_image_generation"):  # pylint: disable=E1129
+    with page_scaffold(page_name="banana-studio"):  # pylint: disable=E1129
         gemini_image_gen_page_content()
