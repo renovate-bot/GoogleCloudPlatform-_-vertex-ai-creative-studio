@@ -38,6 +38,7 @@ from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
 from pages import character_consistency as character_consistency_page
+from pages import banana_studio as banana_studio_page
 from pages import chirp_3hd as chirp_3hd_page
 from pages import config as config_page
 from pages import gemini_image_generation as gemini_image_generation_page

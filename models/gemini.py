@@ -852,3 +852,23 @@ def generate_transformation_prompts(image_uris: list[str]) -> list[Transformatio
 
     prompts = TransformationPrompts.model_validate_json(response.text)
     return prompts.transformations
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def describe_image(image_uri: str) -> str:
+    """Generates a two-sentence description for a given image."""
+    model_name = cfg.MODEL_ID
+    config = types.GenerateContentConfig(temperature=0.2)
+    prompt_parts = [
+        "Describe this image in two sentences.",
+        types.Part.from_uri(file_uri=image_uri, mime_type="image/png"),
+    ]
+    response = client.models.generate_content(
+        model=model_name, contents=prompt_parts, config=config
+    )
+    return response.text.strip()
