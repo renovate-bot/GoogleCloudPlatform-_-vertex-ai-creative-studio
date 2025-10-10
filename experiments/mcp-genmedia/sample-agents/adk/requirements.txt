@@ -149,7 +149,7 @@ httpx==0.28.1
     # via
     #   google-genai
     #   mcp
-httpx-sse==0.4.1
+httpx-sse==0.4.3
     # via mcp
 idna==3.10
     # via
