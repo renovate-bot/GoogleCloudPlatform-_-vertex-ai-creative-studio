@@ -57,7 +57,10 @@ class VtoModelSetup:
         vertexai.init(project=project_id, location=Default.LOCATION)
 
         aiplatform.init(project=f"{project_id}", location=f"{location}")
-        api_regional_endpoint = f"{location}-aiplatform.googleapis.com"
+        if location == "global":
+            api_regional_endpoint = "aiplatform.googleapis.com"
+        else:
+            api_regional_endpoint = f"{location}-aiplatform.googleapis.com"
         client_options = {"api_endpoint": api_regional_endpoint}
         client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
         # model_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/virtual-try-on-exp-05-31"
