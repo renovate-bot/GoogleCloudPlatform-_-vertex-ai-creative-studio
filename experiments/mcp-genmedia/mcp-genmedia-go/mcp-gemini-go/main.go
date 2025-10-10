@@ -20,8 +20,11 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 	"time"
+	"fmt"
 
 	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -33,17 +36,20 @@ var (
 	appConfig   *common.Config
 	genAIClient *genai.Client
 	transport   string
+	port        int
 )
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.3.2" // nano-banana alias
+	version     = "0.5.0" // Add http support
 )
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
+	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
 	flag.Parse()
 }
 
@@ -88,7 +94,7 @@ func main() {
 	}
 	log.Printf("Global GenAI client initialized successfully.")
 
-	s := server.NewMCPServer("Gemini", version)
+	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, false))
 
 	tool := mcp.NewTool("gemini_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini 2.5 Flash Image generation. This model is also called nano-banana."),
@@ -158,8 +164,37 @@ func main() {
 	), geminiLanguageCodesHandler)
 	// --- End of Gemini Resources ---
 
-	log.Printf("Starting %s MCP Server (Version: %s)", serviceName, version)
-	if err := server.ServeStdio(s); err != nil {
-		log.Fatalf("STDIO Server error: %v", err)
+	switch transport {
+	case "sse":
+		ssePort := 8081 // Default SSE port
+		if port != 0 {
+			ssePort = port
+		} else if p, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
+			ssePort = p
+		}
+		log.Printf("Starting %s MCP Server (Version: %s, Transport: sse, Port: %d)", serviceName, version, ssePort)
+		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%d", ssePort)))
+		if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
+			log.Fatalf("SSE Server error: %v", err)
+		}
+	case "http":
+		httpPort := 8080 // Default HTTP port
+		if port != 0 {
+			httpPort = port
+		} else if p, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
+			httpPort = p
+		}
+		log.Printf("Starting %s MCP Server (Version: %s, Transport: http, Port: %d)", serviceName, version, httpPort)
+		http.Handle("/mcp", server.NewStreamableHTTPServer(s))
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", httpPort), nil); err != nil {
+			log.Fatalf("HTTP Server error: %v", err)
+		}
+	case "stdio":
+		log.Printf("Starting %s MCP Server (Version: %s, Transport: stdio)", serviceName, version)
+		if err := server.ServeStdio(s); err != nil {
+			log.Fatalf("STDIO Server error: %v", err)
+		}
+	default:
+		log.Fatalf("Unsupported transport type: %s. Please use 'stdio', 'sse', or 'http'.", transport)
 	}
 }
