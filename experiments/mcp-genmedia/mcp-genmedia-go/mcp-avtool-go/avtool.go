@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/server"
@@ -16,16 +17,54 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "2.1.1" // Disable OTel by default
+	version     = "2.2.0" // Standardize port handling
 )
 
-var transport = flag.String("transport", "stdio", "Transport type (stdio, sse, or http)")
+var (
+	transport string
+	port      int
+)
 
 // init handles command-line flags and initial logging setup.
 // It configures the log package to include standard flags and the short file name
 // of the caller in log messages, which is useful for debugging.
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
+	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
+	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
+}
+
+// determinePort resolves the final listening port based on a defined order of precedence:
+// 1. The `--port` or `-p` command-line flag.
+// 2. The `PORT` environment variable.
+// 3. A transport-specific default value (8080 for HTTP, 8081 for SSE).
+// It logs the selection process for clarity.
+func determinePort(transport string, portFlag int) int {
+	if portFlag != 0 {
+		log.Printf("Using port %d from --port/-p flag.", portFlag)
+		return portFlag
+	}
+
+	envPortStr := common.GetEnv("PORT", "")
+	if envPortStr != "" {
+		if envPort, err := strconv.Atoi(envPortStr); err == nil {
+			log.Printf("Using port %d from PORT environment variable.", envPort)
+			return envPort
+		}
+		log.Printf("Warning: Could not parse PORT environment variable '%s'. Falling back to default.", envPortStr)
+	}
+
+	if transport == "http" {
+		log.Println("Using default port 8080 for http transport.")
+		return 8080
+	}
+	if transport == "sse" {
+		log.Println("Using default port 8081 for sse transport.")
+		return 8081
+	}
+	return 0 // Should not happen for http/sse
 }
 
 // main is the entry point of the application. It initializes the configuration,
@@ -66,17 +105,18 @@ func main() {
 	addCreateGifTool(s, cfg)
 	addGetMediaInfoTool(s, cfg)
 
-	log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: %s)", version, *transport)
-
-	if *transport == "sse" {
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
-		log.Printf("AV Compositing Tool (avtool) MCP Server listening on SSE at :8081")
-		if err := sseServer.Start(":8081"); err != nil {
+	switch transport {
+	case "sse":
+		ssePort := determinePort("sse", port)
+		log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: sse, Port: %d)", version, ssePort)
+		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%d", ssePort)))
+		if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
-	} else if *transport == "http" {
+	case "http":
+		httpPort := determinePort("http", port)
+		log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: http, Port: %d)", version, httpPort)
 		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
-
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"}, // Consider making this configurable
 			AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead},
@@ -85,23 +125,18 @@ func main() {
 			AllowCredentials: true,
 			MaxAge:           300,
 		})
-
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
-
-		httpPort := common.GetEnv("PORT", "8080")
-		listenAddr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("AV Compositing Tool (avtool) MCP Server listening on HTTP at %s/mcp and CORS enabled", listenAddr)
+		listenAddr := fmt.Sprintf(":%d", httpPort)
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
-	} else { // Default to stdio
-		if *transport != "stdio" && *transport != "" {
-			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", *transport)
-		}
-		log.Printf("AV Compositing Tool (avtool) MCP Server listening on STDIO")
+	case "stdio":
+		log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: stdio)", version)
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
+	default:
+		log.Fatalf("Unsupported transport type '%s' specified. Please use 'stdio', 'http', or 'sse'.", transport)
 	}
 	log.Println("AV Compositing Tool (avtool) Server has stopped.")
 }

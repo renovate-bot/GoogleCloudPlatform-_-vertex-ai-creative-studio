@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,17 +44,20 @@ var (
 	appConfig   *common.Config
 	genAIClient *genai.Client // Global GenAI client
 	transport   string
+	port        int
 )
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "1.10.2" // Updates default model
+	version     = "1.12.0" // Standardize port handling
 )
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
+	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
+	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
 	flag.Parse()
 }
 
@@ -191,49 +195,50 @@ func main() {
 		), nil
 	})
 
-	log.Printf("Starting Imagen MCP Server (Version: %s, Transport: %s)", version, transport)
-
-	if transport == "sse" {
-		// Assuming 8081 is the desired SSE port for Imagen to avoid conflict if HTTP uses 8080
-		sseServer := server.NewSSEServer(s, server.WithBaseURL("http://localhost:8081"))
-		log.Printf("Imagen MCP Server listening on SSE at :8081 with t2i tools")
-		if err := sseServer.Start(":8081"); err != nil {
+	switch transport {
+	case "sse":
+		ssePort := 8081 // Default SSE port
+		if port != 0 {
+			ssePort = port
+		} else if p, err := strconv.Atoi(common.GetEnv("PORT", "")); err == nil {
+			ssePort = p
+		}
+		log.Printf("Starting Imagen MCP Server (Version: %s, Transport: sse, Port: %d)", version, ssePort)
+		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%d", ssePort)))
+		if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
-	} else if transport == "http" {
+	case "http":
+		httpPort := 8080 // Default HTTP port
+		if port != 0 {
+			httpPort = port
+		} else if p, err := strconv.Atoi(common.GetEnv("PORT", "")); err == nil {
+			httpPort = p
+		}
+		log.Printf("Starting Imagen MCP Server (Version: %s, Transport: http, Port: %d)", version, httpPort)
 		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
-
-		// Configure CORS
 		c := cors.New(cors.Options{
-			AllowedOrigins:   []string{"*"}, // Consider making this configurable via env var for production
+			AllowedOrigins:   []string{"*"},
 			AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-MCP-Progress-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: true,
-			MaxAge:           300, // In seconds
+			MaxAge:           300,
 		})
-
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
-
-		httpPort := os.Getenv("PORT")
-		if httpPort == "" {
-			httpPort = "8080"
-		}
-
-		listenAddr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("Imagen MCP Server listening on HTTP at %s/mcp with t2i tools and CORS enabled", listenAddr)
+		listenAddr := fmt.Sprintf(":%d", httpPort)
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
-	} else { // Default to stdio
-		if transport != "stdio" && transport != "" {
-			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
-		}
-		log.Printf("Imagen MCP Server listening on STDIO with t2i tools")
+	case "stdio":
+		log.Printf("Starting Imagen MCP Server (Version: %s, Transport: stdio)", version)
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
+	default:
+		log.Fatalf("Unsupported transport type: %s. Please use 'stdio', 'sse', or 'http'.", transport)
 	}
+
 	log.Println("Imagen Server has stopped.")
 }
 
