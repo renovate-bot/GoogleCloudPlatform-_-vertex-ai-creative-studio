@@ -109,6 +109,30 @@ def _empty_placeholder():
     )
 
 @me.component
+def _generate_images_button():
+    """Renders the main generate button and its loading state."""
+    state = me.state(PageState)
+    if state.is_generating:
+        with me.content_button(type="raised", disabled=True):
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    align_items="center",
+                    gap=8,
+                )
+            ):
+                me.progress_spinner(diameter=20, stroke_width=3)
+                me.text("Generating Images...")
+    else:
+        me.button(
+            "Generate Images",
+            on_click=generate_images,
+            type="raised",
+        )
+
+
+@me.component
 def _image_upload_slots(on_upload, on_library_select, on_remove_image):
     """The new image upload UI with 3 slots."""
     state = me.state(PageState)
@@ -428,26 +452,9 @@ def gemini_image_gen_page_content():
                         gap=16,
                     ),
                 ):
-                    if state.is_generating:
-                        with me.content_button(type="raised", disabled=True):
-                            with me.box(
-                                style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    align_items="center",
-                                    gap=8,
-                                )
-                            ):
-                                me.progress_spinner(diameter=20, stroke_width=3)
-                                me.text("Generating Images...")
-                    else:
-                        me.button(
-                            "Generate Images",
-                            on_click=generate_images,
-                            type="raised",
-                        )
-                        with me.content_button(on_click=on_clear_click, type="icon"):
-                            me.icon("delete_sweep")
+                    _generate_images_button()
+                    with me.content_button(on_click=on_clear_click, type="icon"):
+                        me.icon("delete_sweep")
 
                 # Generation time duration
                 if state.generation_complete and state.generation_time > 0:
@@ -899,7 +906,6 @@ def on_generate_questions_click(e: me.ClickEvent):
         yield from show_snackbar(state, f"An error occurred: {ex}")
     finally:
         state.is_generating_questions = False
-        state.is_generating = False  # Explicitly set this to False
         yield
 
 def on_transformation_click(e: me.ClickEvent):
