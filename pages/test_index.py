@@ -42,11 +42,6 @@ def page():
             "route": "/test_vto_prompt_generator",
         },
         {
-            "title": "Infinite Scroll",
-            "description": "A test page for the infinite scroll library chooser.",
-            "route": "/test_infinite_scroll",
-        },
-        {
             "title": "Uploader",
             "description": "A test page for determining uploader component capabilities.",
             "route": "/test_uploader",
@@ -60,16 +55,6 @@ def page():
             "title": "Pixie Compositor Test",
             "description": "A test page for the Pixie Compositor web component.",
             "route": "/test_pixie_compositor",
-        },
-        {
-            "title": "Library v2",
-            "description": "New Library page",
-            "route": "/library_v2",
-        },
-        {
-            "title": "Legacy Library",
-            "description": "Legacy Library page",
-            "route": "/legacy_library",
         },
         {
             "title": "Media Chooser Test",
