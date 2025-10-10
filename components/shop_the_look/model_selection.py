@@ -103,6 +103,7 @@ def model_selection():
                             width="35px",
                             height="35px",
                             font_size="35px",
+                            pointer_events="none",
                         ),
                     )
                     me.icon(
@@ -115,6 +116,7 @@ def model_selection():
                             width="100px",
                             height="100px",
                             font_size="100px",
+                            pointer_events="none",
                         ),
                     )
                     me.text(
@@ -125,6 +127,7 @@ def model_selection():
                             bottom="45px",
                             left="55px",
                             font_size="20px",
+                            pointer_events="none",
                         ),
                     )
 

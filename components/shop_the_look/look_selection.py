@@ -103,6 +103,7 @@ def look_selection():
                             width="30px",
                             height="30px",
                             font_size="30px",
+                            pointer_events="none",
                         ),
                     )
                     me.icon(
@@ -115,6 +116,7 @@ def look_selection():
                             width="50px",
                             height="50px",
                             font_size="50px",
+                            pointer_events="none",
                         ),
                     )
                     me.text(
@@ -125,6 +127,7 @@ def look_selection():
                             bottom="35px",
                             left="45px",
                             font_size="20px",
+                            pointer_events="none",
                         ),
                     )
             with me.box(
@@ -165,6 +168,7 @@ def look_selection():
                         width="30px",
                         height="30px",
                         font_size="30px",
+                        pointer_events="none",
                     ),
                 )
                 me.icon(
@@ -177,6 +181,7 @@ def look_selection():
                         width="50px",
                         height="50px",
                         font_size="50px",
+                        pointer_events="none",
                     ),
                 )
                 me.text(
@@ -187,6 +192,7 @@ def look_selection():
                         bottom="35px",
                         left="30px",
                         font_size="20px",
+                        pointer_events="none",
                     ),
                 )
 
@@ -228,6 +234,7 @@ def look_selection():
                         width="30px",
                         height="30px",
                         font_size="30px",
+                        pointer_events="none",
                     ),
                 )
                 me.icon(
@@ -240,6 +247,7 @@ def look_selection():
                         width="70px",
                         height="70px",
                         font_size="70px",
+                        pointer_events="none",
                     ),
                 )
                 me.text(
@@ -250,6 +258,7 @@ def look_selection():
                         bottom="35px",
                         left="35px",
                         font_size="20px",
+                        pointer_events="none",
                     ),
                 )
 
@@ -291,6 +300,7 @@ def look_selection():
                         width="30px",
                         height="30px",
                         font_size="30px",
+                        pointer_events="none",
                     ),
                 )
                 me.icon(
@@ -303,6 +313,7 @@ def look_selection():
                         width="50px",
                         height="50px",
                         font_size="50px",
+                        pointer_events="none",
                     ),
                 )
                 me.text(
@@ -313,6 +324,7 @@ def look_selection():
                         bottom="35px",
                         left="35px",
                         font_size="20px",
+                        pointer_events="none",
                     ),
                 )
 
