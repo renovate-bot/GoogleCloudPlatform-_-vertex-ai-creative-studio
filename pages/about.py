@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import mesop as me
+
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
-from config.default import ABOUT_PAGE_CONTENT
 from components.pill import pill
+from config.default import ABOUT_PAGE_CONTENT
 
 
 def render_section(section_data: dict):
@@ -39,7 +40,9 @@ def render_section(section_data: dict):
         with me.box(style=me.Style(flex_grow=1)):
             with me.box(
                 style=me.Style(
-                    display="flex", flex_direction="row", gap=5,
+                    display="flex",
+                    flex_direction="row",
+                    gap=5,
                 ),
             ):
                 me.text(section_data["title"], type="headline-5")
@@ -63,7 +66,7 @@ def render_section(section_data: dict):
 
 def about_page_content():
     """About page."""
-    with page_frame(): # pylint: disable=E1129:not-context-manager
+    with page_frame():  # pylint: disable=E1129:not-context-manager
         header("About This Application", "info")
 
         if ABOUT_PAGE_CONTENT:
@@ -86,5 +89,5 @@ def about_page_content():
     title="About - GenMedia Creative Studio",
 )
 def page():
-    with page_scaffold(page_name="about"): # pylint: disable=E1129:not-context-manager
+    with page_scaffold(page_name="about"):  # pylint: disable=E1129:not-context-manager
         about_page_content()
