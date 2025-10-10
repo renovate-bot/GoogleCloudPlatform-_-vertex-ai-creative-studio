@@ -28,7 +28,7 @@ def header(
     """Header component."""
     
     # List of custom icons that should use the svg_icon component
-    custom_icons = ["spark", "style", "scene"]
+    custom_icons = ["spark", "style", "scene", "banana"]
     def render_icon(icon_name: str):
         if icon_name in custom_icons:
             with me.box(style=me.Style(width=24, height=24)):
