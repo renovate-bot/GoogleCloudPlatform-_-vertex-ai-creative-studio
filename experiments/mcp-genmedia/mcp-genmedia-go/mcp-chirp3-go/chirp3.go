@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,8 +32,8 @@ var (
 	ttsClient           *texttospeech.Client // Global Text-to-Speech client
 	availableVoices     []*texttospeechpb.Voice
 	transport           string
-	port                string
-	version             = "0.1.1" // Disable OTel by default
+	port                int
+	version             = "0.3.0" // Standardize port handling
 )
 
 const (
@@ -82,7 +83,8 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.StringVar(&transport, "t", "stdio", "Transport type (stdio, sse, or http)")
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
-	flag.StringVar(&port, "p", "8080", "Port for SSE server if transport is sse") // This port is for SSE, HTTP will use its own.
+	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
+	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
 	flag.Parse()
 
 	titleCaser := cases.Title(language.Und)
@@ -335,67 +337,53 @@ func main() {
 		}, nil
 	})
 
-	userSetPort := false
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "p" {
-			userSetPort = true
+	switch transport {
+	case "sse":
+		ssePort := 8081 // Default SSE port
+		if port != 0 {
+			ssePort = port
+		} else if p, err := strconv.Atoi(common.GetEnv("PORT", "")); err == nil {
+			ssePort = p
 		}
-	})
-
-	if userSetPort && transport == "stdio" {
-		log.Printf("Port -p specified (%s), overriding transport to sse.", port)
-		transport = "sse"
-	}
-
-	log.Printf("Starting %s MCP Server (Version: %s, Transport: %s)", serviceName, version, transport)
-
-	if transport == "sse" {
-		if port == "" {
-			port = "8081" // Default SSE port to 8081 if not specified, to avoid conflict with HTTP default 8080
-			log.Printf("Transport is SSE but no port specified, defaulting to %s", port)
-		}
-		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%s", port)))
-		log.Printf("%s MCP Server listening on SSE at :%s with tools: chirp_tts, list_chirp_voices", serviceName, port)
-		if err := sseServer.Start(fmt.Sprintf(":%s", port)); err != nil {
+		log.Printf("Starting %s MCP Server (Version: %s, Transport: sse, Port: %d)", serviceName, version, ssePort)
+		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%d", ssePort)))
+		if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
-	} else if transport == "http" {
+	case "http":
+		httpPort := 8080 // Default HTTP port
+		if port != 0 {
+			httpPort = port
+		} else if p, err := strconv.Atoi(common.GetEnv("PORT", "")); err == nil {
+			httpPort = p
+		}
+		log.Printf("Starting %s MCP Server (Version: %s, Transport: http, Port: %d)", serviceName, version, httpPort)
 		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
-
-		// Configure CORS
 		c := cors.New(cors.Options{
-			AllowedOrigins:   []string{"*"}, // Consider making this configurable via env var for production
+			AllowedOrigins:   []string{"*"},
 			AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions, http.MethodHead},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-MCP-Progress-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: true,
-			MaxAge:           300, // In seconds
-			// Debug: true, // Uncomment for debugging CORS issues
+			MaxAge:           300,
 		})
-
-		// Wrap the MCP handler with the CORS middleware
 		handlerWithCORS := c.Handler(mcpHTTPHandler)
-
-		httpPort := common.GetEnv("PORT", "8080")
-		listenAddr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("%s MCP Server listening on HTTP at %s/mcp with tools: chirp_tts, list_chirp_voices and CORS enabled", serviceName, listenAddr)
-		// Start the server using the wrapped handler
+		listenAddr := fmt.Sprintf(":%d", httpPort)
 		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
-	} else { // Default to stdio
-		if transport != "stdio" && transport != "" {
-			log.Printf("Unsupported transport type '%s' specified, defaulting to stdio.", transport)
-		}
-		log.Printf("%s MCP Server listening on STDIO with tools: chirp_tts, list_chirp_voices", serviceName)
+	case "stdio":
+		log.Printf("Starting %s MCP Server (Version: %s, Transport: stdio)", serviceName, version)
 		if err := server.ServeStdio(s); err != nil {
 			log.Fatalf("STDIO Server error: %v", err)
 		}
+	default:
+		log.Fatalf("Unsupported transport type: %s. Please use 'stdio', 'sse', or 'http'.", transport)
 	}
 
 	log.Printf("%s Server has stopped.", serviceName)
 	if ttsClient != nil {
-		ttsClient.Close() // Ensure client is closed on server stop, regardless of transport
+		ttsClient.Close()
 	}
 }
 
