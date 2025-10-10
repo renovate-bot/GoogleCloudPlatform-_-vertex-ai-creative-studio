@@ -872,3 +872,78 @@ def describe_image(image_uri: str) -> str:
         model=model_name, contents=prompt_parts, config=config
     )
     return response.text.strip()
+
+
+class QuestionAnswer(BaseModel):
+    question: str
+    answer: bool = Field(..., description="True for 'yes', False for 'no'.")
+
+class EvaluationResult(BaseModel):
+    answers: list[QuestionAnswer]
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def evaluate_image_with_questions(image_uri: str, questions: list[str]) -> EvaluationResult:
+    """Evaluates an image against a list of yes/no questions."""
+    model_name = cfg.MODEL_ID
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=EvaluationResult.model_json_schema(),
+        temperature=0.1,
+    )
+
+    prompt = "For the following image, answer each of the following questions with a simple 'yes' or 'no'. Return the answers as a structured JSON list of question and answer pairs.\n\n"
+    for q in questions:
+        prompt += f"- {q}\n"
+
+    prompt_parts = [
+        prompt,
+        types.Part.from_uri(file_uri=image_uri, mime_type="image/png"),
+    ]
+
+    response = client.models.generate_content(
+        model=model_name, contents=prompt_parts, config=config
+    )
+
+    return EvaluationResult.model_validate_json(response.text)
+
+
+class CritiqueQuestion(BaseModel):
+    question: str = Field(..., description="A yes/no question to evaluate an image.")
+
+class CritiqueQuestionList(BaseModel):
+    questions: list[CritiqueQuestion] = Field(..., max_length=5, min_length=5)
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def generate_critique_questions(prompt: str, image_descriptions: list[str]) -> list[str]:
+    """Generates 5 yes/no questions based on a prompt and image descriptions."""
+    model_name = cfg.MODEL_ID
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=CritiqueQuestionList.model_json_schema(),
+        temperature=0.5,
+    )
+
+    meta_prompt = "Using the following prompt and the description of each image, come up with 5 yes/no questions that we could ask of the resulting image that would identify whether the generated images meets the intent of the user based upon the following:\n\n"
+    meta_prompt += f"Prompt: {prompt}\n\n"
+
+    for i, desc in enumerate(image_descriptions):
+        meta_prompt += f"Image {i+1} description: {desc}\n"
+    
+    response = client.models.generate_content(
+        model=model_name, contents=[meta_prompt], config=config
+    )
+
+    question_list = CritiqueQuestionList.model_validate_json(response.text)
+    return [q.question for q in question_list.questions]
