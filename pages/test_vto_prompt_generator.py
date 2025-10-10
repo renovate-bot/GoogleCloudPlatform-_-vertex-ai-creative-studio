@@ -61,6 +61,8 @@ class PageState:
     security_policy=me.SecurityPolicy(dangerously_disable_trusted_types=True),
 )
 def page():
+    app_state = me.state(AppState)
+    theme_manager(theme=app_state.theme_mode, on_theme_load=on_theme_load)
     state = me.state(PageState)
 
     if state.show_info_dialog:
@@ -91,7 +93,7 @@ It is crucial to describe gender based on presentation rather than identity beca
             title="Virtual Model Composite Card Generator Matrix",
             icon="style",
             show_info_button=True,
-            on_info_click=lambda e: on_show_info_dialog(e),
+            on_info_click=on_show_info_dialog,
         )
 
         with me.box(
@@ -265,14 +267,17 @@ def on_close_info_dialog(e: me.ClickEvent):
 
 def on_base_prompt_input(e: me.InputEvent):
     me.state(PageState).base_prompt = e.value
+    yield
 
 
 def on_gender_select(e: me.SelectSelectionChangeEvent):
     me.state(PageState).selected_gender_name = e.value
+    yield
 
 
 def on_select_silhouette(e: me.ClickEvent):
     me.state(PageState).selected_silhouette_name = e.key
+    yield
 
 
 def on_mst_select(e: me.SelectSelectionChangeEvent):
@@ -283,6 +288,7 @@ def on_mst_select(e: me.SelectSelectionChangeEvent):
     state.selected_mst_orb_url = (
         f"https://google-ai-skin-tone-research.imgix.net/orbs/monk-{mst_number}.png"
     )
+    yield
 
 
 def on_click_randomize(e: me.ClickEvent):
