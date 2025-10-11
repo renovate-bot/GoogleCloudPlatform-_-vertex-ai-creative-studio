@@ -199,13 +199,13 @@ class PageState:
 
     evaluations: dict[str, Evaluation] = field(default_factory=dict)  # pylint: disable=invalid-field-call
     is_evaluating: bool = False
-    description_queue: list[int] = field(default_factory=list)
-    accordion_panels: dict[str, bool] = field(default_factory=dict)
+    description_queue: list[int] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    accordion_panels: dict[str, bool] = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
     # For the library dialog
     is_library_dialog_open: bool = False
     is_library_loading: bool = False
-    library_media_items: list[MediaItem] = field(default_factory=list)
+    library_media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=invalid-field-call
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
