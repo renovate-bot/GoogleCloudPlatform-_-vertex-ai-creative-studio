@@ -119,7 +119,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.42.0
+google-genai==1.43.0
     # via
     #   veo-app (pyproject.toml)
     #   google-cloud-aiplatform
