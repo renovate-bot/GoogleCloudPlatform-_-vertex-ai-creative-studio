@@ -21,14 +21,18 @@ from dataclasses import dataclass, field
 import mesop as me
 
 from common.analytics import log_ui_click, track_model_call
-from common.metadata import MediaItem, add_media_item_to_firestore
+from common.metadata import (
+    MediaItem,
+    add_media_item_to_firestore,
+    get_media_for_page_optimized,
+)
 from common.storage import store_to_gcs
 from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
 from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
-from components.library.library_chooser_button import library_chooser_button
+from components.library.library_dialog import library_dialog
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
@@ -54,7 +58,7 @@ MAX_IMAGES = 3
 
 
 @me.component
-def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disabled: bool):
+def _uploader_placeholder(on_upload, on_open_library, key_prefix: str, disabled: bool):
     """A placeholder box with uploader and library chooser buttons."""
     with me.box(
         style=me.Style(
@@ -84,11 +88,10 @@ def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disable
             disabled=disabled,
             multiple=True,  # Allow multiple file selection in one go
         )
-        library_chooser_button(
-            key=f"{key_prefix}_library_chooser",
-            on_library_select=on_library_select,
-            button_type="icon",
-        )
+        with me.content_button(
+            on_click=on_open_library, type="icon", key=f"{key_prefix}_library_chooser"
+        ):
+            me.icon("photo_library")
 
 
 @me.component
@@ -107,6 +110,7 @@ def _empty_placeholder():
             opacity=0.5,
         )
     )
+
 
 @me.component
 def _generate_images_button():
@@ -133,10 +137,18 @@ def _generate_images_button():
 
 
 @me.component
-def _image_upload_slots(on_upload, on_library_select, on_remove_image):
+def _image_upload_slots(on_upload, on_open_library, on_remove_image):
     """The new image upload UI with 3 slots."""
     state = me.state(PageState)
-    with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(bottom=16), justify_content="center")):
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="row",
+            gap=10,
+            margin=me.Margin(bottom=16),
+            justify_content="center",
+        )
+    ):
         for i in range(MAX_IMAGES):
             if i < len(state.uploaded_image_gcs_uris):
                 image_uri = state.uploaded_image_gcs_uris[i]
@@ -149,7 +161,7 @@ def _image_upload_slots(on_upload, on_library_select, on_remove_image):
             elif i == len(state.uploaded_image_gcs_uris):
                 _uploader_placeholder(
                     on_upload=on_upload,
-                    on_library_select=on_library_select,
+                    on_open_library=on_open_library,
                     key_prefix=f"image_slot_{i}",
                     disabled=False,
                 )
@@ -185,8 +197,14 @@ class PageState:
     critique_questions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_generating_questions: bool = False
     selected_tab_index: int = 0
-    evaluations: dict[str, Evaluation] = field(default_factory=dict) # pylint: disable=invalid-field-call
+    evaluations: dict[str, Evaluation] = field(default_factory=dict)  # pylint: disable=invalid-field-call
     is_evaluating: bool = False
+    description_queue: list[int] = field(default_factory=list)
+
+    # For the library dialog
+    is_library_dialog_open: bool = False
+    is_library_loading: bool = False
+    library_media_items: list[MediaItem] = field(default_factory=list)
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
@@ -201,6 +219,7 @@ class Tab:
   disabled: bool = False
   icon: str | None = None
 
+
 @me.component
 def _description_tab_content(description: str):
     me.textarea(
@@ -211,12 +230,14 @@ def _description_tab_content(description: str):
         style=me.Style(width="100%", font_size="12pt", border=None, background="transparent"),
     )
 
+
 @me.component
 def _questions_tab_content():
     state = me.state(PageState)
     with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
         for i, question in enumerate(state.critique_questions):
             me.text(f"{i+1}. {question}")
+
 
 def _make_tabs() -> list[Tab]:
     state = me.state(PageState)
@@ -227,32 +248,31 @@ def _make_tabs() -> list[Tab]:
             Tab(
                 label=f"Image {i+1}",
                 icon="image",
-                content=lambda desc=description: _description_tab_content(desc)
+                content=lambda desc=description: _description_tab_content(desc),
             )
         )
-    
+
     # Create tab for critique questions if they exist
     if state.critique_questions:
         tabs.append(
             Tab(
-                label="Critique Questions",
-                icon="quiz",
-                content=_questions_tab_content
+                label="Critique Questions", icon="quiz", content=_questions_tab_content
             )
         )
 
     # Set the selected tab
     if not tabs:
         return []
-        
+
     # Adjust selected index if it's out of bounds
     if state.selected_tab_index >= len(tabs):
         state.selected_tab_index = len(tabs) - 1
-        
+
     for index, tab in enumerate(tabs):
         tab.selected = state.selected_tab_index == index
-    
+
     return tabs
+
 
 def on_tab_click(e: me.ClickEvent):
     """Click handler that handles updating the tabs when clicked."""
@@ -265,11 +285,13 @@ def on_tab_click(e: me.ClickEvent):
 
     state.selected_tab_index = tab_index
 
+
 @me.component
 def description_tab_group(tabs: list[Tab], on_tab_click: Callable):
     """Generates the tab group component"""
     _tab_header(tabs, on_tab_click)
     _tab_content(tabs)
+
 
 @me.component
 def _tab_header(tabs: list[Tab], on_tab_click: Callable):
@@ -295,6 +317,7 @@ def _tab_header(tabs: list[Tab], on_tab_click: Callable):
                     me.icon(tab.icon)
                 me.text(tab.label)
 
+
 @me.component
 def _tab_content(tabs: list[Tab]):
     """Component for rendering the content of the selected tab."""
@@ -302,6 +325,7 @@ def _tab_content(tabs: list[Tab]):
         if tab.selected:
             with me.box(style=me.Style(padding=me.Padding(top=16))):
                 tab.content()
+
 
 def _make_tab_style(selected: bool, disabled: bool) -> me.Style:
     """Makes the styles for the tab based on selected/disabled state."""
@@ -317,6 +341,7 @@ def _make_tab_style(selected: bool, disabled: bool) -> me.Style:
         )
         style.cursor = "default"
     return style
+
 
 def _make_default_tab_style():
     """Basic styles shared by different tab state (selected, disabled, default)."""
@@ -354,9 +379,69 @@ with open("config/about_content.json", "r") as f:
     )
 
 
+def open_library_dialog(e: me.ClickEvent):
+    """Opens the library dialog and fetches the initial data."""
+    state = me.state(PageState)
+    state.is_library_dialog_open = True
+    state.is_library_loading = True
+    yield
+
+    # Fetch fresh data every time the dialog is opened
+    items, _ = get_media_for_page_optimized(20, ["images"])
+    state.library_media_items = items
+    state.is_library_loading = False
+    yield
+
+
+def close_library_dialog(e: me.ClickEvent):
+    """Closes the library dialog."""
+    state = me.state(PageState)
+    state.is_library_dialog_open = False
+    yield
+
+
+def on_select_from_library_dialog(e: LibrarySelectionChangeEvent):
+    """
+    Handles the selection of an image from the library dialog.
+    Closes the dialog, adds a placeholder, and queues the description generation.
+    """
+    state = me.state(PageState)
+
+    # Close the dialog first
+    state.is_library_dialog_open = False
+
+    # Check if there's space for a new image
+    if len(state.uploaded_image_gcs_uris) >= MAX_IMAGES:
+        yield from show_snackbar(state, f"You can add a maximum of {MAX_IMAGES} images.")
+        return
+
+    # Add image and placeholder
+    state.uploaded_image_gcs_uris.append(e.gcs_uri)
+    state.image_descriptions.append("Generating description...")
+    new_image_index = len(state.image_descriptions) - 1
+
+    # Queue the description generation
+    is_queue_empty = not state.description_queue
+    state.description_queue.append(new_image_index)
+
+    # Yield to update UI (show placeholder and hide dialog)
+    yield
+
+    # Start the queue processor if it wasn't already running
+    if is_queue_empty:
+        yield from process_description_queue()
+
 def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
+
+    library_dialog(
+        is_open=state.is_library_dialog_open,
+        on_select=on_select_from_library_dialog,
+        on_close=close_library_dialog,
+        media_items=state.library_media_items,
+        is_loading=state.is_library_loading,
+    )
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
@@ -404,7 +489,7 @@ def gemini_image_gen_page_content():
 
                 _image_upload_slots(
                     on_upload=on_upload,
-                    on_library_select=on_library_select,
+                    on_open_library=open_library_dialog,
                     on_remove_image=on_remove_image,
                 )
 
@@ -467,7 +552,14 @@ def gemini_image_gen_page_content():
                 with me.box(style=me.Style(margin=me.Margin(top=16))):
                     if state.is_generating_questions:
                         with me.content_button(type="stroked", disabled=True):
-                            with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=8)):
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    flex_direction="row",
+                                    align_items="center",
+                                    gap=8,
+                                )
+                            ):
                                 me.progress_spinner(diameter=20, stroke_width=3)
                                 me.text("Generating Questions...")
                     else:
@@ -475,10 +567,10 @@ def gemini_image_gen_page_content():
                             "Generate Critique Questions",
                             on_click=on_generate_questions_click,
                             type="stroked",
-                            disabled=not (state.prompt and state.uploaded_image_gcs_uris),
+                            disabled=not (
+                                state.prompt and state.uploaded_image_gcs_uris
+                            ),
                         )
-
-                
 
                 # Actions row
                 if state.generated_image_urls:
@@ -560,12 +652,11 @@ def gemini_image_gen_page_content():
                                     )
 
                 # Critique Questions Display
-                #if state.critique_questions:
+                # if state.critique_questions:
                 #    with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, margin=me.Margin(top=16))):
                 #        me.text("Critique Questions", type="headline-6")
                 #        for i, question in enumerate(state.critique_questions):
                 #            me.text(f"{i+1}. {question}")
-
 
                 # Suggest transformations button
                 if (
@@ -676,16 +767,46 @@ def gemini_image_gen_page_content():
                                         me.text("Evaluating generation...")
                                 elif image_url in state.evaluations:
                                     evaluation = state.evaluations[image_url]
-                                    score = evaluation['score'] if isinstance(evaluation, dict) else evaluation.score
-                                    details = evaluation['details'] if isinstance(evaluation, dict) else evaluation.details
-                                    with me.expansion_panel(title=f"Critique Score: {score}", icon="rule"):
+                                    score = (
+                                        evaluation["score"]
+                                        if isinstance(evaluation, dict)
+                                        else evaluation.score
+                                    )
+                                    details = (
+                                        evaluation["details"]
+                                        if isinstance(evaluation, dict)
+                                        else evaluation.details
+                                    )
+                                    with me.expansion_panel(
+                                        title=f"Critique Score: {score}", icon="rule"
+                                    ):
                                         for item in details:
-                                            with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=8, margin=me.Margin(bottom=8))):
-                                                if item['answer']:
-                                                    me.icon("check_circle", style=me.Style(color=me.theme_var("success")))
+                                            with me.box(
+                                                style=me.Style(
+                                                    display="flex",
+                                                    flex_direction="row",
+                                                    align_items="center",
+                                                    gap=8,
+                                                    margin=me.Margin(bottom=8),
+                                                )
+                                            ):
+                                                if item["answer"]:
+                                                    me.icon(
+                                                        "check_circle",
+                                                        style=me.Style(
+                                                            color=me.theme_var(
+                                                                "success"
+                                                            )
+                                                        ),
+                                                    )
                                                 else:
-                                                    me.icon("cancel", style=me.Style(color=me.theme_var("error")))
-                                                me.text(item['question'])
+                                                    me.icon(
+                                                        "cancel",
+                                                        style=me.Style(
+                                                            color=me.theme_var("error")
+                                                        ),
+                                                    )
+                                                me.text(item["question"])
                         else:
                             # Display multiple images in a gallery view
                             with me.box(
@@ -704,23 +825,71 @@ def gemini_image_gen_page_content():
                                     ),
                                 )
                                 # Evaluation display
-                                with me.box(style=me.Style(width="100%", margin=me.Margin(top=16))):
+                                with me.box(
+                                    style=me.Style(
+                                        width="100%", margin=me.Margin(top=16)
+                                    )
+                                ):
                                     if state.is_evaluating:
-                                        with me.box(style=me.Style(display="flex", align_items="center", gap=8)):
+                                        with me.box(
+                                            style=me.Style(
+                                                display="flex",
+                                                align_items="center",
+                                                gap=8,
+                                            )
+                                        ):
                                             me.progress_spinner(diameter=20)
                                             me.text("Evaluating generation...")
-                                    elif state.selected_image_url in state.evaluations:
-                                        evaluation = state.evaluations[state.selected_image_url]
-                                        score = evaluation['score'] if isinstance(evaluation, dict) else evaluation.score
-                                        details = evaluation['details'] if isinstance(evaluation, dict) else evaluation.details
-                                        with me.expansion_panel(title=f"Critique Score: {score}", icon="rule"):
+                                    elif (
+                                        state.selected_image_url
+                                        in state.evaluations
+                                    ):
+                                        evaluation = state.evaluations[
+                                            state.selected_image_url
+                                        ]
+                                        score = (
+                                            evaluation["score"]
+                                            if isinstance(evaluation, dict)
+                                            else evaluation.score
+                                        )
+                                        details = (
+                                            evaluation["details"]
+                                            if isinstance(evaluation, dict)
+                                            else evaluation.details
+                                        )
+                                        with me.expansion_panel(
+                                            title=f"Critique Score: {score}",
+                                            icon="rule",
+                                        ):
                                             for item in details:
-                                                with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=8, margin=me.Margin(bottom=8))):
-                                                    if item['answer']:
-                                                        me.icon("check_circle", style=me.Style(color=me.theme_var("success")))
+                                                with me.box(
+                                                    style=me.Style(
+                                                        display="flex",
+                                                        flex_direction="row",
+                                                        align_items="center",
+                                                        gap=8,
+                                                        margin=me.Margin(bottom=8),
+                                                    )
+                                                ):
+                                                    if item["answer"]:
+                                                        me.icon(
+                                                            "check_circle",
+                                                            style=me.Style(
+                                                                color=me.theme_var(
+                                                                    "success"
+                                                                )
+                                                            ),
+                                                        )
                                                     else:
-                                                        me.icon("cancel", style=me.Style(color=me.theme_var("error")))
-                                                    me.text(item['question'])
+                                                        me.icon(
+                                                            "cancel",
+                                                            style=me.Style(
+                                                                color=me.theme_var(
+                                                                    "error"
+                                                                )
+                                                            ),
+                                                        )
+                                                    me.text(item["question"])
 
                                 # Thumbnail strip
                                 with me.box(
@@ -742,7 +911,9 @@ def gemini_image_gen_page_content():
                                                     me.BorderSide(
                                                         width=4,
                                                         style="solid",
-                                                        color=me.theme_var("secondary")
+                                                        color=me.theme_var(
+                                                            "secondary"
+                                                        )
                                                         if is_selected
                                                         else "transparent",
                                                     )
@@ -780,17 +951,22 @@ def on_upload(e: me.UploadEvent):
     and then generates descriptions asynchronously.
     """
     state = me.state(PageState)
-    
+
     # Determine how many new images can be uploaded
     upload_slots_available = MAX_IMAGES - len(state.uploaded_image_gcs_uris)
     files_to_upload = e.files[:upload_slots_available]
-    
+
     if not files_to_upload:
-        yield from show_snackbar(state, f"You can upload a maximum of {MAX_IMAGES} images.")
+        yield from show_snackbar(
+            state, f"You can upload a maximum of {MAX_IMAGES} images."
+        )
         return
-    
+
     if len(e.files) > len(files_to_upload):
-        yield from show_snackbar(state, f"You can upload a maximum of {MAX_IMAGES} images. Some files were not uploaded.")
+        yield from show_snackbar(
+            state,
+            f"You can upload a maximum of {MAX_IMAGES} images. Some files were not uploaded.",
+        )
 
     # --- Step 1: Upload files and add placeholders ---
     new_upload_indices = []
@@ -817,20 +993,57 @@ def on_upload(e: me.UploadEvent):
         except Exception as ex:
             print(f"ERROR: Failed to describe image {gcs_url}. Details: {ex}")
             state.image_descriptions[index] = "Failed to generate description."
-        
+
         # Yield after each description is generated to update the UI incrementally
         yield
-    
+
     # --- Step 4: Final state update to fix rendering bug ---
     state.is_generating = False
     yield
 
 
-def on_library_select(e: LibrarySelectionChangeEvent):
-    """Appends a selected library image's GCS URI to the list of uploaded images."""
-    state = me.state(PageState)
-    state.uploaded_image_gcs_uris.append(e.gcs_uri)
+def process_description_queue():
+    """
+    Processes one item from the description queue asynchronously.
+    This is a generator function that will be called after the initial UI update.
+    """
+    # This initial yield is crucial. It forces the event handler to return
+    # control to the browser, allowing the dialog to close *before* the
+    # potentially slow network request in this function begins.
     yield
+
+    state = me.state(PageState)
+    if not state.description_queue:
+        return  # Nothing to do
+
+    # Process one item from the queue
+    index_to_process = state.description_queue.pop(0)
+
+    # Ensure the index is still valid (e.g., user didn't delete the image)
+    if index_to_process >= len(state.uploaded_image_gcs_uris):
+        # If more items are in the queue, continue processing them
+        if state.description_queue:
+            yield from process_description_queue()
+        return
+
+    gcs_uri = state.uploaded_image_gcs_uris[index_to_process]
+
+    try:
+        description = describe_image(gcs_uri)
+        state.image_descriptions[index_to_process] = description
+    except Exception as ex:
+        print(f"ERROR: Failed to describe image {gcs_uri}. Details: {ex}")
+        state.image_descriptions[index_to_process] = "Failed to generate description."
+
+    # Yield to update the UI with the new description
+    yield
+
+    # If there are more items, continue processing
+    if state.description_queue:
+        yield from process_description_queue()
+
+
+
 
 
 def on_remove_image(e: me.ClickEvent):
@@ -842,7 +1055,9 @@ def on_remove_image(e: me.ClickEvent):
         if index_to_remove < len(state.image_descriptions):
             del state.image_descriptions[index_to_remove]
     # If the deleted tab was the last one, or the index is now out of bounds, reset.
-    if state.selected_tab_index >= len(state.image_descriptions) + (1 if state.critique_questions else 0):
+    if state.selected_tab_index >= len(
+        state.image_descriptions
+    ) + (1 if state.critique_questions else 0):
         state.selected_tab_index = 0
     yield
 
