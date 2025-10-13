@@ -69,6 +69,7 @@ jobs:
 
           if [[ "$HAS_ISSUES" == "false" ]]; then
             echo '📝 GitHub repo does not have Issues enabled. Skipping issue triage.'
+            echo "issues_to_triage=[]" >> "${GITHUB_OUTPUT}"
             exit
           fi
 
