@@ -65,6 +65,14 @@ jobs:
           GITHUB_REPOSITORY: '${{ github.repository }}'
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |-
+          export HAS_ISSUES=$(gh api repos/${GITHUB_REPOSITORY} --jq '.has_issues')
+
+          if [[ "$HAS_ISSUES" == "false" ]]; then
+            echo '📝 GitHub repo does not have Issues enabled. Skipping issue triage.'
+            echo "issues_to_triage=[]" >> "${GITHUB_OUTPUT}"
+            exit
+          fi
+
           echo '🔍 Finding unlabeled issues and issues marked for triage...'
           UNLABELED_ISSUES="$(gh issue list \
             --state 'open' \
