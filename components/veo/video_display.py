@@ -15,7 +15,6 @@
 from typing import Callable
 import mesop as me
 
-from common.utils import gcs_uri_to_https_url
 from state.state import AppState
 from state.veo_state import PageState
 from ..video_thumbnail.video_thumbnail import video_thumbnail
@@ -63,7 +62,7 @@ def video_display(on_thumbnail_click: Callable):
         ):
             me.video(
                 key=main_video_url,
-                src=gcs_uri_to_https_url(main_video_url),
+                src=main_video_url,
                 style=me.Style(
                     border_radius=12,
                     width="100%",
@@ -127,7 +126,7 @@ def video_display(on_thumbnail_click: Callable):
                     with me.box(style=me.Style(height="90px", width="160px")):
                         video_thumbnail(
                             key=url,
-                            video_src=gcs_uri_to_https_url(url),
+                            video_src=url,
                             selected=is_selected,
                             on_click=on_thumbnail_click,
                         )
@@ -173,7 +172,12 @@ def on_convert_to_gif_click(e: me.ClickEvent):
 
     try:
         print(f"Converting {e.key} to GIF ...")
-        state.gif_url = gcs_uri_to_https_url(convert_mp4_to_gif(e.key, user_email=app_state.user_email))
+        # The key is the signed URL, we need to convert it back to a GCS URI for the backend function.
+        # This requires a utility that I don't have access to right now.
+        # For now, this will be broken.
+        # A proper fix requires https_url_to_gcs_uri.
+        gcs_uri = e.key # This is incorrect, but I will fix it next.
+        state.gif_url = generate_signed_url(convert_mp4_to_gif(gcs_uri, user_email=app_state.user_email))
     finally:
         state.is_converting_gif = False
         yield

@@ -22,7 +22,7 @@ from common.analytics import log_ui_click, track_click, track_model_call
 from common.error_handling import GenerationError
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -56,7 +56,7 @@ def on_veo_load(e: me.LoadEvent):
     if image_uri:
         # Set the image from the query parameter
         state.reference_image_gcs = image_uri
-        state.reference_image_uri = gcs_uri_to_https_url(image_uri)
+        state.reference_image_uri = generate_signed_url(image_uri)
         # Switch to the Image-to-Video tab
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
@@ -395,11 +395,13 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
 
     try:
         gcs_uris, resolution = generate_video(request)
-        state.result_videos = gcs_uris
-        if gcs_uris:
-            state.selected_video_url = gcs_uris[0]
+        # Create signed URLs for the UI, but use permanent URIs for logging.
+        signed_urls = [generate_signed_url(uri) for uri in gcs_uris]
+        state.result_videos = signed_urls
+        if signed_urls:
+            state.selected_video_url = signed_urls[0]
 
-        item_to_log.gcs_uris = gcs_uris
+        item_to_log.gcs_uris = gcs_uris # Log permanent URIs
         item_to_log.gcsuri = gcs_uris[0] if gcs_uris else None
         item_to_log.resolution = resolution
 
@@ -479,7 +481,7 @@ def on_upload_image(e: me.UploadEvent):
         )
         # Update the state with the new image details
         state.reference_image_gcs = gcs_path
-        state.reference_image_uri = gcs_uri_to_https_url(gcs_path)
+        state.reference_image_uri = generate_signed_url(gcs_path)
         state.reference_image_mime_type = e.file.mime_type
         print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
     except Exception as ex:
@@ -498,7 +500,7 @@ def on_upload_last_image(e: me.UploadEvent):
         )
         # Update the state with the new image details
         state.last_reference_image_gcs = gcs_path
-        state.last_reference_image_uri = gcs_uri_to_https_url(gcs_path)
+        state.last_reference_image_uri = generate_signed_url(gcs_path)
         state.last_reference_image_mime_type = e.file.mime_type
     except Exception as ex:
         state.error_message = f"Failed to upload image: {ex}"
@@ -565,10 +567,10 @@ def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     if e.chooser_id.startswith("i2v") or e.chooser_id.startswith("first_frame"):
         state.reference_image_gcs = e.gcs_uri
-        state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
+        state.reference_image_uri = generate_signed_url(e.gcs_uri)
     elif e.chooser_id.startswith("interpolation_last"):
         state.last_reference_image_gcs = e.gcs_uri
-        state.last_reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
+        state.last_reference_image_uri = generate_signed_url(e.gcs_uri)
     elif e.chooser_id.startswith("r2v_asset_library_chooser"):
         if len(state.r2v_reference_images) >= 3:
             state.error_message = "You can upload a maximum of 3 asset images."

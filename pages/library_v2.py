@@ -392,7 +392,7 @@ def render_tour_detail_dialog(storyboard: dict):
                 final_video_uri = storyboard.get("final_video_uri")
                 if final_video_uri:
                     me.video(
-                        src=gcs_uri_to_https_url(final_video_uri),
+                        src=generate_signed_url(final_video_uri),
                         style=me.Style(width="100%", border_radius=8),
                     )
 

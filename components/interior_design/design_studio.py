@@ -5,7 +5,7 @@ Component for the Design Studio.
 from typing import Callable
 import mesop as me
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.veo_button.veo_button import veo_button
@@ -14,7 +14,7 @@ from components.veo_button.veo_button import veo_button
 @me.component
 def design_studio(
     storyboard_item: dict,
-    design_image_uri: str,
+    design_image_display_url: str,
     is_designing: bool,
     on_upload_design_image: Callable,
     on_select_design_image: Callable,
@@ -45,9 +45,9 @@ def design_studio(
                 on_library_select=on_select_design_image,
                 button_label="Add from Library",
             )
-        if design_image_uri:
+        if design_image_display_url:
             me.image(
-                src=gcs_uri_to_https_url(design_image_uri),
+                src=design_image_display_url,
                 style=me.Style(width="100%", border_radius=8, margin=me.Margin(top=8)),
             )
         me.textarea(

@@ -26,7 +26,7 @@ import mesop as me
 from common.analytics import log_ui_click, track_click
 from common.metadata import MediaItem, add_media_item_to_firestore, save_storyboard
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 from components.header import header
 from components.dialog import dialog
 from components.info_dialog.info_dialog import info_dialog
@@ -73,7 +73,22 @@ def on_load(e: me.LoadEvent):
         doc_ref = db.collection("interior_design_storyboards").document(storyboard_id)
         doc = doc_ref.get()
         if doc.exists:
-            state.storyboard = doc.to_dict()
+            storyboard = doc.to_dict()
+            # Hydrate old data: generate display URLs if they don't exist.
+            if storyboard.get("original_floor_plan_uri") and not storyboard.get("original_floor_plan_display_url"):
+                storyboard["original_floor_plan_display_url"] = generate_signed_url(storyboard["original_floor_plan_uri"])
+            if storyboard.get("generated_3d_view_uri") and not storyboard.get("generated_3d_view_display_url"):
+                storyboard["generated_3d_view_display_url"] = generate_signed_url(storyboard["generated_3d_view_uri"])
+            if storyboard.get("final_video_uri") and not storyboard.get("final_video_display_url"):
+                storyboard["final_video_display_url"] = generate_signed_url(storyboard["final_video_uri"])
+            
+            for item in storyboard.get("storyboard_items", []):
+                if item.get("styled_image_uri") and not item.get("styled_image_display_url"):
+                    item["styled_image_display_url"] = generate_signed_url(item["styled_image_uri"])
+                if item.get("generated_video_uri") and not item.get("generated_video_display_url"):
+                    item["generated_video_display_url"] = generate_signed_url(item["generated_video_uri"])
+
+            state.storyboard = storyboard
             print(f"Loaded storyboard {storyboard_id} from Firestore.")
         else:
             yield from show_snackbar(state, f"Could not find storyboard with ID: {storyboard_id}")
@@ -175,7 +190,7 @@ def page_content():
                 )
                 design_studio(
                     storyboard_item=next((item for item in state.storyboard["storyboard_items"] if item["room_name"] == state.storyboard["selected_room"]), None),
-                    design_image_uri=state.design_image_uri,
+                    design_image_display_url=state.design_image_display_url,
                     is_designing=state.is_designing,
                     on_upload_design_image=on_upload_design_image,
                     on_select_design_image=on_select_design_image,
@@ -206,14 +221,14 @@ def page_content():
                         if item.get("generated_video_uri"):
                             storyboard_video_tile(
                                 key=item["room_name"],
-                                video_url=item["generated_video_uri"],
+                                video_url=item.get("generated_video_display_url", ""),
                                 room_name=item["room_name"],
                                 on_click=on_open_detail_dialog_click,
                             )
-                        elif item["styled_image_uri"]:
+                        elif item.get("styled_image_uri"): # Use .get() for safety
                             storyboard_item_tile(
                                 key=item["room_name"],
-                                image_url=item["styled_image_uri"],
+                                image_url=item.get("styled_image_display_url", ""),
                                 room_name=item["room_name"],
                                 on_click=on_storyboard_item_click,
                             )
@@ -234,7 +249,7 @@ def page_content():
                 if final_video_uri:
                     with me.box(style=me.Style(margin=me.Margin(top=24), display="flex", justify_content="center")):
                         me.video(
-                            src=gcs_uri_to_https_url(final_video_uri),
+                            src=state.storyboard.get("final_video_display_url", ""),
                             style=me.Style(width="100%", max_width="720px", border_radius=8),
                         )
 
@@ -261,6 +276,7 @@ def on_upload_floor_plan(e: me.UploadEvent):
         "user_email": app_state.user_email,
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "original_floor_plan_uri": gcs_url,
+        "original_floor_plan_display_url": generate_signed_url(gcs_url),
         "room_names": [],
         "storyboard_items": [],
         "selected_room": "",
@@ -278,6 +294,7 @@ def on_select_floor_plan(e: LibrarySelectionChangeEvent):
         "user_email": app_state.user_email,
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "original_floor_plan_uri": e.gcs_uri,
+        "original_floor_plan_display_url": generate_signed_url(e.gcs_uri),
         "room_names": [],
         "storyboard_items": [],
         "selected_room": "",
@@ -309,6 +326,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
 
         if gcs_uris:
             state.storyboard["generated_3d_view_uri"] = gcs_uris[0]
+            state.storyboard["generated_3d_view_display_url"] = generate_signed_url(gcs_uris[0])
 
             try:
                 room_names = extract_room_names_from_image(state.storyboard["original_floor_plan_uri"])
@@ -359,6 +377,7 @@ def on_room_button_click(e: me.ClickEvent):
 
         if gcs_uris:
             storyboard_item["styled_image_uri"] = gcs_uris[0]
+            storyboard_item["styled_image_display_url"] = generate_signed_url(gcs_uris[0])
             storyboard_item["style_history"].append(gcs_uris[0])
         else:
             yield from show_snackbar(state, "Zoomed view generation failed to return a result.")
@@ -382,6 +401,7 @@ def on_clear_design(e: me.ClickEvent):
     state = me.state(PageState)
     state.design_prompt = ""
     state.design_image_uri = ""
+    state.design_image_display_url = ""
     yield
 
 
@@ -393,6 +413,7 @@ def on_upload_design_image(e: me.UploadEvent):
         "interior_design_uploads", file.name, file.mime_type, file.getvalue()
     )
     state.design_image_uri = gcs_url
+    state.design_image_display_url = generate_signed_url(gcs_url)
     yield
 
 
@@ -400,6 +421,7 @@ def on_select_design_image(e: LibrarySelectionChangeEvent):
     """Design image selection from library handler."""
     state = me.state(PageState)
     state.design_image_uri = e.gcs_uri
+    state.design_image_display_url = generate_signed_url(e.gcs_uri)
     yield
 
 
@@ -435,6 +457,7 @@ def on_design_click(e: me.ClickEvent):
 
         if gcs_uris:
             storyboard_item["styled_image_uri"] = gcs_uris[0]
+            storyboard_item["styled_image_display_url"] = generate_signed_url(gcs_uris[0])
             storyboard_item["style_history"].append(gcs_uris[0])
             state.design_prompt = ""
             state.design_image_uri = ""
@@ -494,6 +517,7 @@ def on_generate_video_click(e: me.ClickEvent):
                 video_uris, _ = generate_video(request=request)
                 if video_uris:
                     item["generated_video_uri"] = video_uris[0]
+                    item["generated_video_display_url"] = generate_signed_url(video_uris[0])
 
         # Step 2: Concatenate the video
         video_clips = [item["generated_video_uri"] for item in state.storyboard["storyboard_items"] if item.get("generated_video_uri")]
@@ -508,6 +532,7 @@ def on_generate_video_click(e: me.ClickEvent):
         final_video_uri = process_videos(video_clips, "concat") if len(video_clips) > 1 else video_clips[0]
         state.final_video_uri = final_video_uri
         state.storyboard["final_video_uri"] = final_video_uri
+        state.storyboard["final_video_display_url"] = generate_signed_url(final_video_uri)
 
         # Step 3: Create or Update MediaItem
         media_item_id = state.storyboard.get("library_media_item_id")
@@ -564,12 +589,12 @@ def item_detail_dialog(on_close: Callable):
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, margin=me.Margin(top=16))):
             with me.box(style=me.Style(flex_grow=1)):
                 me.text("Source Image", type="headline-5")
-                me.image(src=gcs_uri_to_https_url(item["styled_image_uri"]), style=me.Style(width="100%", border_radius=8))
+                me.image(src=item.get("styled_image_display_url", ""), style=me.Style(width="100%", border_radius=8))
 
             with me.box(style=me.Style(flex_grow=1)):
                 me.text("Generated Video", type="headline-5")
                 if item.get("generated_video_uri"):
-                    me.video(src=gcs_uri_to_https_url(item["generated_video_uri"]), style=me.Style(width="100%", border_radius=8))
+                    me.video(src=item.get("generated_video_display_url", ""), style=me.Style(width="100%", border_radius=8))
                 else:
                     me.text("Video not generated yet.")
 
