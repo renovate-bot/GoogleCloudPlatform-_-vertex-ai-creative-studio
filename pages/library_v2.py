@@ -23,7 +23,7 @@ import mesop as me
 from common.analytics import log_ui_click
 
 from common.metadata import MediaItem, get_media_for_page, get_media_item_by_id
-from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
+from common.utils import generate_signed_url
 from components.header import header
 from components.lightbox_dialog.lightbox_dialog import lightbox_dialog
 from components.library.image_details import CarouselState
@@ -68,6 +68,9 @@ def on_load(e: me.LoadEvent):
             if not item:
                 item = get_media_item_by_id(media_id)
                 if item:
+                    # This item was loaded directly and needs its signed URL generated.
+                    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+                    item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
                     pagestate.media_items.insert(0, item)
 
             if item:
@@ -103,6 +106,11 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
     if not new_items:
         pagestate.all_items_loaded = True
     else:
+        # Generate signed URLs for the newly loaded items in memory.
+        for item in new_items:
+            gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+            item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
+
         if is_filter_change:
             pagestate.media_items = new_items
         else:
@@ -224,7 +232,7 @@ def library_content():
                         if item.gcsuri
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
-                    https_url = gcs_uri_to_https_url(gcs_uri) if gcs_uri else ""
+                    https_url = item.signed_url if hasattr(item, "signed_url") else ""
 
                     # Determine the render type based on mime_type for reliability
                     render_type = "image" # Default to image
@@ -417,13 +425,9 @@ def render_tour_detail_dialog(storyboard: dict):
 @me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
-    # Consolidate the primary URI(s) into a single list for processing.
-    urls_to_process = []
-    if item.gcs_uris:
-        urls_to_process.extend(item.gcs_uris)
-    elif item.gcsuri:
-        urls_to_process.append(item.gcsuri)
-    primary_urls = [gcs_uri_to_https_url(uri) for uri in urls_to_process]
+    # The signed URL was already generated when the item was loaded.
+    # We can reuse it here directly.
+    primary_urls = [item.signed_url] if hasattr(item, "signed_url") else []
 
     # Consolidate all potential source assets into a single list for backward compatibility
     all_source_uris = []
@@ -494,7 +498,7 @@ def render_default_detail_dialog(item: MediaItem):
                 )
             ):
                 for source_uri in all_source_uris:
-                    https_url = gcs_uri_to_https_url(source_uri)
+                    https_url = generate_signed_url(source_uri)
                     # Determine media type from URL extension
                     render_type = "image"  # Default
                     if ".mp4" in https_url or ".webm" in https_url:
