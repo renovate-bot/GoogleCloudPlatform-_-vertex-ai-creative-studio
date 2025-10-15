@@ -18,12 +18,13 @@ import urllib.parse
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional
 import datetime
+import concurrent.futures
 
 import mesop as me
 from common.analytics import log_ui_click
 
 from common.metadata import MediaItem, get_media_for_page, get_media_item_by_id
-from common.utils import generate_signed_url
+from common.utils import generate_signed_url, https_url_to_gcs_uri
 from components.header import header
 from components.lightbox_dialog.lightbox_dialog import lightbox_dialog
 from components.library.image_details import CarouselState
@@ -68,9 +69,6 @@ def on_load(e: me.LoadEvent):
             if not item:
                 item = get_media_item_by_id(media_id)
                 if item:
-                    # This item was loaded directly and needs its signed URL generated.
-                    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
-                    item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
                     pagestate.media_items.insert(0, item)
 
             if item:
@@ -106,15 +104,23 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
     if not new_items:
         pagestate.all_items_loaded = True
     else:
-        # Generate signed URLs for the newly loaded items in memory.
-        for item in new_items:
-            gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+        # Use a ThreadPoolExecutor to generate signed URLs in parallel for performance.
+        def sign_item(item):
+            gcs_uri = (
+                item.gcsuri
+                if item.gcsuri
+                else (item.gcs_uris[0] if item.gcs_uris else None)
+            )
             item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
+            return item
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            processed_items = list(executor.map(sign_item, new_items))
 
         if is_filter_change:
-            pagestate.media_items = new_items
+            pagestate.media_items = processed_items
         else:
-            pagestate.media_items.extend(new_items)
+            pagestate.media_items.extend(processed_items)
 
     pagestate.is_loading = False
     yield
@@ -322,6 +328,22 @@ def on_close_details_dialog(e: me.ClickEvent):
     pagestate.show_details_dialog = False
     pagestate.selected_media_item_id = None
     carousel_state.current_index = 0
+
+    # Helper function for parallel execution
+    def sign_item(item):
+        gcs_uri = (
+            item.gcsuri
+            if item.gcsuri
+            else (item.gcs_uris[0] if item.gcs_uris else None)
+        )
+        item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
+        return item
+
+    # Re-sign all currently loaded items to ensure URLs are not expired.
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # This will update the .signed_url attribute on the items in place.
+        list(executor.map(sign_item, pagestate.media_items))
+
     yield
 
 
@@ -425,9 +447,9 @@ def render_tour_detail_dialog(storyboard: dict):
 @me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
-    # The signed URL was already generated when the item was loaded.
-    # We can reuse it here directly.
-    primary_urls = [item.signed_url] if hasattr(item, "signed_url") else []
+    # Generate a fresh signed URL for the primary asset just-in-time.
+    primary_gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    primary_urls = [generate_signed_url(primary_gcs_uri)] if primary_gcs_uri else []
 
     # Consolidate all potential source assets into a single list for backward compatibility
     all_source_uris = []

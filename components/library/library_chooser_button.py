@@ -14,8 +14,11 @@
 
 from dataclasses import dataclass, field
 from typing import Callable, Optional
+import concurrent.futures
 
 import mesop as me
+
+from common.utils import generate_signed_url
 
 from common.metadata import MediaItem, get_media_for_page_optimized
 from components.dialog import dialog
@@ -53,7 +56,18 @@ def library_chooser_button(
 
         # Fetch fresh data every time the dialog is opened
         items, _ = get_media_for_page_optimized(20, ["images"])
-        state.media_items = items
+
+        # Helper function for parallel execution
+        def sign_item(item):
+            gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+            item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
+            return item
+
+        # Re-sign all currently loaded items to ensure URLs are not expired.
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            processed_items = list(executor.map(sign_item, items))
+
+        state.media_items = processed_items
         state.is_loading = False
         yield
 
