@@ -17,7 +17,6 @@ from typing import Callable, List
 import mesop as me
 
 from common.metadata import MediaItem
-from common.utils import gcs_uri_to_https_url
 from components.library.events import LibrarySelectionChangeEvent
 
 
@@ -44,29 +43,18 @@ def library_image_selector(
             me.text("No recent images found in the library.")
         else:
             for item in media_items:
-                if item.gcs_uris:
-                    for image_uri in item.gcs_uris:
-                        with me.box(
-                            on_click=on_image_click,
-                            key=image_uri,
-                            style=me.Style(cursor="pointer"),
-                        ):
-                            me.image(
-                                src=gcs_uri_to_https_url(image_uri),
-                                style=me.Style(
-                                    width="100%",
-                                    border_radius=8,
-                                    object_fit="cover",
-                                ),
-                            )
-                elif item.gcsuri:
+                # The signed_url attribute is now added by the parent component.
+                image_url = item.signed_url if hasattr(item, "signed_url") else ""
+                gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
+
+                if gcs_uri:
                     with me.box(
                         on_click=on_image_click,
-                        key=item.gcsuri,
+                        key=gcs_uri, # The key should be the permanent GCS URI
                         style=me.Style(cursor="pointer"),
                     ):
                         me.image(
-                            src=gcs_uri_to_https_url(item.gcsuri),
+                            src=image_url,
                             style=me.Style(
                                 width="100%",
                                 border_radius=8,

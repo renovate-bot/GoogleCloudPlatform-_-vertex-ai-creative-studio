@@ -178,6 +178,9 @@ def https_url_to_gcs_uri(url: str | None) -> str:
         return ""
     if url.startswith("gs://"):
         return url
+    # Handle both potential GCS URL formats.
+    if url.startswith("https://storage.googleapis.com/"):
+        return url.replace("https://storage.googleapis.com/", "gs://")
     if url.startswith(GCS_PUBLIC_URL_PREFIX):
         return url.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
     return url
