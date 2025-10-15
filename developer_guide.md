@@ -72,103 +72,71 @@ with track_model_call("my-generative-model-v1", prompt_length=len(prompt)):
     model.generate_content(...)
 ```
 
-## State Management
+## Application Architecture and State Management
 
-### Working with Dataclasses
+This section outlines critical architectural patterns and solutions to common but subtle bugs encountered in this Mesop application. Adhering to these patterns is crucial for building robust and maintainable features.
 
-When using dataclasses in the Mesop state, it's important to be aware of how they are serialized. Mesop's state management system does not automatically serialize dataclasses that contain non-serializable objects, such as `datetime.datetime`.
+### 1. The Parent-Managed State Pattern (for Reusable Components)
 
-To work around this, you have two options:
+**The Problem:** A reusable component (e.g., a "chooser" button) used multiple times on the same page exhibits bizarre behavior, where interacting with one instance affects the others.
 
-1.  **Use simple types:** The simplest solution is to use only simple types (e.g., `str`, `int`, `float`, `bool`, `list`, `dict`) in your dataclasses. For example, instead of using a `datetime.datetime` object for a timestamp, you can use an ISO 8601 string.
+**The Cause:** Using `@me.stateclass` on a class creates a **single, global state object** for all instances of that component. This leads to state collisions, where one component overwrites the state of another. Attempts to work around this with component keys (`me.state(State, key=...)`) or by defining the state class inside the component function are **not supported** by the version of Mesop in this project and will cause crashes.
 
-2.  **Use `asdict`:** If you need to use complex types in your dataclasses, you can use the `asdict` function from Python's `dataclasses` module to convert the dataclass instance to a dictionary before assigning it to the state.
+**The Solution: Parent-Managed State**
 
-    **Example:**
+The only robust solution is to make reusable components stateless ("dumb") and have the parent page manage all state and complex UI.
 
-    ```python
-    from dataclasses import asdict
+-   **Stateless Component:** The component itself should be simple. It should not have a `@me.stateclass`. It should only accept properties (like an `on_click` handler) from its parent.
+-   **Parent Page Manages State:** The page that uses the component is responsible for all state management. This includes fields for dialog visibility, loading states, and data.
+-   **Parent Page Renders Dialogs:** Any complex UI, like a `dialog`, should be rendered by the parent page, not the component. The component's `on_click` handler updates the page's state to show the dialog, and the page re-renders to display it with the correct content.
 
-    # ...
+For a complete working example of this pattern, see `pages/test_media_chooser.py`.
 
-    state.my_dataclass = asdict(MyDataClass(timestamp=datetime.datetime.now()))
-    ```
+### 2. Handling Non-Serializable Objects in State
 
-    When you access the dataclass from the state, you will need to access it as a dictionary:
+**The Problem:** The application crashes with an error like `Object of type DocumentSnapshot is not JSON serializable` or `Unhandled stateclass deserialization`.
 
-    ```python
-    timestamp = state.my_dataclass["timestamp"]
-    ```
+**The Cause:** Mesop's state must be fully JSON serializable to be passed between the server and the browser. Complex Python objects cannot be placed in a state class directly.
 
-## Using the Media Chooser Component
+**The Solutions:**
 
-The application provides a generic, high-performance component for selecting media (`video`, `audio`, or `image`) from the library. This component, `media_chooser_button`, uses a **parent-managed state** pattern. This means the page that uses the button is responsible for managing the state and rendering of the chooser dialog.
+-   **For Dictionaries (`dict`):** If a dataclass field within your state holds a dictionary (e.g., a JSON API response), it will cause a deserialization error.
+    -   **Best Practice:** The field in the dataclass should be typed as `str`.
+    -   **On Write:** Before saving, convert the dictionary to a string with `json.dumps()`.
+    -   **On Read:** To make reading robust, use the `__post_init__` method in your dataclass to automatically check if the data is a `dict` (from an old record in Firestore) and convert it to a string. This centralizes the fix.
 
-This pattern is robust and avoids the complex state-collision bugs that can occur with self-contained components in Mesop. Here’s how to use it:
+-   **For Firestore `DocumentSnapshot`:** To implement cursor-based pagination, you need the `DocumentSnapshot` object.
+    -   **Do not** store the `DocumentSnapshot` object in the state.
+    -   **Instead:** Store only the document's ID (`last_doc.id`), which is a string.
+    -   When fetching the next page, use the stored ID to re-fetch the `DocumentSnapshot` object just before making the next query: `db.collection(...).document(state.last_doc_id).get()`.
 
-### 1. Add State to Your Page
+### 3. Event Handlers and Rendering
 
-First, add the necessary fields to your page's `@me.stateclass` to manage the dialog's visibility, content, and data loading.
+**The Problem:** An event handler runs (as seen in logs), but the UI does not update, or a dialog fails to appear.
 
-**Example:**
-```python
-from dataclasses import field
-from common.metadata import MediaItem
+**The Cause:** This can happen if the function containing the `yield` statement is not the function directly assigned to the event handler (e.g., it is wrapped in a `lambda`). This can interrupt Mesop's render cycle.
 
-@me.stateclass
-class PageState:
-    # ... your other page state fields ...
-
-    # State for the media chooser dialog
-    show_chooser_dialog: bool = False
-    chooser_dialog_media_type: str = ""
-    chooser_dialog_key: str = "" # To track which button opened the dialog
-    chooser_is_loading: bool = False
-    chooser_media_items: list[MediaItem] = field(default_factory=list)
-    chooser_last_doc_id: str = "" # For pagination
-    chooser_all_items_loaded: bool = False
-```
-
-### 2. Render the Button and Create an Event Handler
-
-Place the `media_chooser_button` in your UI. Its `on_click` event should trigger a handler that sets the dialog state and starts the data fetching process.
+**The Solution:** The function that contains `yield` must be assigned **directly** to the event property. If you need to pass extra parameters, create a new, dedicated handler function for each specific action rather than using a `lambda`.
 
 **Example:**
 ```python
-from components.library.media_chooser_button import media_chooser_button
-from common.metadata import get_media_for_chooser
+# In your page code:
 
-# In your page's layout function:
-media_chooser_button(
-    key="my_video_chooser", # A unique key for this button
-    on_click=open_chooser,
-    media_type="video",
-    button_label="Choose a Video"
-)
-
-# The event handler to open the dialog and load the first page of items:
-def open_chooser(e: me.ClickEvent):
+# GOOD: Direct assignment
+def on_open_video_dialog(e: me.ClickEvent):
     state = me.state(PageState)
-    state.show_chooser_dialog = True
-    state.chooser_dialog_media_type = "video" # Set the type of media to show
-    state.chooser_dialog_key = e.key
-    state.chooser_is_loading = True
-    state.chooser_media_items = []
-    state.chooser_all_items_loaded = False
-    state.chooser_last_doc_id = ""
+    state.dialog_media_type = "video"
+    state.show_dialog = True
     yield
 
-    items, last_doc = get_media_for_chooser(media_type="video", page_size=20)
-    state.chooser_media_items = items
-    state.chooser_last_doc_id = last_doc.id if last_doc else ""
-    if not last_doc:
-        state.chooser_all_items_loaded = True
-    state.chooser_is_loading = False
+me.button("Choose Video", on_click=on_open_video_dialog)
+
+# BAD: yield is inside a function called by a lambda
+def open_dialog(media_type: str):
+    state = me.state(PageState)
+    state.dialog_media_type = media_type
+    state.show_dialog = True
     yield
+
+me.button("Choose Video", on_click=lambda e: open_dialog("video")) # This may not work reliably
 ```
-
-### 3. Render the Dialog
-
-Finally, add a component to your page that renders the dialog itself. This component will read the state you set in the previous step to show the dialog, display the items, and handle selection and infinite scrolling.
-
-For a complete, working example, see `pages/test_media_chooser.py`.

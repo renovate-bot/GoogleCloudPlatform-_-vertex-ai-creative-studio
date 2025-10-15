@@ -18,7 +18,6 @@ from components.styles import _BOX_STYLE
 from state.imagen_state import PageState
 from components.svg_icon.svg_icon import svg_icon
 
-from common.utils import gcs_uri_to_https_url
 from components.edit_button.edit_button import edit_button
 from components.veo_button.veo_button import veo_button
 
@@ -68,7 +67,7 @@ def image_output():
                         if img_uri:
                             with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
                                 me.image(
-                                    src=gcs_uri_to_https_url(img_uri),
+                                    src=img_uri,
                                     style=me.Style(
                                         width="300px",
                                         height="300px",

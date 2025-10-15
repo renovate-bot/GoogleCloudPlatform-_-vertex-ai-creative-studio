@@ -19,9 +19,53 @@ import io
 import json
 import re
 from typing import Any
+import datetime
 
 from absl import logging
 from PIL import Image
+import google.auth
+from google.cloud import storage
+from google.auth import impersonated_credentials
+
+import os
+
+def generate_signed_url(gcs_uri: str) -> str:
+    """Generates a signed URL for a GCS object."""
+    if not gcs_uri or not gcs_uri.startswith("gs://"):
+        return ""
+    try:
+        service_account_email = os.environ.get("SERVICE_ACCOUNT_EMAIL")
+        if not service_account_email:
+            logging.error("SERVICE_ACCOUNT_EMAIL environment variable not set.")
+            return ""
+
+        credentials, _ = google.auth.default()
+
+        # Use impersonation to sign the URL.
+        signing_credentials = impersonated_credentials.Credentials(
+            source_credentials=credentials,
+            target_principal=service_account_email,
+            target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
+        )
+
+        storage_client = storage.Client(credentials=credentials)
+        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        # V4 signed URLs are the recommended and most secure version.
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=15),
+            method="GET",
+            credentials=signing_credentials,
+        )
+        return signed_url
+    except Exception as e:
+        logging.error(f"Error generating signed url for {gcs_uri}: {e}")
+        return ""
+
+
 
 
 def extract_username(email_string: str | None) -> str:
@@ -99,12 +143,10 @@ def print_keys(obj, prefix=""):
 
 GCS_PUBLIC_URL_PREFIX = "https://storage.cloud.google.com/"
 
-
-def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
+def _get_gcs_public_https_url(gcs_uri: str | None) -> str:
     """
-    Converts a GCS URI to a publicly accessible URL.
-
-    Handles None, empty strings, and already-formatted URLs gracefully.
+    (Internal use only) Converts a GCS URI to a publicly accessible URL.
+    This performs a simple string replacement and does NOT work for private objects.
     """
     if not gcs_uri:
         return ""
@@ -114,6 +156,18 @@ def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
         return gcs_uri.replace("gs://", GCS_PUBLIC_URL_PREFIX)
     # Return as-is if it's not a recognized format
     return gcs_uri
+
+def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
+    """
+    DEPRECATED: This function now generates a signed URL for a private GCS object.
+    It is a temporary shim to fix broken images across the app.
+    Please switch to calling 'generate_signed_url' directly.
+    """
+    logging.warning(
+        "DEPRECATION WARNING: gcs_uri_to_https_url() is performing an expensive "
+        "signing operation. Please switch to calling generate_signed_url() directly."
+    )
+    return generate_signed_url(gcs_uri)
 
 
 def https_url_to_gcs_uri(url: str | None) -> str:
