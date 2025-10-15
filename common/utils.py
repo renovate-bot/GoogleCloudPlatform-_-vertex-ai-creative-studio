@@ -172,15 +172,20 @@ def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
 
 def https_url_to_gcs_uri(url: str | None) -> str:
     """
-    Converts a public GCS HTTPS URL back to a gs:// URI.
+    Converts a public GCS HTTPS URL (including signed URLs) back to a gs:// URI.
     """
     if not url:
         return ""
     if url.startswith("gs://"):
         return url
-    # Handle both potential GCS URL formats.
-    if url.startswith("https://storage.googleapis.com/"):
-        return url.replace("https://storage.googleapis.com/", "gs://")
-    if url.startswith(GCS_PUBLIC_URL_PREFIX):
-        return url.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
+
+    # Take the base URL, stripping any query parameters from a signed URL
+    url_to_convert = url.split("?")[0]
+
+    if url_to_convert.startswith("https://storage.googleapis.com/"):
+        return url_to_convert.replace("https://storage.googleapis.com/", "gs://")
+    if url_to_convert.startswith(GCS_PUBLIC_URL_PREFIX):
+        return url_to_convert.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
+
+    # If it's not a recognized GCS URL, return the original input as a fallback.
     return url

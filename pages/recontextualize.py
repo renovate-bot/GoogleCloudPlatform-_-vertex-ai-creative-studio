@@ -19,7 +19,7 @@ import mesop as me
 
 from common.metadata import add_media_item
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 from components.dialog import dialog
 from components.edit_button.edit_button import edit_button
 from components.veo_button.veo_button import veo_button
@@ -116,7 +116,7 @@ def recontextualize():
                     ):
                         for i, uri in enumerate(state.uploaded_image_gcs_uris):
                             image_thumbnail(
-                                image_uri=uri, index=i, on_remove=on_remove_image
+                                image_uri=generate_signed_url(uri), index=i, on_remove=on_remove_image
                             )
 
                 me.input(
@@ -178,7 +178,7 @@ def recontextualize():
                         for gcs_uri in state.result_gcs_uris:
                             with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
                                 me.image(
-                                    src=gcs_uri_to_https_url(gcs_uri),
+                                    src=generate_signed_url(gcs_uri),
                                     style=me.Style(width="400px", border_radius=12),
                                 )
                                 with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
