@@ -96,7 +96,7 @@ def veo_modes(
             )
 
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 from components.image_thumbnail import image_thumbnail
 
 
@@ -125,7 +125,7 @@ def _r2v_uploader(
                     if i < len(state.r2v_reference_images):
                         image_uri = state.r2v_reference_images[i]
                         image_thumbnail(
-                            image_uri=image_uri,
+                            image_uri=generate_signed_url(image_uri),
                             index=i,
                             on_remove=on_r2v_asset_remove,
                             icon_size=16,
@@ -147,7 +147,7 @@ def _r2v_uploader(
             with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
                 if state.r2v_style_image:
                     image_thumbnail(
-                        image_uri=state.r2v_style_image,
+                        image_uri=generate_signed_url(state.r2v_style_image),
                         index=0,  # Only one style image
                         on_remove=on_r2v_style_remove,
                         icon_size=16,
@@ -235,7 +235,7 @@ def _image_uploader(
             me.text("First Frame", style=me.Style(font_size="10pt"))
             if state.reference_image_uri:
                 image_thumbnail(
-                    image_uri=state.reference_image_gcs,
+                    image_uri=state.reference_image_uri,
                     index=0,
                     on_remove=on_clear_first_image,
                     icon_size=16,
@@ -254,7 +254,7 @@ def _image_uploader(
                 me.text("Last Frame", style=me.Style(font_size="10pt"))
                 if state.last_reference_image_uri:
                     image_thumbnail(
-                        image_uri=state.last_reference_image_gcs,
+                        image_uri=state.last_reference_image_uri,
                         index=0,
                         on_remove=on_clear_last_image,
                         icon_size=16,

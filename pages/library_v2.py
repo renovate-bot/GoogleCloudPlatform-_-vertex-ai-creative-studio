@@ -365,7 +365,9 @@ def on_veo_click(e: me.WebEvent):
     if https_url:
         # Convert the HTTPS URL back to a GCS URI to pass as a query param
         gcs_uri = https_url_to_gcs_uri(https_url)
-        me.navigate(url="/veo", query_params={"image_uri": gcs_uri})
+        # Pass only the path to avoid URL encoding issues with the gs:// prefix
+        gcs_path = gcs_uri.replace("gs://", "")
+        me.navigate(url="/veo", query_params={"image_path": gcs_path})
     yield
 
 
