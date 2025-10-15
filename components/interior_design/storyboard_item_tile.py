@@ -5,7 +5,7 @@ Component for displaying a single item in the storyboard.
 import mesop as me
 from typing import Callable
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 
 
 @me.component
@@ -25,7 +25,7 @@ def storyboard_item_tile(
             width=200,
             height=150,
             border_radius=8,
-            background=f"url({gcs_uri_to_https_url(image_url)}) center / cover",
+            background=f"url({generate_signed_url(image_url)}) center / cover",
             position="relative",
             cursor="pointer",
             border=me.Border.all(me.BorderSide(color=me.theme_var("outline-variant"))),
