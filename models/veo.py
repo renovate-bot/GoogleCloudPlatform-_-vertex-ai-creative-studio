@@ -24,7 +24,6 @@ from google.genai import types
 
 from common.analytics import get_logger
 from common.error_handling import GenerationError
-from common.utils import gcs_uri_to_https_url
 from config.default import Default
 from config.veo_models import get_veo_model_config
 from models.requests import APIReferenceImage, VideoGenerationRequest
@@ -277,8 +276,6 @@ def image_to_video(
     duration_seconds,
     model,
 ):
-    image_gcs_new = gcs_uri_to_https_url(image_gcs)
-
     """Image to video"""
     req = compose_videogen_request(
         prompt,

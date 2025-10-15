@@ -47,13 +47,17 @@ veo_model = VeoModelSetup.init()
 def on_veo_load(e: me.LoadEvent):
     """Handles page load events, including query parameters for deep linking."""
     state = me.state(PageState)
-    image_uri = me.query_params.get("image_uri")
+    image_path = me.query_params.get("image_path") # Changed from image_uri
     veo_model_param = me.query_params.get("veo_model")
 
     if veo_model_param:
         _update_state_for_new_model(veo_model_param)
 
-    if image_uri:
+    if image_path:
+        # When an image is passed, default to the i2v mode and Veo 3.0 Fast model.
+        _update_state_for_new_model("3.0-fast")
+        # Reconstruct the full GCS URI from the path
+        image_uri = f"gs://{image_path}"
         # Set the image from the query parameter
         state.reference_image_gcs = image_uri
         state.reference_image_uri = generate_signed_url(image_uri)
