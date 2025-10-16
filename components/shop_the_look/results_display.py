@@ -77,7 +77,7 @@ def results_display():
                 flex_shrink=0,
             )
         ):
-            if state.before_image_uri:
+            if state.before_image_display_url:
                 me.text(
                     text="Your Model",
                     type="headline-4",
@@ -87,7 +87,7 @@ def results_display():
                     ),
                 )
                 me.image(
-                    src=gcs_uri_to_https_url(state.before_image_uri),
+                    src=state.before_image_display_url,
                     style=me.Style(
                         width="200px",
                         height="200px",
@@ -219,7 +219,7 @@ def results_display():
                                 width="100%",
                             )
                         ):
-                            img = gcs_uri_to_https_url(item.clothing_image)
+                            img = f"/media/{item.clothing_image.replace('gs://', '')}"
                             me.image(
                                 src=img,
                                 style=me.Style(
@@ -330,22 +330,22 @@ def results_display():
                                                     ),
                                                 )
                     me.image(
-                        src=gcs_uri_to_https_url(state.result_image),
+                        src=state.result_image_display_url,
                         style=me.Style(
                             margin=me.Margin(left=10),
                             width=(
-                                "250px" if state.result_video else "500px"
+                                "250px" if state.result_video_display_url else "500px"
                             ),
                             height=(
-                                "250px" if state.result_video else "500px"
+                                "250px" if state.result_video_display_url else "500px"
                             ),
                             object_fit="contain",
                             border_radius="5px",
                             box_shadow="0 2px 4px rgba(0,0,0,0.1)",
                         ),
                     )
-                    if state.result_video:
-                        video_url = gcs_uri_to_https_url(state.result_video)
+                    if state.result_video_display_url:
+                        video_url = state.result_video_display_url
                         print(f"video_url: {video_url}")
 
                         with me.tooltip(message=state.veo_prompt_input):
@@ -375,10 +375,9 @@ def results_display():
                                     align_items="right",
                                 )
                             ):
-                                for img in state.alternate_images:
-                                    image_url = gcs_uri_to_https_url(img)
+                                for img_url in state.alternate_display_urls:
                                     me.image(
-                                        src=image_url,
+                                        src=img_url,
                                         style=me.Style(
                                             margin=me.Margin(left=10),
                                             width="200px",
@@ -390,7 +389,7 @@ def results_display():
                                     )
             else:
                 me.image(
-                    src=gcs_uri_to_https_url(state.before_image_uri),
+                    src=state.before_image_display_url,
                     style=me.Style(
                         margin=me.Margin(left=10),
                         width="500px",
@@ -426,7 +425,7 @@ def results_display():
                         )
                     ):
                         for img in p.progression_images:
-                            image_url = gcs_uri_to_https_url(img.image_path)
+                            image_url = f"/media/{img.image_path.replace('gs://', '')}"
 
                             with me.box(
                                 style=me.Style(
@@ -488,13 +487,12 @@ def results_display():
                                         box_shadow="0 2px 4px rgba(0,0,0,0.1)",
                                     ),
                                 )
-            if state.alternate_progression_images:
+            if state.alternate_progression_display_urls:
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
                     with me.box(style=me.Style(height="100%")):
-                        for img in state.alternate_progression_images:
-                            image_url = gcs_uri_to_https_url(img)
+                        for img_url in state.alternate_progression_display_urls:
                             me.image(
-                                src=image_url,
+                                src=img_url,
                                 style=me.Style(
                                     margin=me.Margin(left=10),
                                     width="200px",
@@ -528,7 +526,7 @@ def results_display():
                         )
                     ):
                         for img in p.progression_images:
-                            image_url = gcs_uri_to_https_url(img.image_path)
+                            image_url = f"/media/{img.image_path.replace('gs://', '')}"
 
                             with me.box(
                                 style=me.Style(
