@@ -120,12 +120,13 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
                     file_name = gcs_uri.split("/")[-1]
                     print("Video generated - use the following to copy locally")
                     print(f"gsutil cp {gcs_uri} {file_name}")
-                    state.result_video = gcs_uri
+                    state.result_video_gcs_uri = gcs_uri
+                    state.result_video_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
                 else:
                     # Success reported, but no video URI found - treat as an error/unexpected state
                     current_error_message = "API reported success but no video URI was found in the response."
                     print(f"Error: {current_error_message}")
-                    state.result_video = ""  # Ensure no video is shown
+                    state.result_video_gcs_uri = ""  # Ensure no video is shown
         else:
             # Handle cases where 'done' is false or response structure is unexpected
             current_error_message = "Unexpected API response structure or operation not done."
@@ -357,9 +358,11 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                     state.alternate_progression_images.append(progressions)
 
                 if r.primary_view and (i + 1) == len(articles_for_vto):
-                    state.result_image = last_best_image
+                    state.result_image_gcs_uri = last_best_image
+                    state.result_image_display_url = f"/media/{last_best_image.replace('gs://', '')}"
                 elif i == len(look_articles):
-                    state.alternate_images.append(last_best_image)
+                    state.alternate_gcs_uris.append(last_best_image)
+                    state.alternate_display_urls.append(f"/media/{last_best_image.replace('gs://', '')}")
 
                 state.reference_image_gcs_model = last_best_image
                 yield
