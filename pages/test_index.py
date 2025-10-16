@@ -60,6 +60,11 @@ def page():
             "title": "Media Chooser Test",
             "description": "A test page for the generic, high-performance media chooser component.",
             "route": "/test_media_chooser",
+        },
+        {
+            "title": "Proxy Caching Test",
+            "description": "A page to compare the performance of signed URLs vs. a caching proxy endpoint.",
+            "route": "/test_proxy_caching",
         }
     ]
 

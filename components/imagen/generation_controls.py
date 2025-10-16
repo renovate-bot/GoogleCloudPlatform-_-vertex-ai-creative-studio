@@ -176,9 +176,11 @@ def on_click_generate_images(e: me.ClickEvent):
             aspect_ratio=state.image_aspect_ratio,
         )
 
-        # Create a list of temporary, signed URLs for the UI to render.
-        signed_urls = [generate_signed_url(uri) for uri in new_image_uris]
-        state.image_output = signed_urls
+        # Save both the permanent GCS URIs and the cacheable proxy URLs to the state.
+        state.image_gcs_uris = new_image_uris
+        state.image_output = [
+            f"/media/{uri.replace('gs://', '')}" for uri in new_image_uris
+        ]
         state.is_loading = False
 
         if state.image_output:
@@ -290,6 +292,7 @@ def on_click_clear_images(e: me.ClickEvent):
     state.image_prompt_input = ""
     state.image_prompt_placeholder = ""  # Clear placeholder as well
     state.image_output = []  # Use assignment for list reset
+    state.image_gcs_uris = []
     state.image_commentary = ""
     state.image_negative_prompt_input = ""
     state.image_textarea_key += 1

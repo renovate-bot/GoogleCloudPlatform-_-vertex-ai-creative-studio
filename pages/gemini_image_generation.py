@@ -274,7 +274,7 @@ def gemini_image_gen_page_content():
                                 on_click=on_continue_click,
                                 type="stroked",
                             )
-                            veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
+                            veo_button(gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}")
 
 
                 # Image presets
@@ -500,7 +500,7 @@ def on_upload(e: me.UploadEvent):
             file.getvalue(),
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
-        state.uploaded_image_display_urls.append(generate_signed_url(gcs_url))
+        state.uploaded_image_display_urls.append(f"/media/{gcs_url.replace('gs://', '')}")
     yield
 
 
@@ -508,7 +508,7 @@ def on_library_select(e: LibrarySelectionChangeEvent):
     """Appends a selected library image's GCS URI to the list of uploaded images."""
     state = me.state(PageState)
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
-    state.uploaded_image_display_urls.append(generate_signed_url(e.gcs_uri))
+    state.uploaded_image_display_urls.append(f"/media/{e.gcs_uri.replace('gs://', '')}")
     yield
 
 
@@ -583,7 +583,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
+    input_gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
@@ -606,7 +606,7 @@ def on_suggest_transformations_click(e: me.ClickEvent):
 
     try:
         # Use the first generated image to get suggestions
-        gcs_uri = https_url_to_gcs_uri(state.generated_image_urls[0])
+        gcs_uri = f"gs://{state.generated_image_urls[0].replace('/media/', '')}"
         raw_transformations = generate_transformation_prompts(image_uris=[gcs_uri])
         # Convert Pydantic objects to dicts for state
         state.suggested_transformations = [t.model_dump() for t in raw_transformations]
@@ -680,7 +680,7 @@ def on_continue_click(e: me.ClickEvent):
         yield from show_snackbar(state, "Please select an image to continue with.")
         return
 
-    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
+    gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
     state.uploaded_image_gcs_uris = [gcs_uri]
     state.generated_image_urls = []
     state.selected_image_url = ""
@@ -770,7 +770,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             )
         else:
             state.generated_image_urls = [
-                generate_signed_url(uri) for uri in gcs_uris
+                f"/media/{uri.replace('gs://', '')}" for uri in gcs_uris
             ]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
@@ -842,7 +842,7 @@ def on_load(e: me.LoadEvent):
 
             if final_gcs_uri and final_gcs_uri not in state.uploaded_image_gcs_uris:
                 state.uploaded_image_gcs_uris.append(final_gcs_uri)
-                state.uploaded_image_display_urls.append(generate_signed_url(final_gcs_uri))
+                state.uploaded_image_display_urls.append(f"/media/{final_gcs_uri.replace('gs://', '')}")
         state.initial_load_complete = True
     yield
 

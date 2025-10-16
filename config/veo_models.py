@@ -112,6 +112,41 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
     ),
+    VeoModelConfig(
+        version_id="3.1",
+        model_name="veo-3.1-generate-preview",
+        display_name="Veo 3.1",
+        supported_modes=["t2v", "i2v", "interpolation", "r2v"],
+        supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["720p", "1080p"],
+        min_duration=4,
+        max_duration=8,
+        default_duration=8,
+        max_samples=4,
+        default_samples=1,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
+        supported_durations=[4, 6, 8],
+        mode_overrides={
+            "r2v": ModeOverride(supported_durations=[8], default_duration=8)
+        },
+    ),
+    VeoModelConfig(
+        version_id="3.1-fast",
+        model_name="veo-3.1-fast-generate-preview",
+        display_name="Veo 3.1 Fast",
+        supported_modes=["t2v", "i2v", "interpolation"],
+        supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["720p", "1080p"],
+        min_duration=4,
+        max_duration=8,
+        default_duration=8,
+        max_samples=4,
+        default_samples=1,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
+        supported_durations=[4, 6, 8],
+    ),
 ]
 
 # Helper function to easily find a model's config by its version_id.

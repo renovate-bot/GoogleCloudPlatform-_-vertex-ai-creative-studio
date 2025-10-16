@@ -23,7 +23,6 @@ import mesop as me
 import common.storage as storage
 from common.analytics import log_ui_click, track_click
 from common.metadata import MediaItem, add_media_item_to_firestore
-from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
@@ -56,7 +55,8 @@ class GeminiTtsState:
     selected_voice: str = "Callirrhoe"
     selected_language: str = "en-US"
     is_generating: bool = False
-    audio_url: str = ""
+    audio_gcs_uri: str = ""
+    audio_display_url: str = ""
     error: str = ""
     info_dialog_open: bool = False
 
@@ -205,8 +205,8 @@ def page():
                     if state.is_generating:
                         me.progress_spinner()
                         me.text("Generating audio...")
-                    elif state.audio_url:
-                        me.audio(src=state.audio_url)
+                    elif state.audio_display_url:
+                        me.audio(src=state.audio_display_url)
                     else:
                         me.text("Generated audio will appear here.")
 
@@ -296,7 +296,8 @@ def on_click_clear(e: me.ClickEvent):
     state.selected_model = GEMINI_TTS_MODEL_NAMES[0]
     state.selected_voice = "Callirrhoe"
     state.selected_language = "en-US"
-    state.audio_url = ""
+    state.audio_gcs_uri = ""
+    state.audio_display_url = ""
     state.error = ""
     state.is_generating = False
     yield
@@ -331,7 +332,8 @@ def on_click_generate(e: me.ClickEvent):
             contents=audio_bytes,
         )
 
-        state.audio_url = gcs_uri_to_https_url(gcs_url)
+        state.audio_gcs_uri = gcs_url
+        state.audio_display_url = f"/media/{gcs_url.replace('gs://', '')}"
 
     except Exception as ex:
         print(f"ERROR: Failed to generate audio. Details: {ex}")

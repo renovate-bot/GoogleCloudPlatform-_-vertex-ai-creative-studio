@@ -105,23 +105,24 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
     if not new_items:
         pagestate.all_items_loaded = True
     else:
-        # Use a ThreadPoolExecutor to generate signed URLs in parallel for performance.
-        def sign_item(item):
+        # Convert GCS URIs to cacheable proxy URLs.
+        # This is a fast, synchronous operation.
+        for item in new_items:
             gcs_uri = (
                 item.gcsuri
                 if item.gcsuri
                 else (item.gcs_uris[0] if item.gcs_uris else None)
             )
-            item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
-            return item
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            processed_items = list(executor.map(sign_item, new_items))
+            if gcs_uri:
+                proxy_path = gcs_uri.replace("gs://", "")
+                item.signed_url = f"/media/{proxy_path}"
+            else:
+                item.signed_url = ""
 
         if is_filter_change:
-            pagestate.media_items = processed_items
+            pagestate.media_items = new_items
         else:
-            pagestate.media_items.extend(processed_items)
+            pagestate.media_items.extend(new_items)
 
     pagestate.is_loading = False
     yield
@@ -329,22 +330,6 @@ def on_close_details_dialog(e: me.ClickEvent):
     pagestate.show_details_dialog = False
     pagestate.selected_media_item_id = None
     carousel_state.current_index = 0
-
-    # Helper function for parallel execution
-    def sign_item(item):
-        gcs_uri = (
-            item.gcsuri
-            if item.gcsuri
-            else (item.gcs_uris[0] if item.gcs_uris else None)
-        )
-        item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
-        return item
-
-    # Re-sign all currently loaded items to ensure URLs are not expired.
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # This will update the .signed_url attribute on the items in place.
-        list(executor.map(sign_item, pagestate.media_items))
-
     yield
 
 
@@ -361,13 +346,10 @@ def handle_edit_click(e: me.WebEvent):
 
 def on_veo_click(e: me.WebEvent):
     """Event handler for when the VEO button is clicked in the detail viewer."""
-    # The event value contains the https URL of the currently displayed image
-    https_url = e.value["url"]
-    if https_url:
-        # Convert the HTTPS URL back to a GCS URI to pass as a query param
-        gcs_uri = https_url_to_gcs_uri(https_url)
-        # Pass only the path to avoid URL encoding issues with the gs:// prefix
-        gcs_path = gcs_uri.replace("gs://", "")
+    proxy_url = e.value["url"] # This is now the proxy URL, e.g., /media/bucket/object.png
+    if proxy_url:
+        # Convert the proxy URL back to just the GCS path (bucket/object.png)
+        gcs_path = proxy_url.replace("/media/", "", 1)
         me.navigate(url="/veo", query_params={"image_path": gcs_path})
     yield
 
@@ -448,11 +430,19 @@ def render_tour_detail_dialog(storyboard: dict):
 
 
 @me.component
+@me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
-    # Generate a fresh signed URL for the primary asset just-in-time.
-    primary_gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
-    primary_urls = [generate_signed_url(primary_gcs_uri)] if primary_gcs_uri else []
+    # Hydrate the signed_url field at runtime if it's missing.
+    if not hasattr(item, "signed_url") or not item.signed_url:
+        primary_gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+        if primary_gcs_uri:
+            proxy_path = primary_gcs_uri.replace("gs://", "")
+            item.signed_url = f"/media/{proxy_path}"
+        else:
+            item.signed_url = ""
+
+    primary_urls = [item.signed_url] if item.signed_url else []
 
     # Consolidate all potential source assets into a single list for backward compatibility
     all_source_uris = []
@@ -523,7 +513,10 @@ def render_default_detail_dialog(item: MediaItem):
                 )
             ):
                 for source_uri in all_source_uris:
-                    https_url = generate_signed_url(source_uri)
+                    # Construct the proxy URL
+                    proxy_path = source_uri.replace("gs://", "")
+                    https_url = f"/media/{proxy_path}"
+
                     # Determine media type from URL extension
                     render_type = "image"  # Default
                     if ".mp4" in https_url or ".webm" in https_url:

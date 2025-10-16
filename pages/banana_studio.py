@@ -241,6 +241,16 @@ def open_library_dialog(e: me.ClickEvent):
 
     # Fetch fresh data every time the dialog is opened
     items, _ = get_media_for_page_optimized(20, ["images"])
+
+    # Hydrate the items with the cacheable proxy URL
+    for item in items:
+        gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+        if gcs_uri:
+            proxy_path = gcs_uri.replace("gs://", "")
+            item.signed_url = f"/media/{proxy_path}"
+        else:
+            item.signed_url = ""
+
     state.library_media_items = items
     state.is_library_loading = False
     yield
@@ -272,7 +282,7 @@ def on_select_from_library_dialog(e: LibrarySelectionChangeEvent):
 
     # Add image and placeholder
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
-    state.uploaded_image_display_urls.append(generate_signed_url(e.gcs_uri))
+    state.uploaded_image_display_urls.append(f"/media/{e.gcs_uri.replace('gs://', '')}")
     state.image_descriptions.append("Generating description...")
     new_image_index = len(state.image_descriptions) - 1
 
@@ -487,7 +497,7 @@ def gemini_image_gen_page_content():
                                 type="stroked",
                             )
                             veo_button(
-                                gcs_uri=https_url_to_gcs_uri(state.selected_image_url)
+                                gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}"
                             )
 
                 # Image presets
@@ -861,7 +871,7 @@ def on_upload(e: me.UploadEvent):
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
         state.image_descriptions.append("Generating description...")
-        state.uploaded_image_display_urls.append(generate_signed_url(gcs_url))
+        state.uploaded_image_display_urls.append(f"/media/{gcs_url.replace('gs://', '')}")
         new_upload_indices.append(len(state.uploaded_image_gcs_uris) - 1)
 
     # --- Step 2: Yield immediately to update UI with placeholders ---
@@ -1026,7 +1036,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
+    input_gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
@@ -1213,7 +1223,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             )
         else:
             state.generated_image_urls = [
-                generate_signed_url(uri) for uri in gcs_uris
+                f"/media/{uri.replace('gs://', '')}" for uri in gcs_uris
             ]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
@@ -1260,7 +1270,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                             https_url = state.generated_image_urls[uri_index]
                         except ValueError:
                             # Fallback in case the URI isn't found, though it should be.
-                            https_url = generate_signed_url(uri)
+                            https_url = f"/media/{uri.replace('gs://', '')}"
 
                         state.evaluations[https_url] = Evaluation(
                             score=score_str,

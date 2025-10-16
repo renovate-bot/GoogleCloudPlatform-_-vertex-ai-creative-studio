@@ -31,7 +31,6 @@ from tenacity import (
 
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -70,7 +69,8 @@ class PageState:
     is_loading: bool = False
     show_error_dialog: bool = False
     error_message: str = ""
-    result_video: str = ""
+    result_video_gcs_uri: str = ""
+    result_video_display_url: str = ""
     timing: str = ""
 
     aspect_ratio: str = "16:9"
@@ -79,7 +79,8 @@ class PageState:
 
     generated_scene_direction: str = ""
     
-    gif_url: str = ""
+    gif_gcs_uri: str = ""
+    gif_display_url: str = ""
     is_converting_gif: bool = False
 
     veo_model: str = "2.0"
@@ -89,7 +90,7 @@ class PageState:
     reference_image_file: me.UploadedFile = None
     reference_image_file_key: int = 0
     reference_image_gcs: str = ""
-    reference_image_uri: str = ""
+    reference_image_display_url: str = ""
     reference_image_mime_type: str = ""
 
     # Style modifiers
@@ -159,8 +160,8 @@ def motion_portraits_content(app_state: me.state):
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
                     me.text("Portrait")
 
-                    if state.reference_image_uri:
-                        output_url = state.reference_image_uri
+                    if state.reference_image_display_url:
+                        output_url = state.reference_image_display_url
                         print(f"Displaying reference image: {output_url}")
                         me.image(
                             src=output_url,
@@ -372,7 +373,7 @@ def motion_portraits_content(app_state: me.state):
                     on_click=on_click_motion_portraits,
                     type="flat",
                     key="generate_motion_portrait_button",
-                    disabled=state.is_loading or not state.reference_image_uri,
+                    disabled=state.is_loading or not state.reference_image_display_url,
                 ):
                     with me.box(
                         style=me.Style(
@@ -393,13 +394,13 @@ def motion_portraits_content(app_state: me.state):
 
             if (
                 state.is_loading
-                or state.result_video
+                or state.result_video_display_url
                 or state.error_message
                 or state.generated_scene_direction
             ):
                 with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED_MARGIN):
                     if state.is_loading:
-                        state.gif_url = ""
+                        state.gif_display_url = ""
                         with me.box(
                             style=me.Style(
                                 display="flex",
@@ -418,7 +419,7 @@ def motion_portraits_content(app_state: me.state):
                                 ),
                             )
                             me.progress_spinner(diameter=40)
-                    elif state.result_video:
+                    elif state.result_video_display_url:
                         me.text(
                             "Motion Portrait",
                             style=me.Style(
@@ -427,7 +428,7 @@ def motion_portraits_content(app_state: me.state):
                                 margin=me.Margin(bottom=10),
                             ),
                         )
-                        video_url = gcs_uri_to_https_url(state.result_video)
+                        video_url = state.result_video_display_url
                         print(f"Displaying result video: {video_url}")
                         me.video(
                             src=video_url,
@@ -448,14 +449,14 @@ def motion_portraits_content(app_state: me.state):
                                 ),
                             )
                             
-                        me.button("Convert to GIF", key=state.result_video, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
+                        me.button("Convert to GIF", key=state.result_video_gcs_uri, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
                         
                         if state.is_converting_gif:
                             with me.box(style=me.Style(display="flex", justify_content="center")):
                                 me.progress_spinner()
                                 
                         
-                    if state.gif_url:
+                    if state.gif_display_url:
                         with me.box(
                             style=me.Style(
                                 display="flex",
@@ -466,7 +467,7 @@ def motion_portraits_content(app_state: me.state):
                         ):
                             me.text("Video as GIF:", type="headline-5")
                             me.image(
-                                src=state.gif_url,
+                                src=state.gif_display_url,
                                 style=me.Style(width="100%", max_width="480px", border_radius=8),
                             )
 
@@ -520,7 +521,10 @@ def on_convert_to_gif_click(e: me.ClickEvent):
 
     try:
         print(f"Converting {e.key} to GIF ...")
-        state.gif_url = gcs_uri_to_https_url(convert_mp4_to_gif(e.key, user_email=app_state.user_email))
+        # e.key is the GCS URI, convert it to a proxy URL for display
+        gif_gcs_uri = convert_mp4_to_gif(e.key, user_email=app_state.user_email)
+        state.gif_gcs_uri = gif_gcs_uri
+        state.gif_display_url = f"/media/{gif_gcs_uri.replace('gs://', '')}"
     finally:
         state.is_converting_gif = False
         yield
@@ -532,10 +536,11 @@ def on_click_clear_reference_image(e: me.ClickEvent):
     state = me.state(PageState)
     state.reference_image_file = None
     state.reference_image_file_key += 1
-    state.reference_image_uri = ""
+    state.reference_image_display_url = ""
     state.reference_image_gcs = ""
     state.reference_image_mime_type = ""
-    state.result_video = ""
+    state.result_video_gcs_uri = ""
+    state.result_video_display_url = ""
     state.timing = ""
     state.generated_scene_direction = ""
     state.video_length = 5
@@ -546,6 +551,8 @@ def on_click_clear_reference_image(e: me.ClickEvent):
     state.is_loading = False
     state.show_error_dialog = False
     state.error_message = ""
+    state.gif_gcs_uri = ""
+    state.gif_display_url = ""
     yield
 
 
@@ -667,7 +674,7 @@ def on_click_upload(e: me.UploadEvent):
     )
     state.reference_image_gcs = destination_blob_name
     # url
-    state.reference_image_uri = gcs_uri_to_https_url(destination_blob_name)
+    state.reference_image_display_url = f"/media/{destination_blob_name.replace('gs://', '')}"
     # log
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
@@ -684,7 +691,7 @@ def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
     )
     state = me.state(PageState)
     state.reference_image_gcs = e.gcs_uri
-    state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
+    state.reference_image_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
     yield
 
 
@@ -777,7 +784,8 @@ Do not describe the frame. There should be no lip movement like speaking, but th
 
         if gcs_uri:
             gcs_uri = gcs_uri[0]
-            state.result_video = gcs_uri
+            state.result_video_gcs_uri = gcs_uri
+            state.result_video_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
             print(f"Video generated: {gcs_uri}.")
         else:
             current_error_message = "Video generation failed to return a GCS URI."
