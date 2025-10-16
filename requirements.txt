@@ -17,7 +17,7 @@ blinker==1.9.0
     # via flask
 cachecontrol==0.14.3
     # via firebase-admin
-cachetools==6.2.0
+cachetools==6.2.1
     # via google-auth
 certifi==2025.10.5
     # via
@@ -26,7 +26,7 @@ certifi==2025.10.5
     #   requests
 cffi==2.0.0
     # via cryptography
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
 click==8.3.0
     # via
@@ -49,7 +49,7 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.118.3
+fastapi==0.119.0
     # via veo-app (pyproject.toml)
 firebase-admin==6.9.0
     # via veo-app (pyproject.toml)
@@ -119,7 +119,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.43.0
+google-genai==1.44.0
     # via
     #   veo-app (pyproject.toml)
     #   google-cloud-aiplatform
@@ -167,7 +167,7 @@ httpx==0.28.1
     #   google-genai
 hyperframe==6.1.0
     # via h2
-idna==3.10
+idna==3.11
     # via
     #   anyio
     #   httpx
@@ -219,7 +219,7 @@ mypy-extensions==1.1.0
     # via black
 networkx==3.5
     # via scikit-image
-numpy==2.3.3
+numpy==2.3.4
     # via
     #   veo-app (pyproject.toml)
     #   contourpy
@@ -308,13 +308,13 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==2.23
     # via cffi
-pydantic==2.12.0
+pydantic==2.12.2
     # via
     #   fastapi
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.41.1
+pydantic-core==2.41.4
     # via pydantic
 pygments==2.19.2
     # via
@@ -338,7 +338,7 @@ python-dotenv==1.1.1
     # via
     #   mesop
     #   moviepy
-pytokens==0.1.10
+pytokens==0.2.0
     # via black
 pytz==2025.2
     # via pandas

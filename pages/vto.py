@@ -25,7 +25,7 @@ from common.analytics import log_ui_click, track_click
 
 from common.metadata import add_media_item
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import generate_signed_url
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
@@ -70,9 +70,12 @@ class PageState:
 
     person_image_file: me.UploadedFile = None
     person_image_gcs: str = ""
+    person_image_display_url: str = ""
     product_image_file: me.UploadedFile = None
     product_image_gcs: str = ""
+    product_image_display_url: str = ""
     result_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    result_display_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     vto_sample_count: int = 4
     vto_base_steps: int = 32
     is_loading: bool = False
@@ -98,7 +101,8 @@ def on_upload_person(e: me.UploadEvent):
     gcs_url = store_to_gcs(
         "vto_person_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
-    state.person_image_gcs = gcs_uri_to_https_url(gcs_url)
+    state.person_image_gcs = gcs_url
+    state.person_image_display_url = generate_signed_url(gcs_url)
     yield
 
 
@@ -109,10 +113,12 @@ def on_library_chooser(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     if e.chooser_id == "person_library_chooser":
         print("STATE: person image")
-        state.person_image_gcs = gcs_uri_to_https_url(e.gcs_uri)
+        state.person_image_gcs = e.gcs_uri
+        state.person_image_display_url = generate_signed_url(e.gcs_uri)
     elif e.chooser_id == "product_library_chooser":
         print("STATE: prod image")
-        state.product_image_gcs = gcs_uri_to_https_url(e.gcs_uri)
+        state.product_image_gcs = e.gcs_uri
+        state.product_image_display_url = generate_signed_url(e.gcs_uri)
     yield
 
 
@@ -123,7 +129,8 @@ def on_upload_product(e: me.UploadEvent):
     gcs_url = store_to_gcs(
         "vto_product_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
-    state.product_image_gcs = gcs_uri_to_https_url(gcs_url)
+    state.product_image_gcs = gcs_url
+    state.product_image_display_url = generate_signed_url(gcs_url)
     yield
 
 
@@ -160,7 +167,8 @@ def on_click_generate_person(e: me.ClickEvent):
         # The result from generate_virtual_models is a GCS URI, so we can use it directly
         gcs_url = image_urls[0]
 
-        state.person_image_gcs = gcs_uri_to_https_url(gcs_url)
+        state.person_image_gcs = gcs_url
+        state.person_image_display_url = generate_signed_url(gcs_url)
 
     except Exception as e:
         state.error_message = str(e)
@@ -180,13 +188,14 @@ def on_generate(e: me.ClickEvent):
 
     try:
         result_gcs_uris = generate_vto_image(
-            state.person_image_gcs,
-            state.product_image_gcs,
+            state.person_image_gcs, # Pass the correct gs:// URI
+            state.product_image_gcs, # Pass the correct gs:// URI
             state.vto_sample_count,
             state.vto_base_steps,
         )
         print(f"Result GCS URIs: {result_gcs_uris}")
         state.result_gcs_uris = result_gcs_uris
+        state.result_display_urls = [generate_signed_url(uri) for uri in result_gcs_uris]
         add_media_item(
             user_email=app_state.user_email,
             model=config.VTO_MODEL_ID,
@@ -301,16 +310,12 @@ def page():
                             on_library_select=on_library_chooser,
                             button_label="Add from Library",
                         )
-                        me.button(
-                            "Create Virtual Model",
-                            on_click=on_click_generate_person,
-                        )
                     with me.box(style=IMAGE_BOX_STYLE):
                         if state.is_generating_person_image:
                             me.progress_spinner()
-                        elif state.person_image_gcs:
+                        elif state.person_image_display_url:
                             me.image(
-                                src=state.person_image_gcs,
+                                src=state.person_image_display_url,
                                 key="person_image",
                                 style=me.Style(
                                     width=400,
@@ -352,9 +357,9 @@ def page():
                             button_label="Add from Library",
                         )
                     with me.box(style=IMAGE_BOX_STYLE):
-                        if state.product_image_gcs:
+                        if state.product_image_display_url:
                             me.image(
-                                src=state.product_image_gcs,
+                                src=state.product_image_display_url,
                                 key="product_image",
                                 style=me.Style(
                                     width=400,
@@ -406,8 +411,8 @@ def page():
                 ):
                     me.progress_spinner()
 
-            if state.result_gcs_uris:
-                print(f"Images: {state.result_gcs_uris}")
+            if state.result_display_urls:
+                print(f"Images: {state.result_display_urls}")
                 with me.box(
                     style=me.Style(
                         display="flex",
@@ -417,10 +422,11 @@ def page():
                         justify_content="center",
                     )
                 ):
-                    for gcs_uri in state.result_gcs_uris:
+                    for i, display_url in enumerate(state.result_display_urls):
+                        gcs_uri = state.result_gcs_uris[i]
                         with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
                             me.image(
-                                src=gcs_uri_to_https_url(gcs_uri), style=me.Style(width="400px", border_radius=12)
+                                src=display_url, style=me.Style(width="400px", border_radius=12)
                             )
                             with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
                                 edit_button(gcs_uri=gcs_uri)

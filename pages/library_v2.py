@@ -35,6 +35,7 @@ from components.dialog import dialog
 from components.interior_design.storyboard_video_tile import storyboard_video_tile
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from state.state import AppState
+from config.default import Default as cfg
 
 
 @me.stateclass
@@ -94,7 +95,7 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     new_items = get_media_for_page(
         page=pagestate.current_page,
-        media_per_page=20,
+        media_per_page=cfg().LIBRARY_MEDIA_PER_PAGE,
         sort_by_timestamp=True,
         type_filters=pagestate.type_filters,
         filter_by_user_email=user_email_to_filter,
