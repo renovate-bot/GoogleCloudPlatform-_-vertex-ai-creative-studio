@@ -21,7 +21,6 @@ import mesop as me
 import datetime # Required for timestamp
 
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
-from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import (
@@ -59,7 +58,8 @@ class PageState:
     music_prompt_placeholder: str = ""
     original_user_prompt: str = ""
     music_prompt_textarea_key: int = 0
-    music_upload_uri: str = ""
+    music_gcs_uri: str = ""
+    music_display_url: str = ""
 
     timing: str = ""
 
@@ -150,7 +150,7 @@ def lyria_content(app_state: me.state):
 
             # Audio Player - Show if URI exists AND primary loading is done
             if (
-                pagestate.music_upload_uri
+                pagestate.music_display_url
                 and not pagestate.is_loading  # Check generic loading
                 and not pagestate.show_error_dialog
             ):
@@ -162,7 +162,7 @@ def lyria_content(app_state: me.state):
                         margin=me.Margin(bottom=16),
                     )
                 ):
-                    me.audio(src=pagestate.music_upload_uri)
+                    me.audio(src=pagestate.music_display_url)
 
             # Gemini Analysis Loading Indicator - Show if analyzing AND primary loading is done
             if pagestate.is_analyzing and not pagestate.is_loading:
@@ -436,9 +436,10 @@ def on_click_lyria(e: me.ClickEvent):
     try:
         destination_blob_path = generate_music_with_lyria(prompt_for_api)
         gcs_uri_for_analysis_and_metadata = destination_blob_path
-        state.music_upload_uri = gcs_uri_to_https_url(destination_blob_path)
+        state.music_gcs_uri = destination_blob_path
+        state.music_display_url = f"/media/{destination_blob_path.replace('gs://', '')}"
 
-        print(f"Music generated: {state.music_upload_uri}")
+        print(f"Music generated: {state.music_display_url}")
         generated_successfully = True
     except Exception as err:
         print(f"Error during music generation: {err}")
@@ -522,7 +523,8 @@ def clear_music(e: me.ClickEvent):
     state.music_prompt_placeholder = ""
     state.original_user_prompt = ""
     state.music_prompt_textarea_key += 1
-    state.music_upload_uri = ""
+    state.music_gcs_uri = ""
+    state.music_display_url = ""
     state.is_loading = False
     state.is_analyzing = False
     state.show_error_dialog = False

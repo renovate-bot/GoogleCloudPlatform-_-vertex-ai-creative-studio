@@ -30,7 +30,6 @@ from common.metadata import (
     config,
 )
 from common.storage import store_to_gcs
-from common.utils import generate_signed_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -234,14 +233,14 @@ def open_audio_chooser(e: me.ClickEvent):
 
 
 def sign_items_in_parallel(items: list[MediaItem]):
-    """Helper function to add a signed_url attribute to media items in parallel."""
-    def sign_item(item):
+    """Helper function to add a cacheable proxy URL attribute to media items."""
+    for item in items:
         gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
-        item.signed_url = generate_signed_url(gcs_uri) if gcs_uri else ""
-        return item
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        list(executor.map(sign_item, items))
+        if gcs_uri:
+            proxy_path = gcs_uri.replace("gs://", "")
+            item.signed_url = f"/media/{proxy_path}"
+        else:
+            item.signed_url = ""
 
 
 def render_video_video_tab():
@@ -536,10 +535,10 @@ def render_chooser_dialog():
         # Based on which button opened the dialog, update the correct state variable.
         if state.chooser_dialog_key == "video_1":
             state.selected_videos["video_1"] = gcs_uri
-            state.selected_videos_display_urls["video_1"] = generate_signed_url(gcs_uri)
+            state.selected_videos_display_urls["video_1"] = f"/media/{gcs_uri.replace('gs://', '')}"
         elif state.chooser_dialog_key == "video_2":
             state.selected_videos["video_2"] = gcs_uri
-            state.selected_videos_display_urls["video_2"] = generate_signed_url(gcs_uri)
+            state.selected_videos_display_urls["video_2"] = f"/media/{gcs_uri.replace('gs://', '')}"
         elif state.chooser_dialog_key == "video_for_audio":
             state.selected_video_for_audio = gcs_uri
         elif state.chooser_dialog_key == "audio_1":
@@ -663,14 +662,14 @@ def on_upload_video_for_audio(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_video_for_audio = gcs_url
-    state.selected_video_for_audio_display_url = generate_signed_url(gcs_url)
+    state.selected_video_for_audio_display_url = f"/media/{gcs_url.replace('gs://', '')}"
     yield
 
 
 def on_video_select_for_audio(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     state.selected_video_for_audio = e.gcs_uri
-    state.selected_video_for_audio_display_url = generate_signed_url(e.gcs_uri)
+    state.selected_video_for_audio_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
     yield
 
 
@@ -681,14 +680,14 @@ def on_upload_audio(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_audio = gcs_url
-    state.selected_audio_display_url = generate_signed_url(gcs_url)
+    state.selected_audio_display_url = f"/media/{gcs_url.replace('gs://', '')}"
     yield
 
 
 def on_audio_select_from_library(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     state.selected_audio = e.gcs_uri
-    state.selected_audio_display_url = generate_signed_url(e.gcs_uri)
+    state.selected_audio_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
     yield
 
 
@@ -706,7 +705,7 @@ def on_layer_audio_click(e: me.ClickEvent):
             state.selected_video_for_audio, state.selected_audio
         )
         state.concatenated_video_url = processed_uri
-        state.concatenated_video_display_url = generate_signed_url(processed_uri)
+        state.concatenated_video_display_url = f"/media/{processed_uri.replace('gs://', '')}"
 
         # Log to Firestore
         add_media_item_to_firestore(
@@ -748,7 +747,7 @@ def on_upload_video_1(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_videos["video_1"] = gcs_url
-    state.selected_videos_display_urls["video_1"] = generate_signed_url(gcs_url)
+    state.selected_videos_display_urls["video_1"] = f"/media/{gcs_url.replace('gs://', '')}"
     yield
 
 
@@ -759,7 +758,7 @@ def on_upload_video_2(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_videos["video_2"] = gcs_url
-    state.selected_videos_display_urls["video_2"] = generate_signed_url(gcs_url)
+    state.selected_videos_display_urls["video_2"] = f"/media/{gcs_url.replace('gs://', '')}"
     yield
 
 
@@ -795,7 +794,7 @@ def on_process_click(e: me.ClickEvent):
             video_uris_to_process, state.selected_transition
         )
         state.concatenated_video_url = processed_uri
-        state.concatenated_video_display_url = generate_signed_url(processed_uri)
+        state.concatenated_video_display_url = f"/media/{processed_uri.replace('gs://', '')}"
 
         # Log to Firestore
         add_media_item_to_firestore(
@@ -835,7 +834,7 @@ def on_convert_to_gif_click(e: me.ClickEvent):
     try:
         gif_gcs_uri = convert_mp4_to_gif(state.concatenated_video_url, user_email=app_state.user_email)
         state.gif_url = gif_gcs_uri
-        state.gif_display_url = generate_signed_url(gif_gcs_uri)
+        state.gif_display_url = f"/media/{gif_gcs_uri.replace('gs://', '')}"
     except Exception as ex:
         state.error_message = f"An error occurred during GIF conversion: {ex}"
     finally:

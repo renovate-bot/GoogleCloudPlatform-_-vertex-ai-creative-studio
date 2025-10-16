@@ -79,7 +79,8 @@ class PageState:
 
     show_error_dialog: bool = False
     error_message: str = ""
-    result_videos: list[str] = field(default_factory=list)
+    result_gcs_uris: list[str] = field(default_factory=list)
+    result_display_urls: list[str] = field(default_factory=list)
     selected_video_url: str = ""
     timing: str
     

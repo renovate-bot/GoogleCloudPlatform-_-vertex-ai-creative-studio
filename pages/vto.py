@@ -25,7 +25,6 @@ from common.analytics import log_ui_click, track_click
 
 from common.metadata import add_media_item
 from common.storage import store_to_gcs
-from common.utils import generate_signed_url
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
@@ -86,7 +85,7 @@ class PageState:
     info_dialog_open: bool = False
 
     # Load options once
-    _options: dict = field(default_factory=dict, init=False)
+    _options: dict = field(default_factory=dict, init=False) # pylint: disable=E3701:invalid-field-call
 
     def __post_init__(self):
         config_path = Path(__file__).parent.parent / "config/virtual_model_options.json"
@@ -102,7 +101,7 @@ def on_upload_person(e: me.UploadEvent):
         "vto_person_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.person_image_gcs = gcs_url
-    state.person_image_display_url = generate_signed_url(gcs_url)
+    state.person_image_display_url = f"/media/{gcs_url.replace('gs://', '')}"
     yield
 
 
@@ -114,11 +113,11 @@ def on_library_chooser(e: LibrarySelectionChangeEvent):
     if e.chooser_id == "person_library_chooser":
         print("STATE: person image")
         state.person_image_gcs = e.gcs_uri
-        state.person_image_display_url = generate_signed_url(e.gcs_uri)
+        state.person_image_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
     elif e.chooser_id == "product_library_chooser":
         print("STATE: prod image")
         state.product_image_gcs = e.gcs_uri
-        state.product_image_display_url = generate_signed_url(e.gcs_uri)
+        state.product_image_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
     yield
 
 
@@ -130,7 +129,7 @@ def on_upload_product(e: me.UploadEvent):
         "vto_product_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.product_image_gcs = gcs_url
-    state.product_image_display_url = generate_signed_url(gcs_url)
+    state.product_image_display_url = f"/media/{gcs_url.replace('gs://', '')}"
     yield
 
 
@@ -168,7 +167,7 @@ def on_click_generate_person(e: me.ClickEvent):
         gcs_url = image_urls[0]
 
         state.person_image_gcs = gcs_url
-        state.person_image_display_url = generate_signed_url(gcs_url)
+        state.person_image_display_url = f"/media/{gcs_url.replace('gs://', '')}"
 
     except Exception as e:
         state.error_message = str(e)
@@ -195,7 +194,7 @@ def on_generate(e: me.ClickEvent):
         )
         print(f"Result GCS URIs: {result_gcs_uris}")
         state.result_gcs_uris = result_gcs_uris
-        state.result_display_urls = [generate_signed_url(uri) for uri in result_gcs_uris]
+        state.result_display_urls = [f"/media/{uri.replace('gs://', '')}" for uri in result_gcs_uris]
         add_media_item(
             user_email=app_state.user_email,
             model=config.VTO_MODEL_ID,
@@ -231,8 +230,11 @@ def on_sample_count_change(e: me.SliderValueChangeEvent):
 def on_clear(e: me.ClickEvent):
     state = me.state(PageState)
     state.person_image_gcs = ""
+    state.person_image_display_url = ""
     state.product_image_gcs = ""
+    state.product_image_display_url = ""
     state.result_gcs_uris = []
+    state.result_display_urls = []
     yield
 
 def open_info_dialog(e: me.ClickEvent):
@@ -302,13 +304,16 @@ def page():
                         me.uploader(
                             label="Upload Person Image",
                             on_upload=on_upload_person,
-                            style=me.Style(width="100%"),
                             key="person_uploader",
                         )
                         library_chooser_button(
                             key="person_library_chooser",
                             on_library_select=on_library_chooser,
                             button_label="Add from Library",
+                        )
+                        me.button(
+                            "Create Virtual Model",
+                            on_click=on_click_generate_person,
                         )
                     with me.box(style=IMAGE_BOX_STYLE):
                         if state.is_generating_person_image:
@@ -348,7 +353,6 @@ def page():
                         me.uploader(
                             label="Upload Product Image",
                             on_upload=on_upload_product,
-                            style=me.Style(width="100%"),
                             key="product_uploader",
                         )
                         library_chooser_button(

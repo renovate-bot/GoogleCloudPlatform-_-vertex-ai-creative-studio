@@ -106,6 +106,9 @@ class MediaItem:
     # It helps in debugging and displaying all stored fields if needed.
     raw_data: Optional[Dict] = field(default_factory=dict, compare=False, repr=False)
 
+    # This field is populated at runtime with a cacheable proxy URL or a temporary signed URL.
+    signed_url: Optional[str] = None
+
     # Character Consistency specific fields
     media_type: Optional[str] = None
     source_character_images: List[str] = field(default_factory=list)
@@ -455,16 +458,19 @@ def get_media_for_page(
         if sort_by_timestamp:
             query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
 
+        all_docs = list(query.limit(fetch_limit).stream())
+        print(f"[get_media_for_page] Fetched {len(all_docs)} total documents from Firestore before filtering.")
+
         all_fetched_items: List[MediaItem] = []
-        for doc in query.limit(fetch_limit).stream():
+        for doc in all_docs:
             raw_item_data = doc.to_dict()
 
             if raw_item_data is None:
                 print(f"Warning: doc.to_dict() returned None for doc ID: {doc.id}")
                 continue
 
-            # Perform filtering first
-            mime_type = raw_item_data.get("mime_type", "")
+            # Ensure mime_type is a string, even if it's null in Firestore
+            mime_type = raw_item_data.get("mime_type") or ""
             error_message_present = bool(raw_item_data.get("error_message"))
 
             # Apply type filters
@@ -505,6 +511,8 @@ def get_media_for_page(
             media_item = _create_media_item_from_dict(doc.id, raw_item_data)
             if media_item:
                 all_fetched_items.append(media_item)
+
+        print(f"[get_media_for_page] {len(all_fetched_items)} items remaining after client-side filtering.")
 
         # For pagination, slice the fully filtered list
         start_slice = (page - 1) * media_per_page

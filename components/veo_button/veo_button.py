@@ -28,10 +28,14 @@ def on_send_to_veo(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
     gcs_uri = e.key
-    me.navigate(
-        url="/veo",
-        query_params={"image_uri": gcs_uri, "veo_model": "3.0-fast"},
-    )
+    if gcs_uri:
+        # Convert the GCS URI to just the path for the URL parameter
+        gcs_path = gcs_uri.replace("gs://", "")
+        me.navigate(
+            url="/veo",
+            # Use the correct parameter name 'image_path'
+            query_params={"image_path": gcs_path},
+        )
     yield
 
 @me.component
