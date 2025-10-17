@@ -49,8 +49,8 @@ from state.state import AppState
 @me.stateclass
 class PageState:
     # Using a dict to store selected videos, keyed by chooser id (e.g., "video_1")
-    selected_videos: dict[str, str] = field(default_factory=dict)
-    selected_videos_display_urls: dict[str, str] = field(default_factory=dict)
+    selected_videos: dict[str, str] = field(default_factory=dict) # pylint: disable=E3701:invalid-field-call
+    selected_videos_display_urls: dict[str, str] = field(default_factory=dict) # pylint: disable=E3701:invalid-field-call
     concatenated_video_url: str = ""
     concatenated_video_display_url: str = ""
     gif_url: str = ""
@@ -100,8 +100,8 @@ VIDEO_PLACEHOLDER_STYLE = me.Style(
     title="Pixie Compositor",
 )
 def pixie_compositor_page():
-    with page_scaffold(page_name="pixie_compositor"):
-        with page_frame():
+    with page_scaffold(page_name="pixie_compositor"): # pylint: disable=E1129:not-context-manager
+        with page_frame(): # pylint: disable=E1129:not-context-manager
             header("Pixie Compositor", "auto_fix_high")
             page_content()
             render_chooser_dialog()  # Add dialog to the page layout
@@ -578,7 +578,7 @@ def render_chooser_dialog():
         width="95vw", height="80vh", display="flex", flex_direction="column"
     )
 
-    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style):
+    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style): # pylint: disable=E1129:not-context-manager
         if state.show_chooser_dialog:
             with me.box(
                 style=me.Style(

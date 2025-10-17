@@ -104,20 +104,6 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
     if not new_items:
         pagestate.all_items_loaded = True
     else:
-        # Convert GCS URIs to cacheable proxy URLs.
-        # This is a fast, synchronous operation.
-        for item in new_items:
-            gcs_uri = (
-                item.gcsuri
-                if item.gcsuri
-                else (item.gcs_uris[0] if item.gcs_uris else None)
-            )
-            if gcs_uri:
-                proxy_path = gcs_uri.replace("gs://", "")
-                item.signed_url = f"/media/{proxy_path}"
-            else:
-                item.signed_url = ""
-
         if is_filter_change:
             pagestate.media_items = new_items
         else:
@@ -239,7 +225,8 @@ def library_content():
                         if item.gcsuri
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
-                    https_url = item.signed_url if hasattr(item, "signed_url") else ""
+                    # Construct the proxy URL on the fly. This is fast and avoids state issues.
+                    https_url = f"/media/{gcs_uri.replace('gs://', '')}" if gcs_uri else ""
 
                     # Determine the render type based on mime_type for reliability
                     render_type = "image" # Default to image
