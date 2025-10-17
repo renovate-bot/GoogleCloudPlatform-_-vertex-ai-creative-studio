@@ -433,16 +433,16 @@ def render_tour_detail_dialog(storyboard: dict):
 @me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
-    # Hydrate the signed_url field at runtime if it's missing.
-    if not hasattr(item, "signed_url") or not item.signed_url:
-        primary_gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
-        if primary_gcs_uri:
-            proxy_path = primary_gcs_uri.replace("gs://", "")
-            item.signed_url = f"/media/{proxy_path}"
-        else:
-            item.signed_url = ""
-
-    primary_urls = [item.signed_url] if item.signed_url else []
+    primary_urls = []
+    # If there are multiple URIs in gcs_uris, create a proxy URL for each.
+    if item.gcs_uris:
+        for uri in item.gcs_uris:
+            proxy_path = uri.replace("gs://", "")
+            primary_urls.append(f"/media/{proxy_path}")
+    # Fallback for single gcsuri for backward compatibility.
+    elif item.gcsuri:
+        proxy_path = item.gcsuri.replace("gs://", "")
+        primary_urls.append(f"/media/{proxy_path}")
 
     # Consolidate all potential source assets into a single list for backward compatibility
     all_source_uris = []

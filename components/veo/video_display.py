@@ -102,7 +102,7 @@ def video_display(on_thumbnail_click: Callable):
                     on_click=on_click_extend,
                     disabled=True if state.video_extend_length == 0 else False,
                 )
-            
+
             me.button("Convert to GIF", key=main_video_url, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
 
             if state.is_converting_gif:
