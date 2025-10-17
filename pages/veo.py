@@ -59,7 +59,7 @@ def on_veo_load(e: me.LoadEvent):
         image_uri = f"gs://{image_path}"
         # Set the image from the query parameter
         state.reference_image_gcs = image_uri
-        state.reference_image_uri = f"/media/{image_uri.replace('gs://', '')}"
+        state.reference_image_uri = f"/media/{image_path}"
         # Switch to the Image-to-Video tab
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
@@ -398,7 +398,17 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     )
 
     try:
-        gcs_uris, resolution = generate_video(request)
+        model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
+        with track_model_call(
+            model_name=model_name_for_analytics,
+            prompt_length=len(request.prompt) if request.prompt else 0,
+            duration_seconds=request.duration_seconds,
+            aspect_ratio=request.aspect_ratio,
+            video_count=request.video_count,
+            mode=state.veo_mode,
+        ):
+            gcs_uris, resolution = generate_video(request)
+        
         # Create cacheable proxy URLs for the UI
         display_urls = [f"/media/{uri.replace('gs://', '')}" for uri in gcs_uris]
         state.result_gcs_uris = gcs_uris
