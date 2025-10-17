@@ -60,21 +60,20 @@ class PageState:
 def on_load(e: me.LoadEvent):
     """Handles page load events for permalinks and initial data fetch."""
     pagestate = me.state(PageState)
+    media_id = me.query_params.get("media_id")
+
     if not pagestate.initial_load_complete:
-        yield from _load_media(pagestate, is_filter_change=True)
+        # If it's a permalink, skip the initial load and just open the dialog.
+        # The dialog has its own logic to fetch the specific item.
+        if media_id:
+            pagestate.selected_media_item_id = media_id
+            pagestate.show_details_dialog = True
+        else:
+            # Otherwise, perform the initial load for the main library view.
+            yield from _load_media(pagestate, is_filter_change=True)
+        
         pagestate.initial_load_complete = True
 
-        media_id = me.query_params.get("media_id")
-        if media_id:
-            item = next((i for i in pagestate.media_items if i.id == media_id), None)
-            if not item:
-                item = get_media_item_by_id(media_id)
-                if item:
-                    pagestate.media_items.insert(0, item)
-
-            if item:
-                pagestate.selected_media_item_id = media_id
-                pagestate.show_details_dialog = True
     yield
 
 
