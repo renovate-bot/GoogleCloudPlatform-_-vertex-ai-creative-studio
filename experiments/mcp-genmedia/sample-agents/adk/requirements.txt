@@ -77,7 +77,7 @@ google-cloud-aiplatform==1.115.0
     # via google-adk
 google-cloud-appengine-logging==1.6.2
     # via google-cloud-logging
-google-cloud-audit-log==0.3.2
+google-cloud-audit-log==0.4.0
     # via google-cloud-logging
 google-cloud-bigquery==3.38.0
     # via google-cloud-aiplatform
