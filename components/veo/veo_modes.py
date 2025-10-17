@@ -110,7 +110,15 @@ def _r2v_uploader(
 ):
     """Uploader for the Reference-to-Video (r2v) mode."""
     state = me.state(PageState)
+    selected_config = get_veo_model_config(state.veo_model)
     MAX_ASSET_IMAGES = 3
+
+    # Default to True, check for override
+    show_style_reference = True
+    if selected_config.mode_overrides and "r2v" in selected_config.mode_overrides:
+        r2v_override = selected_config.mode_overrides["r2v"]
+        if not r2v_override.supports_style_reference:
+            show_style_reference = False
 
     # Determine if uploaders should be disabled
     style_uploader_disabled = bool(state.r2v_reference_images)
@@ -141,24 +149,25 @@ def _r2v_uploader(
                         )
                     else:
                         _empty_placeholder()
-        # --- Style Section ---
-        with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
-            me.text("Style reference", style=me.Style(font_size="10pt"))
-            with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
-                if state.r2v_style_image:
-                    image_thumbnail(
-                        image_uri=generate_signed_url(state.r2v_style_image),
-                        index=0,  # Only one style image
-                        on_remove=on_r2v_style_remove,
-                        icon_size=16,
-                    )
-                else:
-                    _uploader_placeholder(
-                        on_upload=on_r2v_style_add,
-                        on_library_select=on_library_select,
-                        key_prefix="r2v_style",
-                        disabled=style_uploader_disabled,
-                    )
+        # --- Style Section (Conditionally Rendered) ---
+        if show_style_reference:
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
+                me.text("Style reference", style=me.Style(font_size="10pt"))
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
+                    if state.r2v_style_image:
+                        image_thumbnail(
+                            image_uri=generate_signed_url(state.r2v_style_image),
+                            index=0,  # Only one style image
+                            on_remove=on_r2v_style_remove,
+                            icon_size=16,
+                        )
+                    else:
+                        _uploader_placeholder(
+                            on_upload=on_r2v_style_add,
+                            on_library_select=on_library_select,
+                            key_prefix="r2v_style",
+                            disabled=style_uploader_disabled,
+                        )
 
 
 @me.component
