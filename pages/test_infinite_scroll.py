@@ -14,7 +14,7 @@
 
 import mesop as me
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.infinite_scroll_chooser_button import (
     infinite_scroll_chooser_button,
@@ -46,7 +46,7 @@ def test_infinite_scroll_page():
         print(
             f"Test Page: Received event: chooser_id={e.chooser_id}, gcs_uri={e.gcs_uri}",
         )
-        state.selected_gcs_uri = gcs_uri_to_https_url(e.gcs_uri)
+        state.selected_gcs_uri = create_display_url(e.gcs_uri)
         yield
 
     with page_scaffold(page_name="test_infinite_scroll"):  # pylint: disable=not-context-manager

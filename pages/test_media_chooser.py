@@ -19,7 +19,7 @@ from dataclasses import field
 import mesop as me
 
 from common.metadata import MediaItem, config, db, get_media_for_chooser
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -245,7 +245,7 @@ def render_chooser_dialog():
                                 )
                             else:
                                 for item in items_to_render:
-                                    https_url = gcs_uri_to_https_url(
+                                    https_url = create_display_url(
                                         item.gcsuri
                                         or (item.gcs_uris[0] if item.gcs_uris else "")
                                     )

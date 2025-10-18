@@ -17,7 +17,7 @@ import uuid
 import mesop as me
 
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from config.default import Default
 from models import shop_the_look_workflow
 from state.shop_the_look_state import PageState
@@ -151,7 +151,7 @@ def model_selection():
                         on_click=on_model_click,
                     ):
                         me.image(
-                            src=gcs_uri_to_https_url(model.model_image),
+                            src=create_display_url(model.model_image),
                             style=me.Style(
                                 object_fit="cover",
                                 border_radius="5px",
@@ -173,6 +173,7 @@ def on_model_click(e: me.ClickEvent):
     state = me.state(PageState)
     state.reference_image_gcs_model = e.key
     state.before_image_uri = e.key
+    state.before_image_display_url = create_display_url(e.key)
     for m in state.models:
         if m.model_image in e.key:
             state.selected_model = m

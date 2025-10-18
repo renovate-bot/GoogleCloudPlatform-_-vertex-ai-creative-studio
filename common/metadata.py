@@ -24,6 +24,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 from google.cloud import firestore
 
+from common.analytics import get_logger
 from config.default import Default
 from config.firebase_config import FirebaseClient
 
@@ -32,6 +33,7 @@ from config.firebase_config import FirebaseClient
 # MODEL_ID = model_id
 config = Default()
 db = FirebaseClient(database_id=config.GENMEDIA_FIREBASE_DB).get_client()
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -145,7 +147,7 @@ def add_media_item_to_firestore(item: MediaItem):
     If item.id is provided, the existing document with that ID is updated.
     """
     if not db:
-        print("Firestore client (db) is not initialized. Cannot add media item.")
+        logger.warning("Firestore client (db) is not initialized. Cannot add media item.")
         return
 
     # Prepare data for Firestore using asdict
@@ -160,7 +162,7 @@ def add_media_item_to_firestore(item: MediaItem):
                 firestore_data["timestamp"].replace("Z", "+00:00")
             )
         except ValueError:
-            print(f"Warning: Could not parse timestamp string '{firestore_data['timestamp']}'. Setting to now().")
+            logger.warning(f"Could not parse timestamp string '{firestore_data['timestamp']}'. Setting to now().")
             firestore_data["timestamp"] = datetime.datetime.now(datetime.timezone.utc)
 
     try:
@@ -171,7 +173,7 @@ def add_media_item_to_firestore(item: MediaItem):
             if 'id' in firestore_data:
                 del firestore_data['id']
             doc_ref.set(firestore_data, merge=True) # Use merge=True to update fields
-            print(f"Successfully updated MediaItem in Firestore with ID: {item.id}")
+            logger.info(f"Successfully updated MediaItem in Firestore with ID: {item.id}")
         else:
             # If no ID is provided, create a new document
             doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
@@ -180,10 +182,10 @@ def add_media_item_to_firestore(item: MediaItem):
             doc_ref.set(firestore_data)
             # Set the new Firestore-generated ID back on the object
             item.id = doc_ref.id
-            print(f"Successfully created MediaItem in Firestore with new ID: {item.id}")
+            logger.info(f"Successfully created MediaItem in Firestore with new ID: {item.id}")
 
     except Exception as e:
-        print(f"CRITICAL: Failed to save MediaItem to Firestore. Error: {e}")
+        logger.error(f"CRITICAL: Failed to save MediaItem to Firestore. Error: {e}")
         raise e
 
 def save_storyboard(storyboard: dict) -> dict:
@@ -202,7 +204,7 @@ def save_storyboard(storyboard: dict) -> dict:
 
     doc_ref = db.collection("interior_design_storyboards").document(storyboard["id"])
     doc_ref.set(storyboard)
-    print(f"Storyboard saved to Firestore with ID: {storyboard['id']}")
+    logger.info(f"Storyboard saved to Firestore with ID: {storyboard['id']}")
     return storyboard
 
 
@@ -335,16 +337,16 @@ def get_media_item_by_id(
 ) -> Optional[MediaItem]:  # Assuming MediaItem class is defined/imported
     """Retrieve a specific media item by its Firestore document ID."""
     try:
-        print(f"Trying to retrieve {item_id}")
+        logger.info(f"Trying to retrieve {item_id}")
         doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(item_id)
         doc = doc_ref.get()
         if doc.exists:
             return _create_media_item_from_dict(doc.id, doc.to_dict())
         else:
-            print(f"No document found with ID: {item_id}")
+            logger.warning(f"No document found with ID: {item_id}")
             return None
     except Exception as e:
-        print(f"Error fetching media item by ID {item_id}: {e}")
+        logger.error(f"Error fetching media item by ID {item_id}: {e}")
         return None
 
 
@@ -365,7 +367,7 @@ def add_media_item(user_email: str, **kwargs):
     doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document()
     doc_ref.set(firestore_data)
 
-    print(f"Media data stored in Firestore with document ID: {doc_ref.id}")
+    logger.info(f"Media data stored in Firestore with document ID: {doc_ref.id}")
 
 
 def get_latest_videos(limit: int = 10):
@@ -382,7 +384,7 @@ def get_latest_videos(limit: int = 10):
 
         return media
     except Exception as e:
-        print(f"Error fetching media: {e}")
+        logger.error(f"Error fetching media: {e}")
         return []
 
 
@@ -418,7 +420,7 @@ def add_vto_metadata(
         }
     )
 
-    print(f"VTO data stored in Firestore with document ID: {doc_ref.id}")
+    logger.info(f"VTO data stored in Firestore with document ID: {doc_ref.id}")
 
 
 def get_media_for_page(
@@ -455,16 +457,19 @@ def get_media_for_page(
         if sort_by_timestamp:
             query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
 
+        all_docs = list(query.limit(fetch_limit).stream())
+        logger.info(f"[get_media_for_page] Fetched {len(all_docs)} total documents from Firestore before filtering.")
+
         all_fetched_items: List[MediaItem] = []
-        for doc in query.limit(fetch_limit).stream():
+        for doc in all_docs:
             raw_item_data = doc.to_dict()
 
             if raw_item_data is None:
-                print(f"Warning: doc.to_dict() returned None for doc ID: {doc.id}")
+                logger.warning(f"doc.to_dict() returned None for doc ID: {doc.id}")
                 continue
 
-            # Perform filtering first
-            mime_type = raw_item_data.get("mime_type", "")
+            # Ensure mime_type is a string, even if it's null in Firestore
+            mime_type = raw_item_data.get("mime_type") or ""
             error_message_present = bool(raw_item_data.get("error_message"))
 
             # Apply type filters
@@ -506,13 +511,15 @@ def get_media_for_page(
             if media_item:
                 all_fetched_items.append(media_item)
 
+        logger.info(f"[get_media_for_page] {len(all_fetched_items)} items remaining after client-side filtering.")
+
         # For pagination, slice the fully filtered list
         start_slice = (page - 1) * media_per_page
         end_slice = start_slice + media_per_page
         return all_fetched_items[start_slice:end_slice]
 
     except Exception as e:
-        print(f"Error fetching media from Firestore: {e}")
+        logger.error(f"Error fetching media from Firestore: {e}")
         # Optionally, you could re-raise or handle more gracefully
         return []
 
@@ -698,13 +705,18 @@ def get_media_for_page_optimized(
         return media_items, last_doc
 
     except Exception as e:
-        print(f"Error fetching media from Firestore (optimized): {e}")
+        logger.error(f"Error fetching media from Firestore (optimized): {e}")
         return [], None
+
 
 def get_media_for_chooser(
     media_type: str, page_size: int, start_after=None
 ) -> tuple[list[MediaItem], Optional[firestore.DocumentSnapshot]]:
     """Fetches media items for the chooser, using a hybrid query strategy."""
+    # TODO: This function uses two queries for backward compatibility (one for `media_type`
+    # and one for `mime_type`). After a data migration to ensure all documents have the
+    # `media_type` field, this should be simplified to a single, more performant query
+    # on `media_type` only.
     if not db:
         return [], None
 
@@ -764,5 +776,5 @@ def get_media_for_chooser(
         return media_items, last_doc
 
     except Exception as e:
-        print(f"Error fetching media for chooser: {e}")
+        logger.error(f"Error fetching media for chooser: {e}")
         return [], None

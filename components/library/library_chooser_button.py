@@ -18,6 +18,7 @@ from typing import Callable, Optional
 import mesop as me
 
 from common.metadata import MediaItem, get_media_for_page_optimized
+from common.utils import create_display_url
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_image_selector import library_image_selector
@@ -53,6 +54,12 @@ def library_chooser_button(
 
         # Fetch fresh data every time the dialog is opened
         items, _ = get_media_for_page_optimized(20, ["images"])
+
+        # Convert GCS URIs to display URLs using the centralized helper.
+        for item in items:
+            gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+            item.signed_url = create_display_url(gcs_uri)
+
         state.media_items = items
         state.is_loading = False
         yield

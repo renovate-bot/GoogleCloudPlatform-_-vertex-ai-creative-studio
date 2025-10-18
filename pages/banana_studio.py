@@ -27,7 +27,7 @@ from common.metadata import (
     get_media_for_page_optimized,
 )
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
+from common.utils import create_display_url, https_url_to_gcs_uri
 from components.banana_studio.description_accordion import description_accordion
 from components.dialog import dialog
 from components.header import header
@@ -83,7 +83,7 @@ def _uploader_placeholder(on_upload, on_open_library, key_prefix: str, disabled:
         )
     ):
         me.uploader(
-            label="Add Image",
+            label="Upload Image",
             on_upload=on_upload,
             accepted_file_types=["image/jpeg", "image/png", "image/webp"],
             key=f"{key_prefix}_uploader",
@@ -150,8 +150,8 @@ def _image_upload_slots(on_upload, on_open_library, on_remove_image):
         )
     ):
         for i in range(MAX_IMAGES):
-            if i < len(state.uploaded_image_gcs_uris):
-                image_uri = state.uploaded_image_gcs_uris[i]
+            if i < len(state.uploaded_image_display_urls):
+                image_uri = state.uploaded_image_display_urls[i]
                 image_thumbnail(
                     image_uri=image_uri,
                     index=i,
@@ -180,6 +180,7 @@ class PageState:
     """Gemini Image Generation Page State"""
 
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    uploaded_image_display_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     image_descriptions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
     generated_image_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
@@ -240,6 +241,15 @@ def open_library_dialog(e: me.ClickEvent):
 
     # Fetch fresh data every time the dialog is opened
     items, _ = get_media_for_page_optimized(20, ["images"])
+
+    # Hydrate the items with the cacheable proxy URL
+    for item in items:
+        gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+        if gcs_uri:
+            item.signed_url = create_display_url(gcs_uri)
+        else:
+            item.signed_url = ""
+
     state.library_media_items = items
     state.is_library_loading = False
     yield
@@ -271,6 +281,7 @@ def on_select_from_library_dialog(e: LibrarySelectionChangeEvent):
 
     # Add image and placeholder
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
+    state.uploaded_image_display_urls.append(create_display_url(e.gcs_uri))
     state.image_descriptions.append("Generating description...")
     new_image_index = len(state.image_descriptions) - 1
 
@@ -485,7 +496,7 @@ def gemini_image_gen_page_content():
                                 type="stroked",
                             )
                             veo_button(
-                                gcs_uri=https_url_to_gcs_uri(state.selected_image_url)
+                                gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}"
                             )
 
                 # Image presets
@@ -859,6 +870,7 @@ def on_upload(e: me.UploadEvent):
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
         state.image_descriptions.append("Generating description...")
+        state.uploaded_image_display_urls.append(create_display_url(gcs_url))
         new_upload_indices.append(len(state.uploaded_image_gcs_uris) - 1)
 
     # --- Step 2: Yield immediately to update UI with placeholders ---
@@ -929,6 +941,7 @@ def on_remove_image(e: me.ClickEvent):
     index_to_remove = int(e.key)
     if 0 <= index_to_remove < len(state.uploaded_image_gcs_uris):
         del state.uploaded_image_gcs_uris[index_to_remove]
+        del state.uploaded_image_display_urls[index_to_remove]
         if index_to_remove < len(state.image_descriptions):
             del state.image_descriptions[index_to_remove]
 
@@ -963,6 +976,7 @@ def on_clear_click(e: me.ClickEvent):
     state.generated_image_urls = []
     state.prompt = ""
     state.uploaded_image_gcs_uris = []
+    state.uploaded_image_display_urls = []
     state.image_descriptions = []
     state.selected_image_url = ""
     state.generation_time = 0.0
@@ -1021,7 +1035,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
+    input_gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
@@ -1207,7 +1221,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 "No images were generated, but the attempt was logged to the library.",
             )
         else:
-            state.generated_image_urls = [gcs_uri_to_https_url(uri) for uri in gcs_uris]
+            state.generated_image_urls = [create_display_url(uri) for uri in gcs_uris]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 
@@ -1246,7 +1260,15 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                         score_str = f"{yes_answers}/{len(state.critique_questions)}"
 
                         # Store evaluation
-                        https_url = gcs_uri_to_https_url(uri)
+                        # The signed URL was already generated and is in state.generated_image_urls
+                        # Find the corresponding signed URL for the current GCS URI.
+                        try:
+                            uri_index = gcs_uris.index(uri)
+                            https_url = state.generated_image_urls[uri_index]
+                        except ValueError:
+                            # Fallback in case the URI isn't found, though it should be.
+                            https_url = create_display_url(uri)
+
                         state.evaluations[https_url] = Evaluation(
                             score=score_str,
                             details=[
@@ -1270,7 +1292,6 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     finally:
         state.is_generating = False
         state.generation_complete = True
-        yield
 
 
 def generate_images(e: me.ClickEvent):

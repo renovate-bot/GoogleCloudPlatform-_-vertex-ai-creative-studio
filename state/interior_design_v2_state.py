@@ -24,5 +24,7 @@ class PageState:
     error_message: str = ""
     design_prompt: str = ""
     design_image_uri: str = ""
+    design_image_display_url: str = ""
 
     info_dialog_open: bool = False
+    initial_load_complete: bool = False

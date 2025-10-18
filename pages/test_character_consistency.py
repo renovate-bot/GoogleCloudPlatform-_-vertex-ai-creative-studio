@@ -17,7 +17,7 @@ from dataclasses import field
 import mesop as me
 
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url, https_url_to_gcs_uri
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from components.stepper import stepper
@@ -35,13 +35,18 @@ class PageState:
     current_step: int = 1
     max_completed_step: int = 1
     uploaded_image_gcs_uris: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
+    uploaded_image_display_urls: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
     scene_prompt: str = ""
     video_prompt: str = ""
     character_description: str = ""
-    candidate_image_urls: list[str] = field(default_factory=list) # pylint: disable=invalid-field-call
+    candidate_image_gcs_uris: list[str] = field(default_factory=list)
+    candidate_image_urls: list[str] = field(default_factory=list)
+    best_image_gcs_uri: str = ""
     best_image_url: str = ""
-    user_selected_image_url: str = ""
-    outpainted_image_url: str = ""
+    user_selected_image_url: str = "" # This will be a display URL
+    outpainted_image_gcs_uri: str = ""
+    outpainted_image_display_url: str = ""
+    final_video_gcs_uri: str = ""
     final_video_url: str = ""
     status_message: str = "Ready."
     is_generating: bool = False
@@ -107,9 +112,9 @@ This page allows you to test the character consistency workflow step-by-step.
                         )
                     if state.uploaded_image_gcs_uris:
                         with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=10, justify_content="center", margin=me.Margin(bottom=16))):
-                            for uri in state.uploaded_image_gcs_uris:
+                            for uri in state.uploaded_image_display_urls:
                                 me.image(
-                                    src=gcs_uri_to_https_url(uri),
+                                    src=uri,
                                     style=me.Style(width=200, height=200, object_fit="contain", border_radius=8),
                                 )
                     me.textarea(
@@ -222,6 +227,7 @@ def on_upload(e: me.UploadEvent):
             file.getvalue(),
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
+        state.uploaded_image_display_urls.append(create_display_url(gcs_url))
     yield
 
 
@@ -229,6 +235,7 @@ def on_library_select(e: LibrarySelectionChangeEvent):
     """Handle image selection from the library."""
     state = me.state(PageState)
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
+    state.uploaded_image_display_urls.append(create_display_url(e.gcs_uri))
     yield
 
 
@@ -294,14 +301,13 @@ def generate_alternatives(e: me.ClickEvent):
         if "character_description" in step_result.data:
             state.character_description = step_result.data["character_description"]
         if "candidate_image_gcs_uris" in step_result.data:
-            state.candidate_image_urls = [
-                uri.replace("gs://", "https://storage.cloud.google.com/")
-                for uri in step_result.data["candidate_image_gcs_uris"]
-            ]
+            gcs_uris = step_result.data["candidate_image_gcs_uris"]
+            state.candidate_image_gcs_uris = gcs_uris
+            state.candidate_image_urls = [create_display_url(uri) for uri in gcs_uris]
         if "best_image_gcs_uri" in step_result.data:
-            state.best_image_url = step_result.data["best_image_gcs_uri"].replace(
-                "gs://", "https://storage.cloud.google.com/"
-            )
+            gcs_uri = step_result.data["best_image_gcs_uri"]
+            state.best_image_gcs_uri = gcs_uri
+            state.best_image_url = create_display_url(gcs_uri)
             break
 
     state.is_generating = False
@@ -320,7 +326,7 @@ def generate_video(e: me.ClickEvent):
     yield
 
     # Convert the display URL back to a GCS URI before passing it to the model.
-    gcs_uri = state.user_selected_image_url.replace("https://storage.cloud.google.com/", "gs://")
+    gcs_uri = https_url_to_gcs_uri(state.user_selected_image_url)
 
     for step_result in generate_character_video(
         user_email=app_state.user_email,
@@ -328,9 +334,9 @@ def generate_video(e: me.ClickEvent):
         scene_prompt=state.video_prompt,
     ):
         if "video_gcs_uri" in step_result.data:
-            state.final_video_url = step_result.data["video_gcs_uri"].replace(
-                "gs://", "https://storage.cloud.google.com/"
-            )
+            video_gcs_uri = step_result.data["video_gcs_uri"]
+            state.final_video_gcs_uri = video_gcs_uri
+            state.final_video_url = create_display_url(video_gcs_uri)
             break
 
     state.is_generating = False

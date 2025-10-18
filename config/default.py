@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.0.13" # stl hitbox fix
+    VERSION: str = "1.1.1" # media proxies, veo 3.1
     APP_ENV: str = os.environ.get("APP_ENV", "")
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
@@ -71,7 +71,7 @@ class Default:
     )
 
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
-        "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash"
+        "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash",
     )
 
     # Collections
@@ -91,6 +91,9 @@ class Default:
     IMAGE_BUCKET: str = os.environ.get("IMAGE_BUCKET", f"{PROJECT_ID}-assets/images")
     GCS_ASSETS_BUCKET: str = os.environ.get("GCS_ASSETS_BUCKET")
 
+    # Library
+    LIBRARY_MEDIA_PER_PAGE: int = int(os.environ.get("LIBRARY_MEDIA_PER_PAGE", 15))
+
     # Veo
     VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-2.0-generate-001")
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
@@ -106,10 +109,10 @@ class Default:
     VTO_LOCATION: str = os.environ.get("VTO_LOCATION", "us-central1")
     VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-preview-08-04")
     GENMEDIA_VTO_MODEL_COLLECTION_NAME: str = os.environ.get(
-        "GENMEDIA_VTO_MODEL_COLLECTION_NAME", "genmedia-vto-model"
+        "GENMEDIA_VTO_MODEL_COLLECTION_NAME", "genmedia-vto-model",
     )
     GENMEDIA_VTO_CATALOG_COLLECTION_NAME: str = os.environ.get(
-        "GENMEDIA_VTO_CATALOG_COLLECTION_NAME", "genmedia-vto-catalog"
+        "GENMEDIA_VTO_CATALOG_COLLECTION_NAME", "genmedia-vto-catalog",
     )
 
     # Temperatures for Character Consistency Workflow
@@ -159,6 +162,8 @@ class Default:
     )
 
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
+
+    USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
     image_modifiers: list[str] = field(
         default_factory=lambda: [

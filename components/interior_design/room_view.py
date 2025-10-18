@@ -4,8 +4,6 @@ Component for displaying the room view.
 
 import mesop as me
 
-from common.utils import gcs_uri_to_https_url
-
 
 @me.component
 def room_view(storyboard: dict, is_generating_zoom: bool):
@@ -26,9 +24,10 @@ def room_view(storyboard: dict, is_generating_zoom: bool):
             me.text(f"Room View: {storyboard_item['room_name']}", type="headline-6")
             if is_generating_zoom:
                 me.progress_spinner()
-            elif storyboard_item["styled_image_uri"]:
+            # Use the pre-signed display URL. Use .get() for safety with old data.
+            elif storyboard_item.get("styled_image_display_url"):
                 me.image(
-                    src=gcs_uri_to_https_url(storyboard_item["styled_image_uri"]),
+                    src=storyboard_item.get("styled_image_display_url"),
                     style=me.Style(
                         height="100%",
                         width="100%",

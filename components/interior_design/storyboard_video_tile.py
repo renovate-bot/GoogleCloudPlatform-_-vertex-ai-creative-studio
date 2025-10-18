@@ -5,7 +5,6 @@ Component for displaying a single video item in the storyboard.
 import mesop as me
 from typing import Callable
 
-from common.utils import gcs_uri_to_https_url
 from components.video_thumbnail.video_thumbnail import video_thumbnail
 
 
@@ -31,7 +30,7 @@ def storyboard_video_tile(
         ),
     ):
         video_thumbnail(
-            video_src=gcs_uri_to_https_url(video_url),
+            video_src=video_url,
             selected=False, # Not used in this context, but required
         )
         # Overlay for the room name
