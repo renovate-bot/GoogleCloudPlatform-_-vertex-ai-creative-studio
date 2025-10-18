@@ -20,7 +20,7 @@ import uuid
 
 import google.auth
 import mesop as me
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
@@ -32,42 +32,40 @@ from pydantic import BaseModel
 
 import pages.shop_the_look
 from app_factory import app
-from common.utils import gcs_uri_to_https_url
-from components.page_scaffold import page_scaffold
+from common.utils import create_display_url
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
-from pages import character_consistency as character_consistency_page
 from pages import banana_studio as banana_studio_page
+from pages import character_consistency as character_consistency_page
 from pages import chirp_3hd as chirp_3hd_page
 from pages import config as config_page
 from pages import gemini_image_generation as gemini_image_generation_page
 from pages import gemini_tts as gemini_tts_page
 from pages import home as home_page
 from pages import imagen as imagen_page
-from pages.library_v2 import page as library_v2_page
-from pages.legacy_library import page as legacy_library_page
+from pages import interior_design_v2 as interior_design_page
 from pages import lyria as lyria_page
+from pages import pixie_compositor as pixie_compositor_page
 from pages import portraits as motion_portraits
 from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
+from pages import test_proxy_caching as test_proxy_caching_page
 from pages import veo
 from pages import vto as vto_page
-from pages import interior_design_v2 as interior_design_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
+from pages.library_v2 import page as library_v2_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
 from pages.test_infinite_scroll import test_infinite_scroll_page
+from pages.test_media_chooser import page as test_media_chooser_page
 from pages.test_pixie_compositor import test_pixie_compositor_page
+from pages.test_svg import test_svg_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
-from pages.test_worsfold_encoder import test_worsfold_encoder_page
-from pages.test_svg import test_svg_page
-from pages.test_media_chooser import page as test_media_chooser_page
-from pages import pixie_compositor as pixie_compositor_page
 from state.state import AppState
-import google.auth
+
 
 class UserInfo(BaseModel):
     email: str | None
@@ -83,6 +81,7 @@ app.include_router(router)
 async def favicon():
     return FileResponse("assets/favicon.ico")
 
+
 # Define allowed origins for CORS
 app.add_middleware(
     CORSMiddleware,
@@ -92,17 +91,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/api/convert_to_gif")
 def convert_to_gif(gcs_uri: str, request: Request):
     """Converts an MP4 video to a GIF and saves it to GCS."""
     try:
         uri = convert_mp4_to_gif(gcs_uri, request.scope["MESOP_USER_EMAIL"])
 
-        return {"url": gcs_uri_to_https_url(uri)}
+        return {"url": create_display_url(uri)}
     except Exception as e:
         error_message = str(e)
         print(f"Error generating GIF: {error_message}")
         return {"error": error_message}, 500
+
 
 @app.get("/api/get_signed_url")
 def get_signed_url(gcs_uri: str):
@@ -120,12 +121,12 @@ def get_signed_url(gcs_uri: str):
         bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
-        
+
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(minutes=15),
             method="GET",
-            credentials=signing_credentials
+            credentials=signing_credentials,
         )
 
         return {"signed_url": signed_url}
@@ -148,8 +149,8 @@ async def add_global_csp(request: Request, call_next):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://cdn.jsdelivr.net; "
         "connect-src 'self' https://esm.sh https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://fonts.googleapis.com/; "
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com http://fonts.googleapis.com;"
         "img-src 'self' data: blob: https://google-ai-skin-tone-research.imgix.net https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "media-src 'self' https://deepmind.google https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "worker-src 'self' blob:;"
@@ -198,40 +199,54 @@ me.page(path="/test_uploader", title="Test Uploader")(test_uploader_page)
 me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
     test_vto_prompt_generator_page
 )
-me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
-    test_worsfold_encoder_page
-)
-me.page(path="/test_svg", title="Test SVG")(
-    test_svg_page
-)
-me.page(path="/test_media_chooser", title="Test Media Chooser")(
-    test_media_chooser_page
-)
+me.page(path="/test_svg", title="Test SVG")(test_svg_page)
+me.page(path="/test_media_chooser", title="Test Media Chooser")(test_media_chooser_page)
+
+
+from fastapi.responses import StreamingResponse
+from google.cloud import storage
+
+
+# Add a new endpoint to proxy GCS media for better caching.
+@app.get("/media/{bucket_name}/{object_path:path}")
+async def get_media_proxy(request: Request, bucket_name: str, object_path: str):
+    """Securely proxies a GCS object, checking for IAP authentication."""
+    user_email = request.scope.get("MESOP_USER_EMAIL")
+    app_env = config.Default().APP_ENV
+
+    # Enforce IAP authentication in any environment that is not explicitly a local dev environment.
+    development_envs = ["", "dev", "local"]
+    if app_env not in development_envs and (
+        not user_email or user_email == "anonymous@google.com"
+    ):
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(object_path)
+
+        if not blob.exists():
+            raise HTTPException(status_code=404, detail="Object not found")
+
+        blob.reload()
+        content_type = blob.content_type
+
+        # Set a cache header to instruct browsers and CDNs to cache for 1 hour.
+        headers = {"Cache-Control": "public, max-age=3600"}
+
+        # Stream the file content directly from GCS to the user.
+        stream = blob.open("rb")
+        return StreamingResponse(stream, media_type=content_type, headers=headers)
+
+    except Exception as e:
+        print(f"Error proxying GCS object: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/")
-def root_redirect(request: Request) -> RedirectResponse:
-    """Redirects to /welcome for first-time users, otherwise to /home."""
-    # Check if our tracking cookie exists on the incoming request.
-    if request.cookies.get("has_visited_welcome"):
-        # If it does, send the user to the regular home page.
-        return RedirectResponse(url="/home")
-    else:
-        # If it doesn't, it's a first-time visit.
-        # Create a response that will send the user to the welcome page.
-        response = RedirectResponse(url="/welcome")
-
-        # Before sending the response, set our cookie on it.
-        # The browser will save this cookie for future visits.
-        # max_age=31536000 sets the cookie to expire in 1 year.
-        # max_age=172800 sets the cookie to expire in 48 hours.
-        response.set_cookie(
-            key="has_visited_welcome",
-            value="true",
-            max_age=172800,
-            httponly=True,
-        )
-        return response
+def home() -> RedirectResponse:
+    return RedirectResponse(url="/home")
 
 
 # Use this to mount the static files for the Mesop app
@@ -260,7 +275,6 @@ app.mount(
     StaticFiles(directory="assets"),
     name="assets",
 )
-
 
 
 app.mount(

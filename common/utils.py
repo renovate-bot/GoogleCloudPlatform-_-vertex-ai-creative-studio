@@ -19,9 +19,36 @@ import io
 import json
 import re
 from typing import Any
+import datetime
 
 from absl import logging
 from PIL import Image
+import google.auth
+from google.cloud import storage
+from google.auth import impersonated_credentials
+
+import os
+
+from config.default import Default as cfg
+
+
+def create_display_url(gcs_uri: str) -> str:
+    """
+    Creates a cacheable display URL for a GCS asset.
+    Switches between a direct GCS link and the app proxy based on config.
+    """
+    if not gcs_uri or not gcs_uri.startswith("gs://"):
+        return ""
+
+    if cfg().USE_MEDIA_PROXY:
+        # Use the fast, simple proxy URL
+        proxy_path = gcs_uri.replace("gs://", "")
+        return f"/media/{proxy_path}"
+    else:
+        # Use the direct GCS URL
+        return gcs_uri.replace("gs://", "https://storage.cloud.google.com/")
+
+
 
 
 def extract_username(email_string: str | None) -> str:
@@ -99,12 +126,10 @@ def print_keys(obj, prefix=""):
 
 GCS_PUBLIC_URL_PREFIX = "https://storage.cloud.google.com/"
 
-
-def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
+def _get_gcs_public_https_url(gcs_uri: str | None) -> str:
     """
-    Converts a GCS URI to a publicly accessible URL.
-
-    Handles None, empty strings, and already-formatted URLs gracefully.
+    (Internal use only) Converts a GCS URI to a publicly accessible URL.
+    This performs a simple string replacement and does NOT work for private objects.
     """
     if not gcs_uri:
         return ""
@@ -115,15 +140,22 @@ def gcs_uri_to_https_url(gcs_uri: str | None) -> str:
     # Return as-is if it's not a recognized format
     return gcs_uri
 
-
 def https_url_to_gcs_uri(url: str | None) -> str:
     """
-    Converts a public GCS HTTPS URL back to a gs:// URI.
+    Converts a public GCS HTTPS URL (including signed URLs) back to a gs:// URI.
     """
     if not url:
         return ""
     if url.startswith("gs://"):
         return url
-    if url.startswith(GCS_PUBLIC_URL_PREFIX):
-        return url.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
+
+    # Take the base URL, stripping any query parameters from a signed URL
+    url_to_convert = url.split("?")[0]
+
+    if url_to_convert.startswith("https://storage.googleapis.com/"):
+        return url_to_convert.replace("https://storage.googleapis.com/", "gs://")
+    if url_to_convert.startswith(GCS_PUBLIC_URL_PREFIX):
+        return url_to_convert.replace(GCS_PUBLIC_URL_PREFIX, "gs://")
+
+    # If it's not a recognized GCS URL, return the original input as a fallback.
     return url

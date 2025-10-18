@@ -296,9 +296,12 @@ class MediaDetailViewer extends LitElement {
   renderActions() {
     const urls = JSON.parse(this.primaryUrlsJson);
     if (urls.length === 0) return html``;
-    const currentUrl = urls[this._currentIndex];
-    // Convert https URL back to gs:// for the download button
-    const gcsUri = currentUrl.replace("https://storage.cloud.google.com/", "gs://");
+    const currentUrl = urls[this._currentIndex]; // This is the proxy URL, e.g., /media/bucket/object.png
+
+    // Correctly convert the proxy URL back to a GCS URI for backend functions
+    const isProxyUrl = currentUrl.startsWith("/media/");
+    const gcsPath = isProxyUrl ? currentUrl.substring(7) : new URL(currentUrl).pathname.substring(1);
+    const gcsUri = `gs://${gcsPath}`;
 
     const isImage = this.mediaType === 'image';
 
@@ -324,8 +327,8 @@ class MediaDetailViewer extends LitElement {
 
     return html`
       <div class="actions">
-        <download-button .url=${gcsUri} .filename=${gcsUri.split("/").pop()}></download-button>
-                ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
+        <download-button .url=${gcsUri} .filename=${gcsPath.split("/").pop()}></download-button>
+        ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.editClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'edit'}></svg-icon>Edit</mwc-button>` : ""}
         ${isImage ? html`<mwc-button outlined @click=${() => this._dispatch(this.veoClickEvent, {url: currentUrl})}><svg-icon slot="icon" .iconName=${'movie_filter'}></svg-icon>Veo</mwc-button>` : ""}
         <mwc-button id="copy-link-btn" outlined @click=${handleCopyLink}><svg-icon slot="icon" .iconName=${'link'}></svg-icon>Copy Link</mwc-button>
         ${this.mediaType === 'video' ? html`<convert-to-gif-button .url=${gcsUri} @conversion-complete=${this._handleGifConversion}></convert-to-gif-button>` : ""}

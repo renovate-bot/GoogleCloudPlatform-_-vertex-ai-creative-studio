@@ -31,7 +31,7 @@ from config.default import Default
 
 cfg = Default()
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from config.default import Default
 
 @me.page(
@@ -87,9 +87,9 @@ def page():
                                 ):
                                     if me.state(StarterPackState).is_generating_starter_pack:
                                         me.progress_spinner()
-                                    elif me.state(StarterPackState).generated_starter_pack_uri:
+                                    elif me.state(StarterPackState).generated_starter_pack_display_url:
                                         me.image(
-                                            src=gcs_uri_to_https_url(me.state(StarterPackState).generated_starter_pack_uri),
+                                            src=me.state(StarterPackState).generated_starter_pack_display_url,
                                             style=me.Style(width="100%", max_height=400, object_fit="contain", border_radius=8),
                                         )
                                     else:
@@ -117,9 +117,9 @@ def page():
                                 ):
                                     if me.state(StarterPackState).is_generating_look:
                                         me.progress_spinner()
-                                    elif me.state(StarterPackState).generated_look_uri:
+                                    elif me.state(StarterPackState).generated_look_display_url:
                                         me.image(
-                                            src=gcs_uri_to_https_url(me.state(StarterPackState).generated_look_uri),
+                                            src=me.state(StarterPackState).generated_look_display_url,
                                             style=me.Style(width="100%", max_height=400, object_fit="contain", border_radius=8),
                                         )
                                     else:
@@ -147,9 +147,9 @@ def look_to_starter_pack_content():
                 on_library_select=on_library_chooser,
                 button_type="icon",
             )
-        if me.state(StarterPackState).look_image_uri:
+        if me.state(StarterPackState).look_image_display_url:
             me.image(
-                src=gcs_uri_to_https_url(me.state(StarterPackState).look_image_uri),
+                src=me.state(StarterPackState).look_image_display_url,
                 style=me.Style(
                     width="100%",
                     margin=me.Margin(top=16),
@@ -182,9 +182,9 @@ def starter_pack_to_look_content():
                 on_library_select=on_library_chooser,
                 button_type="icon",
             )
-        if me.state(StarterPackState).starter_pack_image_uri:
+        if me.state(StarterPackState).starter_pack_image_display_url:
             me.image(
-                src=gcs_uri_to_https_url(me.state(StarterPackState).starter_pack_image_uri),
+                src=me.state(StarterPackState).starter_pack_image_display_url,
                 style=me.Style(
                     width="100%",
                     margin=me.Margin(top=16),
@@ -208,9 +208,9 @@ def starter_pack_to_look_content():
         if me.state(StarterPackState).is_generating_virtual_model:
             with me.box(style=me.Style(display="flex", justify_content="center", margin=me.Margin(top=16))):
                 me.progress_spinner()
-        elif me.state(StarterPackState).model_image_uri:
+        elif me.state(StarterPackState).model_image_display_url:
             me.image(
-                src=gcs_uri_to_https_url(me.state(StarterPackState).model_image_uri),
+                src=me.state(StarterPackState).model_image_display_url,
                 style=me.Style(
                     width="100%",
                     margin=me.Margin(top=16),
@@ -239,104 +239,238 @@ def on_tab_click(e: me.ClickEvent):
     yield
 
 def on_upload_look_image(e: me.UploadEvent):
+
     state = me.state(StarterPackState)
+
     uploaded_file = e.file
-    state.look_image_uri = storage.store_to_gcs(
+
+    gcs_uri = storage.store_to_gcs(
+
         folder="starter_pack_uploads",
+
         file_name=uploaded_file.name,
+
         mime_type=uploaded_file.mime_type,
+
         contents=uploaded_file.getvalue(),
+
     )
+
+    state.look_image_uri = gcs_uri
+
+    state.look_image_display_url = create_display_url(gcs_uri)
+
     print(f"Look image URI: {state.look_image_uri}")
+
     yield
+
+
+
+
 
 def on_library_chooser(e: LibrarySelectionChangeEvent):
+
     state = me.state(StarterPackState)
+
     print(f"EVENT: {e}")
+
     
+
     if e.chooser_id == "library_look":
+
         state.look_image_uri = e.gcs_uri
+
+        state.look_image_display_url = create_display_url(e.gcs_uri)
+
     elif e.chooser_id == "library_starter_pack":
+
         state.starter_pack_image_uri = e.gcs_uri
+
+        state.starter_pack_image_display_url = create_display_url(e.gcs_uri)
+
     elif e.chooser_id == "library_model":
+
         state.model_image_uri = e.gcs_uri
+
+        state.model_image_display_url = create_display_url(e.gcs_uri)
+
     yield
+
+
+
+
 
 def on_upload_starter_pack_image(e: me.UploadEvent):
+
     state = me.state(StarterPackState)
+
     uploaded_file = e.file
-    state.starter_pack_image_uri = storage.store_to_gcs(
+
+    gcs_uri = storage.store_to_gcs(
+
         folder="starter_pack_uploads",
+
         file_name=uploaded_file.name,
+
         mime_type=uploaded_file.mime_type,
+
         contents=uploaded_file.getvalue(),
+
     )
+
+    state.starter_pack_image_uri = gcs_uri
+
+    state.starter_pack_image_display_url = create_display_url(gcs_uri)
+
     yield
+
+
+
+
 
 def on_upload_model_image(e: me.UploadEvent):
+
     state = me.state(StarterPackState)
+
     uploaded_file = e.file
-    state.model_image_uri = storage.store_to_gcs(
+
+    gcs_uri = storage.store_to_gcs(
+
         folder="starter_pack_uploads",
+
         file_name=uploaded_file.name,
+
         mime_type=uploaded_file.mime_type,
+
         contents=uploaded_file.getvalue(),
+
     )
+
+    state.model_image_uri = gcs_uri
+
+    state.model_image_display_url = create_display_url(gcs_uri)
+
     yield
+
+
+
+
 
 def on_click_generate_virtual_model(e: me.ClickEvent):
+
     state = me.state(StarterPackState)
+
     app_state = me.state(AppState)
+
     state.is_generating_virtual_model = True
+
     yield
+
+
 
     gcs_uri = model.generate_virtual_model()
+
     state.model_image_uri = gcs_uri
+
+    state.model_image_display_url = create_display_url(gcs_uri)
+
     #add_media_item(
+
     #    user_email=app_state.user_email,
+
     #    model=cfg.MODEL_IMAGEN4_FAST,
+
     #    mime_type="image/png",
+
     #    gcs_uris=[gcs_uri],
+
     #    comment="virtual model",
+
     #    source_images_gcs=[]
+
     #)
+
     state.is_generating_virtual_model = False
+
     yield
+
+
+
+
 
 @track_click(element_id="starter_pack_generate_starter_pack_button")
+
 def on_click_generate_starter_pack(e: me.ClickEvent):
+
     state = me.state(StarterPackState)
+
     app_state = me.state(AppState)
+
     state.is_generating_starter_pack = True
+
     yield
+
+
 
     gcs_uri = model.generate_starter_pack_from_look(
+
         look_image_uri=state.look_image_uri
+
     )
+
     state.generated_starter_pack_uri = gcs_uri
+
+    state.generated_starter_pack_display_url = create_display_url(gcs_uri)
+
     add_media_item(
+
         user_email=app_state.user_email,
+
         model=cfg.GEMINI_IMAGE_GEN_MODEL,
+
         mime_type="image/png",
+
         gcs_uris=[gcs_uri],
+
         comment="look to starter pack",
+
         source_images_gcs=[state.look_image_uri]
+
     )
+
     state.is_generating_starter_pack = False
+
     yield
+
+
+
+
 
 @track_click(element_id="starter_pack_generate_look_button")
+
 def on_click_generate_look(e: me.ClickEvent):
+
     state = me.state(StarterPackState)
+
     app_state = me.state(AppState)
+
     state.is_generating_look = True
+
     yield
 
+
+
     gcs_uri = model.generate_look_from_starter_pack(
+
         starter_pack_uri=state.starter_pack_image_uri,
+
         model_image_uri=state.model_image_uri,
+
     )
+
     state.generated_look_uri = gcs_uri
+
+    state.generated_look_display_url = create_display_url(gcs_uri)
     add_media_item(
         user_email=app_state.user_email,
         model=cfg.GEMINI_IMAGE_GEN_MODEL,
@@ -352,13 +486,18 @@ def on_click_generate_look(e: me.ClickEvent):
 def on_click_clear_starter_pack(e: me.ClickEvent):
     state = me.state(StarterPackState)
     state.look_image_uri = ""
+    state.look_image_display_url = ""
     state.generated_starter_pack_uri = ""
+    state.generated_starter_pack_display_url = ""
     yield
 
 @track_click(element_id="starter_pack_clear_look_button")
 def on_click_clear_look(e: me.ClickEvent):
     state = me.state(StarterPackState)
     state.starter_pack_image_uri = ""
+    state.starter_pack_image_display_url = ""
     state.model_image_uri = ""
+    state.model_image_display_url = ""
     state.generated_look_uri = ""
+    state.generated_look_display_url = ""
     yield

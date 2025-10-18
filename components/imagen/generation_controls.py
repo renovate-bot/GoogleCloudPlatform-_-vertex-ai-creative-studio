@@ -19,6 +19,8 @@ import time
 import mesop as me
 import datetime # Required for timestamp
 
+from common.utils import create_display_url
+
 from common.analytics import track_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
 from config.default import Default
@@ -164,6 +166,7 @@ def on_click_generate_images(e: me.ClickEvent):
     start_time = time.time()
 
     try:
+        # This returns the permanent gs:// URIs
         new_image_uris = generate_images_from_prompt(
             input_txt=current_prompt,
             current_model_name=state.image_model_name,
@@ -172,64 +175,43 @@ def on_click_generate_images(e: me.ClickEvent):
             prompt_modifiers_segment="",  # This is now handled by the prompt itself
             aspect_ratio=state.image_aspect_ratio,
         )
-        state.image_output = new_image_uris
+
+        # Save both the permanent GCS URIs and the display URLs to the state.
+        state.image_gcs_uris = new_image_uris
+        state.image_output = [create_display_url(uri) for uri in new_image_uris]
         state.is_loading = False
 
         if state.image_output:
-            # Generate commentary in the background
-            state.image_commentary = generate_compliment(
-                current_prompt, state.image_output
-            )
+            # Generate commentary in the background using the permanent GCS URIs
+            state.image_commentary = generate_compliment(current_prompt, new_image_uris)
 
         end_time = time.time()
         execution_time = end_time - start_time
 
         # Determine original and rewritten prompts
-        # current_prompt is the one used for generation (could be original or rewritten)
-        # state.image_prompt_input is the current content of the textarea (could be original or rewritten)
-
-        # If state.image_prompt_input is different from current_prompt,
-        # it implies current_prompt was the result of a rewrite, and the original
-        # would have been what was in state.image_prompt_input before the rewrite.
-        # This logic is a bit tricky as we don't explicitly store "original_user_typed_prompt_before_rewrite".
-        # For now, let's assume:
-        # - current_prompt is the "final prompt" used for generation.
-        # - If a rewrite happened, state.image_prompt_input holds the rewritten one.
-        # - The 'original_prompt' field in MediaItem should be the user's initial prompt.
-        # This needs careful state management during rewrite to capture the true original.
-        # For this refactor, we'll use current_prompt as original_prompt if no rewrite,
-        # and state.image_prompt_input as rewritten_prompt if they differ.
-
-        final_prompt_for_generation = current_prompt # This was used for generation
-        original_user_prompt = current_prompt # Default, might be overwritten if rewrite occurred
-        rewritten_value = None
-
-        # A simple way to check if a rewrite likely happened:
-        # If state.image_prompt_input (current textbox value) is different from what was submitted (final_prompt_for_generation)
-        # AND final_prompt_for_generation was the one used to generate (meaning it came from a rewrite action before generation)
-        # This part is still a bit ambiguous without clearer state tracking of "pre-rewrite prompt"
-        # For now, if image_prompt_input (current state) is the result of a rewrite, it's the rewritten.
-        # current_prompt is what was *actually* sent.
-        # The add_image_metadata used current_prompt for original_prompt and state.image_prompt_input for rewritten_prompt.
-        # Let's stick to that pattern:
-
-        media_original_prompt = current_prompt # This was passed as original_prompt to add_image_metadata
-        media_rewritten_prompt = state.image_prompt_input if state.image_prompt_input != current_prompt else None
-
+        final_prompt_for_generation = current_prompt
+        media_original_prompt = current_prompt
+        media_rewritten_prompt = (
+            state.image_prompt_input
+            if state.image_prompt_input != current_prompt
+            else None
+        )
 
         item = MediaItem(
             user_email=app_state.user_email or "local_user@example.com",
             timestamp=datetime.datetime.now(datetime.timezone.utc),
-            prompt=final_prompt_for_generation, # The prompt actually used
+            prompt=final_prompt_for_generation,  # The prompt actually used
             original_prompt=media_original_prompt,
             rewritten_prompt=media_rewritten_prompt,
             model=state.image_model_name,
-            mime_type="image/png", # Assuming PNG
+            mime_type="image/png",  # Assuming PNG
             generation_time=execution_time,
-            error_message="", # Or actual error if one occurred before this block
-            gcs_uris=state.image_output,
+            error_message="",  # Or actual error if one occurred before this block
+            gcs_uris=new_image_uris,  # Save the permanent URIs to Firestore
             aspect=state.image_aspect_ratio,
-            negative_prompt=state.image_negative_prompt_input if state.image_negative_prompt_input else None,
+            negative_prompt=state.image_negative_prompt_input
+            if state.image_negative_prompt_input
+            else None,
             num_images=int(state.imagen_image_count),
             seed=int(state.imagen_seed),
             critique=state.image_commentary if state.image_commentary else None,
@@ -242,10 +224,10 @@ def on_click_generate_images(e: me.ClickEvent):
         item_with_error = MediaItem(
             user_email=app_state.user_email or "local_user@example.com",
             timestamp=datetime.datetime.now(datetime.timezone.utc),
-            prompt=current_prompt, # Or state.image_prompt_input
+            prompt=current_prompt,  # Or state.image_prompt_input
             model=state.image_model_name,
             mime_type="image/png",
-            generation_time=time.time() - start_time, # Time until error
+            generation_time=time.time() - start_time,  # Time until error
             error_message=state.error_message,
             aspect=state.image_aspect_ratio,
             num_images=int(state.imagen_image_count),
@@ -308,6 +290,7 @@ def on_click_clear_images(e: me.ClickEvent):
     state.image_prompt_input = ""
     state.image_prompt_placeholder = ""  # Clear placeholder as well
     state.image_output = []  # Use assignment for list reset
+    state.image_gcs_uris = []
     state.image_commentary = ""
     state.image_negative_prompt_input = ""
     state.image_textarea_key += 1

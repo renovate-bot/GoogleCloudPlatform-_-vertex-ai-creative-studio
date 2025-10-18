@@ -96,7 +96,7 @@ def veo_modes(
             )
 
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from components.image_thumbnail import image_thumbnail
 
 
@@ -110,7 +110,15 @@ def _r2v_uploader(
 ):
     """Uploader for the Reference-to-Video (r2v) mode."""
     state = me.state(PageState)
+    selected_config = get_veo_model_config(state.veo_model)
     MAX_ASSET_IMAGES = 3
+
+    # Default to True, check for override
+    show_style_reference = True
+    if selected_config.mode_overrides and "r2v" in selected_config.mode_overrides:
+        r2v_override = selected_config.mode_overrides["r2v"]
+        if not r2v_override.supports_style_reference:
+            show_style_reference = False
 
     # Determine if uploaders should be disabled
     style_uploader_disabled = bool(state.r2v_reference_images)
@@ -125,7 +133,7 @@ def _r2v_uploader(
                     if i < len(state.r2v_reference_images):
                         image_uri = state.r2v_reference_images[i]
                         image_thumbnail(
-                            image_uri=image_uri,
+                            image_uri=create_display_url(image_uri),
                             index=i,
                             on_remove=on_r2v_asset_remove,
                             icon_size=16,
@@ -141,24 +149,25 @@ def _r2v_uploader(
                         )
                     else:
                         _empty_placeholder()
-        # --- Style Section ---
-        with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
-            me.text("Style reference", style=me.Style(font_size="10pt"))
-            with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
-                if state.r2v_style_image:
-                    image_thumbnail(
-                        image_uri=state.r2v_style_image,
-                        index=0,  # Only one style image
-                        on_remove=on_r2v_style_remove,
-                        icon_size=16,
-                    )
-                else:
-                    _uploader_placeholder(
-                        on_upload=on_r2v_style_add,
-                        on_library_select=on_library_select,
-                        key_prefix="r2v_style",
-                        disabled=style_uploader_disabled,
-                    )
+        # --- Style Section (Conditionally Rendered) ---
+        if show_style_reference:
+            with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
+                me.text("Style reference", style=me.Style(font_size="10pt"))
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
+                    if state.r2v_style_image:
+                        image_thumbnail(
+                            image_uri=create_display_url(state.r2v_style_image),
+                            index=0,  # Only one style image
+                            on_remove=on_r2v_style_remove,
+                            icon_size=16,
+                        )
+                    else:
+                        _uploader_placeholder(
+                            on_upload=on_r2v_style_add,
+                            on_library_select=on_library_select,
+                            key_prefix="r2v_style",
+                            disabled=style_uploader_disabled,
+                        )
 
 
 @me.component
@@ -185,7 +194,7 @@ def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disable
         )
     ):
         me.uploader(
-            label="Add Image",
+            label="Upload Image",
             on_upload=on_upload,
             accepted_file_types=["image/jpeg", "image/png"],
             key=f"{key_prefix}_uploader",
@@ -235,7 +244,7 @@ def _image_uploader(
             me.text("First Frame", style=me.Style(font_size="10pt"))
             if state.reference_image_uri:
                 image_thumbnail(
-                    image_uri=state.reference_image_gcs,
+                    image_uri=state.reference_image_uri,
                     index=0,
                     on_remove=on_clear_first_image,
                     icon_size=16,
@@ -254,7 +263,7 @@ def _image_uploader(
                 me.text("Last Frame", style=me.Style(font_size="10pt"))
                 if state.last_reference_image_uri:
                     image_thumbnail(
-                        image_uri=state.last_reference_image_gcs,
+                        image_uri=state.last_reference_image_uri,
                         index=0,
                         on_remove=on_clear_last_image,
                         icon_size=16,

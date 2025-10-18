@@ -34,28 +34,43 @@ class PageState:
     mode = "/workflows-retail/lool"
 
     aspect_ratio: str = "9:16"
-    video_length: int = 8  # 5-8
+    video_length: int = 8
 
-    # I2V reference Image
-    reference_image_file_clothing: me.UploadedFile = None
-    reference_image_file_key_clothing: int = 0
+    # Input Images
     reference_image_gcs_clothing: list[str] = field(default_factory=list)
-    reference_image_uri_clothing: list[str] = field(default_factory=list)
+    reference_image_display_urls_clothing: list[str] = field(default_factory=list)
 
-    reference_image_file_model: me.UploadedFile = None
-    reference_image_file_key_model: int = 0
-    reference_image_gcs_model: str
-    reference_image_uri_model: str
+    reference_image_gcs_model: str = ""
+    reference_image_display_url_model: str = ""
+    
+    before_image_gcs_uri: str = ""
+    before_image_display_url: str = ""
 
+    # Output Images/Videos
+    result_image_gcs_uri: str = ""
+    result_image_display_url: str = ""
+    result_video_gcs_uri: str = ""
+    result_video_display_url: str = ""
+    
+    result_gcs_uris: list[str] = field(default_factory=list)
+    result_display_urls: list[str] = field(default_factory=list)
+
+    # Progression and alternate images
+    progression_images: list[ProgressionImages] = field(default_factory=list)
+    retry_progression_images: list[ProgressionImages] = field(default_factory=list)
+    alternate_progression_gcs_uris: list[str] = field(default_factory=list)
+    alternate_progression_display_urls: list[str] = field(default_factory=list)
+    alternate_gcs_uris: list[str] = field(default_factory=list)
+    alternate_display_urls: list[str] = field(default_factory=list)
+
+    # General UI state
     is_loading: bool = False
     show_error_dialog: bool = False
     error_message: str = ""
-    result_image: str
-    timing: str
+    timing: str = ""
     look: int = 0
     catalog: list[CatalogRecord] = field(default_factory=list)
     models: list[ModelRecord] = field(default_factory=list)
-    before_image_uri: str
     normal_accordion: dict[str, bool] = field(
         default_factory=lambda: {
             "retry_progression": True,
@@ -63,18 +78,12 @@ class PageState:
             "alternate": True,
         }
     )
-    progression_images: list[ProgressionImages] = field(default_factory=list)
-    retry_progression_images: list[ProgressionImages] = field(default_factory=list)
-    alternate_progression_images: list[str] = field(default_factory=list)
-    alternate_images: list[str] = field(default_factory=list)
     veo_prompt_input: str = (
         "Wide angle shot from a high-angle ceiling perspective captures a sleek model confidently striding down a brightly lit runway. Her full figure is elegantly presented, with every detail of her avant-garde ensemble visible, but the primary focus is drawn to her meticulously designed footwear. The shoes, perhaps gleaming architectural platforms or intricately embellished heels, are highlighted by the stark, dramatic spotlights illuminating the pristine runway below. The long, clean lines of the catwalk stretch into the distance, with the blurred, indistinct forms of the audience fading into the background, ensuring all attention remains on the model's powerful stride and the striking statement of her shoes. The elevated viewpoint offers a unique, almost abstract, composition that emphasizes the geometry of the runway and the singular importance of the footwear. The camera shot should be from 20 feet away."
     )
-    result_video: str
     generate_alternate_views: bool
     selected_model: ModelRecord
     generate_video: bool = True
-    result_images: list[str] = field(default_factory=list)
     veo_model = "2.0"
     current_status: str = ""
     vto_sample_count: str = "4"

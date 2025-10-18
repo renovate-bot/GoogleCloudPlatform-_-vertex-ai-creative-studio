@@ -22,7 +22,6 @@ from common.analytics import log_ui_click, track_click, track_model_call
 from common.error_handling import GenerationError
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -38,6 +37,7 @@ from models.model_setup import VeoModelSetup
 from models.veo import APIReferenceImage, VideoGenerationRequest, generate_video
 from state.state import AppState
 from state.veo_state import PageState
+from common.utils import create_display_url
 
 config = Default()
 
@@ -47,16 +47,27 @@ veo_model = VeoModelSetup.init()
 def on_veo_load(e: me.LoadEvent):
     """Handles page load events, including query parameters for deep linking."""
     state = me.state(PageState)
-    image_uri = me.query_params.get("image_uri")
+    image_path = me.query_params.get("image_path") # Changed from image_uri
     veo_model_param = me.query_params.get("veo_model")
 
     if veo_model_param:
         _update_state_for_new_model(veo_model_param)
 
-    if image_uri:
+    if image_path:
+        # When an image is passed, default to the i2v mode and Veo 3.1 Fast model.
+        _update_state_for_new_model("3.1-fast")
+        
+        image_uri = ""
+        if image_path.startswith("https://"):
+            from common.utils import https_url_to_gcs_uri
+            image_uri = https_url_to_gcs_uri(image_path)
+        else:
+            # Reconstruct the full GCS URI from the path for backward compatibility
+            image_uri = f"gs://{image_path}"
+
         # Set the image from the query parameter
         state.reference_image_gcs = image_uri
-        state.reference_image_uri = gcs_uri_to_https_url(image_uri)
+        state.reference_image_uri = create_display_url(image_uri)
         # Switch to the Image-to-Video tab
         state.veo_mode = "i2v"
         # Provide a default prompt for a better user experience
@@ -268,7 +279,8 @@ def on_blur_negative_prompt(e: me.InputBlurEvent):
 def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Clear prompt and video."""
     state = me.state(PageState)
-    state.result_videos = []
+    state.result_gcs_uris = []
+    state.result_display_urls = []
     state.selected_video_url = ""
     state.prompt = None
     state.negative_prompt = ""
@@ -394,12 +406,25 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     )
 
     try:
-        gcs_uris, resolution = generate_video(request)
-        state.result_videos = gcs_uris
-        if gcs_uris:
-            state.selected_video_url = gcs_uris[0]
+        model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
+        with track_model_call(
+            model_name=model_name_for_analytics,
+            prompt_length=len(request.prompt) if request.prompt else 0,
+            duration_seconds=request.duration_seconds,
+            aspect_ratio=request.aspect_ratio,
+            video_count=request.video_count,
+            mode=state.veo_mode,
+        ):
+            gcs_uris, resolution = generate_video(request)
+        
+        # Create display URLs for the UI
+        display_urls = [create_display_url(uri) for uri in gcs_uris]
+        state.result_gcs_uris = gcs_uris
+        state.result_display_urls = display_urls
+        if display_urls:
+            state.selected_video_url = display_urls[0]
 
-        item_to_log.gcs_uris = gcs_uris
+        item_to_log.gcs_uris = gcs_uris # Log permanent URIs
         item_to_log.gcsuri = gcs_uris[0] if gcs_uris else None
         item_to_log.resolution = resolution
 
@@ -479,7 +504,7 @@ def on_upload_image(e: me.UploadEvent):
         )
         # Update the state with the new image details
         state.reference_image_gcs = gcs_path
-        state.reference_image_uri = gcs_uri_to_https_url(gcs_path)
+        state.reference_image_uri = create_display_url(gcs_path)
         state.reference_image_mime_type = e.file.mime_type
         print(f"Image uploaded to {gcs_path} with mime type {e.file.mime_type}")
     except Exception as ex:
@@ -498,7 +523,7 @@ def on_upload_last_image(e: me.UploadEvent):
         )
         # Update the state with the new image details
         state.last_reference_image_gcs = gcs_path
-        state.last_reference_image_uri = gcs_uri_to_https_url(gcs_path)
+        state.last_reference_image_uri = create_display_url(gcs_path)
         state.last_reference_image_mime_type = e.file.mime_type
     except Exception as ex:
         state.error_message = f"Failed to upload image: {ex}"
@@ -565,10 +590,10 @@ def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     if e.chooser_id.startswith("i2v") or e.chooser_id.startswith("first_frame"):
         state.reference_image_gcs = e.gcs_uri
-        state.reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
+        state.reference_image_uri = create_display_url(e.gcs_uri)
     elif e.chooser_id.startswith("interpolation_last"):
         state.last_reference_image_gcs = e.gcs_uri
-        state.last_reference_image_uri = gcs_uri_to_https_url(e.gcs_uri)
+        state.last_reference_image_uri = create_display_url(e.gcs_uri)
     elif e.chooser_id.startswith("r2v_asset_library_chooser"):
         if len(state.r2v_reference_images) >= 3:
             state.error_message = "You can upload a maximum of 3 asset images."

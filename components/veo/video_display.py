@@ -15,11 +15,11 @@
 from typing import Callable
 import mesop as me
 
-from common.utils import gcs_uri_to_https_url
 from state.state import AppState
 from state.veo_state import PageState
 from ..video_thumbnail.video_thumbnail import video_thumbnail
 from models.video_processing import convert_mp4_to_gif
+from common.utils import https_url_to_gcs_uri, create_display_url
 
 @me.component
 def video_display(on_thumbnail_click: Callable):
@@ -41,12 +41,12 @@ def video_display(on_thumbnail_click: Callable):
             state.gif_url = ""
             return
 
-        if not state.result_videos:
+        if not state.result_display_urls:
             me.text("Your generated videos will appear here.", style=me.Style(padding=me.Padding.all(24), color=me.theme_var("on-surface-variant")))
             return
 
         # Determine the main video to display
-        main_video_url = state.selected_video_url if state.selected_video_url else state.result_videos[0]
+        main_video_url = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
 
         # Parse aspect ratio string "w:h" into "w / h" for CSS
         aspect_ratio_css = state.aspect_ratio.replace(":", " / ")
@@ -63,7 +63,7 @@ def video_display(on_thumbnail_click: Callable):
         ):
             me.video(
                 key=main_video_url,
-                src=gcs_uri_to_https_url(main_video_url),
+                src=main_video_url,
                 style=me.Style(
                     border_radius=12,
                     width="100%",
@@ -71,6 +71,13 @@ def video_display(on_thumbnail_click: Callable):
                     display="block",
                 ),
             )
+
+        # Find the corresponding GCS URI for the selected video URL to pass to the GIF converter.
+        try:
+            selected_index = state.result_display_urls.index(main_video_url)
+            gcs_uri_for_gif = state.result_gcs_uris[selected_index]
+        except (ValueError, IndexError):
+            gcs_uri_for_gif = "" # Fallback in case of an issue
 
         # Generation time and Extend functionality
         with me.box(
@@ -103,15 +110,15 @@ def video_display(on_thumbnail_click: Callable):
                     on_click=on_click_extend,
                     disabled=True if state.video_extend_length == 0 else False,
                 )
-            
-            me.button("Convert to GIF", key=main_video_url, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
+
+            me.button("Convert to GIF", key=gcs_uri_for_gif, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
 
             if state.is_converting_gif:
                 with me.box(style=me.Style(display="flex", justify_content="center")):
                     me.progress_spinner()
 
         # Thumbnail strip for multiple videos
-        if len(state.result_videos) > 1:
+        if len(state.result_display_urls) > 1:
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -122,12 +129,12 @@ def video_display(on_thumbnail_click: Callable):
                     flex_wrap="wrap",
                 )
             ):
-                for url in state.result_videos:
+                for url in state.result_display_urls:
                     is_selected = url == main_video_url
                     with me.box(style=me.Style(height="90px", width="160px")):
                         video_thumbnail(
                             key=url,
-                            video_src=gcs_uri_to_https_url(url),
+                            video_src=url,
                             selected=is_selected,
                             on_click=on_thumbnail_click,
                         )
@@ -158,7 +165,7 @@ def on_selection_change_extend_length(e: me.SelectSelectionChangeEvent):
 def on_click_extend(e: me.ClickEvent):
     """Extend video"""
     state = me.state(PageState)
-    video_to_extend = state.selected_video_url if state.selected_video_url else state.result_videos[0]
+    video_to_extend = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
     print(
         f"You would like to extend {video_to_extend} by {state.video_extend_length} seconds."
     )
@@ -169,11 +176,28 @@ def on_convert_to_gif_click(e: me.ClickEvent):
     state = me.state(PageState)
     app_state = me.state(AppState)
     state.is_converting_gif = True
+    state.gif_url = ""
     yield
 
     try:
-        print(f"Converting {e.key} to GIF ...")
-        state.gif_url = gcs_uri_to_https_url(convert_mp4_to_gif(e.key, user_email=app_state.user_email))
+        # Get the display URL of the currently selected video.
+        video_to_convert = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
+        print(f"Converting {video_to_convert} to GIF ...")
+
+        # Convert the display URL back to a GCS URI for the backend function.
+        gcs_uri = https_url_to_gcs_uri(video_to_convert)
+
+        # This function returns the GCS URI of the new GIF
+        new_gif_gcs_uri = convert_mp4_to_gif(gcs_uri, user_email=app_state.user_email)
+
+        # Convert the new GCS URI into a display URL
+        state.gif_url = create_display_url(new_gif_gcs_uri)
+
+    except Exception as ex:
+        # Handle errors if necessary
+        print(f"Error converting to GIF: {ex}")
+        state.error_message = f"Failed to convert to GIF: {ex}"
+        state.show_error_dialog = True
     finally:
         state.is_converting_gif = False
         yield

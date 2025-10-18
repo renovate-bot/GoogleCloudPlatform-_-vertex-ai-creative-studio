@@ -18,6 +18,7 @@ import datetime
 import time
 from dataclasses import field, dataclass
 from typing import Callable
+import concurrent.futures
 
 import mesop as me
 
@@ -29,7 +30,6 @@ from common.metadata import (
     config,
 )
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -43,15 +43,19 @@ from models.video_processing import (
     layer_audio_on_video,
     process_videos,
 )
+from common.utils import create_display_url
 from state.state import AppState
 
 
 @me.stateclass
 class PageState:
     # Using a dict to store selected videos, keyed by chooser id (e.g., "video_1")
-    selected_videos: dict[str, str] = field(default_factory=dict)
+    selected_videos: dict[str, str] = field(default_factory=dict) # pylint: disable=E3701:invalid-field-call
+    selected_videos_display_urls: dict[str, str] = field(default_factory=dict) # pylint: disable=E3701:invalid-field-call
     concatenated_video_url: str = ""
+    concatenated_video_display_url: str = ""
     gif_url: str = ""
+    gif_display_url: str = ""
     is_loading: bool = False
     is_converting_gif: bool = False
     error_message: str = ""
@@ -63,7 +67,9 @@ class PageState:
     dialog_message: str = ""
     active_tab: str = "video_video"
     selected_video_for_audio: str = ""
+    selected_video_for_audio_display_url: str = ""
     selected_audio: str = ""
+    selected_audio_display_url: str = ""
 
     # State for the new media chooser dialog
     show_chooser_dialog: bool = False
@@ -95,8 +101,8 @@ VIDEO_PLACEHOLDER_STYLE = me.Style(
     title="Pixie Compositor",
 )
 def pixie_compositor_page():
-    with page_scaffold(page_name="pixie_compositor"):
-        with page_frame():
+    with page_scaffold(page_name="pixie_compositor"): # pylint: disable=E1129:not-context-manager
+        with page_frame(): # pylint: disable=E1129:not-context-manager
             header("Pixie Compositor", "auto_fix_high")
             page_content()
             render_chooser_dialog()  # Add dialog to the page layout
@@ -195,6 +201,8 @@ def open_video_chooser(e: me.ClickEvent):
     yield
 
     items, last_doc = get_media_for_chooser(media_type="video", page_size=20)
+    # Sign the URLs once on load
+    sign_items_in_parallel(items)
     state.chooser_media_items = items
     state.chooser_last_doc_id = last_doc.id if last_doc else ""
     if not last_doc:
@@ -215,12 +223,24 @@ def open_audio_chooser(e: me.ClickEvent):
     yield
 
     items, last_doc = get_media_for_chooser(media_type="audio", page_size=20)
+    # Sign the URLs once on load
+    sign_items_in_parallel(items)
     state.chooser_media_items = items
     state.chooser_last_doc_id = last_doc.id if last_doc else ""
     if not last_doc:
         state.chooser_all_items_loaded = True
     state.chooser_is_loading = False
     yield
+
+
+def sign_items_in_parallel(items: list[MediaItem]):
+    """Helper function to add a cacheable proxy URL attribute to media items."""
+    for item in items:
+        gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
+        if gcs_uri:
+            item.signed_url = create_display_url(gcs_uri)
+        else:
+            item.signed_url = ""
 
 
 def render_video_video_tab():
@@ -258,10 +278,10 @@ def render_video_video_tab():
                         key="video_1", on_click=open_video_chooser, media_type="video"
                     )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
-                    if "video_1" in state.selected_videos:
+                    if "video_1" in state.selected_videos_display_urls:
                         me.video(
                             key=state.selected_videos["video_1"],  # Add key to force re-render
-                            src=gcs_uri_to_https_url(state.selected_videos["video_1"]),
+                            src=state.selected_videos_display_urls["video_1"],
                             style=me.Style(
                                 height="100%",
                                 width="100%",
@@ -293,10 +313,10 @@ def render_video_video_tab():
                         key="video_2", on_click=open_video_chooser, media_type="video"
                     )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
-                    if "video_2" in state.selected_videos:
+                    if "video_2" in state.selected_videos_display_urls:
                         me.video(
                             key=state.selected_videos["video_2"],  # Add key to force re-render
-                            src=gcs_uri_to_https_url(state.selected_videos["video_2"]),
+                            src=state.selected_videos_display_urls["video_2"],
                             style=me.Style(height="100%", width="100%", border_radius=8),
                         )
                     else:
@@ -343,7 +363,7 @@ def render_video_video_tab():
             me.text(state.error_message, style=me.Style(color="red"))
 
         # result video
-        if state.concatenated_video_url:
+        if state.concatenated_video_display_url:
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -353,7 +373,7 @@ def render_video_video_tab():
                 )
             ):
                 me.video(
-                    src=gcs_uri_to_https_url(state.concatenated_video_url),
+                    src=state.concatenated_video_display_url,
                     style=me.Style(width="100%", max_width="720px", border_radius=8),
                 )
                 me.button(
@@ -366,7 +386,7 @@ def render_video_video_tab():
             with me.box(style=me.Style(display="flex", justify_content="center")):
                 me.progress_spinner()
 
-        if state.gif_url:
+        if state.gif_display_url:
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -377,7 +397,7 @@ def render_video_video_tab():
             ):
                 me.text("Video as GIF:", type="headline-5")
                 me.image(
-                    src=gcs_uri_to_https_url(state.gif_url),
+                    src=state.gif_display_url,
                     style=me.Style(width="100%", max_width="480px", border_radius=8),
                 )
 
@@ -419,10 +439,10 @@ def render_video_audio_tab():
                         media_type="video",
                     )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
-                    if state.selected_video_for_audio:
+                    if state.selected_video_for_audio_display_url:
                         me.video(
                             key=state.selected_video_for_audio,  # Add key to force re-render
-                            src=gcs_uri_to_https_url(state.selected_video_for_audio),
+                            src=state.selected_video_for_audio_display_url,
                             style=me.Style(
                                 height="100%",
                                 width="100%",
@@ -455,9 +475,9 @@ def render_video_audio_tab():
                     )
                     # Future: Add audio_chooser_button if created
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
-                    if state.selected_audio:
+                    if state.selected_audio_display_url:
                         me.audio(
-                            src=gcs_uri_to_https_url(state.selected_audio),
+                            src=state.selected_audio_display_url,
                         )
                     else:
                         me.icon("music_note")
@@ -490,7 +510,7 @@ def render_video_audio_tab():
         if state.error_message:
             me.text(state.error_message, style=me.Style(color="red"))
 
-        if state.concatenated_video_url:
+        if state.concatenated_video_display_url:
             with me.box(
                 style=me.Style(
                     display="flex",
@@ -500,7 +520,7 @@ def render_video_audio_tab():
                 )
             ):
                 me.video(
-                    src=gcs_uri_to_https_url(state.concatenated_video_url),
+                    src=state.concatenated_video_display_url,
                     style=me.Style(width="100%", max_width="720px", border_radius=8),
                 )
 
@@ -515,12 +535,16 @@ def render_chooser_dialog():
         # Based on which button opened the dialog, update the correct state variable.
         if state.chooser_dialog_key == "video_1":
             state.selected_videos["video_1"] = gcs_uri
+            state.selected_videos_display_urls["video_1"] = create_display_url(gcs_uri)
         elif state.chooser_dialog_key == "video_2":
             state.selected_videos["video_2"] = gcs_uri
+            state.selected_videos_display_urls["video_2"] = create_display_url(gcs_uri)
         elif state.chooser_dialog_key == "video_for_audio":
             state.selected_video_for_audio = gcs_uri
+            state.selected_video_for_audio_display_url = create_display_url(gcs_uri)
         elif state.chooser_dialog_key == "audio_1":
             state.selected_audio = gcs_uri
+            state.selected_audio_display_url = create_display_url(gcs_uri)
 
         state.show_chooser_dialog = False
         yield
@@ -543,6 +567,8 @@ def render_chooser_dialog():
             page_size=20,
             start_after=last_doc_ref,
         )
+        # Sign the URLs once on load
+        sign_items_in_parallel(new_items)
         state.chooser_media_items.extend(new_items)
         state.chooser_last_doc_id = last_doc.id if last_doc else ""
         if not last_doc:
@@ -554,7 +580,7 @@ def render_chooser_dialog():
         width="95vw", height="80vh", display="flex", flex_direction="column"
     )
 
-    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style):
+    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style): # pylint: disable=E1129:not-context-manager
         if state.show_chooser_dialog:
             with me.box(
                 style=me.Style(
@@ -614,10 +640,7 @@ def render_chooser_dialog():
                                 )
                             else:
                                 for item in items_to_render:
-                                    https_url = gcs_uri_to_https_url(
-                                        item.gcsuri
-                                        or (item.gcs_uris[0] if item.gcs_uris else "")
-                                    )
+                                    https_url = item.signed_url if hasattr(item, "signed_url") else ""
                                     media_tile(
                                         key=item.gcsuri
                                         or (item.gcs_uris[0] if item.gcs_uris else ""),
@@ -641,12 +664,14 @@ def on_upload_video_for_audio(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_video_for_audio = gcs_url
+    state.selected_video_for_audio_display_url = create_display_url(gcs_url)
     yield
 
 
 def on_video_select_for_audio(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     state.selected_video_for_audio = e.gcs_uri
+    state.selected_video_for_audio_display_url = create_display_url(e.gcs_uri)
     yield
 
 
@@ -657,12 +682,14 @@ def on_upload_audio(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_audio = gcs_url
+    state.selected_audio_display_url = create_display_url(gcs_url)
     yield
 
 
 def on_audio_select_from_library(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     state.selected_audio = e.gcs_uri
+    state.selected_audio_display_url = create_display_url(e.gcs_uri)
     yield
 
 
@@ -680,6 +707,7 @@ def on_layer_audio_click(e: me.ClickEvent):
             state.selected_video_for_audio, state.selected_audio
         )
         state.concatenated_video_url = processed_uri
+        state.concatenated_video_display_url = create_display_url(processed_uri)
 
         # Log to Firestore
         add_media_item_to_firestore(
@@ -721,6 +749,7 @@ def on_upload_video_1(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_videos["video_1"] = gcs_url
+    state.selected_videos_display_urls["video_1"] = create_display_url(gcs_url)
     yield
 
 
@@ -731,6 +760,7 @@ def on_upload_video_2(e: me.UploadEvent):
         "pixie_compositor_uploads", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.selected_videos["video_2"] = gcs_url
+    state.selected_videos_display_urls["video_2"] = create_display_url(gcs_url)
     yield
 
 
@@ -766,6 +796,7 @@ def on_process_click(e: me.ClickEvent):
             video_uris_to_process, state.selected_transition
         )
         state.concatenated_video_url = processed_uri
+        state.concatenated_video_display_url = create_display_url(processed_uri)
 
         # Log to Firestore
         add_media_item_to_firestore(
@@ -777,9 +808,8 @@ def on_process_click(e: me.ClickEvent):
                 source_uris=video_uris_to_process,
                 comment=f"Produced by Pixie Compositor with {state.selected_transition} transition",
                 model="pixie-compositor-v1",
-            )
+            ),
         )
-
     except ValueError as ex:
         # Catch the specific resolution error and show a dialog
         state.dialog_title = "Resolution Mismatch"
@@ -798,11 +828,14 @@ def on_convert_to_gif_click(e: me.ClickEvent):
     app_state = me.state(AppState)
     state.is_converting_gif = True
     state.gif_url = ""
+    state.gif_display_url = ""
     state.error_message = ""
     yield
 
     try:
-        state.gif_url = convert_mp4_to_gif(state.concatenated_video_url, user_email=app_state.user_email)
+        gif_gcs_uri = convert_mp4_to_gif(state.concatenated_video_url, user_email=app_state.user_email)
+        state.gif_url = gif_gcs_uri
+        state.gif_display_url = create_display_url(gif_gcs_uri)
     except Exception as ex:
         state.error_message = f"An error occurred during GIF conversion: {ex}"
     finally:

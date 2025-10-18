@@ -21,7 +21,7 @@ import mesop as me
 
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.video_chooser_button import video_chooser_button
@@ -135,7 +135,7 @@ def on_video_select(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     state.selected_video_gcs_uri = e.gcs_uri
     state.selected_video_url = e.gcs_uri  # Pass the gs:// URI to the component
-    state.selected_video_display_url = gcs_uri_to_https_url(e.gcs_uri)
+    state.selected_video_display_url = create_display_url(e.gcs_uri)
     yield
 
 
