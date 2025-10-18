@@ -240,6 +240,8 @@ With any of the deployment options above that use IAP, if you need to add additi
 * Application Access - Add the user to IAP. Follow [these steps](https://cloud.google.com/iap/docs/managing-access#managing_access_console) if you deployed using a load balancer, granting the user the *IAP-Secured Web App User* role. If you deployed using only the Cloud Run provided URL, follow [these steps](https://cloud.google.com/run/docs/securing/identity-aware-proxy-cloud-run#manage_user_or_group_access).
 * Image Access - The images are served using the authenticated GCS URL of each storage object so users need to be granted the *Storage Object Viewer* role. The name of the bucket is available as the `assets-bucket` Terraform output.
 
+> **Note:** For the application to function correctly, the **Cloud Run service account** must have the **`Storage Object Viewer`** (`roles/storage.objectViewer`) role on the GCS bucket. This allows the application to read media assets and serve them to users through the proxy.
+
 # Solution Design
 There are two way to deploy this solution. One using a custom domain with a load balancer and IAP integration. The other is using Cloud Run's default URL and integrating IAP with Cloud Run. The below diagrams depict the components used for each option.
 
