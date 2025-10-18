@@ -33,6 +33,7 @@ from config.default import Default
 from models.image_models import generate_virtual_models
 from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
 from models.vto import generate_vto_image
+from common.utils import create_display_url
 from state.state import AppState
 from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
@@ -101,7 +102,7 @@ def on_upload_person(e: me.UploadEvent):
         "vto_person_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.person_image_gcs = gcs_url
-    state.person_image_display_url = f"/media/{gcs_url.replace('gs://', '')}"
+    state.person_image_display_url = create_display_url(gcs_url)
     yield
 
 
@@ -113,11 +114,11 @@ def on_library_chooser(e: LibrarySelectionChangeEvent):
     if e.chooser_id == "person_library_chooser":
         print("STATE: person image")
         state.person_image_gcs = e.gcs_uri
-        state.person_image_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
+        state.person_image_display_url = create_display_url(e.gcs_uri)
     elif e.chooser_id == "product_library_chooser":
         print("STATE: prod image")
         state.product_image_gcs = e.gcs_uri
-        state.product_image_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
+        state.product_image_display_url = create_display_url(e.gcs_uri)
     yield
 
 
@@ -129,7 +130,7 @@ def on_upload_product(e: me.UploadEvent):
         "vto_product_images", e.file.name, e.file.mime_type, e.file.getvalue()
     )
     state.product_image_gcs = gcs_url
-    state.product_image_display_url = f"/media/{gcs_url.replace('gs://', '')}"
+    state.product_image_display_url = create_display_url(gcs_url)
     yield
 
 
@@ -167,7 +168,7 @@ def on_click_generate_person(e: me.ClickEvent):
         gcs_url = image_urls[0]
 
         state.person_image_gcs = gcs_url
-        state.person_image_display_url = f"/media/{gcs_url.replace('gs://', '')}"
+        state.person_image_display_url = create_display_url(gcs_url)
 
     except Exception as e:
         state.error_message = str(e)
@@ -194,7 +195,7 @@ def on_generate(e: me.ClickEvent):
         )
         print(f"Result GCS URIs: {result_gcs_uris}")
         state.result_gcs_uris = result_gcs_uris
-        state.result_display_urls = [f"/media/{uri.replace('gs://', '')}" for uri in result_gcs_uris]
+        state.result_display_urls = [create_display_url(uri) for uri in result_gcs_uris]
         add_media_item(
             user_email=app_state.user_email,
             model=config.VTO_MODEL_ID,

@@ -6,7 +6,7 @@ from typing import Callable
 import mesop as me
 
 from common.storage import store_to_gcs
-from common.utils import generate_signed_url
+from common.utils import create_display_url
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from state.interior_design_v2_state import PageState
@@ -66,7 +66,7 @@ def floor_plan_uploader(
         with me.box(style=IMAGE_PLACEHOLDER_STYLE):
             if storyboard and storyboard.get("original_floor_plan_uri"):
                 me.image(
-                    src=generate_signed_url(storyboard["original_floor_plan_uri"]),
+                    src=create_display_url(storyboard["original_floor_plan_uri"]),
                     style=me.Style(
                         height="100%",
                         width="100%",

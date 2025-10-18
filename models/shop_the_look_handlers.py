@@ -35,6 +35,7 @@ from models.gemini import (
 from models.shop_the_look_models import ProgressionImage, ProgressionImages
 from models.veo import image_to_video
 from models.vto import call_virtual_try_on
+from common.utils import create_display_url
 from state.shop_the_look_state import PageState
 from state.state import AppState
 
@@ -47,7 +48,8 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.is_loading = True
     state.show_error_dialog = False
     state.error_message = ""
-    state.result_video = ""
+    state.result_video_gcs_uri = ""
+    state.result_video_display_url = ""
     state.timing = ""
     state.current_status = f"Generating video with Veo {state.veo_model}"
     yield
@@ -72,10 +74,9 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         for item in state.catalog:
             if item.look_id == state.look:
                 veo_prompt += f"\n {item.ai_description}"
-
         op = image_to_video(
             veo_prompt,
-            state.result_image,
+            state.result_image_gcs_uri,
             seed,
             aspect_ratio,
             state.veo_sample_count,
@@ -121,7 +122,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
                     print("Video generated - use the following to copy locally")
                     print(f"gsutil cp {gcs_uri} {file_name}")
                     state.result_video_gcs_uri = gcs_uri
-                    state.result_video_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
+                    state.result_video_display_url = create_display_url(gcs_uri)
                 else:
                     # Success reported, but no video URI found - treat as an error/unexpected state
                     current_error_message = "API reported success but no video URI was found in the response."
@@ -157,7 +158,8 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
             state.error_message = current_error_message
             state.show_error_dialog = True
             # Ensure no result video is displayed on error
-            state.result_video = ""
+            state.result_video_gcs_uri = ""
+            state.result_video_display_url = ""
             yield
 
         try:
@@ -343,10 +345,10 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                             p.accurate = bm.accurate
                             if bm.best_image:
                                 last_best_image = p.image_path
-                            state.result_images.append(p.image_path)
 
-                if last_best_image is None and state.result_images:
-                    last_best_image = state.result_images[-1]
+                if last_best_image is None and potential_images:
+                    # Fallback: if no 'best' image was flagged, use the last one generated.
+                    last_best_image = potential_images[-1]
 
                 progressions = ProgressionImages(progression_images=temp_progressions)
 
@@ -359,10 +361,10 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
 
                 if r.primary_view and (i + 1) == len(articles_for_vto):
                     state.result_image_gcs_uri = last_best_image
-                    state.result_image_display_url = f"/media/{last_best_image.replace('gs://', '')}"
+                    state.result_image_display_url = create_display_url(last_best_image)
                 elif i == len(look_articles):
                     state.alternate_gcs_uris.append(last_best_image)
-                    state.alternate_display_urls.append(f"/media/{last_best_image.replace('gs://', '')}")
+                    state.alternate_display_urls.append(create_display_url(last_best_image))
 
                 state.reference_image_gcs_model = last_best_image
                 yield
@@ -370,7 +372,7 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
     if e.key == "primary" or e.key == "retry":
         with concurrent.futures.ThreadPoolExecutor() as executor:
             final_image_bytes_list = list(
-                executor.map(download_from_gcs, [state.result_image])
+                executor.map(download_from_gcs, [state.result_image_gcs_uri])
             )
             state.current_status = "Critic evaluation in progress..."
             yield

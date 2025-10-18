@@ -96,7 +96,7 @@ def veo_modes(
             )
 
 
-from common.utils import generate_signed_url
+from common.utils import create_display_url
 from components.image_thumbnail import image_thumbnail
 
 
@@ -133,7 +133,7 @@ def _r2v_uploader(
                     if i < len(state.r2v_reference_images):
                         image_uri = state.r2v_reference_images[i]
                         image_thumbnail(
-                            image_uri=generate_signed_url(image_uri),
+                            image_uri=create_display_url(image_uri),
                             index=i,
                             on_remove=on_r2v_asset_remove,
                             icon_size=16,
@@ -156,7 +156,7 @@ def _r2v_uploader(
                 with me.box(style=me.Style(display="flex", flex_direction="row", gap=5)):
                     if state.r2v_style_image:
                         image_thumbnail(
-                            image_uri=generate_signed_url(state.r2v_style_image),
+                            image_uri=create_display_url(state.r2v_style_image),
                             index=0,  # Only one style image
                             on_remove=on_r2v_style_remove,
                             icon_size=16,
@@ -194,7 +194,7 @@ def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disable
         )
     ):
         me.uploader(
-            label="Add Image",
+            label="Upload Image",
             on_upload=on_upload,
             accepted_file_types=["image/jpeg", "image/png"],
             key=f"{key_prefix}_uploader",

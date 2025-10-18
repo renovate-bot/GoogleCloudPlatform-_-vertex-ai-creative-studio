@@ -4,8 +4,6 @@ Component for the Design Studio.
 
 from typing import Callable
 import mesop as me
-
-from common.utils import generate_signed_url
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.veo_button.veo_button import veo_button

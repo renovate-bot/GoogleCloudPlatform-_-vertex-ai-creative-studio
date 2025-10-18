@@ -16,7 +16,7 @@
 
 import mesop as me
 
-from common.utils import gcs_uri_to_https_url
+from common.utils import create_display_url
 from models.shop_the_look_handlers import on_click_veo, on_click_vto_look
 from pages.styles import _BOX_STYLE_CENTER_DISTRIBUTED
 from state.shop_the_look_state import PageState
@@ -31,21 +31,20 @@ def on_click_clear_reference_image(
     state.progression_images = []
     state.retry_progression_images = []
     state.alternate_progression_images = []
-    state.alternate_images = []
-    state.result_video = None
+    state.alternate_display_urls = []
+    state.result_video_gcs_uri = None
     state.look_description = ""
     state.reference_image_gcs_clothing = []
     state.reference_image_uri_clothing = []
     state.reference_image_gcs_model = None
     state.reference_image_uri_model = None
-    state.result_image = None
+    state.result_image_gcs_uri = None
     state.error_message = ""
     state.timing = None
     state.look = 0
     state.catalog = []
     state.before_image_uri = None
     state.models = []
-    state.result_images = []
     state.final_critic = None
     state.tryon_started = False
     state.retry_counter = 0
@@ -136,8 +135,8 @@ def results_display():
                     )
                 ):
                     if (
-                        state.result_image
-                        and not state.result_video
+                        state.result_image_gcs_uri
+                        and not state.result_video_gcs_uri
                         and not state.generate_video
                         and not state.is_loading
                     ):
@@ -151,7 +150,7 @@ def results_display():
                     if (
                         state.look
                         and state.look != 0
-                        and not state.result_image
+                        and not state.result_image_gcs_uri
                         and not state.is_loading
                     ):
                         with me.content_button(
@@ -219,7 +218,7 @@ def results_display():
                                 width="100%",
                             )
                         ):
-                            img = f"/media/{item.clothing_image.replace('gs://', '')}"
+                            img = create_display_url(item.clothing_image)
                             me.image(
                                 src=img,
                                 style=me.Style(
@@ -261,7 +260,7 @@ def results_display():
                         margin=me.Margin(bottom=20),
                     ),
                 )
-            if state.result_image:
+            if state.result_image_gcs_uri:
                 with me.box(
                     style=me.Style(
                         display="flex",
@@ -293,7 +292,7 @@ def results_display():
                                             width="100px",
                                             height="100px",
                                             font_size=(
-                                                "25px" if state.result_video else "50px"
+                                                "25px" if state.result_video_gcs_uri else "50px"
                                             ),
                                         ),
                                     )
@@ -305,7 +304,7 @@ def results_display():
                                             width="50px",
                                             height="50px",
                                             font_size=(
-                                                "25px" if state.result_video else "50px"
+                                                "25px" if state.result_video_gcs_uri else "50px"
                                             ),
                                         ),
                                     )
@@ -324,7 +323,7 @@ def results_display():
                                                         height="50px",
                                                         font_size=(
                                                             "25px"
-                                                            if state.result_video
+                                                            if state.result_video_gcs_uri
                                                             else "50px"
                                                         ),
                                                     ),
@@ -367,7 +366,7 @@ def results_display():
                         align_items="right",
                     )
                 ):
-                    if state.alternate_images:
+                    if state.alternate_display_urls:
                         with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
                             with me.box(
                                 style=me.Style(
@@ -425,7 +424,7 @@ def results_display():
                         )
                     ):
                         for img in p.progression_images:
-                            image_url = f"/media/{img.image_path.replace('gs://', '')}"
+                            image_url = create_display_url(img.image_path)
 
                             with me.box(
                                 style=me.Style(

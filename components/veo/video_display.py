@@ -19,6 +19,7 @@ from state.state import AppState
 from state.veo_state import PageState
 from ..video_thumbnail.video_thumbnail import video_thumbnail
 from models.video_processing import convert_mp4_to_gif
+from common.utils import https_url_to_gcs_uri, create_display_url
 
 @me.component
 def video_display(on_thumbnail_click: Callable):
@@ -71,6 +72,13 @@ def video_display(on_thumbnail_click: Callable):
                 ),
             )
 
+        # Find the corresponding GCS URI for the selected video URL to pass to the GIF converter.
+        try:
+            selected_index = state.result_display_urls.index(main_video_url)
+            gcs_uri_for_gif = state.result_gcs_uris[selected_index]
+        except (ValueError, IndexError):
+            gcs_uri_for_gif = "" # Fallback in case of an issue
+
         # Generation time and Extend functionality
         with me.box(
             style=me.Style(
@@ -103,7 +111,7 @@ def video_display(on_thumbnail_click: Callable):
                     disabled=True if state.video_extend_length == 0 else False,
                 )
 
-            me.button("Convert to GIF", key=main_video_url, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
+            me.button("Convert to GIF", key=gcs_uri_for_gif, on_click=on_convert_to_gif_click, disabled=state.is_converting_gif)
 
             if state.is_converting_gif:
                 with me.box(style=me.Style(display="flex", justify_content="center")):
@@ -172,16 +180,18 @@ def on_convert_to_gif_click(e: me.ClickEvent):
     yield
 
     try:
-        print(f"Converting {e.key} to GIF ...")
-        # e.key is the proxy URL, e.g., /media/bucket/video.mp4
-        # Convert it back to a GCS URI for the backend function.
-        gcs_uri = f"gs://{e.key.replace('/media/', '')}"
+        # Get the display URL of the currently selected video.
+        video_to_convert = state.selected_video_url if state.selected_video_url else state.result_display_urls[0]
+        print(f"Converting {video_to_convert} to GIF ...")
+
+        # Convert the display URL back to a GCS URI for the backend function.
+        gcs_uri = https_url_to_gcs_uri(video_to_convert)
 
         # This function returns the GCS URI of the new GIF
         new_gif_gcs_uri = convert_mp4_to_gif(gcs_uri, user_email=app_state.user_email)
 
-        # Convert the new GCS URI into a proxy URL for display
-        state.gif_url = f"/media/{new_gif_gcs_uri.replace('gs://', '')}"
+        # Convert the new GCS URI into a display URL
+        state.gif_url = create_display_url(new_gif_gcs_uri)
 
     except Exception as ex:
         # Handle errors if necessary

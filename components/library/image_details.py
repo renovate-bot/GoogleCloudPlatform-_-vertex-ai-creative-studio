@@ -22,7 +22,7 @@ from typing import Callable
 import mesop as me
 
 from common.metadata import MediaItem
-from common.utils import gcs_uri_to_https_url, https_url_to_gcs_uri
+from common.utils import create_display_url, https_url_to_gcs_uri
 from components.download_button.download_button import download_button
 from components.edit_button.edit_button import edit_button
 
@@ -85,7 +85,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
         )
     ):
         # Image display
-        image_url = gcs_uri_to_https_url(item.gcs_uris[state.current_index])
+        image_url = create_display_url(item.gcs_uris[state.current_index])
         me.image(
             src=image_url,
             style=me.Style(
@@ -153,7 +153,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                         )
                     ):
                         me.text("Person Image")
-                        person_url = gcs_uri_to_https_url(person_gcs_uri)
+                        person_url = create_display_url(person_gcs_uri)
                         me.image(
                             src=person_url,
                             style=me.Style(
@@ -173,7 +173,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                         )
                     ):
                         me.text("Product Image")
-                        product_url = gcs_uri_to_https_url(product_gcs_uri)
+                        product_url = create_display_url(product_gcs_uri)
                         me.image(
                             src=product_url,
                             style=me.Style(
@@ -196,7 +196,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
             ):
                 for uri in item.source_images_gcs:
                     me.image(
-                        src=gcs_uri_to_https_url(uri),
+                        src=create_display_url(uri),
                         style=me.Style(
                             width="100px", height="auto", border_radius="8px"
                         ),

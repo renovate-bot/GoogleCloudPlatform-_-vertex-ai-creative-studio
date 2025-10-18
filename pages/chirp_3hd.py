@@ -23,6 +23,7 @@ import mesop as me
 from common.analytics import log_ui_click, track_click
 
 import common.storage as storage
+from common.utils import create_display_url
 from common.metadata import MediaItem, add_media_item_to_firestore
 from components.dialog import dialog, dialog_actions
 from components.header import header
@@ -382,7 +383,7 @@ def on_click_generate(e: me.ClickEvent):
         )
 
         state.audio_gcs_uri = gcs_url
-        state.audio_display_url = f"/media/{gcs_url.replace('gs://', '')}"
+        state.audio_display_url = create_display_url(gcs_url)
 
     except Exception as ex:
         print(f"ERROR: Failed to generate Chirp3 HD audio. Details: {ex}")
@@ -407,7 +408,7 @@ def on_click_generate(e: me.ClickEvent):
                 custom_pronunciations=state.custom_pronunciations,
                 voice=state.selected_voice,
                 pace=state.speaking_rate,
-                volume=state.volume_gain_db,
+                volume_gain_db=state.volume_gain_db,
                 language_code=state.selected_language
             )
             add_media_item_to_firestore(item)

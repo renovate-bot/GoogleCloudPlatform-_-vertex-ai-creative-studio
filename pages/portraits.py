@@ -48,6 +48,7 @@ from pages.styles import (
     _BOX_STYLE_CENTER_DISTRIBUTED_MARGIN,
 )
 from state.state import AppState
+from common.utils import create_display_url
 
 client = GeminiModelSetup.init()
 
@@ -524,7 +525,7 @@ def on_convert_to_gif_click(e: me.ClickEvent):
         # e.key is the GCS URI, convert it to a proxy URL for display
         gif_gcs_uri = convert_mp4_to_gif(e.key, user_email=app_state.user_email)
         state.gif_gcs_uri = gif_gcs_uri
-        state.gif_display_url = f"/media/{gif_gcs_uri.replace('gs://', '')}"
+        state.gif_display_url = create_display_url(gif_gcs_uri)
     finally:
         state.is_converting_gif = False
         yield
@@ -674,7 +675,7 @@ def on_click_upload(e: me.UploadEvent):
     )
     state.reference_image_gcs = destination_blob_name
     # url
-    state.reference_image_display_url = f"/media/{destination_blob_name.replace('gs://', '')}"
+    state.reference_image_display_url = create_display_url(destination_blob_name)
     # log
     print(
         f"{destination_blob_name} with contents len {len(contents)} of type {e.file.mime_type} uploaded to {config.GENMEDIA_BUCKET}."
@@ -691,7 +692,7 @@ def on_portrait_image_from_library(e: LibrarySelectionChangeEvent):
     )
     state = me.state(PageState)
     state.reference_image_gcs = e.gcs_uri
-    state.reference_image_display_url = f"/media/{e.gcs_uri.replace('gs://', '')}"
+    state.reference_image_display_url = create_display_url(e.gcs_uri)
     yield
 
 
@@ -785,7 +786,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
         if gcs_uri:
             gcs_uri = gcs_uri[0]
             state.result_video_gcs_uri = gcs_uri
-            state.result_video_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
+            state.result_video_display_url = create_display_url(gcs_uri)
             print(f"Video generated: {gcs_uri}.")
         else:
             current_error_message = "Video generation failed to return a GCS URI."

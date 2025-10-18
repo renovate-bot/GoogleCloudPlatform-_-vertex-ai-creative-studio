@@ -19,6 +19,7 @@ import mesop as me
 
 from common.metadata import get_media_item_by_id
 from common.storage import store_to_gcs
+from common.utils import create_display_url
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from models.character_consistency import generate_character_video
@@ -189,7 +190,7 @@ def on_upload(e: me.UploadEvent):
             file.getvalue(),
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
-        state.uploaded_image_display_urls.append(f"/media/{gcs_url.replace('gs://', '')}")
+        state.uploaded_image_display_urls.append(create_display_url(gcs_url))
     yield
 
 
@@ -222,19 +223,19 @@ def on_generate_click(e: me.ClickEvent):
                 if "candidate_image_gcs_uris" in step_result.data:
                     gcs_uris = step_result.data["candidate_image_gcs_uris"]
                     state.candidate_image_gcs_uris = gcs_uris
-                    state.candidate_image_display_urls = [f"/media/{uri.replace('gs://', '')}" for uri in gcs_uris]
+                    state.candidate_image_display_urls = [create_display_url(uri) for uri in gcs_uris]
                 if "best_image_gcs_uri" in step_result.data:
                     gcs_uri = step_result.data["best_image_gcs_uri"]
                     state.best_image_gcs_uri = gcs_uri
-                    state.best_image_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
+                    state.best_image_display_url = create_display_url(gcs_uri)
                 if "outpainted_image_gcs_uri" in step_result.data:
                     gcs_uri = step_result.data["outpainted_image_gcs_uri"]
                     state.outpainted_image_gcs_uri = gcs_uri
-                    state.outpainted_image_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
+                    state.outpainted_image_display_url = create_display_url(gcs_uri)
                 if "video_gcs_uri" in step_result.data:
                     gcs_uri = step_result.data["video_gcs_uri"]
                     state.final_video_gcs_uri = gcs_uri
-                    state.final_video_display_url = f"/media/{gcs_uri.replace('gs://', '')}"
+                    state.final_video_display_url = create_display_url(gcs_uri)
             yield
 
         state.status_message = f"Workflow complete! Total time: {state.total_generation_time:.2f} seconds"

@@ -13,29 +13,29 @@
 # limitations under the License.
 """A test library page using the new media_tile component."""
 
+import concurrent.futures
+import datetime
 import json
 import urllib.parse
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import List, Optional
-import datetime
-import concurrent.futures
 
 import mesop as me
-from common.analytics import log_ui_click
 
+from common.analytics import log_ui_click
 from common.metadata import MediaItem, get_media_for_page, get_media_item_by_id
-from common.utils import generate_signed_url, https_url_to_gcs_uri
-from components.header import header
-from components.lightbox_dialog.lightbox_dialog import lightbox_dialog
-from components.library.image_details import CarouselState
-from components.media_detail_viewer.media_detail_viewer import media_detail_viewer
-from components.media_tile.media_tile import media_tile, get_pills_for_item
-from components.page_scaffold import page_frame, page_scaffold
+from common.utils import create_display_url, https_url_to_gcs_uri
 from components.dialog import dialog
+from components.header import header
 from components.interior_design.storyboard_video_tile import storyboard_video_tile
+from components.library.image_details import CarouselState
+from components.lightbox_dialog.lightbox_dialog import lightbox_dialog
+from components.media_detail_viewer.media_detail_viewer import media_detail_viewer
+from components.media_tile.media_tile import get_pills_for_item, media_tile
+from components.page_scaffold import page_frame, page_scaffold
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
-from state.state import AppState
 from config.default import Default as cfg
+from state.state import AppState
 
 
 @me.stateclass
@@ -55,6 +55,7 @@ class PageState:
         default_factory=lambda: ["all"]
     )  # "all", "images", "videos", "audio"
     error_filter: str = "all"  # "all", "no_errors", "only_errors"
+    tour_dialog_active_tab: str = "details"
 
 
 def on_load(e: me.LoadEvent):
@@ -71,7 +72,7 @@ def on_load(e: me.LoadEvent):
         else:
             # Otherwise, perform the initial load for the main library view.
             yield from _load_media(pagestate, is_filter_change=True)
-        
+
         pagestate.initial_load_complete = True
 
     yield
@@ -225,11 +226,11 @@ def library_content():
                         if item.gcsuri
                         else (item.gcs_uris[0] if item.gcs_uris else None)
                     )
-                    # Construct the proxy URL on the fly. This is fast and avoids state issues.
-                    https_url = f"/media/{gcs_uri.replace('gs://', '')}" if gcs_uri else ""
+                    # Construct the display URL on the fly.
+                    https_url = create_display_url(gcs_uri) if gcs_uri else ""
 
                     # Determine the render type based on mime_type for reliability
-                    render_type = "image" # Default to image
+                    render_type = "image"  # Default to image
                     if item.mime_type:
                         if item.mime_type.startswith("video/"):
                             render_type = "video"
@@ -278,7 +279,7 @@ def library_dialog(pagestate: PageState):
         # FETCH ON DEMAND
         item_to_display = get_media_item_by_id(pagestate.selected_media_item_id)
 
-        with lightbox_dialog(is_open=True, on_close=on_close_details_dialog): # pylint: disable=E1129:not-context-manager
+        with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):  # pylint: disable=E1129:not-context-manager
             if not item_to_display:
                 with me.box(style=me.Style(padding=me.Padding.all(16))):
                     me.text("Error: Could not load media item details.")
@@ -332,7 +333,9 @@ def handle_edit_click(e: me.WebEvent):
 
 def on_veo_click(e: me.WebEvent):
     """Event handler for when the VEO button is clicked in the detail viewer."""
-    proxy_url = e.value["url"] # This is now the proxy URL, e.g., /media/bucket/object.png
+    proxy_url = e.value[
+        "url"
+    ]  # This is now the proxy URL, e.g., /media/bucket/object.png
     if proxy_url:
         # Convert the proxy URL back to just the GCS path (bucket/object.png)
         gcs_path = proxy_url.replace("/media/", "", 1)
@@ -350,20 +353,29 @@ def json_default_serializer(o):
 @me.component
 def render_tour_detail_dialog(storyboard: dict):
     """Renders a dedicated dialog for viewing Interior Design Tours."""
+    pagestate = me.state(PageState)
 
     if not storyboard:
         return
 
     with lightbox_dialog(is_open=True, on_close=on_close_details_dialog):  # pylint: disable=E1129:not-context-manager
-        me.text(f"Interior Design Tour", type="headline-5")
+        me.text("Interior Design Tour", type="headline-5")
 
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=24, margin=me.Margin(top=16))):
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=24, margin=me.Margin(top=16)
+            )
+        ):
             # Left Column: Video and Carousel
-            with me.box(style=me.Style(flex_grow=1, display="flex", flex_direction="column", gap=16)):
+            with me.box(
+                style=me.Style(
+                    flex_grow=1, display="flex", flex_direction="column", gap=16
+                )
+            ):
                 final_video_uri = storyboard.get("final_video_uri")
                 if final_video_uri:
                     me.video(
-                        src=generate_signed_url(final_video_uri),
+                        src=create_display_url(final_video_uri),
                         style=me.Style(width="100%", border_radius=8),
                     )
 
@@ -382,23 +394,90 @@ def render_tour_detail_dialog(storyboard: dict):
                             if item.get("generated_video_uri"):
                                 storyboard_video_tile(
                                     key=item["room_name"],
-                                    video_url=item["generated_video_uri"],
+                                    video_url=create_display_url(
+                                        item["generated_video_uri"]
+                                    ),
                                     room_name=item["room_name"],
                                     on_click=lambda e: None,
                                 )
-            
-            # Right Column: Metadata
-            with me.box(style=me.Style(width=300, flex_shrink=0)):
-                me.text("Details", type="headline-6")
-                with me.box(style=me.Style(margin=me.Margin(top=8, bottom=16))):
+
+            # Right Column: Metadata with Tabs
+            with me.box(
+                style=me.Style(
+                    width=300, flex_shrink=0, max_height="80vh", overflow_y="auto"
+                )
+            ):
+                # Tab header
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        border=me.Border.all(
+                            me.BorderSide(color=me.theme_var("outline-variant"))
+                        ),
+                        margin=me.Margin(bottom=16),
+                    )
+                ):
+                    with me.content_button(
+                        on_click=lambda e: setattr(
+                            pagestate, "tour_dialog_active_tab", "details"
+                        ),
+                        style=me.Style(
+                            border=me.Border.all(me.BorderSide(width=0)),
+                            padding=me.Padding.all(0),
+                        ),
+                    ):
+                        me.text(
+                            "Details",
+                            style=me.Style(
+                                padding=me.Padding(bottom=8, left=16, right=16),
+                                font_weight="bold"
+                                if pagestate.tour_dialog_active_tab == "details"
+                                else "normal",
+                                border=me.Border(
+                                    bottom=me.BorderSide(
+                                        width=2,
+                                        style="solid",
+                                        color=me.theme_var("primary")
+                                        if pagestate.tour_dialog_active_tab == "details"
+                                        else "transparent",
+                                    )
+                                ),
+                            ),
+                        )
+                    with me.content_button(
+                        on_click=lambda e: setattr(
+                            pagestate, "tour_dialog_active_tab", "raw"
+                        ),
+                        style=me.Style(
+                            border=me.Border.all(me.BorderSide(width=0)),
+                            padding=me.Padding.all(0),
+                        ),
+                    ):
+                        me.text(
+                            "Raw",
+                            style=me.Style(
+                                padding=me.Padding(bottom=8, left=16, right=16),
+                                font_weight="bold"
+                                if pagestate.tour_dialog_active_tab == "raw"
+                                else "normal",
+                                border=me.Border(
+                                    bottom=me.BorderSide(
+                                        width=2,
+                                        style="solid",
+                                        color=me.theme_var("primary")
+                                        if pagestate.tour_dialog_active_tab == "raw"
+                                        else "transparent",
+                                    )
+                                ),
+                            ),
+                        )
+
+                # Tab content
+                if pagestate.tour_dialog_active_tab == "details":
                     me.text(f"Storyboard ID: {storyboard.get('id')}")
                     me.text(f"Created: {storyboard.get('timestamp')}")
-                    # You can add more metadata here as needed
 
-                me.divider()
-
-                me.text("Raw Metadata", type="headline-6", style=me.Style(margin=me.Margin(top=16)))
-                with me.box(style=me.Style(background=me.theme_var("surface-container"), border_radius=8, padding=me.Padding.all(8), margin=me.Margin(top=8))):
+                if pagestate.tour_dialog_active_tab == "raw":
                     me.code(json.dumps(storyboard, indent=2), language="json")
 
         with me.box(
@@ -411,7 +490,10 @@ def render_tour_detail_dialog(storyboard: dict):
         ):
             me.button("Close", on_click=on_close_details_dialog, type="stroked")
             me.button(
-                "Continue Styling", on_click=on_continue_styling_click, key=storyboard.get("id"), type="raised"
+                "Continue Styling",
+                on_click=on_continue_styling_click,
+                key=storyboard.get("id"),
+                type="raised",
             )
 
 
@@ -420,15 +502,12 @@ def render_tour_detail_dialog(storyboard: dict):
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
     primary_urls = []
-    # If there are multiple URIs in gcs_uris, create a proxy URL for each.
+    # If there are multiple URIs in gcs_uris, create a display URL for each.
     if item.gcs_uris:
-        for uri in item.gcs_uris:
-            proxy_path = uri.replace("gs://", "")
-            primary_urls.append(f"/media/{proxy_path}")
+        primary_urls = [create_display_url(uri) for uri in item.gcs_uris]
     # Fallback for single gcsuri for backward compatibility.
     elif item.gcsuri:
-        proxy_path = item.gcsuri.replace("gs://", "")
-        primary_urls.append(f"/media/{proxy_path}")
+        primary_urls = [create_display_url(item.gcsuri)]
 
     # Consolidate all potential source assets into a single list for backward compatibility
     all_source_uris = []
@@ -499,9 +578,8 @@ def render_default_detail_dialog(item: MediaItem):
                 )
             ):
                 for source_uri in all_source_uris:
-                    # Construct the proxy URL
-                    proxy_path = source_uri.replace("gs://", "")
-                    https_url = f"/media/{proxy_path}"
+                    # Construct the display URL
+                    https_url = create_display_url(source_uri)
 
                     # Determine media type from URL extension
                     render_type = "image"  # Default
@@ -532,8 +610,5 @@ def on_continue_styling_click(e: me.ClickEvent):
                 "storyboard_id": f"{storyboard_id}",
             },
         )
-                
+
     yield
-
-
-

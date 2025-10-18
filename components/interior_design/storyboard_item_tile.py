@@ -5,7 +5,7 @@ Component for displaying a single item in the storyboard.
 import mesop as me
 from typing import Callable
 
-from common.utils import generate_signed_url
+from common.utils import create_display_url
 
 
 @me.component
@@ -18,6 +18,7 @@ def storyboard_item_tile(
     """
     A simple tile for displaying a storyboard item.
     """
+    display_url = create_display_url(image_url) if image_url.startswith("gs://") else image_url
     with me.box(
         key=key,
         on_click=on_click,
@@ -25,7 +26,7 @@ def storyboard_item_tile(
             width=200,
             height=150,
             border_radius=8,
-            background=f"url({generate_signed_url(image_url)}) center / cover",
+            background=f"url({display_url}) center / cover",
             position="relative",
             cursor="pointer",
             border=me.Border.all(me.BorderSide(color=me.theme_var("outline-variant"))),
