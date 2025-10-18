@@ -21,6 +21,7 @@ import uuid
 import mesop as me
 
 import common.storage as storage
+from common.utils import create_display_url
 from common.analytics import log_ui_click, track_click
 from common.metadata import MediaItem, add_media_item_to_firestore
 from components.dialog import dialog, dialog_actions
@@ -333,7 +334,7 @@ def on_click_generate(e: me.ClickEvent):
         )
 
         state.audio_gcs_uri = gcs_url
-        state.audio_display_url = f"/media/{gcs_url.replace('gs://', '')}"
+        state.audio_display_url = create_display_url(gcs_url)
 
     except Exception as ex:
         print(f"ERROR: Failed to generate audio. Details: {ex}")

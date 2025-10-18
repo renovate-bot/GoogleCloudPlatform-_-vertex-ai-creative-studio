@@ -33,7 +33,7 @@ from config.rewriters import MUSIC_REWRITER
 from models.gemini import analyze_audio_with_gemini, rewriter
 from models.lyria import generate_music_with_lyria
 from state.state import AppState
-from config.default import ABOUT_PAGE_CONTENT
+from common.utils import create_display_url
 
 cfg = Default()
 
@@ -437,7 +437,7 @@ def on_click_lyria(e: me.ClickEvent):
         destination_blob_path = generate_music_with_lyria(prompt_for_api)
         gcs_uri_for_analysis_and_metadata = destination_blob_path
         state.music_gcs_uri = destination_blob_path
-        state.music_display_url = f"/media/{destination_blob_path.replace('gs://', '')}"
+        state.music_display_url = create_display_url(destination_blob_path)
 
         print(f"Music generated: {state.music_display_url}")
         generated_successfully = True

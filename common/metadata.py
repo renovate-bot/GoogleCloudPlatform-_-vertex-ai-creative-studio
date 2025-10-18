@@ -202,6 +202,7 @@ def save_storyboard(storyboard: dict) -> dict:
     if "id" not in storyboard or not storyboard.get("id"):
         storyboard["id"] = str(uuid.uuid4())
 
+    doc_ref = db.collection("interior_design_storyboards").document(storyboard["id"])
     doc_ref.set(storyboard)
     logger.info(f"Storyboard saved to Firestore with ID: {storyboard['id']}")
     return storyboard

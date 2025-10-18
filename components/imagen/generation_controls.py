@@ -19,7 +19,7 @@ import time
 import mesop as me
 import datetime # Required for timestamp
 
-from common.utils import generate_signed_url
+from common.utils import create_display_url
 
 from common.analytics import track_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore # Updated import
@@ -176,11 +176,9 @@ def on_click_generate_images(e: me.ClickEvent):
             aspect_ratio=state.image_aspect_ratio,
         )
 
-        # Save both the permanent GCS URIs and the cacheable proxy URLs to the state.
+        # Save both the permanent GCS URIs and the display URLs to the state.
         state.image_gcs_uris = new_image_uris
-        state.image_output = [
-            f"/media/{uri.replace('gs://', '')}" for uri in new_image_uris
-        ]
+        state.image_output = [create_display_url(uri) for uri in new_image_uris]
         state.is_loading = False
 
         if state.image_output:

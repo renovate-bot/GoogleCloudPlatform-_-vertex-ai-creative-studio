@@ -299,7 +299,8 @@ class MediaDetailViewer extends LitElement {
     const currentUrl = urls[this._currentIndex]; // This is the proxy URL, e.g., /media/bucket/object.png
 
     // Correctly convert the proxy URL back to a GCS URI for backend functions
-    const gcsPath = currentUrl.startsWith("/media/") ? currentUrl.substring(7) : currentUrl;
+    const isProxyUrl = currentUrl.startsWith("/media/");
+    const gcsPath = isProxyUrl ? currentUrl.substring(7) : new URL(currentUrl).pathname.substring(1);
     const gcsUri = `gs://${gcsPath}`;
 
     const isImage = this.mediaType === 'image';

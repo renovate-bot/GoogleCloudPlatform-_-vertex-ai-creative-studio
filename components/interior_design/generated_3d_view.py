@@ -5,7 +5,7 @@ Component for generating and displaying the 3D view.
 from typing import Callable
 import mesop as me
 
-from common.utils import generate_signed_url
+from common.utils import create_display_url
 
 
 IMAGE_PLACEHOLDER_STYLE = me.Style(
@@ -61,7 +61,7 @@ def generated_3d_view(
                 me.progress_spinner()
             elif storyboard and storyboard.get("generated_3d_view_uri"):
                 me.image(
-                    src=generate_signed_url(storyboard["generated_3d_view_uri"]),
+                    src=create_display_url(storyboard["generated_3d_view_uri"]),
                     style=me.Style(
                         height="100%",
                         width="100%",

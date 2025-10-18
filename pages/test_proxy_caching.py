@@ -18,7 +18,7 @@ from dataclasses import field
 import mesop as me
 
 from common.metadata import MediaItem, get_media_for_page
-from common.utils import generate_signed_url
+from common.utils import create_display_url
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from config.default import Default as cfg
@@ -77,8 +77,8 @@ def page_content():
         return
 
     with me.box(style=me.Style(margin=me.Margin(top=24))):
-        # Method 1: Signed URLs
-        me.text("Method 1: Signed URLs (Not Cached)", type="headline-5")
+        # Method 1: Signed URLs (Not Cached)
+        me.text("Method 1: `USE_MEDIA_PROXY=False` (Direct GCS links, not cached by proxy)", type="headline-5")
         with me.box(
             style=me.Style(
                 display="flex", flex_wrap="wrap", gap=16, margin=me.Margin(top=16)
@@ -88,13 +88,13 @@ def page_content():
                 gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
                 if gcs_uri:
                     me.image(
-                        src=generate_signed_url(gcs_uri),
+                        src=create_display_url(gcs_uri),
                         style=me.Style(height=150, width=150, object_fit="cover", border_radius=8),
                     )
 
     with me.box(style=me.Style(margin=me.Margin(top=32))):
         # Method 2: Proxy Endpoint
-        me.text("Method 2: Proxy Endpoint (Cached)", type="headline-5")
+        me.text("Method 2: `USE_MEDIA_PROXY=True` (Proxy Endpoint, cached)", type="headline-5")
         with me.box(
             style=me.Style(
                 display="flex", flex_wrap="wrap", gap=16, margin=me.Margin(top=16)
@@ -103,9 +103,7 @@ def page_content():
             for item in state.media_items:
                 gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
                 if gcs_uri:
-                    # Construct the proxy URL: gs://bucket-name/path/to/object.png -> /media/bucket-name/path/to/object.png
-                    proxy_path = gcs_uri.replace("gs://", "")
                     me.image(
-                        src=f"/media/{proxy_path}",
+                        src=create_display_url(gcs_uri),
                         style=me.Style(height=150, width=150, object_fit="cover", border_radius=8),
                     )

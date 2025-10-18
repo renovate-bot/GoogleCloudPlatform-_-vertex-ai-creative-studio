@@ -22,7 +22,7 @@ import mesop as me
 from common.analytics import log_ui_click, track_model_call
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
-from common.utils import generate_signed_url, https_url_to_gcs_uri
+from common.utils import create_display_url, https_url_to_gcs_uri
 from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
@@ -500,7 +500,7 @@ def on_upload(e: me.UploadEvent):
             file.getvalue(),
         )
         state.uploaded_image_gcs_uris.append(gcs_url)
-        state.uploaded_image_display_urls.append(f"/media/{gcs_url.replace('gs://', '')}")
+        state.uploaded_image_display_urls.append(create_display_url(gcs_url))
     yield
 
 
@@ -508,7 +508,7 @@ def on_library_select(e: LibrarySelectionChangeEvent):
     """Appends a selected library image's GCS URI to the list of uploaded images."""
     state = me.state(PageState)
     state.uploaded_image_gcs_uris.append(e.gcs_uri)
-    state.uploaded_image_display_urls.append(f"/media/{e.gcs_uri.replace('gs://', '')}")
+    state.uploaded_image_display_urls.append(create_display_url(e.gcs_uri))
     yield
 
 
@@ -769,9 +769,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 "No images were generated, but the attempt was logged to the library.",
             )
         else:
-            state.generated_image_urls = [
-                f"/media/{uri.replace('gs://', '')}" for uri in gcs_uris
-            ]
+            state.generated_image_urls = [create_display_url(uri) for uri in gcs_uris]
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 
@@ -842,7 +840,7 @@ def on_load(e: me.LoadEvent):
 
             if final_gcs_uri and final_gcs_uri not in state.uploaded_image_gcs_uris:
                 state.uploaded_image_gcs_uris.append(final_gcs_uri)
-                state.uploaded_image_display_urls.append(f"/media/{final_gcs_uri.replace('gs://', '')}")
+                state.uploaded_image_display_urls.append(create_display_url(final_gcs_uri))
         state.initial_load_complete = True
     yield
 

@@ -27,3 +27,4 @@ class PageState:
     design_image_display_url: str = ""
 
     info_dialog_open: bool = False
+    initial_load_complete: bool = False

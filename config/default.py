@@ -163,6 +163,8 @@ class Default:
 
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
 
+    USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
+
     image_modifiers: list[str] = field(
         default_factory=lambda: [
             "aspect_ratio",

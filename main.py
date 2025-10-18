@@ -32,8 +32,7 @@ from pydantic import BaseModel
 
 import pages.shop_the_look
 from app_factory import app
-#from common.utils import gcs_uri_to_https_url
-#from components.page_scaffold import page_scaffold
+from common.utils import create_display_url
 from config import default as config
 from models.video_processing import convert_mp4_to_gif
 from pages import about as about_page
@@ -56,7 +55,6 @@ from pages import veo
 from pages import vto as vto_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
-from pages.legacy_library import page as legacy_library_page
 from pages.library_v2 import page as library_v2_page
 from pages.test_character_consistency import page as test_character_consistency_page
 from pages.test_index import page as test_index_page
@@ -66,7 +64,6 @@ from pages.test_pixie_compositor import test_pixie_compositor_page
 from pages.test_svg import test_svg_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
-from pages.test_worsfold_encoder import test_worsfold_encoder_page
 from state.state import AppState
 
 
@@ -101,7 +98,7 @@ def convert_to_gif(gcs_uri: str, request: Request):
     try:
         uri = convert_mp4_to_gif(gcs_uri, request.scope["MESOP_USER_EMAIL"])
 
-        return {"url": f"/media/{uri.replace('gs://', '')}"}
+        return {"url": create_display_url(uri)}
     except Exception as e:
         error_message = str(e)
         print(f"Error generating GIF: {error_message}")
@@ -152,7 +149,7 @@ async def add_global_csp(request: Request, call_next):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://cdn.jsdelivr.net; "
         "connect-src 'self' https://esm.sh https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://fonts.googleapis.com/; "
         "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com http://fonts.googleapis.com;"
         "img-src 'self' data: blob: https://google-ai-skin-tone-research.imgix.net https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "media-src 'self' https://deepmind.google https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
@@ -201,9 +198,6 @@ me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(
 me.page(path="/test_uploader", title="Test Uploader")(test_uploader_page)
 me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
     test_vto_prompt_generator_page
-)
-me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
-    test_worsfold_encoder_page
 )
 me.page(path="/test_svg", title="Test SVG")(test_svg_page)
 me.page(path="/test_media_chooser", title="Test Media Chooser")(test_media_chooser_page)
