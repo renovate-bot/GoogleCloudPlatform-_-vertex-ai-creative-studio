@@ -1134,6 +1134,7 @@ def on_continue_click(e: me.ClickEvent):
 
     gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
     state.uploaded_image_gcs_uris = [gcs_uri]
+    state.uploaded_image_display_urls = [create_display_url(gcs_uri)]
     state.generated_image_urls = []
     state.selected_image_url = ""
     state.generation_time = 0.0
@@ -1284,6 +1285,10 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
 
                 state.is_evaluating = False
                 yield
+
+        # Always turn off the main generating spinner after the core process is done.
+        state.is_generating = False
+        yield
 
     except Exception as ex:
         print(f"ERROR: Failed to generate images. Details: {ex}")

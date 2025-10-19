@@ -181,7 +181,7 @@ imageio-ffmpeg==0.6.0
     # via moviepy
 importlib-metadata==8.7.0
     # via opentelemetry-api
-iniconfig==2.1.0
+iniconfig==2.3.0
     # via pytest
 ipython==9.6.0
     # via mediapy
@@ -402,7 +402,7 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.5.0
     # via requests
-uvicorn==0.37.0
+uvicorn==0.38.0
     # via veo-app (pyproject.toml)
 watchdog==6.0.0
     # via mesop
