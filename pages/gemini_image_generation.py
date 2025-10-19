@@ -680,8 +680,9 @@ def on_continue_click(e: me.ClickEvent):
         yield from show_snackbar(state, "Please select an image to continue with.")
         return
 
-    gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
+    gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
     state.uploaded_image_gcs_uris = [gcs_uri]
+    state.uploaded_image_display_urls = [create_display_url(gcs_uri)] # This line is the fix
     state.generated_image_urls = []
     state.selected_image_url = ""
     state.generation_time = 0.0
