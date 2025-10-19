@@ -37,6 +37,11 @@ def page():
             "route": "/banana-studio",
         },
         {
+            "title": "Gemini Writers Workshop",
+            "description": "A place to generate text content from prompts and optional media assets.",
+            "route": "/gemini-writers-workshop",
+        },
+        {
             "title": "VTO Model Composite Card Generator",
             "description": "A tool to generate a matrix of virtual models with different attributes.",
             "route": "/test_vto_prompt_generator",

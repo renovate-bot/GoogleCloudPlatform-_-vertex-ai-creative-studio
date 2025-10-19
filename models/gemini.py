@@ -947,3 +947,46 @@ def generate_critique_questions(prompt: str, image_descriptions: list[str]) -> l
 
     question_list = CritiqueQuestionList.model_validate_json(response.text)
     return [q.question for q in question_list.questions]
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def generate_text(prompt: str, images: list[str]) -> tuple[str, float]:
+    """Generates text from a prompt and a list of media files."""
+    print(f"Entering generate_text with prompt: {prompt} and {len(images)} images.")
+    start_time = time.time()
+    model_name = cfg.MODEL_ID
+
+    parts = [types.Part.from_text(text=prompt)]
+    for image_uri in images:
+        # Simple check for video based on common extensions
+        if any(ext in image_uri for ext in [".mp4", ".mov", ".avi", ".mkv"]):
+            mime_type = "video/mp4"
+        else:
+            mime_type = "image/png"
+        parts.append(types.Part.from_uri(file_uri=image_uri, mime_type=mime_type))
+    
+    print(f"Constructed parts for Gemini API: {parts}")
+
+    contents = [types.Content(role="user", parts=parts)]
+
+    client = GeminiModelSetup.init(
+        location=cfg.LOCATION,
+    )
+
+    print(f"Sending request to model: {model_name}")
+    response = client.models.generate_content(
+        model=model_name,
+        contents=contents,
+    )
+    print(f"Received raw response from model: {response}")
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+
+    print(f"Returning text: {response.text}, execution_time: {execution_time}")
+    return response.text, execution_time
