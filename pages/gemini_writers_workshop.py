@@ -21,7 +21,7 @@ from typing import List, Optional
 import mesop as me
 from google.cloud import firestore
 
-from common.analytics import track_model_call
+from common.analytics import track_model_call, track_click
 from common.metadata import (
     MediaItem,
     _create_media_item_from_dict,
@@ -588,6 +588,7 @@ def on_prompt_blur(e: me.InputEvent):
     me.state(PageState).prompt = e.value
 
 
+@track_click(element_id="writers_workshop_clear_button")
 def on_clear_click(e: me.ClickEvent):
     state = me.state(PageState)
     state.generated_text = ""
@@ -610,6 +611,7 @@ def show_snackbar(message: str):
     yield
 
 
+@track_click(element_id="writers_workshop_generate_button")
 def on_generate_text_click(e: me.ClickEvent):
     state = me.state(PageState)
     if not state.prompt:
