@@ -39,6 +39,7 @@ from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from components.video_thumbnail.video_thumbnail import video_thumbnail
+from components.copy_button.copy_button import copy_button
 from config.default import Default as cfg
 from models.gemini import generate_text
 from state.state import AppState
@@ -50,8 +51,8 @@ MAX_MEDIA_ASSETS = 3
 class PageState:
     """Gemini Writers Workshop Page State"""
 
-    uploaded_media_gcs_uris: list[str] = field(default_factory=list) # pylint: disable=E3701:invalid-field-call
-    uploaded_media_display_urls: list[str] = field(default_factory=list) # pylint: disable=E3701:invalid-field-call
+    uploaded_media_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
+    uploaded_media_display_urls: list[str] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
     prompt: str = ""
     generated_text: str = ""
     is_generating: bool = False
@@ -64,13 +65,34 @@ class PageState:
     # For the new chooser dialog
     show_chooser_dialog: bool = False
     chooser_is_loading: bool = False
-    chooser_media_items: list[MediaItem] = field(default_factory=list) # pylint: disable=E3701:invalid-field-call
+    chooser_media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
     chooser_last_doc_id: str = ""
     chooser_all_items_loaded: bool = False
 
     info_dialog_open: bool = False
     show_error_dialog: bool = False
     error_message: str = ""
+
+
+with open("config/about_content.json", "r") as f:
+    about_content = json.load(f)
+    WRITERS_WORKSHOP_INFO = {
+        "title": "Gemini Writers Workshop",
+        "description": "A place to generate text content from prompts and optional media assets."
+    }
+
+def open_info_dialog(e: me.ClickEvent):
+    """Open the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = True
+    yield
+
+
+def close_info_dialog(e: me.ClickEvent):
+    """Close the info dialog."""
+    state = me.state(PageState)
+    state.info_dialog_open = False
+    yield
 
 
 def get_all_media_for_chooser(
@@ -109,7 +131,7 @@ def get_all_media_for_chooser(
 )
 def page():
     """Define the Mesop page route for Gemini Writers Workshop."""
-    with page_scaffold(page_name="gemini-writers-workshop"): # pylint: disable=E1129:not-context-manager
+    with page_scaffold(page_name="gemini-writers-workshop"):  # pylint: disable=E1129:not-context-manager
         gemini_writers_workshop_page_content()
 
 
@@ -118,16 +140,33 @@ def gemini_writers_workshop_page_content():
     state = me.state(PageState)
     render_chooser_dialog()
 
-    with dialog(is_open=state.show_error_dialog):
-        me.text("Generation Error", type="headline-6", style=me.Style(color=me.theme_var("error")))
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):
+            me.text(f"About {WRITERS_WORKSHOP_INFO['title']}", type="headline-6")
+            me.markdown(WRITERS_WORKSHOP_INFO["description"])
+            me.divider()
+            me.button("Close", on_click=close_info_dialog, type="flat")
+
+    with dialog(is_open=state.show_error_dialog):  # pylint: disable=E1129:not-context-manager
+        me.text(
+            "Generation Error",
+            type="headline-6",
+            style=me.Style(color=me.theme_var("error")),
+        )
         me.text(state.error_message, style=me.Style(margin=me.Margin(top=16)))
-        with me.box(style=me.Style(display="flex", justify_content="flex-end", margin=me.Margin(top=24))):
+        with me.box(
+            style=me.Style(
+                display="flex", justify_content="flex-end", margin=me.Margin(top=24)
+            )
+        ):
             me.button("Close", on_click=on_close_error_dialog, type="flat")
 
     with page_frame():  # pylint: disable=E1129:not-context-manager
         header(
             "Gemini Writers Workshop",
             "spark",
+            show_info_button=True,
+            on_info_click=open_info_dialog,
         )
         with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
             # Left column (controls)
@@ -166,7 +205,10 @@ def gemini_writers_workshop_page_content():
                     with me.content_button(on_click=on_clear_click, type="icon"):
                         me.icon("delete_sweep")
 
-                if me.state(PageState).generation_complete and me.state(PageState).generation_time > 0:
+                if (
+                    me.state(PageState).generation_complete
+                    and me.state(PageState).generation_time > 0
+                ):
                     me.text(
                         f"{me.state(PageState).generation_time:.2f} seconds",
                         style=me.Style(font_size=12),
@@ -182,7 +224,10 @@ def gemini_writers_workshop_page_content():
                 )
             ):
                 if me.state(PageState).generated_text:
-                    me.markdown(me.state(PageState).generated_text)
+                    with me.box(style=me.Style(display="flex", flex_direction="row", justify_content="space-between", align_items="center")):
+                        me.text("Generated Text", type="headline-6")
+                        copy_button(text_to_copy=me.state(PageState).generated_text)
+                    me.markdown(me.state(PageState).generated_text, style=me.Style(margin=me.Margin(top=16)))
                 else:
                     with me.box(
                         style=me.Style(
@@ -201,7 +246,7 @@ def gemini_writers_workshop_page_content():
                                 color=me.theme_var("on-surface-variant"),
                             )
                         ):
-                            svg_icon(icon_name="edit_document")
+                            svg_icon(icon_name="spark")
 
 
 @me.component
@@ -223,14 +268,37 @@ def _media_upload_slots():
                 gcs_uri = state.uploaded_media_gcs_uris[i]
 
                 with me.box(style=me.Style(position="relative", width=100, height=100)):
-                    if any(gcs_uri.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]):
-                        me.image(src=display_url, style=me.Style(width="100%", height="100%", border_radius=8, object_fit="cover"))
-                    elif any(gcs_uri.lower().endswith(ext) for ext in [".mp4", ".mov", ".avi", ".webm"]):
+                    if any(
+                        gcs_uri.lower().endswith(ext)
+                        for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+                    ):
+                        me.image(
+                            src=display_url,
+                            style=me.Style(
+                                width="100%",
+                                height="100%",
+                                border_radius=8,
+                                object_fit="cover",
+                            ),
+                        )
+                    elif any(
+                        gcs_uri.lower().endswith(ext)
+                        for ext in [".mp4", ".mov", ".avi", ".webm"]
+                    ):
                         video_thumbnail(video_src=display_url)
                     else:
-                        with me.box(style=me.Style(width=100, height=100, border=me.Border.all(me.BorderSide(style="dashed")), display="flex", align_items="center", justify_content="center")):
+                        with me.box(
+                            style=me.Style(
+                                width=100,
+                                height=100,
+                                border=me.Border.all(me.BorderSide(style="dashed")),
+                                display="flex",
+                                align_items="center",
+                                justify_content="center",
+                            )
+                        ):
                             me.icon("article")
-                    
+
                     with me.box(
                         on_click=on_remove_media,
                         key=str(i),
@@ -287,7 +355,9 @@ def _uploader_placeholder(key_prefix: str):
             multiple=True,
         )
         with me.content_button(
-            on_click=open_chooser_dialog, type="icon", key=f"{key_prefix}_library_chooser"
+            on_click=open_chooser_dialog,
+            type="icon",
+            key=f"{key_prefix}_library_chooser",
         ):
             me.icon("photo_library")
 
@@ -362,7 +432,8 @@ def render_chooser_dialog():
         )
         # Use that object for query
         new_items, last_doc = get_all_media_for_chooser(
-            page_size=20, start_after=last_doc_ref,
+            page_size=20,
+            start_after=last_doc_ref,
         )
 
         for item in new_items:
@@ -374,31 +445,69 @@ def render_chooser_dialog():
         state.chooser_is_loading = False
         yield
 
-    dialog_style = me.Style(width="95vw", height="80vh", display="flex", flex_direction="column")
+    dialog_style = me.Style(
+        width="95vw", height="80vh", display="flex", flex_direction="column"
+    )
 
     with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style):  # pylint: disable=E1129:not-context-manager
         if state.show_chooser_dialog:
-            with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)):
-                with me.box(style=me.Style(display="flex", flex_direction="row", justify_content="space-between", align_items="center", width="100%")):
+            with me.box(
+                style=me.Style(
+                    display="flex", flex_direction="column", gap=16, flex_grow=1
+                )
+            ):
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        justify_content="space-between",
+                        align_items="center",
+                        width="100%",
+                    )
+                ):
                     me.text("Select a Media Asset from Library", type="headline-6")
-                    with me.content_button(type="icon", on_click=lambda e: setattr(state, "show_chooser_dialog", False)):
+                    with me.content_button(
+                        type="icon",
+                        on_click=lambda e: setattr(state, "show_chooser_dialog", False),
+                    ):
                         me.icon("close")
 
-                with me.box(style=me.Style(flex_grow=1, overflow_y="auto", padding=me.Padding.all(10))):
+                with me.box(
+                    style=me.Style(
+                        flex_grow=1, overflow_y="auto", padding=me.Padding.all(10)
+                    )
+                ):
                     if state.chooser_is_loading and not state.chooser_media_items:
-                        with me.box(style=me.Style(display="flex", justify_content="center", align_items="center", height="100%")):
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                justify_content="center",
+                                align_items="center",
+                                height="100%",
+                            )
+                        ):
                             me.progress_spinner()
                     else:
-                        with me.box(style=me.Style(display="grid", grid_template_columns="repeat(auto-fill, minmax(250px, 1fr))", gap="16px")):
+                        with me.box(
+                            style=me.Style(
+                                display="grid",
+                                grid_template_columns="repeat(auto-fill, minmax(250px, 1fr))",
+                                gap="16px",
+                            )
+                        ):
                             items_to_render = state.chooser_media_items
                             if not items_to_render and not state.chooser_is_loading:
                                 me.text("No items found in your library.")
                             else:
                                 for item in items_to_render:
-                                    https_url = item.signed_url if hasattr(item, "signed_url") else ""
-                                    
+                                    https_url = (
+                                        item.signed_url
+                                        if hasattr(item, "signed_url")
+                                        else ""
+                                    )
+
                                     # Explicitly determine render type for the tile
-                                    render_type = "image" # Default
+                                    render_type = "image"  # Default
                                     if item.mime_type:
                                         if item.mime_type.startswith("video/"):
                                             render_type = "video"
@@ -424,6 +533,7 @@ def render_chooser_dialog():
                             all_items_loaded=state.chooser_all_items_loaded,
                         )
 
+
 def open_chooser_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.show_chooser_dialog = True
@@ -446,17 +556,24 @@ def open_chooser_dialog(e: me.ClickEvent):
     state.chooser_is_loading = False
     yield
 
+
 # Other event handlers
 def on_upload(e: me.UploadEvent):
     state = me.state(PageState)
     if len(state.uploaded_media_gcs_uris) < MAX_MEDIA_ASSETS:
         file = e.files[0]
-        gcs_url = store_to_gcs("gemini_writers_studio_references", file.name, file.mime_type, file.getvalue())
+        gcs_url = store_to_gcs(
+            "gemini_writers_studio_references",
+            file.name,
+            file.mime_type,
+            file.getvalue(),
+        )
         state.uploaded_media_gcs_uris.append(gcs_url)
         state.uploaded_media_display_urls.append(create_display_url(gcs_url))
     else:
         show_snackbar(f"You can add a maximum of {MAX_MEDIA_ASSETS} media assets.")
     yield
+
 
 def on_remove_media(e: me.ClickEvent):
     state = me.state(PageState)
@@ -466,8 +583,10 @@ def on_remove_media(e: me.ClickEvent):
         del state.uploaded_media_display_urls[index_to_remove]
     yield
 
+
 def on_prompt_blur(e: me.InputEvent):
     me.state(PageState).prompt = e.value
+
 
 def on_clear_click(e: me.ClickEvent):
     state = me.state(PageState)
@@ -480,6 +599,7 @@ def on_clear_click(e: me.ClickEvent):
     state.previous_media_item_id = None
     yield
 
+
 def show_snackbar(message: str):
     state = me.state(PageState)
     state.snackbar_message = message
@@ -488,6 +608,7 @@ def show_snackbar(message: str):
     time.sleep(3)
     state.show_snackbar = False
     yield
+
 
 def on_generate_text_click(e: me.ClickEvent):
     state = me.state(PageState)
@@ -499,10 +620,12 @@ def on_generate_text_click(e: me.ClickEvent):
         input_gcs_uris=state.uploaded_media_gcs_uris,
     )
 
+
 def on_close_error_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.show_error_dialog = False
     yield
+
 
 def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
     state = me.state(PageState)
@@ -512,8 +635,12 @@ def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
     yield
 
     try:
-        with track_model_call(model_name=cfg().MODEL_ID, prompt_length=len(base_prompt)):
-            text_result, execution_time = generate_text(prompt=base_prompt, images=input_gcs_uris)
+        with track_model_call(
+            model_name=cfg().MODEL_ID, prompt_length=len(base_prompt)
+        ):
+            text_result, execution_time = generate_text(
+                prompt=base_prompt, images=input_gcs_uris
+            )
         state.generation_time = execution_time
         state.generated_text = text_result
     except Exception as ex:

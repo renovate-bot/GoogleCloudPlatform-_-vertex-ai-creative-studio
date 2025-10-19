@@ -963,11 +963,17 @@ def generate_text(prompt: str, images: list[str]) -> tuple[str, float]:
 
     parts = [types.Part.from_text(text=prompt)]
     for image_uri in images:
-        # Simple check for video based on common extensions
-        if any(ext in image_uri for ext in [".mp4", ".mov", ".avi", ".mkv"]):
-            mime_type = "video/mp4"
+        # More robust mime type detection
+        if any(image_uri.lower().endswith(ext) for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]):
+            mime_type = "video/mp4" # General video type
+        elif any(image_uri.lower().endswith(ext) for ext in [".wav", ".mp3", ".flac"]):
+            mime_type = "audio/wav" # General audio type
+        elif any(image_uri.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]):
+            mime_type = "image/png" # General image type
         else:
-            mime_type = "image/png"
+            # Fallback for unknown types, though this may still cause errors
+            mime_type = "application/octet-stream"
+        
         parts.append(types.Part.from_uri(file_uri=image_uri, mime_type=mime_type))
     
     print(f"Constructed parts for Gemini API: {parts}")
