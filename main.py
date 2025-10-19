@@ -24,7 +24,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from google.auth import impersonated_credentials
 from google.cloud import storage
@@ -42,6 +42,7 @@ from pages import chirp_3hd as chirp_3hd_page
 from pages import config as config_page
 from pages import gemini_image_generation as gemini_image_generation_page
 from pages import gemini_tts as gemini_tts_page
+from pages import gemini_writers_workshop as gemini_writers_workshop_page
 from pages import home as home_page
 from pages import imagen as imagen_page
 from pages import interior_design_v2 as interior_design_page
@@ -203,8 +204,7 @@ me.page(path="/test_svg", title="Test SVG")(test_svg_page)
 me.page(path="/test_media_chooser", title="Test Media Chooser")(test_media_chooser_page)
 
 
-from fastapi.responses import StreamingResponse
-from google.cloud import storage
+
 
 
 # Add a new endpoint to proxy GCS media for better caching.
