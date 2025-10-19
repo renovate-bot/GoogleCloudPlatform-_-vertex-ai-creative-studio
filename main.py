@@ -52,6 +52,7 @@ from pages import portraits as motion_portraits
 from pages import recontextualize as recontextualize_page
 from pages import starter_pack as starter_pack_page
 from pages import test_proxy_caching as test_proxy_caching_page
+from pages import selfie as selfie_page
 from pages import veo
 from pages import vto as vto_page
 from pages import welcome as welcome_page
