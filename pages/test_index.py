@@ -47,6 +47,11 @@ def page():
             "route": "/test_vto_prompt_generator",
         },
         {
+            "title": "Selfie Camera",
+            "description": "A test page for the selfie camera component.",
+            "route": "/selfie",
+        },
+        {
             "title": "Uploader",
             "description": "A test page for determining uploader component capabilities.",
             "route": "/test_uploader",
