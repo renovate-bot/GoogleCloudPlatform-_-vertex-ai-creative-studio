@@ -127,12 +127,13 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_samples=1,
         supports_prompt_enhancement=True,
         default_prompt_enhancement=True,
+        supported_durations=[4, 6, 8],
         mode_overrides={
             "r2v": ModeOverride(
-                supported_durations=[8], 
+                supported_durations=[8],
                 default_duration=8,
                 supports_style_reference=False
-            )
+            ),
         },
     ),
     VeoModelConfig(
