@@ -13,13 +13,13 @@
 # limitations under the License.
 """Motion portraits"""
 
-import time
-from dataclasses import field
 import json
+import time
+import base64
+import uuid
+from dataclasses import field
 
 import mesop as me
-
-from common.analytics import log_ui_click, track_click
 from google.genai import types
 from google.genai.types import GenerateContentConfig
 from tenacity import (
@@ -29,8 +29,10 @@ from tenacity import (
     wait_exponential,
 )
 
+from common.analytics import log_ui_click, track_click
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
+from common.utils import create_display_url
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -39,6 +41,7 @@ from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
+from components.selfie_camera.selfie_camera import selfie_camera
 from config.default import ABOUT_PAGE_CONTENT, Default
 from models.model_setup import GeminiModelSetup, VeoModelSetup
 from models.veo import VideoGenerationRequest, generate_video
@@ -48,7 +51,6 @@ from pages.styles import (
     _BOX_STYLE_CENTER_DISTRIBUTED_MARGIN,
 )
 from state.state import AppState
-from common.utils import create_display_url
 
 client = GeminiModelSetup.init()
 
@@ -99,6 +101,7 @@ class PageState:
     modifier_selected_states: dict[str, bool] = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
     info_dialog_open: bool = False
+    show_selfie_dialog: bool = False
 
 
 from config.portrait_styles import PORTRAIT_STYLES
@@ -107,14 +110,16 @@ from config.veo_models import VEO_MODELS, get_veo_model_config
 
 @me.page(path="/motion_portraits", title="Motion Portraits - GenMedia Creative Studio")
 def motion_portraits_page():
-    """Main Page."""
+    """Implement the Motion Portraits page."""
     state = me.state(AppState)
     with page_scaffold(page_name="motion_portraits"):  # pylint: disable=not-context-manager
         motion_portraits_content(state)
 
 
 def motion_portraits_content(app_state: me.state):
-    """Motion portraits Mesop Page"""
+    """Implement the Motion Portraits Mesop Page content."""
+    state = me.state(PageState)
+    selfie_dialog()
 
     state = me.state(PageState)
     # Get current model config
@@ -137,7 +142,7 @@ def motion_portraits_content(app_state: me.state):
             me.markdown(MOTION_PORTRAITS_INFO["description"])
             me.divider()
             me.text("Current Settings", type="headline-6")
-            me.text(f"VEO Model: {state.veo_model}")
+            me.text(f"Veo Model: {state.veo_model}")
             me.text(f"Prompt used: {state.veo_prompt_input}")
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
@@ -213,6 +218,8 @@ def motion_portraits_content(app_state: me.state):
                             button_type="icon",
                             key="portrait_library_chooser",
                         )
+                        with me.content_button(type="icon", on_click=on_open_selfie_dialog):
+                            me.icon("camera_alt")
                         me.button(
                             label="Clear",
                             on_click=on_click_clear_reference_image,
@@ -658,6 +665,48 @@ def on_selection_change_aspect(e: me.SelectSelectionChangeEvent):
     state.aspect_ratio = e.value
 
 
+def on_open_selfie_dialog(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.show_selfie_dialog = True
+    yield
+
+
+def on_selfie_capture(e: me.WebEvent):
+    state = me.state(PageState)
+    state.show_selfie_dialog = False
+    
+    # The data is a base64-encoded data URL, e.g., "data:image/png;base64,iVBORw0KGgo..."
+    data_url = e.value["value"]
+    # Simple split to get the actual base64 data
+    try:
+        header, encoded = data_url.split(",", 1)
+        # Get mime type from header
+        mime_type = header.split(";")[0].split(":")[1]
+        # Decode the base64 string
+        image_data = base64.b64decode(encoded)
+        
+        # Store to GCS
+        gcs_uri = store_to_gcs(
+            folder="selfies",
+            file_name=f"selfie_{uuid.uuid4()}.png",
+            mime_type=mime_type,
+            contents=image_data,
+        )
+        
+        # Update state
+        state.reference_image_gcs = gcs_uri
+        state.reference_image_display_url = create_display_url(gcs_uri)
+        state.reference_image_mime_type = mime_type
+
+    except Exception as ex:
+        state.error_message = f"Failed to process selfie: {ex}"
+        state.show_error_dialog = True
+
+    yield
+
+
+
+
 def on_click_upload(e: me.UploadEvent):
     """Upload image to GCS"""
     app_state = me.state(AppState)
@@ -926,3 +975,17 @@ def close_info_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.info_dialog_open = False
     yield
+
+
+@me.component
+def selfie_dialog():
+    state = me.state(PageState)
+    with dialog(is_open=state.show_selfie_dialog):
+        # Only render the camera component if the dialog is actually open
+        # to prevent it from activating the camera on page load.
+        if state.show_selfie_dialog:
+            with me.box(style=me.Style(padding=me.Padding.all(16))):
+                me.text("Take a Selfie", type="headline-6")
+                selfie_camera(on_capture=on_selfie_capture)
+                with me.box(style=me.Style(display="flex", justify_content="flex-end", margin=me.Margin(top=16))):
+                    me.button("Cancel", on_click=lambda e: setattr(state, "show_selfie_dialog", False), type="flat")

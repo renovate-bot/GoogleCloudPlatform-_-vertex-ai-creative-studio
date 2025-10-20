@@ -29,6 +29,7 @@ from state.state import AppState
 class PageState:
     captured_image_url: str = ""
     is_saving: bool = False
+    show_camera: bool = False
 
 
 def on_capture(e: me.WebEvent):
@@ -92,7 +93,10 @@ def page():
         ):
             me.text("Selfie Capture", type="headline-5")
 
-            selfie_camera(on_capture=on_capture)
+            if state.show_camera:
+                selfie_camera(on_capture=on_capture)
+            else:
+                me.button("Start Camera", on_click=lambda e: setattr(state, "show_camera", True), type="raised")
 
             if state.is_saving:
                 me.progress_spinner()
