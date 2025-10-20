@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.1.2" # gemini writer's workshop
+    VERSION: str = "1.1.4" # motion portrait selfie cam
     APP_ENV: str = os.environ.get("APP_ENV", "")
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
