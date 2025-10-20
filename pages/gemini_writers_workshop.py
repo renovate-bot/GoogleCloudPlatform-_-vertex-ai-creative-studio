@@ -286,6 +286,18 @@ def _media_upload_slots():
                         for ext in [".mp4", ".mov", ".avi", ".webm"]
                     ):
                         video_thumbnail(video_src=display_url)
+                    elif gcs_uri.lower().endswith(".pdf"):
+                        with me.box(
+                            style=me.Style(
+                                width=100,
+                                height=100,
+                                border=me.Border.all(me.BorderSide(style="dashed")),
+                                display="flex",
+                                align_items="center",
+                                justify_content="center",
+                            )
+                        ):
+                            me.icon("article")
                     else:
                         with me.box(
                             style=me.Style(
@@ -350,7 +362,7 @@ def _uploader_placeholder(key_prefix: str):
         me.uploader(
             label="Upload Media",
             on_upload=on_upload,
-            accepted_file_types=["image/jpeg", "image/png", "image/webp", "video/mp4"],
+            accepted_file_types=["image/jpeg", "image/png", "image/webp", "video/mp4", "application/pdf"],
             key=f"{key_prefix}_uploader",
             multiple=True,
         )
