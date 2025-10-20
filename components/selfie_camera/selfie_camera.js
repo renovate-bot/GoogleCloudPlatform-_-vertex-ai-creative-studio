@@ -50,6 +50,15 @@ class SelfieCamera extends LitElement {
   constructor() {
     super();
     this.capture = "";
+    this.stream = null;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+      console.log("Camera stream stopped.");
+    }
   }
 
   firstUpdated() {
@@ -62,6 +71,7 @@ class SelfieCamera extends LitElement {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       this.videoElement.srcObject = stream;
+      this.stream = stream; // Store the stream for cleanup
     } catch (err) {
       console.error("Error accessing camera:", err);
     }
