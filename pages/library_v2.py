@@ -63,17 +63,16 @@ def on_load(e: me.LoadEvent):
     pagestate = me.state(PageState)
     media_id = me.query_params.get("media_id")
 
-    if not pagestate.initial_load_complete:
-        # If it's a permalink, skip the initial load and just open the dialog.
-        # The dialog has its own logic to fetch the specific item.
-        if media_id:
-            pagestate.selected_media_item_id = media_id
-            pagestate.show_details_dialog = True
-        else:
-            # Otherwise, perform the initial load for the main library view.
-            yield from _load_media(pagestate, is_filter_change=True)
-
-        pagestate.initial_load_complete = True
+    # If it's a permalink, skip the initial load and just open the dialog.
+    # The dialog has its own logic to fetch the specific item.
+    if media_id and not pagestate.show_details_dialog:
+        pagestate.selected_media_item_id = media_id
+        pagestate.show_details_dialog = True
+    else:
+        # Otherwise, perform the initial load for the main library view.
+        # This will also run every time the user navigates back to the page,
+        # ensuring the view is fresh.
+        yield from _load_media(pagestate, is_filter_change=True)
 
     yield
 
