@@ -84,6 +84,18 @@
     },
 
     {
+      "id": 25,
+      "display": "Gemini",
+      "icon": "spark",
+      "route": "/gemini-writers-workshop",
+      "group": "foundation",
+      "mode": "text",
+      "description": "Collaborate with Gemini in the Writers Workshop",
+      "video_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_videos/capability__native-audio_16-9.mp4",
+      "video_object_position": "bottom"
+    },
+
+    {
       "id": 30,
       "display": "Virtual Try-On",
       "icon": "checkroom",
