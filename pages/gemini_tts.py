@@ -16,6 +16,7 @@
 
 import datetime
 import json
+import time
 import uuid
 
 import mesop as me
@@ -27,6 +28,7 @@ from common.metadata import MediaItem, add_media_item_to_firestore
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
+from components.snackbar import snackbar
 from config.gemini_tts import (
     GEMINI_TTS_LANGUAGES,
     GEMINI_TTS_MODEL_NAMES,
@@ -60,6 +62,8 @@ class GeminiTtsState:
     audio_display_url: str = ""
     error: str = ""
     info_dialog_open: bool = False
+    show_snackbar: bool = False
+    snackbar_message: str = ""
 
 
 @me.page(
@@ -71,7 +75,12 @@ def page():
     state = me.state(GeminiTtsState)
 
     with page_scaffold(page_name="gemini-tts"):  # pylint: disable=E1129:not-context-manager
-        with page_frame():  # pylint: disable=E1129:not-context-manager
+        gemini_tts_page_content()
+
+
+def gemini_tts_page_content():
+    state = me.state(GeminiTtsState)
+    with page_frame():  # pylint: disable=E1129:not-context-manager
             header(
                 "Gemini Text-to-Speech",
                 "record_voice_over",
@@ -210,6 +219,7 @@ def page():
                         me.audio(src=state.audio_display_url)
                     else:
                         me.text("Generated audio will appear here.")
+            snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 def on_blur_text(e: me.InputBlurEvent):
     """Handles text input."""
@@ -310,7 +320,7 @@ def on_click_generate(e: me.ClickEvent):
     state = me.state(GeminiTtsState)
     app_state = me.state(AppState)
     state.is_generating = True
-    state.audio_url = ""
+    state.audio_display_url = ""
     state.error = ""
     gcs_url = ""
     yield
@@ -338,7 +348,7 @@ def on_click_generate(e: me.ClickEvent):
 
     except Exception as ex:
         print(f"ERROR: Failed to generate audio. Details: {ex}")
-        app_state.snackbar_message = f"An error occurred: {ex}"
+        yield from _show_snackbar(state, f"An error occurred: {ex}")
 
     finally:
         state.is_generating = False
@@ -377,4 +387,13 @@ def close_info_dialog(e: me.ClickEvent):
     """Close the info dialog."""
     state = me.state(GeminiTtsState)
     state.info_dialog_open = False
+    yield
+
+
+def _show_snackbar(state: GeminiTtsState, message: str):
+    state.snackbar_message = message
+    state.show_snackbar = True
+    yield
+    time.sleep(3)
+    state.show_snackbar = False
     yield
