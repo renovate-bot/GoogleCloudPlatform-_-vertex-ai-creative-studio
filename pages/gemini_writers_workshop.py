@@ -78,7 +78,7 @@ with open("config/about_content.json", "r") as f:
     about_content = json.load(f)
     WRITERS_WORKSHOP_INFO = {
         "title": "Gemini Writers Workshop",
-        "description": "A place to generate text content from prompts and optional media assets."
+        "description": "A place to generate text content from prompts and optional media assets.\n\nUpload an image or video to get a Gemini description, or upload a PDF to extract or analyze information. Use this information to enhance your understanding and create new prompts."
     }
 
 def open_info_dialog(e: me.ClickEvent):
@@ -141,7 +141,7 @@ def gemini_writers_workshop_page_content():
     render_chooser_dialog()
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open): # pylint: disable=E1129:not-context-manager
             me.text(f"About {WRITERS_WORKSHOP_INFO['title']}", type="headline-6")
             me.markdown(WRITERS_WORKSHOP_INFO["description"])
             me.divider()
