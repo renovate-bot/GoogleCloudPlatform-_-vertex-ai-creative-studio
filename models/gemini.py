@@ -970,6 +970,8 @@ def generate_text(prompt: str, images: list[str]) -> tuple[str, float]:
             mime_type = "audio/wav" # General audio type
         elif any(image_uri.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]):
             mime_type = "image/png" # General image type
+        elif image_uri.lower().endswith(".pdf"):
+            mime_type = "application/pdf"
         else:
             # Fallback for unknown types, though this may still cause errors
             mime_type = "application/octet-stream"

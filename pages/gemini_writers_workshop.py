@@ -78,7 +78,7 @@ with open("config/about_content.json", "r") as f:
     about_content = json.load(f)
     WRITERS_WORKSHOP_INFO = {
         "title": "Gemini Writers Workshop",
-        "description": "A place to generate text content from prompts and optional media assets."
+        "description": "A place to generate text content from prompts and optional media assets.\n\nUpload an image or video to get a Gemini description, or upload a PDF to extract or analyze information. Use this information to enhance your understanding and create new prompts."
     }
 
 def open_info_dialog(e: me.ClickEvent):
@@ -141,7 +141,7 @@ def gemini_writers_workshop_page_content():
     render_chooser_dialog()
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):
+        with dialog(is_open=state.info_dialog_open): # pylint: disable=E1129:not-context-manager
             me.text(f"About {WRITERS_WORKSHOP_INFO['title']}", type="headline-6")
             me.markdown(WRITERS_WORKSHOP_INFO["description"])
             me.divider()
@@ -286,6 +286,18 @@ def _media_upload_slots():
                         for ext in [".mp4", ".mov", ".avi", ".webm"]
                     ):
                         video_thumbnail(video_src=display_url)
+                    elif gcs_uri.lower().endswith(".pdf"):
+                        with me.box(
+                            style=me.Style(
+                                width=100,
+                                height=100,
+                                border=me.Border.all(me.BorderSide(style="dashed")),
+                                display="flex",
+                                align_items="center",
+                                justify_content="center",
+                            )
+                        ):
+                            me.icon("article")
                     else:
                         with me.box(
                             style=me.Style(
@@ -350,7 +362,7 @@ def _uploader_placeholder(key_prefix: str):
         me.uploader(
             label="Upload Media",
             on_upload=on_upload,
-            accepted_file_types=["image/jpeg", "image/png", "image/webp", "video/mp4"],
+            accepted_file_types=["image/jpeg", "image/png", "image/webp", "video/mp4", "application/pdf"],
             key=f"{key_prefix}_uploader",
             multiple=True,
         )
