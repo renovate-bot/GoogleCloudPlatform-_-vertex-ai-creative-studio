@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import logging
 import tempfile
 import uuid
 
@@ -379,10 +380,32 @@ def layer_audio_on_video(video_gcs_uri: str, audio_gcs_uri: str) -> str:
         return final_gcs_uri
 
 
+def _calculate_motion_score(clip: VideoFileClip, sample_interval_seconds: float = 0.5) -> float:
+    """Calculates a motion score based on frame-to-frame differences."""
+    frame_diffs = []
+    prev_frame = None
+
+    for t in np.arange(0, clip.duration, sample_interval_seconds):
+        frame = clip.get_frame(t)
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        if prev_frame is not None:
+            diff = cv2.absdiff(gray_frame, prev_frame)
+            frame_diffs.append(np.mean(diff))
+        
+        prev_frame = gray_frame
+
+    if not frame_diffs:
+        return 0.0
+
+    return np.mean(frame_diffs)
+
+
+
 # --- GIF Conversion --- #
 
 
-def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, fps: int = 10, resize_factor: float | None = None) -> str:
+def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, target_mb: int = 8) -> str:
     with tempfile.TemporaryDirectory() as tmpdir:
         local_path = _download_videos_to_temp([source_video_gcs_uri], tmpdir)[0]
 
@@ -391,11 +414,70 @@ def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, fps: int = 10
 
         clip = VideoFileClip(local_path)
 
-        if resize_factor is not None:
-            clip = clip.resized(resize_factor)
+        # --- Intelligent Resizing Logic ---
+        motion_score = _calculate_motion_score(clip)
+        logging.info(f"Calculated motion score: {motion_score:.2f}")
 
-        clip.write_gif(output_path, fps=fps)
+        TARGET_SIZE_BYTES = target_mb * 1024 * 1024
+        # Start with reasonable quality defaults
+        fps = min(clip.fps, 12) 
+        resize_factor = 1.0
+        
+        # Adjust heuristic based on motion. A higher score means more motion and less compressibility.
+        # A motion score of ~30 is moderate. Let's make the heuristic more directly influenced by it.
+        # Start with a base heuristic and add a motion factor.
+        # base_heuristic = 0.35
+        # motion_factor = (motion_score / 50.0) # Normalize based on an expected max motion of ~50
+        # bytes_per_pixel_heuristic = base_heuristic + motion_factor * 0.2 # Motion adjusts heuristic by up to 0.2
+        
+        # Let's map the motion score (e.g., 0-50) to a more aggressive heuristic range (e.g., 0.6 - 1.4)
+        normalized_motion = min(motion_score / 50.0, 1.0) # Normalize score, cap at 1.0
+        bytes_per_pixel_heuristic = 0.6 + (normalized_motion * 0.8) # Map to 0.6-1.4 range
+
+        logging.info(f"Using motion-adjusted heuristic: {bytes_per_pixel_heuristic:.2f}")
+
+        # Estimate initial size
+        estimated_size = (
+            clip.size[0] * resize_factor * 
+            clip.size[1] * resize_factor * 
+            fps * 
+            clip.duration * 
+            bytes_per_pixel_heuristic
+        )
+
+        # Iteratively reduce quality if estimate is too high
+        while estimated_size > TARGET_SIZE_BYTES and (resize_factor > 0.2 or fps > 8):
+            if resize_factor > 0.3:
+                resize_factor -= 0.1
+            elif fps > 8:
+                fps -= 2
+            else: # Last resort
+                resize_factor -= 0.05
+
+            estimated_size = (
+                clip.size[0] * resize_factor * 
+                clip.size[1] * resize_factor * 
+                fps * 
+                clip.duration * 
+                bytes_per_pixel_heuristic
+            )
+            logging.info(f"Adjusting parameters. New resize_factor: {resize_factor:.2f}, New fps: {fps}, Estimated Size: {estimated_size / 1024 / 1024:.2f} MB")
+
+        final_params_comment = f"GIF generation params: resize_factor={resize_factor:.2f}, fps={fps}"
+        logging.info(f"FINAL PARAMS: {final_params_comment}")
+        
+        final_clip = clip.resized(resize_factor)
+        final_clip.write_gif(output_path, fps=fps)
+
+        # Get file sizes for metadata
+        source_video_size_mb = os.path.getsize(local_path) / (1024 * 1024)
+        final_gif_size_mb = os.path.getsize(output_path) / (1024 * 1024)
+        size_comment = f"Source Video: {source_video_size_mb:.2f} MB, Final GIF: {final_gif_size_mb:.2f} MB"
+        logging.info(size_comment)
+        final_params_comment += f". {size_comment}"
+
         clip.close()
+        final_clip.close()
 
         gif_uri = _upload_to_gcs(output_path, "generated_gifs", "image/gif")
 
@@ -406,7 +488,7 @@ def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, fps: int = 10
                 timestamp=datetime.datetime.now(datetime.timezone.utc),
                 mime_type="image/gif",
                 source_images_gcs=[source_video_gcs_uri], # Source is the concatenated video
-                comment="Produced by Pixie Compositor",
+                comment=final_params_comment,
                 model="pixie-compositor-v1-gif",
             )
         )
