@@ -152,7 +152,7 @@ def step1_content():
         me.textarea(
             label="Product Description",
             value=state.rotation_project.get("product_description", ""),
-            on_input=on_description_input,
+            on_blur=on_description_input,
             style=me.Style(width=400, height=200),
         )
         with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, align_items="center")):
