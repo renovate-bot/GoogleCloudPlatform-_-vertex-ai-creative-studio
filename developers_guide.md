@@ -93,6 +93,45 @@ This section outlines the key architectural patterns and best practices that are
     *   **Problem:** An event handler for an item in a list always receives data from the *last* item.
     *   **Solution:** Use the `key` property of the clickable component to pass a unique identifier. The event handler can then access this value via `e.key`.
 
+### Composable UI for Image Uploads
+
+*   **Problem:** You need to create a UI where a user can either upload a new image or select one from the media library. This UI should display a placeholder when empty and the selected image when populated.
+*   **Solution:** Follow a compositional pattern by combining several small, reusable components. Do not build a single, monolithic "uploader" component for your page.
+
+*   **Core Components:**
+    *   **`image_thumbnail`:** Use this to display an image that has already been uploaded or selected. It includes a built-in "remove" button.
+    *   **`_uploader_placeholder`:** Create a private component within your page that renders a styled placeholder box. This component should contain:
+        *   An `me.uploader` component for local file uploads.
+        *   The `library_chooser_button` component for opening the media library.
+    *   **Page Logic:** Your main page component is responsible for the logic. It should conditionally render either the `_uploader_placeholder` (if no image is selected) or the `image_thumbnail` (if an image is selected).
+
+*   **Example Structure:**
+    ```python
+    # In your pages/my_page.py
+    from components.image_thumbnail import image_thumbnail
+    from components.library.library_chooser_button import library_chooser_button
+
+    @me.component
+    def _uploader_placeholder(on_upload, on_open_library):
+        with me.box(style=...): # Dashed border style
+            me.uploader(on_upload=on_upload, ...)
+            library_chooser_button(on_library_select=on_open_library, ...)
+
+    def my_page_content():
+        state = me.state(PageState)
+        if state.my_image_uri:
+            image_thumbnail(
+                image_uri=state.my_image_uri,
+                on_remove=handle_remove_image,
+                ...
+            )
+        else:
+            _uploader_placeholder(
+                on_upload=handle_upload,
+                on_open_library=handle_open_library,
+            )
+    ```
+
 ### Analytics and Instrumentation
 
 When adding new features, it is important to instrument them with the analytics framework from `common/analytics.py` to provide insights into user behavior and application performance.
