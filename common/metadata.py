@@ -129,6 +129,9 @@ class MediaItem:
     # Interior Design Storyboard
     storyboard_id: Optional[str] = None
 
+    # Object Rotation
+    object_rotation_project_id: Optional[str] = None
+
     # R2V specific
     r2v_reference_images: List[str] = field(default_factory=list)
     r2v_style_image: Optional[str] = None
@@ -324,6 +327,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         language_code=raw_item_data.get("language_code"),
         style_prompt=raw_item_data.get("style_prompt"),
         storyboard_id=raw_item_data.get("storyboard_id"),
+        object_rotation_project_id=raw_item_data.get("object_rotation_project_id"),
         related_media_item_id=raw_item_data.get("related_media_item_id"),
         r2v_reference_images=raw_item_data.get("r2v_reference_images", []),
         r2v_style_image=raw_item_data.get("r2v_style_image"),
