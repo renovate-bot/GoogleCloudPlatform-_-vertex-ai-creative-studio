@@ -497,7 +497,6 @@ def render_tour_detail_dialog(storyboard: dict):
 
 
 @me.component
-@me.component
 def render_default_detail_dialog(item: MediaItem):
     """Renders the default detail view for standard media items."""
     primary_urls = []
@@ -564,6 +563,16 @@ def render_default_detail_dialog(item: MediaItem):
         on_veo_click=on_veo_click,
     )
 
+    # Add a button to link back to the object rotation page if applicable
+    if item.object_rotation_project_id:
+        with me.box(style=me.Style(margin=me.Margin(top=16))):
+            me.button(
+                "View Rotation Project",
+                on_click=on_view_rotation_project_click,
+                key=item.object_rotation_project_id,
+                type="stroked",
+            )
+
     # New section to render source assets using media_tile
     if all_source_uris:
         with me.box(style=me.Style(margin=me.Margin(top=24))):
@@ -610,4 +619,16 @@ def on_continue_styling_click(e: me.ClickEvent):
             },
         )
 
+    yield
+
+def on_view_rotation_project_click(e: me.ClickEvent):
+    """Navigates the user to the object rotation page to view a project."""
+    project_id = e.key
+    if project_id:
+        me.navigate(
+            url="/object-rotation",
+            query_params={
+                "object_rotation_id": f"{project_id}",
+            },
+        )
     yield
