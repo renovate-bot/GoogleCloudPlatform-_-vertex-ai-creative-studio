@@ -42,6 +42,11 @@ def page():
             "route": "/object-rotation",
         },
         {
+            "title": "Guideline Analysis",
+            "description": "A page to analyze a media item's prompt and generate guideline criteria.",
+            "route": "/guideline-analysis",
+        },
+        {
             "title": "VTO Model Composite Card Generator",
             "description": "A tool to generate a matrix of virtual models with different attributes.",
             "route": "/test_vto_prompt_generator",
