@@ -874,12 +874,64 @@ def describe_image(image_uri: str) -> str:
     return response.text.strip()
 
 
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def describe_video(video_uri: str) -> str:
+    """Generates a two-sentence description for a given video."""
+    model_name = cfg.MODEL_ID
+    config = types.GenerateContentConfig(temperature=0.2)
+    prompt_parts = [
+        "Describe this video in two sentences, focusing on the main subject, action, and overall visual style.",
+        types.Part.from_uri(file_uri=video_uri, mime_type="video/mp4"),
+    ]
+    response = client.models.generate_content(
+        model=model_name, contents=prompt_parts, config=config
+    )
+    return response.text.strip()
+
+
 class QuestionAnswer(BaseModel):
     question: str
     answer: bool = Field(..., description="True for 'yes', False for 'no'.")
 
+
 class EvaluationResult(BaseModel):
     answers: list[QuestionAnswer]
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def evaluate_media_with_questions(media_uri: str, mime_type: str, questions: list[str]) -> EvaluationResult:
+    """Evaluates a media file against a list of yes/no questions."""
+    model_name = cfg.MODEL_ID
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=EvaluationResult.model_json_schema(),
+        temperature=0.1,
+    )
+
+    prompt = "For the following media, answer each of the following questions with a simple 'yes' or 'no'. Return the answers as a structured JSON list of question and answer pairs.\n\n"
+    for q in questions:
+        prompt += f"- {q}\n"
+
+    prompt_parts = [
+        prompt,
+        types.Part.from_uri(file_uri=media_uri, mime_type=mime_type),
+    ]
+
+    response = client.models.generate_content(
+        model=model_name, contents=prompt_parts, config=config
+    )
+
+    return EvaluationResult.model_validate_json(response.text)
 
 
 @retry(
