@@ -22,22 +22,22 @@ from google.cloud import firestore
 
 from common.metadata import (
     MediaItem,
-    add_media_item_to_firestore,
-    get_media_item_by_id,
     _create_media_item_from_dict,
+    add_media_item_to_firestore,
     config,
     db,
+    get_media_item_by_id,
 )
 from common.storage import store_to_gcs
 from common.utils import create_display_url
+from components.dialog import dialog
 from components.header import header
 from components.library.library_dialog import library_dialog
 from components.media_tile.media_tile import media_tile
 from components.page_scaffold import page_frame, page_scaffold
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
-from components.dialog import dialog
-from models.guideline_analysis import generate_guideline_criteria
 from models.gemini import describe_image, describe_video, evaluate_media_with_questions
+from models.guideline_analysis import generate_guideline_criteria
 from state.state import AppState
 
 
@@ -47,15 +47,15 @@ class PageState:
 
     selected_media_item_id: str | None = None
     additional_guidance: str = ""
-    criteria: dict[str, list[str]] = field(default_factory=dict)
+    criteria: dict[str, list[str]] = field(default_factory=dict) # pylint: disable=E3701:invalid-field-call
     is_generating_criteria: bool = False
     criteria_error: str | None = None
-    evaluations: dict[str, str] = field(default_factory=dict)  # Store as JSON strings
+    evaluations: dict[str, str] = field(default_factory=dict)  # Store as JSON strings # pylint: disable=E3701:invalid-field-call
     is_evaluating: bool = False
     evaluation_error: str | None = None
     show_chooser_dialog: bool = False
     chooser_is_loading: bool = False
-    chooser_media_items: list[MediaItem] = field(default_factory=list)
+    chooser_media_items: list[MediaItem] = field(default_factory=list) # pylint: disable=E3701:invalid-field-call
     chooser_last_doc_id: str = ""
     chooser_all_items_loaded: bool = False
 
@@ -66,8 +66,8 @@ class PageState:
 )
 def page():
     """Main Page."""
-    with page_scaffold(page_name="guideline-analysis"):
-        with page_frame():
+    with page_scaffold(page_name="guideline-analysis"): # pylint: disable=E1129:not-context-manager
+        with page_frame(): # pylint: disable=E1129:not-context-manager
             header("Guideline Analysis", "rule")
             page_content()
 
@@ -192,7 +192,11 @@ def page_content():
             )
         ):
             me.text("Select a media asset to analyze")
-            with me.box(style=me.Style(display="flex", flex_direction="row", align_items="center", gap=16)):
+            with me.box(
+                style=me.Style(
+                    display="flex", flex_direction="row", align_items="center", gap=16
+                )
+            ):
                 _uploader_placeholder(on_library_select=open_chooser_dialog)
                 with me.content_button(on_click=on_clear_click, type="icon"):
                     me.icon("delete_sweep")
@@ -200,7 +204,7 @@ def page_content():
         with me.box(style=me.Style(flex_grow=1)):
             if item:
                 with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
-                    with me.box(style=me.Style(width=200)):
+                    with me.box(style=me.Style(width="50%")):
                         display_url = create_display_url(
                             item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
                         )
@@ -213,7 +217,7 @@ def page_content():
                         else:
                             me.text("No media preview")
 
-                    with me.box(style=me.Style(flex_grow=1)):
+                    with me.box(style=me.Style(width="50%")):
                         me.text("Prompt:", type="headline-6")
                         if item.prompt:
                             me.text(item.prompt)
@@ -229,7 +233,7 @@ def page_content():
                             label="Additional Brand Guidelines",
                             on_blur=on_additional_guidance_blur,
                             value=state.additional_guidance,
-                            style=me.Style(width="100%", margin=me.Margin(top=16))
+                            style=me.Style(width="100%", margin=me.Margin(top=16)),
                         )
 
                 with me.box(style=me.Style(margin=me.Margin(top=16))):
@@ -242,7 +246,10 @@ def page_content():
                         me.progress_spinner()
 
                     if state.criteria_error:
-                        me.text(state.criteria_error, style=me.Style(color=me.theme_var("error")))
+                        me.text(
+                            state.criteria_error,
+                            style=me.Style(color=me.theme_var("error")),
+                        )
 
                     if state.criteria:
                         with me.box(style=me.Style(margin=me.Margin(top=16))):
@@ -251,7 +258,11 @@ def page_content():
                                     me.text(category, type="headline-6")
                                     for q in questions:
                                         me.text(f"- {q}")
-                                    with me.box(style=me.Style(margin=me.Margin(top=8, bottom=8))):
+                                    with me.box(
+                                        style=me.Style(
+                                            margin=me.Margin(top=8, bottom=8)
+                                        )
+                                    ):
                                         me.divider()
 
                             if not state.is_evaluating:
@@ -266,7 +277,10 @@ def page_content():
                         me.progress_spinner()
 
                     if state.evaluation_error:
-                        me.text(state.evaluation_error, style=me.Style(color=me.theme_var("error")))
+                        me.text(
+                            state.evaluation_error,
+                            style=me.Style(color=me.theme_var("error")),
+                        )
 
                     if state.evaluations:
                         for category, evaluation_json in state.evaluations.items():
@@ -287,9 +301,19 @@ def page_content():
                                             )
                                         ):
                                             if detail["answer"]:
-                                                me.icon("check_circle", style=me.Style(color=me.theme_var("success")))
+                                                me.icon(
+                                                    "check_circle",
+                                                    style=me.Style(
+                                                        color=me.theme_var("success")
+                                                    ),
+                                                )
                                             else:
-                                                me.icon("cancel", style=me.Style(color=me.theme_var("error")))
+                                                me.icon(
+                                                    "cancel",
+                                                    style=me.Style(
+                                                        color=me.theme_var("error")
+                                                    ),
+                                                )
                                             me.text(detail["question"])
             else:
                 me.text("No media item selected.")
@@ -423,7 +447,7 @@ def render_chooser_dialog():
         width="95vw", height="80vh", display="flex", flex_direction="column"
     )
 
-    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style):
+    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style): # pylint: disable=E1129:not-context-manager
         if state.show_chooser_dialog:
             with me.box(
                 style=me.Style(
@@ -461,32 +485,32 @@ def render_chooser_dialog():
                                 gap="16px",
                             )
                         ):
-                                for item in state.chooser_media_items:
-                                    https_url = (
-                                        item.signed_url
-                                        if hasattr(item, "signed_url")
-                                        else ""
-                                    )
+                            for item in state.chooser_media_items:
+                                https_url = (
+                                    item.signed_url
+                                    if hasattr(item, "signed_url")
+                                    else ""
+                                )
 
-                                    render_type = "image"
-                                    if item.mime_type:
-                                        if item.mime_type.startswith("video/"):
-                                            render_type = "video"
-                                        elif item.mime_type.startswith("audio/"):
-                                            render_type = "audio"
-                                    elif https_url:
-                                        if ".mp4" in https_url or ".webm" in https_url:
-                                            render_type = "video"
-                                        elif ".wav" in https_url or ".mp3" in https_url:
-                                            render_type = "audio"
+                                render_type = "image"
+                                if item.mime_type:
+                                    if item.mime_type.startswith("video/"):
+                                        render_type = "video"
+                                    elif item.mime_type.startswith("audio/"):
+                                        render_type = "audio"
+                                elif https_url:
+                                    if ".mp4" in https_url or ".webm" in https_url:
+                                        render_type = "video"
+                                    elif ".wav" in https_url or ".mp3" in https_url:
+                                        render_type = "audio"
 
-                                    media_tile(
-                                        key=item.id,
-                                        on_click=handle_item_selected,
-                                        media_type=render_type,
-                                        https_url=https_url,
-                                        pills_json="[]",
-                                    )
+                                media_tile(
+                                    key=item.id,
+                                    on_click=handle_item_selected,
+                                    media_type=render_type,
+                                    https_url=https_url,
+                                    pills_json="[]",
+                                )
                         scroll_sentinel(
                             on_visible=handle_load_more,
                             is_loading=state.chooser_is_loading,
