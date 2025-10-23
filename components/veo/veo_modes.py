@@ -196,7 +196,7 @@ def _uploader_placeholder(on_upload, on_library_select, key_prefix: str, disable
         me.uploader(
             label="Upload Image",
             on_upload=on_upload,
-            accepted_file_types=["image/jpeg", "image/png"],
+            accepted_file_types=["image/jpeg", "image/png", "image/webp"],
             key=f"{key_prefix}_uploader",
             disabled=disabled,
         )
