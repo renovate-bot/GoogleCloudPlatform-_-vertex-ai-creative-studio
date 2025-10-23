@@ -354,7 +354,7 @@ requests==2.32.5
     #   google-genai
 rsa==4.9.1
     # via google-auth
-ruff==0.14.1
+ruff==0.14.2
     # via veo-app (pyproject.toml)
 scikit-image==0.25.2
     # via veo-app (pyproject.toml)
