@@ -130,11 +130,11 @@ func BuildImagenModelDescription() string {
 type VeoModelInfo struct {
 	CanonicalName         string
 	Aliases               []string
-	MinDuration           int32
-	MaxDuration           int32
 	DefaultDuration       int32
+	SupportedDurations    []int32
 	MaxVideos             int32
 	SupportedAspectRatios []string
+	SupportsGenerateAudio bool
 }
 
 // SupportedVeoModels is the single source of truth for all supported Veo models.
@@ -142,29 +142,83 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 	"veo-2.0-generate-001": {
 		CanonicalName:         "veo-2.0-generate-001",
 		Aliases:               []string{"Veo 2"},
-		MinDuration:           5,
-		MaxDuration:           8,
-		DefaultDuration:       5,
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{5, 6, 7, 8},
 		MaxVideos:             4,
 		SupportedAspectRatios: []string{"16:9", "9:16"},
+		SupportsGenerateAudio: false,
+	},
+	"veo-2.0-generate-exp": {
+		CanonicalName:         "veo-2.0-generate-exp",
+		Aliases:               []string{"Veo 2.0 Exp"},
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{5, 6, 7, 8},
+		MaxVideos:             4,
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		SupportsGenerateAudio: false,
+	},
+	"veo-2.0-generate-preview": {
+		CanonicalName:         "veo-2.0-generate-preview",
+		Aliases:               []string{"Veo 2.0 Preview"},
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{5, 6, 7, 8},
+		MaxVideos:             4,
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		SupportsGenerateAudio: false,
+	},
+	"veo-3.0-generate-001": {
+		CanonicalName:         "veo-3.0-generate-001",
+		Aliases:               []string{"Veo 3.0"},
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{4, 6, 8},
+		MaxVideos:             2,
+		SupportedAspectRatios: []string{"16:9"},
+		SupportsGenerateAudio: true,
+	},
+	"veo-3.0-fast-generate-001": {
+		CanonicalName:         "veo-3.0-fast-generate-001",
+		Aliases:               []string{"Veo 3.0 Fast"},
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{4, 6, 8},
+		MaxVideos:             2,
+		SupportedAspectRatios: []string{"16:9"},
+		SupportsGenerateAudio: true,
 	},
 	"veo-3.0-generate-preview": {
 		CanonicalName:         "veo-3.0-generate-preview",
 		Aliases:               []string{"Veo 3"},
-		MinDuration:           8,
-		MaxDuration:           8,
 		DefaultDuration:       8,
+		SupportedDurations:    []int32{4, 6, 8},
 		MaxVideos:             2,
 		SupportedAspectRatios: []string{"16:9"},
+		SupportsGenerateAudio: true,
 	},
 	"veo-3.0-fast-generate-preview": {
 		CanonicalName:         "veo-3.0-fast-generate-preview",
 		Aliases:               []string{"Veo 3 Fast"},
-		MinDuration:           8,
-		MaxDuration:           8,
 		DefaultDuration:       8,
+		SupportedDurations:    []int32{4, 6, 8},
 		MaxVideos:             2,
 		SupportedAspectRatios: []string{"16:9"},
+		SupportsGenerateAudio: true,
+	},
+	"veo-3.1-generate-preview": {
+		CanonicalName:         "veo-3.1-generate-preview",
+		Aliases:               []string{"Veo 3.1"},
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{4, 6, 8},
+		MaxVideos:             2,
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		SupportsGenerateAudio: true,
+	},
+	"veo-3.1-fast-generate-preview": {
+		CanonicalName:         "veo-3.1-fast-generate-preview",
+		Aliases:               []string{"Veo 3.1 Fast"},
+		DefaultDuration:       8,
+		SupportedDurations:    []int32{4, 6, 8},
+		MaxVideos:             2,
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		SupportsGenerateAudio: true,
 	},
 }
 
@@ -197,8 +251,12 @@ func BuildVeoModelDescription() string {
 
 	for _, name := range sortedNames {
 		info := SupportedVeoModels[name]
-		sb.WriteString(fmt.Sprintf("- *%s* (Duration: %d-%ds, Max Videos: %d, Ratios: %s)",
-			info.CanonicalName, info.MinDuration, info.MaxDuration, info.MaxVideos, strings.Join(info.SupportedAspectRatios, ", ")))
+		durationsStr := make([]string, len(info.SupportedDurations))
+		for i, d := range info.SupportedDurations {
+			durationsStr[i] = fmt.Sprintf("%d", d)
+		}
+		sb.WriteString(fmt.Sprintf("- *%s* (Durations: [%s]s, Max Videos: %d, Ratios: %s)",
+			info.CanonicalName, strings.Join(durationsStr, ", "), info.MaxVideos, strings.Join(info.SupportedAspectRatios, ", ")))
 		if len(info.Aliases) > 0 {
 			sb.WriteString(fmt.Sprintf(" Aliases: *%s*", strings.Join(info.Aliases, "*, *")))
 		}

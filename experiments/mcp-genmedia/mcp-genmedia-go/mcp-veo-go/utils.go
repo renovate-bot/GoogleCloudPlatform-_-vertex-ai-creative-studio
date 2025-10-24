@@ -39,7 +39,7 @@ func inferMimeTypeFromURI(uri string) string {
 }
 
 // parseCommonVideoParams extracts and validates video generation parameters from the request arguments.
-func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config) (string, string, string, string, int32, int32, error) {
+func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config) (string, string, string, string, int32, int32, bool, error) {
 	// Model
 	modelInput, ok := args["model"].(string)
 	if !ok || modelInput == "" {
@@ -47,7 +47,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	}
 	canonicalName, found := common.ResolveVeoModel(modelInput)
 	if !found {
-		return "", "", "", "", 0, 0, fmt.Errorf("model '%s' is not a valid or supported model name", modelInput)
+		return "", "", "", "", 0, 0, false, fmt.Errorf("model '%s' is not a valid or supported model name", modelInput)
 	}
 	model := canonicalName
 	modelDetails := common.SupportedVeoModels[model]
@@ -82,13 +82,20 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	if durationArg, ok := args["duration"].(float64); ok {
 		durationSecs = int32(durationArg)
 	}
-	if durationSecs < modelDetails.MinDuration {
-		log.Printf("Warning: Requested duration %ds is less than the minimum of %ds for model %s. Adjusting to minimum.", durationSecs, modelDetails.MinDuration, model)
-		durationSecs = modelDetails.MinDuration
+	validDuration := false
+	for _, d := range modelDetails.SupportedDurations {
+		if d == durationSecs {
+			validDuration = true
+			break
+		}
 	}
-	if durationSecs > modelDetails.MaxDuration {
-		log.Printf("Warning: Requested duration %ds is greater than the maximum of %ds for model %s. Adjusting to maximum.", durationSecs, modelDetails.MaxDuration, model)
-		durationSecs = modelDetails.MaxDuration
+	if !validDuration {
+		// Create a string representation of the supported durations for the error message
+		durationsStr := make([]string, len(modelDetails.SupportedDurations))
+		for i, d := range modelDetails.SupportedDurations {
+			durationsStr[i] = fmt.Sprintf("%d", d)
+		}
+		return "", "", "", "", 0, 0, false, fmt.Errorf("duration '%d' is not supported by model %s. Supported durations are: [%s]", durationSecs, model, strings.Join(durationsStr, ", "))
 	}
 
 	// Aspect Ratio
@@ -104,8 +111,18 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 		}
 	}
 	if !validRatio {
-		return "", "", "", "", 0, 0, fmt.Errorf("aspect ratio '%s' is not supported by model %s", finalAspectRatio, model)
+		return "", "", "", "", 0, 0, false, fmt.Errorf("aspect ratio '%s' is not supported by model %s", finalAspectRatio, model)
 	}
 
-	return gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, nil
+	// Generate Audio
+	var generateAudio bool = true // Default to true as per user request
+	if genAudioArg, ok := args["generate_audio"].(bool); ok {
+		generateAudio = genAudioArg
+	}
+
+	if generateAudio && !modelDetails.SupportsGenerateAudio {
+		return "", "", "", "", 0, 0, false, fmt.Errorf("generate_audio is set to true, but is not supported by model %s", model)
+	}
+
+	return gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, nil
 }
