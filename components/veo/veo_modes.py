@@ -44,10 +44,10 @@ def veo_modes(
         return
 
     # Dynamically create the buttons based on the supported modes for the selected model.
-    veo_mode_buttons = [
-        me.ButtonToggleButton(label=mode, value=mode)
-        for mode in selected_config.supported_modes
-    ]
+    veo_mode_buttons = []
+    for mode in selected_config.supported_modes:
+        label = "first/last" if mode == "interpolation" else mode
+        veo_mode_buttons.append(me.ButtonToggleButton(label=label, value=mode))
 
     me.button_toggle(
         value=state.veo_mode,
@@ -257,7 +257,7 @@ def _image_uploader(
                     disabled=False,
                 )
 
-        # Last Frame (for interpolation)
+        # Last Frame (for interpolation, also known as first/last frame)
         if last_image:
             with me.box(style=me.Style(display="flex", flex_direction="column", gap=2)):
                 me.text("Last Frame", style=me.Style(font_size="10pt"))
