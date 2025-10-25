@@ -26,6 +26,7 @@ from common.metadata import (
     add_media_item_to_firestore,
     get_media_for_page_optimized,
 )
+from common.prompt_template_service import prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url, https_url_to_gcs_uri
 from components.banana_studio.description_accordion import description_accordion
@@ -38,7 +39,6 @@ from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from components.veo_button.veo_button import veo_button
-from config.banana_presets import IMAGE_ACTION_PRESETS
 from config.default import Default as cfg
 from models.gemini import (
     describe_image,
@@ -197,6 +197,7 @@ class PageState:
     is_suggesting_transformations: bool = False
     critique_questions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_generating_questions: bool = False
+    prompt_templates: list[dict] = field(default_factory=list)
 
     evaluations: dict[str, Evaluation] = field(default_factory=dict)  # pylint: disable=invalid-field-call
     is_evaluating: bool = False
@@ -311,6 +312,126 @@ def on_accordion_toggle(e: me.ExpansionPanelToggleEvent):
     state.accordion_panels = {e.key: True}
 
 
+@me.component
+def _critique_questions_button():
+    state = me.state(PageState)
+    with me.box(style=me.Style(margin=me.Margin(top=16))):
+        if state.is_generating_questions:
+            with me.content_button(type="stroked", disabled=True):
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        align_items="center",
+                        gap=8,
+                    )
+                ):
+                    me.progress_spinner(diameter=20, stroke_width=3)
+                    me.text("Generating Questions...")
+        else:
+            me.button(
+                "Generate Critique Questions",
+                on_click=on_generate_questions_click,
+                type="stroked",
+                disabled=not (
+                    state.prompt and state.uploaded_image_gcs_uris
+                ),
+            )
+
+@me.component
+def _actions_row():
+    state = me.state(PageState)
+    if not state.generated_image_urls:
+        return
+
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="column",
+            gap=16,
+            margin=me.Margin(top=16),
+        ),
+    ):
+        me.text("Actions", type="headline-5")
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                align_items="center",
+                gap=16,
+            ),
+        ):
+            me.image(
+                src=state.selected_image_url,
+                style=me.Style(
+                    width=100,
+                    height=100,
+                    border_radius=8,
+                    object_fit="cover",
+                ),
+            )
+            me.button(
+                "Continue",
+                on_click=on_continue_click,
+                type="stroked",
+            )
+            veo_button(
+                gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}"
+            )
+
+@me.component
+def _prompt_templates_ui():
+    state = me.state(PageState)
+    if not (state.generated_image_urls or state.uploaded_image_gcs_uris):
+        return
+
+    # Group templates by category
+    categories = {}
+    for t in state.prompt_templates:
+        if t["category"] not in categories:
+            categories[t["category"]] = []
+        categories[t["category"]].append(t)
+
+    if not categories:
+        return
+
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="column",
+            gap=8,
+            margin=me.Margin(top=16),
+        ),
+    ):
+        for category_name, templates in categories.items():
+            if not templates:
+                continue
+
+            me.text(
+                f"{category_name.capitalize()} Actions",
+                style=me.Style(
+                    font_size=14,
+                    margin=me.Margin(top=8),
+                ),
+            )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    align_items="center",
+                    gap=8,
+                    flex_wrap="wrap",
+                ),
+            ):
+                for template in templates:
+                    me.button(
+                        template["label"],
+                        on_click=on_image_action_click,
+                        type="stroked",
+                        key=template["key"],
+                        style=CHIP_STYLE,
+                    )
+
 def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
@@ -376,11 +497,6 @@ def gemini_image_gen_page_content():
                 # Display descriptions and questions
                 if state.image_descriptions or state.critique_questions:
                     with me.box(style=me.Style(margin=me.Margin(top=16))):
-                        # Preserving the tabs component for easy switching
-                        # description_tabs(
-                        #     image_descriptions=state.image_descriptions,
-                        #     critique_questions=state.critique_questions,
-                        # )
                         description_accordion(
                             image_descriptions=state.image_descriptions,
                             critique_questions=state.critique_questions,
@@ -405,18 +521,6 @@ def gemini_image_gen_page_content():
                     value=str(state.aspect_ratio),
                     style=me.Style(width="100%", margin=me.Margin(bottom=16)),
                 )
-                # me.select(
-                #     label="Number of Images",
-                #     options=[
-                #         me.SelectOption(label="1", value="1"),
-                #         me.SelectOption(label="2", value="2"),
-                #         me.SelectOption(label="3", value="3"),
-                #         me.SelectOption(label="4", value="4"),
-                #     ],
-                #     on_selection_change=on_num_images_change,
-                #     value=str(state.num_images_to_generate),
-                #     style=me.Style(width="100%", margin=me.Margin(bottom=16)),
-                # )
 
                 # Generate images button
                 with me.box(
@@ -438,115 +542,11 @@ def gemini_image_gen_page_content():
                         style=me.Style(font_size=12),
                     )
 
-                # Generate Critique Questions
-                with me.box(style=me.Style(margin=me.Margin(top=16))):
-                    if state.is_generating_questions:
-                        with me.content_button(type="stroked", disabled=True):
-                            with me.box(
-                                style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    align_items="center",
-                                    gap=8,
-                                )
-                            ):
-                                me.progress_spinner(diameter=20, stroke_width=3)
-                                me.text("Generating Questions...")
-                    else:
-                        me.button(
-                            "Generate Critique Questions",
-                            on_click=on_generate_questions_click,
-                            type="stroked",
-                            disabled=not (
-                                state.prompt and state.uploaded_image_gcs_uris
-                            ),
-                        )
+                _critique_questions_button()
 
-                # Actions row
-                if state.generated_image_urls:
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            flex_direction="column",
-                            gap=16,
-                            margin=me.Margin(top=16),
-                        ),
-                    ):
-                        me.text("Actions", type="headline-5")
-                        with me.box(
-                            style=me.Style(
-                                display="flex",
-                                flex_direction="row",
-                                align_items="center",
-                                gap=16,
-                            ),
-                        ):
-                            me.image(
-                                src=state.selected_image_url,
-                                style=me.Style(
-                                    width=100,
-                                    height=100,
-                                    border_radius=8,
-                                    object_fit="cover",
-                                ),
-                            )
-                            me.button(
-                                "Continue",
-                                on_click=on_continue_click,
-                                type="stroked",
-                            )
-                            veo_button(
-                                gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}"
-                            )
+                _actions_row()
 
-                # Image presets
-                if state.generated_image_urls or state.uploaded_image_gcs_uris:
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            flex_direction="column",
-                            gap=8,  # Reduced gap for tighter category spacing
-                            margin=me.Margin(top=16),
-                        ),
-                    ):
-                        # me.text("Image Presets", style=me.Style(font_weight="bold"))
-
-                        for category_name, presets in IMAGE_ACTION_PRESETS.items():
-                            if not presets:
-                                continue
-
-                            me.text(
-                                f"{category_name.capitalize()} Actions",
-                                style=me.Style(
-                                    font_size=14,
-                                    margin=me.Margin(top=8),
-                                ),
-                            )
-                            with me.box(
-                                style=me.Style(
-                                    display="flex",
-                                    flex_direction="row",
-                                    align_items="center",
-                                    gap=8,  # Reduced gap
-                                    flex_wrap="wrap",
-                                ),
-                            ):
-                                for preset in presets:
-                                    label = preset.get("label") or preset["key"]
-                                    me.button(
-                                        label,
-                                        on_click=on_image_action_click,
-                                        type="stroked",
-                                        key=preset["key"],
-                                        style=CHIP_STYLE,
-                                    )
-
-                # Critique Questions Display
-                # if state.critique_questions:
-                #    with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, margin=me.Margin(top=16))):
-                #        me.text("Critique Questions", type="headline-6")
-                #        for i, question in enumerate(state.critique_questions):
-                #            me.text(f"{i+1}. {question}")
+                _prompt_templates_ui()
 
                 # Suggest transformations button
                 if (
@@ -585,7 +585,6 @@ def gemini_image_gen_page_content():
                             margin=me.Margin(top=16),
                         )
                     ):
-                        # me.text("Suggested Transformations", style=me.Style(font_weight="bold"))
                         with me.box(
                             style=me.Style(
                                 display="flex",
@@ -1076,15 +1075,10 @@ def on_image_action_click(e: me.ClickEvent):
     state = me.state(PageState)
     app_state = me.state(AppState)
 
-    # Find the preset that was clicked
-    preset = None
-    for category in IMAGE_ACTION_PRESETS.values():
-        found = next((p for p in category if p["key"] == e.key), None)
-        if found:
-            preset = found
-            break
+    # Find the template that was clicked
+    template = next((t for t in state.prompt_templates if t["key"] == e.key), None)
 
-    if not preset:
+    if not template:
         yield from show_snackbar(state, f"Unknown action: {e.key}")
         return
 
@@ -1102,26 +1096,25 @@ def on_image_action_click(e: me.ClickEvent):
     if user_image_uri:
         input_gcs_uris.append(user_image_uri)
 
-    # Add reference images from the preset, if they exist
-    preset_references = preset.get("references", [])
-    if preset_references:
-        input_gcs_uris.extend(preset_references)
+    # Add reference images from the template, if they exist
+    if template["references"]:
+        input_gcs_uris.extend(template["references"])
 
-    # If there are no images at all (neither from user nor preset), show an error
+    # If there are no images at all (neither from user nor template), show an error
     if not input_gcs_uris:
         yield from show_snackbar(state, "Please upload or select an image first.")
         return
 
     # Log the click event for analytics
     log_ui_click(
-        element_id=f"preset_action_{preset['key']}",
+        element_id=f"preset_action_{template['key']}",
         page_name=app_state.current_page,
         session_id=app_state.session_id,
     )
 
     # The action now uses the combined list of images
     yield from _generate_and_save(
-        base_prompt=preset["prompt"], input_gcs_uris=input_gcs_uris
+        base_prompt=template["prompt"], input_gcs_uris=input_gcs_uris
     )
 
 
@@ -1326,13 +1319,21 @@ def close_info_dialog(e: me.ClickEvent):
 def on_load(e: me.LoadEvent):
     """Handles the initial load of the page, checking for an image URI in the query parameters."""
     state = me.state(PageState)
-    # This flag ensures the logic runs only once on initial page load,
-    # not on subsequent yields or interactions.
+
+    # Load templates once on initial load.
+    if not state.prompt_templates:
+        templates = prompt_template_service.load_templates(
+            config_path="config/image_prompt_templates.json", template_type="image"
+        )
+        state.prompt_templates = [t.model_dump() for t in templates]
+        print(f"Loaded {len(state.prompt_templates)} image prompt templates.")
+
     if not state.initial_load_complete:
         image_uri = me.query_params.get("image_uri")
         if image_uri and image_uri not in state.uploaded_image_gcs_uris:
             state.uploaded_image_gcs_uris.append(image_uri)
         state.initial_load_complete = True
+
     yield
 
 

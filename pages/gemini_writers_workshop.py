@@ -28,6 +28,7 @@ from common.metadata import (
     config,
     db,
 )
+from common.prompt_template_service import PromptTemplate, prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url
 from components.dialog import dialog
@@ -35,6 +36,9 @@ from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.media_tile.media_tile import get_pills_for_item, media_tile
 from components.page_scaffold import page_frame, page_scaffold
+from components.prompt_template_dialog.prompt_template_dialog import (
+    prompt_template_dialog,
+)
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
@@ -61,6 +65,7 @@ class PageState:
     show_snackbar: bool = False
     snackbar_message: str = ""
     previous_media_item_id: str | None = None
+    prompt_templates: list[dict] = field(default_factory=list)
 
     # For the new chooser dialog
     show_chooser_dialog: bool = False
@@ -72,6 +77,7 @@ class PageState:
     info_dialog_open: bool = False
     show_error_dialog: bool = False
     error_message: str = ""
+    show_save_template_dialog: bool = False
 
 
 with open("config/about_content.json", "r") as f:
@@ -125,9 +131,190 @@ def get_all_media_for_chooser(
         return [], None
 
 
+def on_load(e: me.LoadEvent):
+    state = me.state(PageState)
+    if not state.prompt_templates:
+        templates = prompt_template_service.load_templates(
+            config_path="config/text_prompt_templates.json",
+            template_type="text"
+        )
+        state.prompt_templates = [t.model_dump() for t in templates]
+    yield
+
+def on_template_click(e: me.ClickEvent):
+
+    state = me.state(PageState)
+
+    state.prompt = e.key
+
+    yield
+
+
+
+
+
+def on_open_save_dialog_click(e: me.ClickEvent):
+
+
+
+
+
+    state = me.state(PageState)
+
+
+
+
+
+    state.show_save_template_dialog = True
+
+
+
+
+
+    yield
+
+
+
+
+
+def on_close_save_dialog(e: me.ClickEvent):
+
+    state = me.state(PageState)
+
+    state.show_save_template_dialog = False
+
+    yield
+
+
+
+
+
+def on_save_template(label: str, key: str, category: str):
+
+    state = me.state(PageState)
+
+    app_state = me.state(AppState)
+
+
+
+    new_template = PromptTemplate(
+
+        key=key,
+
+        label=label,
+
+        prompt=state.prompt,
+
+        category=category,
+
+        template_type="text",
+
+        attribution=app_state.user_email,  # or user_id
+
+    )
+
+
+
+    try:
+
+        prompt_template_service.add_template(new_template)
+
+        # Reload templates
+
+        templates = prompt_template_service.load_templates(
+
+            config_path="config/text_prompt_templates.json", template_type="text"
+
+        )
+
+        state.prompt_templates = [t.model_dump() for t in templates]
+
+        # Close dialog
+
+        state.show_save_template_dialog = False
+
+        yield from show_snackbar("Template saved successfully!")
+
+    except Exception as e:
+
+        print(f"Error saving template: {e}")
+
+        state.error_message = f"Error saving template: {e}"
+
+        state.show_error_dialog = True
+
+
+
+    yield
+
+
+
+
+
+CHIP_STYLE = me.Style(
+    padding=me.Padding(top=4, right=12, bottom=4, left=12),
+    border_radius=8,
+    font_size=14,
+    height=32,
+)
+
+@me.component
+def _prompt_templates_ui():
+    state = me.state(PageState)
+    
+    # Group templates by category
+    categories = {}
+    for t in state.prompt_templates:
+        if t["category"] not in categories:
+            categories[t["category"]] = []
+        categories[t["category"]].append(t)
+
+    if not categories:
+        return
+
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="column",
+            gap=8,
+            margin=me.Margin(top=16),
+        )
+    ):
+        me.text("Prompt Templates", style=me.Style(font_weight="bold"))
+        for category_name, templates in categories.items():
+            if not templates:
+                continue
+
+            me.text(
+                f"{category_name.capitalize()}",
+                style=me.Style(
+                    font_size=14,
+                    margin=me.Margin(top=8),
+                ),
+            )
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="row",
+                    align_items="center",
+                    gap=8,
+                    flex_wrap="wrap",
+                )
+            ):
+                for template in templates:
+                    me.button(
+                        template["label"],
+                        on_click=on_template_click,
+                        type="stroked",
+                        key=template["prompt"],
+                        style=CHIP_STYLE,
+                    )
+
+
 @me.page(
     path="/gemini-writers-workshop",
     title="Gemini Writers Workshop - GenMedia Creative Studio",
+    on_load=on_load,
 )
 def page():
     """Define the Mesop page route for Gemini Writers Workshop."""
@@ -139,6 +326,12 @@ def gemini_writers_workshop_page_content():
     """Renders the main UI for the Gemini Writers Studio page."""
     state = me.state(PageState)
     render_chooser_dialog()
+    prompt_template_dialog(
+        is_open=state.show_save_template_dialog,
+        prompt_text=state.prompt,
+        on_save=on_save_template,
+        on_close=on_close_save_dialog,
+    )
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open): # pylint: disable=E1129:not-context-manager
@@ -204,6 +397,15 @@ def gemini_writers_workshop_page_content():
                     _generate_text_button()
                     with me.content_button(on_click=on_clear_click, type="icon"):
                         me.icon("delete_sweep")
+                    with me.tooltip(
+                        message="Enter a prompt and click outside the text box to enable saving."
+                    ):
+                        with me.content_button(
+                            on_click=on_open_save_dialog_click,
+                            type="icon",
+                            disabled=not state.prompt,
+                        ):
+                            me.icon("save")
 
                 if (
                     me.state(PageState).generation_complete
@@ -213,6 +415,8 @@ def gemini_writers_workshop_page_content():
                         f"{me.state(PageState).generation_time:.2f} seconds",
                         style=me.Style(font_size=12),
                     )
+
+                _prompt_templates_ui()
 
             # Right column (generated text)
             with me.box(
