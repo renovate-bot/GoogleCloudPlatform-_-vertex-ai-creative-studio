@@ -197,7 +197,7 @@ class PageState:
     is_suggesting_transformations: bool = False
     critique_questions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_generating_questions: bool = False
-    prompt_templates: list[dict] = field(default_factory=list)
+    prompt_templates: list[dict] = field(default_factory=list) # pylint: disable=invalid-field-call
 
     evaluations: dict[str, Evaluation] = field(default_factory=dict)  # pylint: disable=invalid-field-call
     is_evaluating: bool = False
