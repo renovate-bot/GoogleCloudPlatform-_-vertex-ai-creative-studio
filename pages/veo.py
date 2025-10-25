@@ -192,7 +192,22 @@ def veo_content(app_state: me.state):
             me.text(f"Negative Prompt: {state.negative_prompt}")
             me.text(f"Model: {state.veo_model}")
             me.text(f"Duration: {state.video_length}s")
-            me.text(f"Input Image: {state.reference_image_gcs}")
+
+            # Mode-specific settings display
+            if state.veo_mode == "i2v":
+                if state.reference_image_gcs:
+                    me.text(f"Input Image: {state.reference_image_gcs}")
+            elif state.veo_mode == "interpolation":
+                if state.reference_image_gcs:
+                    me.text(f"First Frame: {state.reference_image_gcs}")
+                if state.last_reference_image_gcs:
+                    me.text(f"Last Frame: {state.last_reference_image_gcs}")
+            elif state.veo_mode == "r2v":
+                if state.r2v_reference_images:
+                    me.text(f"Asset Images: {len(state.r2v_reference_images)} selected")
+                if state.r2v_style_image:
+                    me.text(f"Style Image: {state.r2v_style_image}")
+
             with dialog_actions():  # pylint: disable=E1129:not-context-manager
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
