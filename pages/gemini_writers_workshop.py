@@ -21,7 +21,7 @@ from typing import List, Optional
 import mesop as me
 from google.cloud import firestore
 
-from common.analytics import track_model_call, track_click
+from common.analytics import track_click, track_model_call
 from common.metadata import (
     MediaItem,
     _create_media_item_from_dict,
@@ -31,6 +31,7 @@ from common.metadata import (
 from common.prompt_template_service import PromptTemplate, prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url
+from components.copy_button.copy_button import copy_button
 from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
@@ -43,7 +44,6 @@ from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from components.video_thumbnail.video_thumbnail import video_thumbnail
-from components.copy_button.copy_button import copy_button
 from config.default import Default as cfg
 from models.gemini import generate_text
 from state.state import AppState
@@ -65,7 +65,7 @@ class PageState:
     show_snackbar: bool = False
     snackbar_message: str = ""
     previous_media_item_id: str | None = None
-    prompt_templates: list[dict] = field(default_factory=list)
+    prompt_templates: list[dict] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
 
     # For the new chooser dialog
     show_chooser_dialog: bool = False
@@ -84,8 +84,9 @@ with open("config/about_content.json", "r") as f:
     about_content = json.load(f)
     WRITERS_WORKSHOP_INFO = {
         "title": "Gemini Writers Workshop",
-        "description": "A place to generate text content from prompts and optional media assets.\n\nUpload an image or video to get a Gemini description, or upload a PDF to extract or analyze information. Use this information to enhance your understanding and create new prompts."
+        "description": "A place to generate text content from prompts and optional media assets.\n\nUpload an image or video to get a Gemini description, or upload a PDF to extract or analyze information. Use this information to enhance your understanding and create new prompts.",
     }
+
 
 def open_info_dialog(e: me.ClickEvent):
     """Open the info dialog."""
@@ -135,50 +136,76 @@ def on_load(e: me.LoadEvent):
     state = me.state(PageState)
     if not state.prompt_templates:
         templates = prompt_template_service.load_templates(
-            config_path="config/text_prompt_templates.json",
-            template_type="text"
+            config_path="config/text_prompt_templates.json", template_type="text"
         )
         state.prompt_templates = [t.model_dump() for t in templates]
     yield
 
+
 def on_template_click(e: me.ClickEvent):
+    """
+
+
+    Handles clicks on prompt template buttons.
+
+
+
+
+
+    If the user has already entered a prompt, it combines the user's prompt
+
+
+    with the template's prompt and triggers generation.
+
+
+
+
+
+    If the user's prompt is empty, it populates the prompt text area
+
+
+    with the template's content.
+
+
+    """
 
     state = me.state(PageState)
 
-    state.prompt = e.key
+    template_prompt = e.key
 
-    yield
+    # Check if the user has entered their own prompt (and it's not just whitespace)
 
+    if state.prompt and state.prompt.strip():
+        # Combine the user's prompt and the template, then generate
 
+        combined_prompt = f"{template_prompt}\n\n{state.prompt}"
 
+        state.prompt = combined_prompt
+
+        # Trigger generation
+
+        yield from _generate_text_and_save(
+            base_prompt=combined_prompt,
+            input_gcs_uris=state.uploaded_media_gcs_uris,
+        )
+
+    else:
+        # If there's no user prompt, just apply the template to the text area
+
+        state.prompt = template_prompt
+
+        yield
 
 
 def on_open_save_dialog_click(e: me.ClickEvent):
-
-
-
-
-
     state = me.state(PageState)
 
-
-
-
-
     state.show_save_template_dialog = True
-
-
-
-
 
     yield
 
 
-
-
-
 def on_close_save_dialog(e: me.ClickEvent):
-
     state = me.state(PageState)
 
     state.show_save_template_dialog = False
@@ -186,45 +213,27 @@ def on_close_save_dialog(e: me.ClickEvent):
     yield
 
 
-
-
-
 def on_save_template(label: str, key: str, category: str):
-
     state = me.state(PageState)
 
     app_state = me.state(AppState)
 
-
-
     new_template = PromptTemplate(
-
         key=key,
-
         label=label,
-
         prompt=state.prompt,
-
         category=category,
-
         template_type="text",
-
         attribution=app_state.user_email,  # or user_id
-
     )
 
-
-
     try:
-
         prompt_template_service.add_template(new_template)
 
         # Reload templates
 
         templates = prompt_template_service.load_templates(
-
             config_path="config/text_prompt_templates.json", template_type="text"
-
         )
 
         state.prompt_templates = [t.model_dump() for t in templates]
@@ -236,19 +245,13 @@ def on_save_template(label: str, key: str, category: str):
         yield from show_snackbar("Template saved successfully!")
 
     except Exception as e:
-
         print(f"Error saving template: {e}")
 
         state.error_message = f"Error saving template: {e}"
 
         state.show_error_dialog = True
 
-
-
     yield
-
-
-
 
 
 CHIP_STYLE = me.Style(
@@ -258,16 +261,18 @@ CHIP_STYLE = me.Style(
     height=32,
 )
 
+
 @me.component
 def _prompt_templates_ui():
     state = me.state(PageState)
-    
-    # Group templates by category
+
+    # Group templates by category (case-insensitive)
     categories = {}
     for t in state.prompt_templates:
-        if t["category"] not in categories:
-            categories[t["category"]] = []
-        categories[t["category"]].append(t)
+        category_key = t["category"].lower()
+        if category_key not in categories:
+            categories[category_key] = []
+        categories[category_key].append(t)
 
     if not categories:
         return
@@ -281,12 +286,12 @@ def _prompt_templates_ui():
         )
     ):
         me.text("Prompt Templates", style=me.Style(font_weight="bold"))
-        for category_name, templates in categories.items():
+        for category_key, templates in categories.items():
             if not templates:
                 continue
 
             me.text(
-                f"{category_name.capitalize()}",
+                f"{category_key.capitalize()}",
                 style=me.Style(
                     font_size=14,
                     margin=me.Margin(top=8),
@@ -334,7 +339,7 @@ def gemini_writers_workshop_page_content():
     )
 
     if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open): # pylint: disable=E1129:not-context-manager
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=E1129:not-context-manager
             me.text(f"About {WRITERS_WORKSHOP_INFO['title']}", type="headline-6")
             me.markdown(WRITERS_WORKSHOP_INFO["description"])
             me.divider()
@@ -428,10 +433,20 @@ def gemini_writers_workshop_page_content():
                 )
             ):
                 if me.state(PageState).generated_text:
-                    with me.box(style=me.Style(display="flex", flex_direction="row", justify_content="space-between", align_items="center")):
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            justify_content="space-between",
+                            align_items="center",
+                        )
+                    ):
                         me.text("Generated Text", type="headline-6")
                         copy_button(text_to_copy=me.state(PageState).generated_text)
-                    me.markdown(me.state(PageState).generated_text, style=me.Style(margin=me.Margin(top=16)))
+                    me.markdown(
+                        me.state(PageState).generated_text,
+                        style=me.Style(margin=me.Margin(top=16)),
+                    )
                 else:
                     with me.box(
                         style=me.Style(
@@ -566,7 +581,13 @@ def _uploader_placeholder(key_prefix: str):
         me.uploader(
             label="Upload Media",
             on_upload=on_upload,
-            accepted_file_types=["image/jpeg", "image/png", "image/webp", "video/mp4", "application/pdf"],
+            accepted_file_types=[
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+                "video/mp4",
+                "application/pdf",
+            ],
             key=f"{key_prefix}_uploader",
             multiple=True,
         )
