@@ -203,12 +203,12 @@
     },
     {
       "id": 99,
-      "display": "Configuration",
+      "display": "Settings",
       "icon": "settings",
       "route": "/config",
       "align": "bottom",
       "group": "studio",
-      "description": "Administer prompt templates and other settings."
+      "description": "Configure application settings."
     }
   ]
 }

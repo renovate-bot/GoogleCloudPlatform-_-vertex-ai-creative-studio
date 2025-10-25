@@ -128,6 +128,15 @@ class PromptTemplateService:
         template.id = doc_ref.id
         return template
 
+    def update_template(self, template_id: str, updates: dict):
+        """Updates an existing template in the Firestore collection."""
+        if not db:
+            raise ConnectionError("Firestore client is not initialized.")
+
+        doc_ref = db.collection(self.collection_name).document(template_id)
+        doc_ref.update(updates)
+        print(f"Successfully updated template '{template_id}' in Firestore.")
+
 
 # Instantiate a global service object
 prompt_template_service = PromptTemplateService()
