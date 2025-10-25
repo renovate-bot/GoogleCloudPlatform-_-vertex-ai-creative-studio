@@ -15,6 +15,7 @@
 """Object Rotation page."""
 
 import datetime
+import time
 from dataclasses import field
 from typing import Callable
 
@@ -27,6 +28,7 @@ from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.library.library_dialog import library_dialog
+from components.snackbar import snackbar
 
 @me.component
 def _uploader_placeholder(on_upload: Callable, on_library_select: Callable):
@@ -69,6 +71,18 @@ class PageState:
     show_library: bool = False
     show_library_for_view: str | None = None
     initial_load_complete: bool = False
+    show_snackbar: bool = False
+    snackbar_message: str = ""
+
+
+def show_snackbar(state: PageState, message: str):
+    """Displays a snackbar message at the bottom of the page."""
+    state.snackbar_message = message
+    state.show_snackbar = True
+    yield
+    time.sleep(3)
+    state.show_snackbar = False
+    yield
 
 
 def on_load(e: me.LoadEvent):
@@ -106,10 +120,12 @@ def on_load(e: me.LoadEvent):
     on_load=on_load,
 )
 def object_rotation_page():
+    state = me.state(PageState)
     with page_scaffold(page_name="object_rotation"):  # pylint: disable=E1129:not-context-manager
         with page_frame():  # pylint: disable=E1129:not-context-manager
             header("Object Rotation", "360")
             page_content()
+        snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 
 def page_content():
@@ -424,6 +440,8 @@ async def on_generate_views(e: me.ClickEvent):
             product_description=state.rotation_project.get("product_description", ""),
             image_uri=state.rotation_project["main_product_image_uri"],
         )
+        if not views:
+            raise Exception("Model did not return any views.")
         if "product_views" not in state.rotation_project:
             state.rotation_project["product_views"] = {}
         state.rotation_project["product_views"].update(views)
@@ -431,6 +449,8 @@ async def on_generate_views(e: me.ClickEvent):
     except Exception as ex:
         # Handle and display error
         print(f"Error generating views: {ex}")
+        for _ in show_snackbar(state, f"Error generating views: {ex}"):
+            yield
     finally:
         state.is_generating_views = False
         yield
@@ -552,6 +572,7 @@ def on_generate_video(e: me.ClickEvent):
     except Exception as ex:
         # Handle and display error
         print(f"Error generating video: {ex}")
+        yield from show_snackbar(state, f"Error generating video: {ex}")
     finally:
         state.is_generating_video = False
         yield
