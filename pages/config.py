@@ -23,8 +23,8 @@ import pandas as pd
 from common.prompt_template_service import prompt_template_service
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
-from components.prompt_template_detail_dialog.prompt_template_detail_dialog import (
-    prompt_template_detail_dialog,
+from components.prompt_template_form_dialog.prompt_template_form_dialog import (
+    prompt_template_form_dialog,
 )
 from config.default import Default
 from state.state import AppState
@@ -185,13 +185,15 @@ def page():
 
             # Conditionally render the dialog, passing the derived template dict
             if state.show_template_dialog and selected_template:
-                prompt_template_detail_dialog(
+                is_editable = selected_template["attribution"] == app_state.user_email
+                prompt_template_form_dialog(
                     template=selected_template,
+                    # Use the new mode parameter instead of is_editable
+                    mode="edit" if is_editable else "view",
                     is_open=state.show_template_dialog,
-                    is_editable=selected_template["attribution"]
-                    == app_state.user_email,
                     on_close=on_close_dialog,
                     on_update=on_update_template,
+                    on_save=None,  # Not used on this page
                 )
 
 

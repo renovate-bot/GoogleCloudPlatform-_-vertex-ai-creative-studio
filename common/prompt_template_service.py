@@ -91,15 +91,16 @@ class PromptTemplateService:
 
     def load_all_templates(self) -> list[PromptTemplate]:
         """Loads all default and user-created templates from all sources."""
-        templates: list[PromptTemplate] = []
+        default_templates: list[PromptTemplate] = []
+        user_templates: list[PromptTemplate] = []
 
         # Load defaults from both files
-        templates.extend(
+        default_templates.extend(
             self._load_from_json(
                 "config/text_prompt_templates.json", template_type="text"
             )
         )
-        templates.extend(
+        default_templates.extend(
             self._load_from_json(
                 "config/image_prompt_templates.json", template_type="image"
             )
@@ -108,12 +109,11 @@ class PromptTemplateService:
         # Load all from Firestore
         if db:
             try:
-                query = db.collection("prompt_templates").order_by("label")
+                # Use a simple query without ordering to be more robust
+                query = db.collection("prompt_templates")
                 for doc in query.stream():
                     try:
-                        # Avoid adding duplicates that came from the default JSON
-                        if not any(t.key == doc.to_dict().get("key") for t in templates):
-                            templates.append(PromptTemplate(**doc.to_dict(), id=doc.id))
+                        user_templates.append(PromptTemplate(**doc.to_dict(), id=doc.id))
                     except Exception as e:
                         print(
                             f"Warning: Skipping invalid prompt template from Firestore ({doc.id}): {e}"
@@ -121,7 +121,16 @@ class PromptTemplateService:
             except Exception as e:
                 print(f"Warning: Could not load templates from Firestore: {e}")
 
-        return templates
+        # Combine and de-duplicate, giving user templates precedence
+        all_templates_map = {t.key: t for t in default_templates}
+        for t in user_templates:
+            all_templates_map[t.key] = t
+
+        # Sort the final list in Python
+        final_list = sorted(
+            all_templates_map.values(), key=lambda t: (t.category, t.label)
+        )
+        return final_list
 
     def add_template(self, template: PromptTemplate) -> PromptTemplate:
         """
@@ -138,7 +147,7 @@ class PromptTemplateService:
         # Firestore does not store the ID in the document data
         template_dict.pop("id", None)
 
-        doc_ref = db.collection(self.collection_name).add(template_dict)
+        _, doc_ref = db.collection(self.collection_name).add(template_dict)
 
         # Return the template with the new Firestore-generated ID
         template.id = doc_ref.id

@@ -37,8 +37,8 @@ from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.media_tile.media_tile import get_pills_for_item, media_tile
 from components.page_scaffold import page_frame, page_scaffold
-from components.prompt_template_dialog.prompt_template_dialog import (
-    prompt_template_dialog,
+from components.prompt_template_form_dialog.prompt_template_form_dialog import (
+    prompt_template_form_dialog,
 )
 from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from components.snackbar import snackbar
@@ -213,7 +213,7 @@ def on_close_save_dialog(e: me.ClickEvent):
     yield
 
 
-def on_save_template(label: str, key: str, category: str):
+def on_save_template(label: str, key: str, category: str, prompt: str):
     state = me.state(PageState)
 
     app_state = me.state(AppState)
@@ -221,7 +221,7 @@ def on_save_template(label: str, key: str, category: str):
     new_template = PromptTemplate(
         key=key,
         label=label,
-        prompt=state.prompt,
+        prompt=prompt,  # Use prompt from dialog
         category=category,
         template_type="text",
         attribution=app_state.user_email,  # or user_id
@@ -331,11 +331,15 @@ def gemini_writers_workshop_page_content():
     """Renders the main UI for the Gemini Writers Studio page."""
     state = me.state(PageState)
     render_chooser_dialog()
-    prompt_template_dialog(
+    # Use the new, unified dialog in 'create' mode
+    prompt_template_form_dialog(
+        # Pass the prompt text in the 'template' dict
+        template={"prompt": state.prompt},
+        mode="create",
         is_open=state.show_save_template_dialog,
-        prompt_text=state.prompt,
         on_save=on_save_template,
         on_close=on_close_save_dialog,
+        on_update=None,  # Not used on this page
     )
 
     if state.info_dialog_open:
@@ -347,7 +351,7 @@ def gemini_writers_workshop_page_content():
 
     with dialog(is_open=state.show_error_dialog):  # pylint: disable=E1129:not-context-manager
         me.text(
-            "Generation Error",
+            "An Error Occurred",
             type="headline-6",
             style=me.Style(color=me.theme_var("error")),
         )
