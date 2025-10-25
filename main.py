@@ -32,7 +32,7 @@ from pydantic import BaseModel
 
 import pages.shop_the_look
 from app_factory import app
-from common import prompt_template_service
+from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url
 from config import default as config
 from models.video_processing import convert_mp4_to_gif

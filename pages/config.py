@@ -23,6 +23,9 @@ import pandas as pd
 from common.prompt_template_service import prompt_template_service
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
+from components.prompt_template_detail_dialog.prompt_template_detail_dialog import (
+    prompt_template_detail_dialog,
+)
 from config.default import Default
 from state.state import AppState
 
@@ -91,9 +94,11 @@ def _make_tab_style(selected: bool) -> me.Style:
 
 @me.stateclass
 class PageState:
-    templates: list[dict] = field(default_factory=list) # pylint: disable=E3701:invalid-field-call
+    templates: list[dict] = field(default_factory=list)
     is_loading: bool = False
     active_tab: str = "details"
+    show_template_dialog: bool = False
+    selected_template_key: str | None = None
 
 
 def on_load(e: me.LoadEvent):
@@ -111,25 +116,83 @@ def on_load(e: me.LoadEvent):
     yield
 
 
+def on_row_click(e: me.ClickEvent):
+    state = me.state(PageState)
+    # The key of the box is the template key
+    state.selected_template_key = e.key
+    state.show_template_dialog = True
+    yield
+
+
+def on_close_dialog(e: me.ClickEvent):
+    state = me.state(PageState)
+    state.show_template_dialog = False
+    state.selected_template_key = None
+    yield
+
+
+def on_update_template(template_id: str, updates: dict):
+    state = me.state(PageState)
+    try:
+        prompt_template_service.update_template(template_id, updates)
+        # Reload all templates to reflect the change
+        all_templates = prompt_template_service.load_all_templates()
+        state.templates = sorted(
+            [t.model_dump() for t in all_templates],
+            key=lambda x: (x["category"], x["label"]),
+        )
+        # Close the dialog
+        state.show_template_dialog = False
+        state.selected_template_key = None
+    except Exception as e:
+        print(f"Error updating template: {e}")
+        # Optionally, show an error dialog
+    yield
+
+
 @me.page(path="/config", title="Configuration", on_load=on_load)
 def page():
     """Renders the configuration page."""
+    state = me.state(PageState)
     app_state = me.state(AppState)
-    with page_scaffold(page_name="config"): # pylint: disable=E1129:not-context-manager
-        header("Configuration", icon="settings") # pylint: disable=E1129:not-context-manager
 
-        tabs = [
-            Tab(key="details", label="Config Details", icon="list_alt"),
-            Tab(key="templates", label="Prompt Templates", icon="pattern"),
-        ]
-        _tab_group(
-            tabs=tabs, on_tab_click=on_tab_change, selected_tab_key=me.state(PageState).active_tab
+    # Find the template to display at render time
+    selected_template = None
+    if state.selected_template_key:
+        selected_template = next(
+            (t for t in state.templates if t["key"] == state.selected_template_key),
+            None,
         )
 
-        if me.state(PageState).active_tab == "details":
-            _render_config_details_tab(app_state=app_state)
-        elif me.state(PageState).active_tab == "templates":
-            _render_prompt_templates_list()
+    with page_scaffold(page_name="config"):
+        with page_frame():
+            header("Configuration", icon="settings")
+
+            tabs = [
+                Tab(key="details", label="Config Details", icon="list_alt"),
+                Tab(key="templates", label="Prompt Templates", icon="pattern"),
+            ]
+            _tab_group(
+                tabs=tabs,
+                on_tab_click=on_tab_change,
+                selected_tab_key=state.active_tab,
+            )
+
+            if state.active_tab == "details":
+                _render_config_details_tab(app_state=app_state)
+            elif state.active_tab == "templates":
+                _render_prompt_templates_list(app_state=app_state)
+
+            # Conditionally render the dialog, passing the derived template dict
+            if state.show_template_dialog and selected_template:
+                prompt_template_detail_dialog(
+                    template=selected_template,
+                    is_open=state.show_template_dialog,
+                    is_editable=selected_template["attribution"]
+                    == app_state.user_email,
+                    on_close=on_close_dialog,
+                    on_update=on_update_template,
+                )
 
 
 def get_config_table(app_state: AppState):
@@ -192,7 +255,7 @@ def _render_config_details_tab(app_state: AppState):
 
 
 @me.component
-def _render_prompt_templates_list():
+def _render_prompt_templates_list(app_state: AppState):
     """Renders the list of prompt templates."""
     state = me.state(PageState)
 
@@ -227,6 +290,8 @@ def _render_prompt_templates_list():
             # Data Rows
             for template in state.templates:
                 with me.box(
+                    key=template["key"],
+                    on_click=on_row_click,
                     style=me.Style(
                         display="grid",
                         grid_template_columns="2fr 2fr 1fr 1fr 2fr 1fr",
@@ -240,7 +305,8 @@ def _render_prompt_templates_list():
                             )
                         ),
                         align_items="center",
-                    )
+                        cursor="pointer",
+                    ),
                 ):
                     me.text(template["label"])
                     me.text(template["key"])

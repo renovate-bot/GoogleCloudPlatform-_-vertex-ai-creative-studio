@@ -22,11 +22,13 @@ from common.analytics import log_ui_click, track_click, track_model_call
 from common.error_handling import GenerationError
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.storage import store_to_gcs
+from common.utils import create_display_url
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.page_scaffold import page_frame, page_scaffold
 from components.veo.generation_controls import generation_controls
+from components.veo.prompt_inputs import prompt_inputs
 from components.veo.veo_modes import veo_modes
 from components.veo.video_display import video_display
 from config.default import ABOUT_PAGE_CONTENT, Default
@@ -37,7 +39,6 @@ from models.model_setup import VeoModelSetup
 from models.veo import APIReferenceImage, VideoGenerationRequest, generate_video
 from state.state import AppState
 from state.veo_state import PageState
-from common.utils import create_display_url
 
 config = Default()
 
@@ -47,7 +48,7 @@ veo_model = VeoModelSetup.init()
 def on_veo_load(e: me.LoadEvent):
     """Handles page load events, including query parameters for deep linking."""
     state = me.state(PageState)
-    image_path = me.query_params.get("image_path") # Changed from image_uri
+    image_path = me.query_params.get("image_path")  # Changed from image_uri
     veo_model_param = me.query_params.get("veo_model")
 
     if veo_model_param:
@@ -56,10 +57,11 @@ def on_veo_load(e: me.LoadEvent):
     if image_path:
         # When an image is passed, default to the i2v mode and Veo 3.1 Fast model.
         _update_state_for_new_model("3.1-fast")
-        
+
         image_uri = ""
         if image_path.startswith("https://"):
             from common.utils import https_url_to_gcs_uri
+
             image_uri = https_url_to_gcs_uri(image_path)
         else:
             # Reconstruct the full GCS URI from the path for backward compatibility
@@ -86,9 +88,6 @@ def veo_page():
     state = me.state(AppState)
     with page_scaffold(page_name="veo"):  # pylint: disable=not-context-manager
         veo_content(state)
-
-
-from components.veo.prompt_inputs import prompt_inputs
 
 
 def on_selection_change_person_generation(e: me.SelectSelectionChangeEvent):
@@ -406,7 +405,9 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
     )
 
     try:
-        model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
+        model_name_for_analytics = get_veo_model_config(
+            request.model_version_id
+        ).model_name
         with track_model_call(
             model_name=model_name_for_analytics,
             prompt_length=len(request.prompt) if request.prompt else 0,
@@ -416,7 +417,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
             mode=state.veo_mode,
         ):
             gcs_uris, resolution = generate_video(request)
-        
+
         # Create display URLs for the UI
         display_urls = [create_display_url(uri) for uri in gcs_uris]
         state.result_gcs_uris = gcs_uris
@@ -424,7 +425,7 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         if display_urls:
             state.selected_video_url = display_urls[0]
 
-        item_to_log.gcs_uris = gcs_uris # Log permanent URIs
+        item_to_log.gcs_uris = gcs_uris  # Log permanent URIs
         item_to_log.gcsuri = gcs_uris[0] if gcs_uris else None
         item_to_log.resolution = resolution
 

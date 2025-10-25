@@ -432,115 +432,297 @@ def _prompt_templates_ui():
                         style=CHIP_STYLE,
                     )
 
-def gemini_image_gen_page_content():
-    """Renders the main UI for the Gemini Image Generation page."""
+
+@me.component
+def _suggest_transformations_ui():
     state = me.state(PageState)
+    # Suggest transformations button
+    if (
+        state.generation_complete
+        and not state.suggested_transformations
+        and state.generated_image_urls
+    ):
+        with me.box(style=me.Style(margin=me.Margin(top=16))):
+            if state.is_suggesting_transformations:
+                with me.content_button(disabled=True, style=CHIP_STYLE):
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            align_items="center",
+                            gap=8,
+                        )
+                    ):
+                        me.progress_spinner(diameter=20, stroke_width=3)
+                        me.text("Suggesting...")
+            else:
+                me.button(
+                    "Suggest Transformations",
+                    on_click=on_suggest_transformations_click,
+                    style=CHIP_STYLE,
+                )
 
-    library_dialog(
-        is_open=state.is_library_dialog_open,
-        on_select=on_select_from_library_dialog,
-        on_close=close_library_dialog,
-        media_items=state.library_media_items,
-        is_loading=state.is_library_loading,
-    )
-
-    if state.info_dialog_open:
-        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
-            me.text(f"About {NANO_BANANA_INFO['title']}", type="headline-6")
-            me.markdown(NANO_BANANA_INFO["description"])
-            me.divider()
-            me.text("Current Settings", type="headline-6")
-            with me.box(style=me.Style(margin=me.Margin(top=16))):
-                me.button("Close", on_click=close_info_dialog, type="flat")
-
-    with page_frame():  # pylint: disable=E1129
-        header(
-            "Gemini Image Generation",
-            "banana",
-            show_info_button=True,
-            on_info_click=open_info_dialog,
-        )
-
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
-            # Left column (controls)
+    # Suggested transformations
+    if state.suggested_transformations:
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                gap=16,
+                margin=me.Margin(top=16),
+            )
+        ):
             with me.box(
                 style=me.Style(
-                    width=400,
-                    background=me.theme_var("surface-container-lowest"),
-                    padding=me.Padding.all(16),
-                    border_radius=12,
+                    display="flex",
+                    flex_direction="column",
+                    align_items="flex-start",
+                    gap=8,
                 ),
             ):
+                for transformation in state.suggested_transformations:
+                    with me.content_button(
+                        on_click=on_transformation_click,
+                        key=json.dumps(transformation),
+                        type="stroked",
+                        style=CHIP_STYLE,
+                    ):
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="row",
+                                align_items="center",
+                                gap=8,
+                            )
+                        ):
+                            svg_icon(icon_name="image_edit_auto")
+                            me.text(transformation["title"])
+
+def gemini_image_gen_page_content():
+
+    """Renders the main UI for the Gemini Image Generation page."""
+
+    state = me.state(PageState)
+
+
+
+    library_dialog(
+
+        is_open=state.is_library_dialog_open,
+
+        on_select=on_select_from_library_dialog,
+
+        on_close=close_library_dialog,
+
+        media_items=state.library_media_items,
+
+        is_loading=state.is_library_loading,
+
+    )
+
+
+
+    if state.info_dialog_open:
+
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
+
+            me.text(f"About {NANO_BANANA_INFO['title']}", type="headline-6")
+
+            me.markdown(NANO_BANANA_INFO["description"])
+
+            me.divider()
+
+            me.text("Current Settings", type="headline-6")
+
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+
+                me.button("Close", on_click=close_info_dialog, type="flat")
+
+
+
+    with page_frame():
+
+        header(
+
+            "Gemini Image Generation",
+
+            "banana",
+
+            show_info_button=True,
+
+            on_info_click=open_info_dialog,
+
+        )
+
+
+
+        with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+
+            # Left column (controls)
+
+            with me.box(
+
+                style=me.Style(
+
+                    width=400,
+
+                    background=me.theme_var("surface-container-lowest"),
+
+                    padding=me.Padding.all(16),
+
+                    border_radius=12,
+
+                ),
+
+            ):
+
                 me.text(
+
                     "Type a prompt or add images and a prompt",
+
                     style=me.Style(
+
                         margin=me.Margin(bottom=16),
+
                     ),
+
                 )
+
+
 
                 me.textarea(
+
                     label="Prompt",
+
                     rows=3,
+
                     max_rows=14,
+
                     autosize=True,
+
                     on_blur=on_prompt_blur,
+
                     value=state.prompt,
+
                     style=me.Style(width="100%", margin=me.Margin(bottom=2)),
+
                 )
+
+
 
                 _image_upload_slots(
+
                     on_upload=on_upload,
+
                     on_open_library=open_library_dialog,
+
                     on_remove_image=on_remove_image,
+
                 )
+
+
 
                 # Display descriptions and questions
+
                 if state.image_descriptions or state.critique_questions:
+
                     with me.box(style=me.Style(margin=me.Margin(top=16))):
+
                         description_accordion(
+
                             image_descriptions=state.image_descriptions,
+
                             critique_questions=state.critique_questions,
+
                             expanded_panels=state.accordion_panels,
+
                             on_toggle=on_accordion_toggle,
+
                         )
 
+
+
                 me.select(
+
                     label="Aspect Ratio",
+
                     options=[
+
                         me.SelectOption(label="1:1", value="1:1"),
+
                         me.SelectOption(label="3:2", value="3:2"),
+
                         me.SelectOption(label="2:3", value="2:3"),
+
                         me.SelectOption(label="3:4", value="3:4"),
+
                         me.SelectOption(label="4:3", value="4:3"),
+
                         me.SelectOption(label="4:5", value="4:5"),
+
                         me.SelectOption(label="9:16", value="9:16"),
+
                         me.SelectOption(label="16:9", value="16:9"),
+
                         me.SelectOption(label="21:9", value="21:9"),
+
                     ],
+
                     on_selection_change=on_aspect_ratio_change,
+
                     value=str(state.aspect_ratio),
+
                     style=me.Style(width="100%", margin=me.Margin(bottom=16)),
+
                 )
 
+
+
                 # Generate images button
+
                 with me.box(
+
                     style=me.Style(
+
                         display="flex",
+
                         flex_direction="row",
+
                         align_items="center",
+
                         gap=16,
+
                     ),
+
                 ):
+
                     _generate_images_button()
+
                     with me.content_button(on_click=on_clear_click, type="icon"):
+
                         me.icon("delete_sweep")
 
+
+
                 # Generation time duration
+
                 if state.generation_complete and state.generation_time > 0:
+
                     me.text(
+
                         f"{state.generation_time:.2f} seconds",
+
                         style=me.Style(font_size=12),
+
                     )
+
+
+
+                # --- STABLE COMPONENT SECTION ---
+
+                # These components are now always rendered. Their internal logic
+
+                # handles whether they are visible or not.
 
                 _critique_questions_button()
 
@@ -548,290 +730,452 @@ def gemini_image_gen_page_content():
 
                 _prompt_templates_ui()
 
-                # Suggest transformations button
-                if (
-                    state.generation_complete
-                    and not state.suggested_transformations
-                    and state.generated_image_urls
-                ):
-                    with me.box(style=me.Style(margin=me.Margin(top=16))):
-                        if state.is_suggesting_transformations:
-                            with me.content_button(disabled=True, style=CHIP_STYLE):
-                                with me.box(
-                                    style=me.Style(
-                                        display="flex",
-                                        flex_direction="row",
-                                        align_items="center",
-                                        gap=8,
-                                    )
-                                ):
-                                    me.progress_spinner(diameter=20, stroke_width=3)
-                                    me.text("Suggesting...")
-                        else:
-                            me.button(
-                                "Suggest Transformations",
-                                on_click=on_suggest_transformations_click,
-                                # type="stroked",
-                                style=CHIP_STYLE,
-                            )
+                _suggest_transformations_ui() # New component for suggestions
 
-                # Suggested transformations
-                if state.suggested_transformations:
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            flex_direction="row",
-                            gap=16,
-                            margin=me.Margin(top=16),
-                        )
-                    ):
-                        with me.box(
-                            style=me.Style(
-                                display="flex",
-                                flex_direction="column",
-                                align_items="flex-start",
-                                gap=8,
-                            ),
-                        ):
-                            for transformation in state.suggested_transformations:
-                                with me.content_button(
-                                    on_click=on_transformation_click,
-                                    key=json.dumps(transformation),
-                                    type="stroked",
-                                    style=CHIP_STYLE,
-                                ):
-                                    with me.box(
-                                        style=me.Style(
-                                            display="flex",
-                                            flex_direction="row",
-                                            align_items="center",
-                                            gap=8,
-                                        )
-                                    ):
-                                        svg_icon(icon_name="image_edit_auto")
-                                        me.text(transformation["title"])
+
 
             # Right column (generated images)
+
             with me.box(
+
                 style=me.Style(
+
                     flex_grow=1,
+
                     display="flex",
+
                     flex_direction="column",
+
                     align_items="center",
+
                     justify_content="center",
+
                     border_radius=12,
+
                     padding=me.Padding.all(16),
+
                     min_height=400,
+
                 )
+
             ):
+
                 if state.generation_complete and not state.generated_image_urls:
+
                     me.text("No images returned.")
+
                 elif state.generated_image_urls:
+
                     # This box is to override the parent's centering styles
+
                     with me.box(
+
                         style=me.Style(
+
                             width="100%",
+
                             height="100%",
+
                             display="flex",
+
                             flex_direction="column",
+
                         )
+
                     ):
+
                         if len(state.generated_image_urls) == 1:
+
                             # Display single, maximized image
+
                             image_url = state.generated_image_urls[0]
+
                             me.image(
+
                                 src=image_url,
+
                                 style=me.Style(
+
                                     width="100%",
+
                                     max_height="85vh",
+
                                     object_fit="contain",
+
                                     border_radius=8,
+
                                 ),
+
                             )
+
                             # Evaluation display
+
                             with me.box(
+
                                 style=me.Style(width="100%", margin=me.Margin(top=16))
+
                             ):
+
                                 if state.is_evaluating:
+
                                     with me.box(
+
                                         style=me.Style(
+
                                             display="flex", align_items="center", gap=8
+
                                         )
+
                                     ):
+
                                         me.progress_spinner(diameter=20)
+
                                         me.text("Evaluating generation...")
+
                                 elif image_url in state.evaluations:
+
                                     evaluation = state.evaluations[image_url]
+
                                     score = (
+
                                         evaluation["score"]
+
                                         if isinstance(evaluation, dict)
+
                                         else evaluation.score
+
                                     )
+
                                     details = (
+
                                         evaluation["details"]
+
                                         if isinstance(evaluation, dict)
+
                                         else evaluation.details
+
                                     )
+
                                     with me.expansion_panel(
+
                                         title=f"Critique Score: {score}", icon="rule"
+
                                     ):
+
                                         for item in details:
+
                                             with me.box(
+
                                                 style=me.Style(
+
                                                     display="flex",
+
                                                     flex_direction="row",
+
                                                     align_items="center",
+
                                                     gap=8,
+
                                                     margin=me.Margin(bottom=8),
+
                                                 )
+
                                             ):
+
                                                 if item["answer"]:
+
                                                     me.icon(
+
                                                         "check_circle",
+
                                                         style=me.Style(
+
                                                             color=me.theme_var(
+
                                                                 "success"
+
                                                             )
+
                                                         ),
+
                                                     )
+
                                                 else:
+
                                                     me.icon(
+
                                                         "cancel",
+
                                                         style=me.Style(
+
                                                             color=me.theme_var("error")
+
                                                         ),
+
                                                     )
+
                                                 me.text(item["question"])
+
                         else:
+
                             # Display multiple images in a gallery view
+
                             with me.box(
+
                                 style=me.Style(
+
                                     display="flex", flex_direction="column", gap=16
+
                                 )
+
                             ):
+
                                 # Main image
+
                                 me.image(
+
                                     src=state.selected_image_url,
+
                                     style=me.Style(
+
                                         width="100%",
+
                                         max_height="75vh",
+
                                         object_fit="contain",
+
                                         border_radius=8,
+
                                     ),
+
                                 )
+
                                 # Evaluation display
+
                                 with me.box(
+
                                     style=me.Style(
+
                                         width="100%", margin=me.Margin(top=16)
+
                                     )
+
                                 ):
+
                                     if state.is_evaluating:
+
                                         with me.box(
+
                                             style=me.Style(
+
                                                 display="flex",
+
                                                 align_items="center",
+
                                                 gap=8,
+
                                             )
+
                                         ):
+
                                             me.progress_spinner(diameter=20)
+
                                             me.text("Evaluating generation...")
+
                                     elif state.selected_image_url in state.evaluations:
+
                                         evaluation = state.evaluations[
+
                                             state.selected_image_url
+
                                         ]
+
                                         score = (
+
                                             evaluation["score"]
+
                                             if isinstance(evaluation, dict)
+
                                             else evaluation.score
+
                                         )
+
                                         details = (
+
                                             evaluation["details"]
+
                                             if isinstance(evaluation, dict)
+
                                             else evaluation.details
+
                                         )
+
                                         with me.expansion_panel(
+
                                             title=f"Critique Score: {score}",
+
                                             icon="rule",
+
                                         ):
+
                                             for item in details:
+
                                                 with me.box(
+
                                                     style=me.Style(
+
                                                         display="flex",
+
                                                         flex_direction="row",
+
                                                         align_items="center",
+
                                                         gap=8,
+
                                                         margin=me.Margin(bottom=8),
+
                                                     )
+
                                                 ):
+
                                                     if item["answer"]:
+
                                                         me.icon(
+
                                                             "check_circle",
+
                                                             style=me.Style(
+
                                                                 color=me.theme_var(
+
                                                                     "success"
+
                                                                 )
+
                                                             ),
+
                                                         )
+
                                                     else:
+
                                                         me.icon(
+
                                                             "cancel",
+
                                                             style=me.Style(
+
                                                                 color=me.theme_var(
+
                                                                     "error"
+
                                                                 )
+
                                                             ),
+
                                                         )
+
                                                     me.text(item["question"])
 
+
+
                                 # Thumbnail strip
+
                                 with me.box(
+
                                     style=me.Style(
+
                                         display="flex",
+
                                         flex_direction="row",
+
                                         gap=16,
+
                                         justify_content="center",
+
                                     )
+
                                 ):
+
                                     for url in state.generated_image_urls:
+
                                         is_selected = url == state.selected_image_url
+
                                         with me.box(
+
                                             key=url,
+
                                             on_click=on_thumbnail_click,
+
                                             style=me.Style(
+
                                                 padding=me.Padding.all(4),
+
                                                 border=me.Border.all(
+
                                                     me.BorderSide(
+
                                                         width=4,
+
                                                         style="solid",
+
                                                         color=me.theme_var("secondary")
+
                                                         if is_selected
+
                                                         else "transparent",
+
                                                     )
+
                                                 ),
+
                                                 border_radius=12,
+
                                                 cursor="pointer",
+
                                             ),
+
                                         ):
+
                                             me.image(
+
                                                 src=url,
+
                                                 style=me.Style(
+
                                                     width=100,
+
                                                     height=100,
+
                                                     object_fit="cover",
+
                                                     border_radius=6,
+
                                                 ),
+
                                             )
+
                 else:
+
                     # Placeholder
+
                     with me.box(
+
                         style=me.Style(
+
                             opacity=0.2,
+
                             width=128,
+
                             height=128,
+
                             color=me.theme_var("on-surface-variant"),
+
                         )
+
                     ):
+
                         svg_icon(icon_name="banana")
+
         snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 
