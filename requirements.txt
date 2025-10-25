@@ -2,7 +2,7 @@
 #    uv pip compile pyproject.toml -o requirements.txt
 absl-py==2.3.1
     # via mesop
-annotated-doc==0.0.2
+annotated-doc==0.0.3
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
