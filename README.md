@@ -310,18 +310,13 @@ uv run main.py
 
 Please see the [Developer's Guide](./developers_guide.md) for more information on how this application was built, including specific information about [Mesop](https://mesop-dev.github.io/mesop/) and the [scaffold for Studio style apps](https://github.com/ghchinoy/studio-scaffold).
 
-
-Using the Mesop app in a virtual environment provides the best debugging and building experience as it supports hot reload.
-
-```bash
-source .venv/bin/activate
-```
-
-Start the app, use the Mesop command in your python virutal environment
+When developing this app, since it's a FastAPI application that serves Mesop, please use the following
 
 ```bash
-mesop main.py
+uv run main.py
 ```
+
+Traditional Mesop hot reload capabilities (i.e. `mesop main.py`) are not fully available at this time.
 
 ## Contributing changes
 
