@@ -14,7 +14,7 @@
     {
       "id": "veo",
       "title": "Veo",
-      "description": "The **Veo** page is for video generation. You can create videos from a text prompt (text-to-video) or animate an existing image (image-to-video).\n\n**Available Models:**\n*   Veo 2\n*   Veo 3\n*   Veo 3 Fast\n\n[Learn more about Veo on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/video/overview)",
+      "description": "The **Veo** page is for advanced video generation. You can create videos using several modes:\n*   **Text-to-Video**: Create a video from a descriptive text prompt.\n*   **Image-to-Video**: Animate a single static image.\n*   **First/Last Frame**: Generate the video motion between a starting image and an ending image.\n*   **Reference-to-Video**: Generate a video based on multiple asset images and an optional style reference image.\n\n**Available Models:**\n*   Veo 2\n*   Veo 3 & Veo 3 Fast\n*   Veo 3.1 & Veo 3.1 Fast\n\n[Learn more about Veo on Vertex AI](https://cloud.google.com/vertex-ai/docs/generative-ai/video/overview)",
       "image": null,
       "video": null
     },

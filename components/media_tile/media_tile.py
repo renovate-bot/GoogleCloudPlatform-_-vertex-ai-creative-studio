@@ -34,6 +34,8 @@ def get_pills_for_item(item: MediaItem, https_url: str) -> str:
             pills.append({"label": f"{item.duration} sec"})
     elif effective_media_type == "image":
         pills.append({"label": "Image"})
+        if item.model and ("vto" in item.model.lower() or "virtual-try-on" in item.model.lower()):
+            pills.append({"label": "vto"})
         if item.aspect:
             pills.append({"label": item.aspect})
         if len(item.gcs_uris) > 1:
