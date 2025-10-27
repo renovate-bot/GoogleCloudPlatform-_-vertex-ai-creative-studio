@@ -136,6 +136,10 @@ class MediaItem:
     r2v_reference_images: List[str] = field(default_factory=list)
     r2v_style_image: Optional[str] = None
 
+    # VTO specific
+    person_image_gcs: Optional[str] = None
+    product_image_gcs: Optional[str] = None
+
     def __post_init__(self):
         # Ensure audio_analysis is always a JSON string for state serialization.
         # This handles cases where raw data from Firestore might be a dict.
@@ -331,6 +335,8 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         related_media_item_id=raw_item_data.get("related_media_item_id"),
         r2v_reference_images=raw_item_data.get("r2v_reference_images", []),
         r2v_style_image=raw_item_data.get("r2v_style_image"),
+        person_image_gcs=raw_item_data.get("person_image_gcs"),
+        product_image_gcs=raw_item_data.get("product_image_gcs"),
         raw_data=raw_item_data,
     )
     return media_item

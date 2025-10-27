@@ -34,7 +34,7 @@ from models.gemini import (
 )
 from models.shop_the_look_models import ProgressionImage, ProgressionImages
 from models.veo import image_to_video
-from models.vto import call_virtual_try_on
+from models.vto import generate_vto_image
 from common.utils import create_display_url
 from state.shop_the_look_state import PageState
 from state.state import AppState
@@ -305,13 +305,12 @@ def on_click_vto_look(e: me.ClickEvent):  # pylint: disable=unused-argument
                 state.current_status = f"{status_prefix}Trying on {row.article_type}..."
                 yield
 
-                op = call_virtual_try_on(
-                    person_image_uri=state.reference_image_gcs_model,
-                    product_image_uri=row.clothing_image,
+                potential_images = generate_vto_image(
+                    person_gcs_uri=state.reference_image_gcs_model,
+                    product_gcs_uri=row.clothing_image,
                     sample_count=int(state.vto_sample_count),
                 )
 
-                potential_images = [p["gcsUri"] for p in op.predictions]
                 temp_progressions = [
                     ProgressionImage(image_path=p, best_image=False, reasoning="")
                     for p in potential_images
