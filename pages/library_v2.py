@@ -519,6 +519,10 @@ def render_default_detail_dialog(item: MediaItem):
         all_source_uris.append(item.r2v_style_image)
     if item.reference_image:
         all_source_uris.append(item.reference_image)
+    if item.person_image_gcs:
+        all_source_uris.append(item.person_image_gcs)
+    if item.product_image_gcs:
+        all_source_uris.append(item.product_image_gcs)
 
     # Handle case where timestamp might be a string from Firestore
     timestamp_display = "N/A"

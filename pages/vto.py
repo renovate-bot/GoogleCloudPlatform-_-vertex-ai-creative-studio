@@ -15,6 +15,7 @@
 import random
 import uuid
 import json
+import time
 from dataclasses import field
 from pathlib import Path
 
@@ -78,6 +79,8 @@ class PageState:
     result_display_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     vto_sample_count: int = 4
     vto_base_steps: int = 32
+    person_generation: str = "allow_all"
+    safety_filter_level: str = "block_only_high"
     is_loading: bool = False
     is_generating_person_image: bool = False
     error_dialog_open: bool = False
@@ -187,12 +190,17 @@ def on_generate(e: me.ClickEvent):
     yield
 
     try:
+        start_time = time.time()
         result_gcs_uris = generate_vto_image(
             state.person_image_gcs, # Pass the correct gs:// URI
             state.product_image_gcs, # Pass the correct gs:// URI
             state.vto_sample_count,
             state.vto_base_steps,
+            person_generation=state.person_generation,
+            safety_filter_level=state.safety_filter_level,
         )
+        end_time = time.time()
+        generation_time = end_time - start_time
         print(f"Result GCS URIs: {result_gcs_uris}")
         state.result_gcs_uris = result_gcs_uris
         state.result_display_urls = [create_display_url(uri) for uri in result_gcs_uris]
@@ -203,6 +211,7 @@ def on_generate(e: me.ClickEvent):
             gcs_uris=result_gcs_uris,
             person_image_gcs=state.person_image_gcs,
             product_image_gcs=state.product_image_gcs,
+            generation_time=generation_time,
         )
     except Exception as e:
         state.error_message = str(e)
@@ -224,6 +233,20 @@ def on_sample_count_change(e: me.SliderValueChangeEvent):
     )
     state = me.state(PageState)
     state.vto_sample_count = int(e.value)
+    yield
+
+
+def on_person_generation_change(e: me.SelectSelectionChangeEvent):
+    """Handles changes to the person generation select."""
+    state = me.state(PageState)
+    state.person_generation = e.value
+    yield
+
+
+def on_safety_filter_change(e: me.SelectSelectionChangeEvent):
+    """Handles changes to the safety filter select."""
+    state = me.state(PageState)
+    state.safety_filter_level = e.value
     yield
 
 
@@ -400,6 +423,37 @@ def page():
                         value=state.vto_sample_count,
                         on_value_change=on_sample_count_change,
                     )
+
+                me.box(style=me.Style(width=36))
+
+                me.select(
+                    label="Person Generation",
+                    options=[
+                        me.SelectOption(label="Allow (All ages)", value="allow_all"),
+                        me.SelectOption(label="Allow (Adults only)", value="allow_adult"),
+                        #me.SelectOption(label="Don't Allow", value="dont_allow"),
+                    ],
+                    appearance="outline",
+                    value=state.person_generation,
+                    on_selection_change=on_person_generation_change,
+                    style=me.Style(width=200),
+                )
+
+                me.box(style=me.Style(width=36))
+
+                me.select(
+                    label="Safety Filter",
+                    options=[
+                        me.SelectOption(label="Block most", value="block_low_and_above"),
+                        me.SelectOption(label="Block some", value="block_medium_and_above"),
+                        me.SelectOption(label="Block few", value="block_only_high"),
+                    ],
+                    appearance="outline",
+                    value=state.safety_filter_level,
+                    on_selection_change=on_safety_filter_change,
+                    style=me.Style(width=200),
+                )
+
 
                 me.box(style=me.Style(width=36))
 
