@@ -303,6 +303,11 @@ def on_selection_change_veo_mode(e: me.ButtonToggleChangeEvent):
         override = model_config.mode_overrides[e.value]
         if override.default_duration:
             state.video_length = override.default_duration
+        if (
+            override.supported_aspect_ratios
+            and state.aspect_ratio not in override.supported_aspect_ratios
+        ):
+            state.aspect_ratio = override.supported_aspect_ratios[0]
     yield
 
 def on_click_clear_reference_image(e: me.ClickEvent):
