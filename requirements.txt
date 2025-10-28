@@ -51,7 +51,7 @@ docstring-parser==0.17.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.120.0
+fastapi==0.120.1
     # via veo-app (pyproject.toml)
 firebase-admin==6.9.0
     # via veo-app (pyproject.toml)
@@ -339,7 +339,7 @@ python-dateutil==2.9.0.post0
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-dotenv==1.1.1
+python-dotenv==1.2.1
     # via
     #   mesop
     #   moviepy
