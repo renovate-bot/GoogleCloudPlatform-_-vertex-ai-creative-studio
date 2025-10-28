@@ -234,6 +234,39 @@ Use this option if you want to quickly run the UI without having to setup a loca
 
   [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git&cloudshell_tutorial=tutorial.md)
 
+# Updating GenMedia Creative Studio
+
+As new features and fixes are added to GenMedia Creative Studio, you will want to update your deployment. You do **not** need to destroy your existing infrastructure.
+
+## Updating Application Code
+If you only need to update the application code (Python files, UI changes):
+
+1. Pull the latest changes from the repository:
+   ```bash
+   git pull
+   ```
+2. Run the build script:
+   ```bash
+   ./build.sh
+   ```
+This script submits a new build to Cloud Build, creates a new container image, and updates the existing Cloud Run service.
+
+## Updating Infrastructure
+If the updates include changes to the Terraform configuration (e.g., new environment variables, new Google Cloud services):
+
+1. Pull the latest changes:
+   ```bash
+   git pull
+   ```
+2. Initialize Terraform to download any new provider requirements:
+   ```bash
+   terraform init -upgrade
+   ```
+3. Apply the changes. Terraform will only update what has changed:
+   ```bash
+   terraform apply
+   ```
+
 # Adding Additional Users
 
 With any of the deployment options above that use IAP, if you need to add additional users, there are two steps to take to make sure those users can both access the application and the images generated:
