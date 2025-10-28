@@ -157,6 +157,18 @@ def _update_state_for_new_model(model_version_id: str):
             if not (min_dur <= state.video_length <= max_dur):
                 state.video_length = new_model_config.default_duration
 
+        # Check for aspect ratio override for the current mode
+        if (
+            new_model_config.mode_overrides
+            and state.veo_mode in new_model_config.mode_overrides
+        ):
+            override = new_model_config.mode_overrides[state.veo_mode]
+            if (
+                override.supported_aspect_ratios
+                and state.aspect_ratio not in override.supported_aspect_ratios
+            ):
+                state.aspect_ratio = override.supported_aspect_ratios[0]
+
 
 def on_selection_change_veo_model(e: me.SelectSelectionChangeEvent):
     """Handle changes to the Veo model selection."""
