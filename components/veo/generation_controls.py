@@ -41,6 +41,7 @@ def generation_controls(
     min_duration = selected_config.min_duration
     max_duration = selected_config.max_duration
     supported_durations = selected_config.supported_durations
+    supported_aspect_ratios = selected_config.supported_aspect_ratios
 
     if (
         selected_config.mode_overrides
@@ -51,6 +52,8 @@ def generation_controls(
             supported_durations = override.supported_durations
             min_duration = min(supported_durations)
             max_duration = max(supported_durations)
+        if override.supported_aspect_ratios:
+            supported_aspect_ratios = override.supported_aspect_ratios
 
     with me.box(style=me.Style(display="flex", flex_direction="row", gap=10)):
         # Model selection
@@ -84,7 +87,7 @@ def generation_controls(
             appearance="outline",
             options=[
                 me.SelectOption(label=ratio, value=ratio)
-                for ratio in selected_config.supported_aspect_ratios
+                for ratio in supported_aspect_ratios
             ],
             value=state.aspect_ratio,
             on_selection_change=on_selection_change_aspect_ratio,

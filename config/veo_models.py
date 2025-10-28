@@ -23,6 +23,7 @@ class ModeOverride:
     supported_durations: Optional[List[int]] = None
     default_duration: Optional[int] = None
     supports_style_reference: bool = True
+    supported_aspect_ratios: Optional[List[str]] = None
 
 
 @dataclass
@@ -132,7 +133,8 @@ VEO_MODELS: List[VeoModelConfig] = [
             "r2v": ModeOverride(
                 supported_durations=[8],
                 default_duration=8,
-                supports_style_reference=False
+                supports_style_reference=False,
+                supported_aspect_ratios=["16:9"],
             ),
         },
     ),
