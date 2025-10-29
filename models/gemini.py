@@ -106,6 +106,10 @@ def generate_image_from_prompt_and_images(
         location=cfg.GEMINI_IMAGE_GEN_LOCATION,
     )
 
+    print(f"Generating image with model: {model_name}, aspect_ratio: {aspect_ratio}, num_images: {len(images)}")
+    for i, img in enumerate(images):
+        print(f"  Image {i}: {img}")
+
     response = client.models.generate_content(
         model=model_name,
         contents=contents,
