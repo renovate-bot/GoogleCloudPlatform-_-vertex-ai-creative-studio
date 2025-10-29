@@ -211,6 +211,7 @@ def get_config_table(app_state: AppState):
             "Veo Project ID",
             "Veo Model ID",
             "Veo Experimental Model ID",
+            "Use Media Proxy",
         ],
         "Value": [
             app_state.user_email if app_state.user_email else "Anonymous",
@@ -225,6 +226,7 @@ def get_config_table(app_state: AppState):
             Default.VEO_PROJECT_ID,
             Default.VEO_MODEL_ID,
             Default.VEO_EXP_MODEL_ID,
+            str(Default.USE_MEDIA_PROXY),
         ],
     }
 
