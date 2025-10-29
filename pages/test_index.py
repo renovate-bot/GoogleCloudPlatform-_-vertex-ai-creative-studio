@@ -81,6 +81,11 @@ def page():
             "description": "A page to compare the performance of signed URLs vs. a caching proxy endpoint.",
             "route": "/test_proxy_caching",
         },
+        {
+            "title": "Async Veo Test",
+            "description": "Test page for the new non-blocking Veo generation flow.",
+            "route": "/test_async_veo",
+        },
     ]
 
     # Main container - use min_height and flex column

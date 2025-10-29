@@ -41,6 +41,7 @@ class MediaItem:
     """Represents a single media item in the library for Firestore storage and retrieval."""
 
     id: Optional[str] = None  # Firestore document ID
+    status: str = "created"  # Options: "created", "pending", "processing", "complete", "failed"
     related_media_item_id: Optional[str] = None  # For linking generation sequences
     user_email: Optional[str] = None
     timestamp: Optional[datetime.datetime] = None  # Store as datetime object
@@ -297,6 +298,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         mime_type=raw_item_data.get("mime_type"),
         mode=raw_item_data.get("mode"),
         generation_time=gen_time,
+        status=raw_item_data.get("status", "complete"),  # Default to 'complete' for legacy items
         error_message=raw_item_data.get("error_message"),
         gcsuri=gcsuri,
         gcs_uris=raw_item_data.get("gcs_uris", []),
