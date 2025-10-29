@@ -149,6 +149,10 @@ def https_url_to_gcs_uri(url: str | None) -> str:
     if url.startswith("gs://"):
         return url
 
+    # Handle local media proxy URLs
+    if url.startswith("/media/"):
+        return f"gs://{url.replace('/media/', '')}"
+
     # Take the base URL, stripping any query parameters from a signed URL
     url_to_convert = url.split("?")[0]
 

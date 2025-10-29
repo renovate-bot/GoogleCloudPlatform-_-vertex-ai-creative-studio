@@ -53,8 +53,11 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.2.2" # vto / stl refactor
+    VERSION: str = "1.2.3" # media proxy updates
     APP_ENV: str = os.environ.get("APP_ENV", "")
+    API_BASE_URL: str = os.environ.get(
+        "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
+    )
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
     # Gemini

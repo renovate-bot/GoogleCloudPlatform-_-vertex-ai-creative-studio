@@ -85,3 +85,7 @@ class PageState:
     timing: str
     
     person_generation: str = "Allow (All ages)"
+
+    # Async Job Tracking
+    current_job_id: str = ""
+    job_status: str = ""

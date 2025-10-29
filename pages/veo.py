@@ -14,7 +14,10 @@
 """Veo mesop UI page."""
 
 import datetime  # Required for timestamp
+import json
 import time
+
+import requests
 
 import mesop as me
 
@@ -362,38 +365,46 @@ def on_click_custom_rewriter(e: me.ClickEvent):  # pylint: disable=unused-argume
 
 @track_click(element_id="veo_create_button")
 def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
-    """Veo generate request handler."""
-    app_state = me.state(AppState)
+    """Handles the click event for the Veo generation button."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
 
-    if state.veo_mode == "t2v" and not state.veo_prompt_input:
-        state.error_message = "Prompt cannot be empty for VEO generation."
+    # --- Input Validation ---
+    if not state.veo_prompt_input:
+        state.error_message = "Please enter a prompt."
         state.show_error_dialog = True
         yield
         return
 
+    # --- Reset State for New Generation ---
     state.is_loading = True
-    state.show_error_dialog = False
     state.error_message = ""
     state.result_video = ""
+    state.result_gcs_uris = []
+    state.result_display_urls = []
+    state.selected_video_url = ""
     state.timing = ""
+    start_time = time.time()
     yield
 
-    start_time = time.time()
-
+    # --- Prepare Request Data ---
+    # (Logic copied from original to maintain parity)
     request = VideoGenerationRequest(
         prompt=state.veo_prompt_input,
-        negative_prompt=state.negative_prompt,
-        duration_seconds=state.video_length,
-        video_count=state.video_count,
+        model_version_id=state.veo_model,
         aspect_ratio=state.aspect_ratio,
         resolution=state.resolution,
+        duration_seconds=state.video_length,
+        video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
-        model_version_id=state.veo_model,
-        person_generation=state.person_generation,
-        reference_image_gcs=state.reference_image_gcs,
-        last_reference_image_gcs=state.last_reference_image_gcs,
+        person_generation=state.person_generation.lower().split(" ")[0],
+        reference_image_gcs=state.reference_image_gcs
+        if state.veo_mode in ["i2v", "r2v"] and state.reference_image_gcs
+        else None,
         reference_image_mime_type=state.reference_image_mime_type,
+        last_reference_image_gcs=state.last_reference_image_gcs
+        if state.veo_mode == "interpolation" and state.last_reference_image_gcs
+        else None,
         last_reference_image_mime_type=state.last_reference_image_mime_type,
         r2v_references=[
             APIReferenceImage(gcs_uri=uri, mime_type=mime)
@@ -410,81 +421,83 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         else None,
     )
 
-    item_to_log = MediaItem(
-        user_email=app_state.user_email,
-        timestamp=datetime.datetime.now(datetime.UTC),
-        prompt=request.prompt,
-        original_prompt=(
-            state.original_prompt if state.original_prompt else request.prompt
-        ),
-        model=get_veo_model_config(request.model_version_id).model_name,
-        mime_type="video/mp4",
-        mode=state.veo_mode,
-        aspect=request.aspect_ratio,
-        duration=float(request.duration_seconds),
-        reference_image=request.reference_image_gcs,
-        last_reference_image=request.last_reference_image_gcs,
-        r2v_reference_images=state.r2v_reference_images,
-        r2v_style_image=state.r2v_style_image,
-        negative_prompt=request.negative_prompt,
-        enhanced_prompt_used=request.enhance_prompt,
-        comment="veo default generation",
-    )
-
+    # --- 1. Initiate Async Job ---
     try:
-        model_name_for_analytics = get_veo_model_config(
-            request.model_version_id
-        ).model_name
-        with track_model_call(
+        api_url = f"{config.API_BASE_URL}/api/veo/generate_async"
+        headers = {"X-Goog-Authenticated-User-Email": app_state.user_email}
+        
+        # Log the initial click/attempt
+        model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
+        track_model_call(
             model_name=model_name_for_analytics,
             prompt_length=len(request.prompt) if request.prompt else 0,
             duration_seconds=request.duration_seconds,
             aspect_ratio=request.aspect_ratio,
             video_count=request.video_count,
             mode=state.veo_mode,
-        ):
-            gcs_uris, resolution = generate_video(request)
-
-        # Create display URLs for the UI
-        display_urls = [create_display_url(uri) for uri in gcs_uris]
-        state.result_gcs_uris = gcs_uris
-        state.result_display_urls = display_urls
-        if display_urls:
-            state.selected_video_url = display_urls[0]
-
-        item_to_log.gcs_uris = gcs_uris  # Log permanent URIs
-        item_to_log.gcsuri = gcs_uris[0] if gcs_uris else None
-        item_to_log.resolution = resolution
-
-    except GenerationError as ge:
-        state.error_message = ge.message
-        state.show_error_dialog = True
-        state.result_video = ""
-        item_to_log.error_message = ge.message
-    except Exception as ex:
-        state.error_message = (
-            f"An unexpected error occurred during video generation: {str(ex)}"
         )
+
+        response = requests.post(api_url, json=request.model_dump(), headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        state.current_job_id = data["job_id"]
+        state.job_status = data["status"]
+        yield
+    except Exception as e:
+        state.error_message = f"Failed to start generation job: {e}"
         state.show_error_dialog = True
-        state.result_video = ""
-        item_to_log.error_message = state.error_message
+        state.is_loading = False
+        yield
+        return
 
-    finally:
-        end_time = time.time()
-        execution_time = end_time - start_time
-        state.timing = f"Generation time: {round(execution_time)} seconds"
-        item_to_log.generation_time = execution_time
-
+    # --- 2. Poll for Completion ---
+    # NOTE: In a real production app, consider using a more robust polling mechanism
+    # or WebSockets if available. For now, this simple loop with yields works
+    # within Mesop's generator-based event handlers to keep the UI responsive.
+    while state.job_status in ["pending", "processing", "created"]:
+        time.sleep(2) 
         try:
-            add_media_item_to_firestore(item_to_log)
-        except Exception as meta_err:
-            print(f"CRITICAL: Failed to store metadata: {meta_err}")
-            if not state.show_error_dialog:
-                state.error_message = f"Failed to store video metadata: {meta_err}"
-                state.show_error_dialog = True
+            status_url = f"{config.API_BASE_URL}/api/veo/job/{state.current_job_id}"
+            resp = requests.get(status_url)
+            resp.raise_for_status()
+            status_data = resp.json()
+            state.job_status = status_data["status"]
 
-    state.is_loading = False
-    yield
+            if state.job_status == "complete":
+                # Success! Update state with results.
+                state.result_gcs_uris = status_data.get("video_uris", [])
+                # If only one URI is returned but we expected a list, handle it.
+                if not state.result_gcs_uris and status_data.get("video_uri"):
+                     state.result_gcs_uris = [status_data["video_uri"]]
+                
+                state.result_display_urls = [create_display_url(uri) for uri in state.result_gcs_uris]
+                if state.result_display_urls:
+                    state.selected_video_url = state.result_display_urls[0]
+                
+                end_time = time.time()
+                execution_time = end_time - start_time
+                state.timing = f"Generation time: {round(execution_time)} seconds"
+                state.is_loading = False
+                yield
+                break
+
+            elif state.job_status == "failed":
+                # Failure. Show error.
+                state.error_message = status_data.get("error_message", "Unknown error during generation.")
+                state.show_error_dialog = True
+                state.is_loading = False
+                yield
+                break
+            
+            # Still polling...
+            yield
+
+        except Exception as e:
+            state.error_message = f"Polling failed: {e}"
+            state.show_error_dialog = True
+            state.is_loading = False
+            yield
+            break
 
 
 def on_blur_veo_prompt(e: me.InputBlurEvent):
