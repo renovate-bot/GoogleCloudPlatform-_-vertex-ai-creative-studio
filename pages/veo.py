@@ -22,10 +22,10 @@ import requests
 import mesop as me
 
 from common.analytics import log_ui_click, track_click, track_model_call
-from common.error_handling import GenerationError
-from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
+from common.error_handling import AsyncVeoPollingFailedError, GenerationError
+from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
-from common.utils import create_display_url
+from common.utils import create_display_url, get_image_dimensions_from_base64
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
@@ -493,7 +493,8 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
             yield
 
         except Exception as e:
-            state.error_message = f"Polling failed: {e}"
+            error = AsyncVeoPollingFailedError(f"Polling failed: {e}")
+            state.error_message = str(error)
             state.show_error_dialog = True
             state.is_loading = False
             yield
