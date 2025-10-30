@@ -74,7 +74,7 @@ google-api-core==2.27.0
     #   google-cloud-texttospeech
 google-api-python-client==2.185.0
     # via firebase-admin
-google-auth==2.41.1
+google-auth==2.42.1
     # via
     #   google-api-core
     #   google-api-python-client
