@@ -35,7 +35,7 @@
       "group": "foundation",
       "mode": "video",
       "description": "Generate videos from text or image prompts using Veo.",
-      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/gemini-image__page-cover.mp4"
+      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/veo__page-cover-1_hcTy7l3.mp4"
     },
     {
       "id": 12,
@@ -46,7 +46,7 @@
       "group": "foundation",
       "mode": "image",
       "description": "Generate images from text prompts using Gemini.",
-      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/imagen__page_cover.mp4"
+      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/gemini-image__page-cover.mp4"
     },
     {
       "id": 14,
