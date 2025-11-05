@@ -2,7 +2,7 @@ module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-
 
 go 1.24.3
 
-toolchain go1.25.1
+toolchain go1.25.4
 
 require (
 	cloud.google.com/go/texttospeech v1.15.0
