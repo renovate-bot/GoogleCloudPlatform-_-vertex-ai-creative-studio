@@ -141,6 +141,10 @@ class MediaItem:
     person_image_gcs: Optional[str] = None
     product_image_gcs: Optional[str] = None
 
+    # Upscale specific
+    original_resolution: Optional[str] = None
+    upscale_factor: Optional[str] = None
+
     def __post_init__(self):
         # Ensure audio_analysis is always a JSON string for state serialization.
         # This handles cases where raw data from Firestore might be a dict.
@@ -339,6 +343,8 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         r2v_style_image=raw_item_data.get("r2v_style_image"),
         person_image_gcs=raw_item_data.get("person_image_gcs"),
         product_image_gcs=raw_item_data.get("product_image_gcs"),
+        original_resolution=raw_item_data.get("original_resolution"),
+        upscale_factor=raw_item_data.get("upscale_factor"),
         raw_data=raw_item_data,
     )
     return media_item
@@ -709,6 +715,8 @@ def get_media_for_page_optimized(
                     if raw_item_data.get("outpainted_image") is not None
                     else None
                 ),
+                original_resolution=raw_item_data.get("original_resolution"),
+                upscale_factor=raw_item_data.get("upscale_factor"),
                 raw_data=raw_item_data,
             )
             media_items.append(media_item)

@@ -316,6 +316,22 @@ gs://<bucket-name>/<object-name>
 
 When constructing a GCS URI, make sure to not include the `gs://` prefix more than once.
 
+# Adding New Pages
+
+To add a new page to the application, follow this standard pattern:
+
+1.  **Create Page Module:** Create your page file (e.g., `pages/my_new_feature.py`).
+2.  **Use Decorator:** Use the `@me.page` decorator directly on the main page function within that file.
+    ```python
+    @me.page(path="/my-feature", title="My Feature")
+    def page():
+        # ...
+    ```
+3.  **Register in main.py:** Import the module in `main.py` to ensure it's loaded. Do *not* re-register it with `me.page()` in `main.py` unless you specifically need to override properties.
+    ```python
+    import pages.my_new_feature # Registers the page via the decorator
+    ```
+
 # Feature Implementation: The Full Data Lifecycle Checklist
 
 When adding a new data field (e.g., a prompt, parameter, or setting) to a feature, you must trace and modify its entire lifecycle. Before marking the task as complete, verify each of the following steps:
@@ -324,8 +340,8 @@ When adding a new data field (e.g., a prompt, parameter, or setting) to a featur
 2.  **UI Input:** Has the UI component for user input been added or modified in `pages/`?
 3.  **Request Schema:** Has the data contract in `models/requests.py` been updated?
 4.  **Model Logic:** Has the core generation function in `models/` been updated to use the field?
-5.  **Persistence (Write):** Has the `MediaItem` in `common/metadata.py` been updated, AND is the field being saved correctly from the page's `on_click` handler?
-6.  **Persistence (Read):** Has the data loading function (`get_media_for_page` in `pages/library.py`) been updated to read the field from Firestore into the `MediaItem` object?
+5.  **Persistence (Write):** Has the `MediaItem` dataclass in `common/metadata.py` been updated with the new field?
+6.  **Persistence (Read):** CRITICAL: Has the `_create_media_item_from_dict` function in `common/metadata.py` been updated to map the Firestore data back to the `MediaItem` field?
 7.  **UI Display:** Is the field now displayed correctly in all relevant views (e.g., the library details dialog)?
 8.  **Edge Cases:** Have all related user actions, like "Clear" or "Reset" buttons, been updated to handle the new field?
 # Refactoring Strategy
