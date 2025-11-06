@@ -376,7 +376,7 @@ def _actions_row():
                 type="stroked",
             )
             veo_button(
-                gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}"
+                gcs_uri=https_url_to_gcs_uri(state.selected_image_url)
             )
 
 
@@ -1081,7 +1081,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
+    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
