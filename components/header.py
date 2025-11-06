@@ -16,6 +16,7 @@ import typing
 import mesop as me
 
 from components.svg_icon.svg_icon import svg_icon
+from components.pill import pill
 
 
 @me.component
@@ -58,6 +59,8 @@ def header(
                 type="headline-5",
                 style=me.Style(font_family="Google Sans"),
             )
+            if current_status:
+                pill(current_status, "stage")
 
         if show_info_button and on_info_click:
             with (

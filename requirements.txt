@@ -80,7 +80,7 @@ google-api-core==2.28.1
     #   google-cloud-resource-manager
     #   google-cloud-storage
     #   google-cloud-texttospeech
-google-auth==2.42.1
+google-auth==2.43.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
