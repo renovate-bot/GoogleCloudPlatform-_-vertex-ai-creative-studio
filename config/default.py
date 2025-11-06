@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.2.5" # gemini tts eval
+    VERSION: str = "1.2.6" # preview: imagen 4 upscale
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
