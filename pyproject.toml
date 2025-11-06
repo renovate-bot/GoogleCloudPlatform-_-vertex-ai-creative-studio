@@ -26,6 +26,8 @@ dependencies = [
     "scipy",
     "scikit-image",
     "opencv-python",
+    "librosa>=0.11.0",
+    "praat-parselmouth>=0.4.6",
 ]
 
 [tool.ruff]
