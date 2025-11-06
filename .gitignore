@@ -60,3 +60,4 @@ terraform.rc
 
 ## MCP Servers
 drivectl-mcp.log
+.genkit/

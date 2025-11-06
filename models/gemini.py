@@ -17,6 +17,7 @@ import json
 import time
 import uuid
 from typing import Dict, Optional
+from pathlib import Path
 
 import requests
 from google.cloud.aiplatform import telemetry
@@ -1080,3 +1081,49 @@ def generate_text(prompt: str, images: list[str]) -> tuple[str, float]:
 
     # print(f"Returning text: {response.text}, execution_time: {execution_time}")
     return response.text, execution_time
+
+
+class TTSEvaluation(BaseModel):
+    quality_score: int = Field(..., ge=1, le=100, description="Integer score between 1 and 100.")
+    justification: str = Field(..., description="A single sentence summarizing the main reason for the score.")
+    key_tags: list[str] = Field(..., description="List of tags describing style, tone, pace, content, voice.")
+
+
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def evaluate_tts_audio(audio_uri: str, original_text: str, generation_prompt: str) -> TTSEvaluation:
+    """Evaluates TTS audio using a specific prompt template."""
+    model_name = cfg.MODEL_ID
+    
+    # Load the prompt template
+    prompt_path = Path("test/tts-eval-prompt.txt")
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"TTS evaluation prompt not found at {prompt_path}")
+    
+    base_prompt = prompt_path.read_text()
+    
+    # Replace placeholders
+    final_prompt = base_prompt.replace("[PASTE THE FULL TEXT THAT WAS CONVERTED TO SPEECH HERE]", original_text)
+    final_prompt = final_prompt.replace("[PASTE THE SPECIFIC PROMPT USED TO GENERATE THE AUDIO (e.g., \"Narrate this in a friendly, slightly amused tone with a fast pace and a British accent.\")]", generation_prompt)
+
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=TTSEvaluation.model_json_schema(),
+        temperature=0.2, # Low temperature for consistent evaluation
+    )
+
+    prompt_parts = [
+        final_prompt,
+        types.Part.from_uri(file_uri=audio_uri, mime_type="audio/wav"),
+    ]
+
+    with track_model_call(model_name=model_name, task="evaluate_tts_audio"):
+        response = client.models.generate_content(
+            model=model_name, contents=prompt_parts, config=config
+        )
+
+    return TTSEvaluation.model_validate_json(response.text)
