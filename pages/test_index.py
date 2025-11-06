@@ -47,8 +47,8 @@ def page():
             "route": "/guideline-analysis",
         },
         {
-            "title": "Image Upscale Test",
-            "description": "Test page for Imagen 4.0 Upscale.",
+            "title": "Imagen Upscale Test",
+            "description": "Test page for Imagen 4 Upscale.",
             "route": "/imagen-upscale",
         },
         {
@@ -163,19 +163,15 @@ def page():
                 border=me.Border(top=me.BorderSide(width=1, color=me.theme_var("tertiary-fixed-variant"))),
                 display="flex",
                 align_items="center",
+                gap=12,
                 background=me.theme_var("inverse-surface"),
                 color=me.theme_var("inverse-on-surface"),
+                cursor="pointer",
             ),
             on_click=on_home_click,
         ):
-            with me.content_button(
-                type="icon",
-                on_click=on_home_click,
-                style=me.Style(margin=me.Margin(left="auto"), color=me.theme_var("inverse-on-surface")),
-                
-            ):
-                with me.tooltip(message="Back to Welcome Page"):
-                    me.icon(icon="auto_awesome")
+            with me.tooltip(message="Back to Welcome Page"):
+                me.icon(icon="auto_awesome", style=me.Style(color=me.theme_var("inverse-on-surface")))
             me.text("Return to GenMedia Creative Studio")
 
 
