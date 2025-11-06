@@ -274,7 +274,7 @@ def gemini_image_gen_page_content():
                                 on_click=on_continue_click,
                                 type="stroked",
                             )
-                            veo_button(gcs_uri=f"gs://{state.selected_image_url.replace('/media/', '')}")
+                            veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
 
 
                 # Image presets
@@ -583,7 +583,7 @@ def on_transformation_click(e: me.ClickEvent):
         session_id=app_state.session_id,
     )
 
-    input_gcs_uri = f"gs://{state.selected_image_url.replace('/media/', '')}"
+    input_gcs_uri = https_url_to_gcs_uri(state.selected_image_url)
 
     # The transformation uses the selected image as the sole input
     # and the button's key as the prompt.
