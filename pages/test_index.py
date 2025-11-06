@@ -47,6 +47,11 @@ def page():
             "route": "/guideline-analysis",
         },
         {
+            "title": "Image Upscale Test",
+            "description": "Test page for Imagen 4.0 Upscale.",
+            "route": "/imagen-upscale",
+        },
+        {
             "title": "VTO Model Composite Card Generator",
             "description": "A tool to generate a matrix of virtual models with different attributes.",
             "route": "/test_vto_prompt_generator",

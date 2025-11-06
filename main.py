@@ -71,6 +71,7 @@ from pages.test_svg import test_svg_page
 from pages.test_uploader import test_uploader_page
 from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
 from pages.test_async_veo import page as test_async_veo_page
+import pages.imagen_upscale
 from state.state import AppState
 
 
