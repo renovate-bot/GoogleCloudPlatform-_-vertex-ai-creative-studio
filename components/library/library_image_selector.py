@@ -18,6 +18,7 @@ import mesop as me
 
 from common.metadata import MediaItem
 from components.library.events import LibrarySelectionChangeEvent
+from components.media_tile.media_tile import get_pills_for_item, media_tile
 
 
 @me.component
@@ -25,11 +26,11 @@ def library_image_selector(
     on_select: Callable[[LibrarySelectionChangeEvent], None],
     media_items: List[MediaItem],
 ):
-    """A component that displays a grid of recent images from the library."""
+    """A component that displays a grid of recent media items from the library."""
 
-    def on_image_click(e: me.ClickEvent):
-        """Handles the click event on an image in the grid."""
-        print(f"Image Clicked. URI from key: {e.key}")
+    def on_media_click(e: me.WebEvent):
+        """Handles the click event on a media tile."""
+        print(f"Media Clicked. URI from key: {e.key}")
         yield from on_select(LibrarySelectionChangeEvent(gcs_uri=e.key))
 
     with me.box(
@@ -40,24 +41,28 @@ def library_image_selector(
         )
     ):
         if not media_items:
-            me.text("No recent images found in the library.")
+            me.text("No recent items found in the library.")
         else:
             for item in media_items:
                 # The signed_url attribute is now added by the parent component.
-                image_url = item.signed_url if hasattr(item, "signed_url") else ""
+                https_url = item.signed_url if hasattr(item, "signed_url") else ""
                 gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
 
+                # Explicitly determine render type for the tile if possible
+                render_type = item.media_type
+                if not render_type and item.mime_type:
+                    if item.mime_type.startswith("video/"):
+                        render_type = "video"
+                    elif item.mime_type.startswith("audio/"):
+                        render_type = "audio"
+                    elif item.mime_type.startswith("image/"):
+                        render_type = "image"
+
                 if gcs_uri:
-                    with me.box(
-                        on_click=on_image_click,
-                        key=gcs_uri, # The key should be the permanent GCS URI
-                        style=me.Style(cursor="pointer"),
-                    ):
-                        me.image(
-                            src=image_url,
-                            style=me.Style(
-                                width="100%",
-                                border_radius=8,
-                                object_fit="cover",
-                            ),
-                        )
+                    media_tile(
+                        key=gcs_uri,
+                        on_click=on_media_click,
+                        media_type=render_type,
+                        https_url=https_url,
+                        pills_json=get_pills_for_item(item, https_url),
+                    )
