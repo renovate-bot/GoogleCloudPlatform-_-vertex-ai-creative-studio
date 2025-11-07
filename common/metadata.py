@@ -546,6 +546,7 @@ def get_media_for_page_optimized(
     page_size: int,
     type_filters: list[str],
     start_after=None,
+    filter_by_user_email: Optional[str] = None,
 ):
     """
     Fetches a paginated and filtered list of media items from Firestore
@@ -553,6 +554,10 @@ def get_media_for_page_optimized(
     """
     try:
         query = db.collection(config.GENMEDIA_COLLECTION_NAME)
+
+        # Apply user email filter if provided
+        if filter_by_user_email:
+            query = query.where("user_email", "==", filter_by_user_email)
 
         # Apply type filters using WHERE clauses
         # Note: This requires Firestore indexes. For a single 'mime_type' startsWith,
@@ -566,7 +571,7 @@ def get_media_for_page_optimized(
             query = query.where("mime_type", ">=", "image/").where(
                 "mime_type", "<", "image0"
             )
-        elif "music" in type_filters:
+        elif "music" in type_filters or "audio" in type_filters:
             query = query.where("mime_type", ">=", "audio/").where(
                 "mime_type", "<", "audio0"
             )

@@ -25,18 +25,13 @@ import mesop as me
 from common.metadata import (
     MediaItem,
     add_media_item_to_firestore,
-    get_media_for_chooser,
-    db,
-    config,
 )
 from common.storage import store_to_gcs
 from components.dialog import dialog
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
-from components.library.media_chooser_button import media_chooser_button
-from components.media_tile.media_tile import media_tile, get_pills_for_item
+from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
-from components.scroll_sentinel.scroll_sentinel import scroll_sentinel
 from components.snackbar import snackbar
 from models.video_processing import (
     convert_mp4_to_gif,
@@ -71,15 +66,6 @@ class PageState:
     selected_audio: str = ""
     selected_audio_display_url: str = ""
 
-    # State for the new media chooser dialog
-    show_chooser_dialog: bool = False
-    chooser_dialog_media_type: str = ""
-    chooser_dialog_key: str = ""
-    chooser_is_loading: bool = False
-    chooser_media_items: list[MediaItem] = field(default_factory=list)
-    chooser_last_doc_id: str = ""
-    chooser_all_items_loaded: bool = False
-
 
 VIDEO_PLACEHOLDER_STYLE = me.Style(
     width=360,
@@ -105,7 +91,6 @@ def pixie_compositor_page():
         with page_frame(): # pylint: disable=E1129:not-context-manager
             header("Pixie Compositor", "auto_fix_high")
             page_content()
-            render_chooser_dialog()  # Add dialog to the page layout
 
 
 # Adapted from components/tab_nav.py
@@ -189,60 +174,6 @@ def page_content():
     snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
 
-def open_video_chooser(e: me.ClickEvent):
-    state = me.state(PageState)
-    state.show_chooser_dialog = True
-    state.chooser_dialog_media_type = "video"
-    state.chooser_dialog_key = e.key
-    state.chooser_is_loading = True
-    state.chooser_media_items = []
-    state.chooser_all_items_loaded = False
-    state.chooser_last_doc_id = ""
-    yield
-
-    items, last_doc = get_media_for_chooser(media_type="video", page_size=20)
-    # Sign the URLs once on load
-    sign_items_in_parallel(items)
-    state.chooser_media_items = items
-    state.chooser_last_doc_id = last_doc.id if last_doc else ""
-    if not last_doc:
-        state.chooser_all_items_loaded = True
-    state.chooser_is_loading = False
-    yield
-
-
-def open_audio_chooser(e: me.ClickEvent):
-    state = me.state(PageState)
-    state.show_chooser_dialog = True
-    state.chooser_dialog_media_type = "audio"
-    state.chooser_dialog_key = e.key
-    state.chooser_is_loading = True
-    state.chooser_media_items = []
-    state.chooser_all_items_loaded = False
-    state.chooser_last_doc_id = ""
-    yield
-
-    items, last_doc = get_media_for_chooser(media_type="audio", page_size=20)
-    # Sign the URLs once on load
-    sign_items_in_parallel(items)
-    state.chooser_media_items = items
-    state.chooser_last_doc_id = last_doc.id if last_doc else ""
-    if not last_doc:
-        state.chooser_all_items_loaded = True
-    state.chooser_is_loading = False
-    yield
-
-
-def sign_items_in_parallel(items: list[MediaItem]):
-    """Helper function to add a cacheable proxy URL attribute to media items."""
-    for item in items:
-        gcs_uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
-        if gcs_uri:
-            item.signed_url = create_display_url(gcs_uri)
-        else:
-            item.signed_url = ""
-
-
 def render_video_video_tab():
     state = me.state(PageState)
     with me.box(
@@ -274,8 +205,10 @@ def render_video_video_tab():
                         accepted_file_types=["video/mp4", "video/quicktime"],
                         style=me.Style(width="100%"),
                     )
-                    media_chooser_button(
-                        key="video_1", on_click=open_video_chooser, media_type="video"
+                    library_chooser_button(
+                        key="video_1",
+                        on_library_select=on_video_select,
+                        media_type=["videos"],
                     )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
                     if "video_1" in state.selected_videos_display_urls:
@@ -309,8 +242,10 @@ def render_video_video_tab():
                         accepted_file_types=["video/mp4", "video/quicktime"],
                         style=me.Style(width="100%"),
                     )
-                    media_chooser_button(
-                        key="video_2", on_click=open_video_chooser, media_type="video"
+                    library_chooser_button(
+                        key="video_2",
+                        on_library_select=on_video_select,
+                        media_type=["videos"],
                     )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
                     if "video_2" in state.selected_videos_display_urls:
@@ -433,10 +368,10 @@ def render_video_audio_tab():
                         accepted_file_types=["video/mp4", "video/quicktime"],
                         style=me.Style(width="100%"),
                     )
-                    media_chooser_button(
+                    library_chooser_button(
                         key="video_for_audio",
-                        on_click=open_video_chooser,
-                        media_type="video",
+                        on_library_select=on_video_select_for_audio,
+                        media_type=["videos"],
                     )
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
                     if state.selected_video_for_audio_display_url:
@@ -470,8 +405,10 @@ def render_video_audio_tab():
                         accepted_file_types=["audio/mpeg", "audio/wav"],
                         style=me.Style(width="100%"),
                     )
-                    media_chooser_button(
-                        key="audio_1", on_click=open_audio_chooser, media_type="audio"
+                    library_chooser_button(
+                        key="audio_1",
+                        on_library_select=on_audio_select_from_library,
+                        media_type=["audio"],
                     )
                     # Future: Add audio_chooser_button if created
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
@@ -523,138 +460,6 @@ def render_video_audio_tab():
                     src=state.concatenated_video_display_url,
                     style=me.Style(width="100%", max_width="720px", border_radius=8),
                 )
-
-
-@me.component
-def render_chooser_dialog():
-    """Renders the single, page-level dialog for choosing media."""
-    state = me.state(PageState)
-
-    def handle_item_selected(e: me.ClickEvent):
-        gcs_uri = e.key
-        # Based on which button opened the dialog, update the correct state variable.
-        if state.chooser_dialog_key == "video_1":
-            state.selected_videos["video_1"] = gcs_uri
-            state.selected_videos_display_urls["video_1"] = create_display_url(gcs_uri)
-        elif state.chooser_dialog_key == "video_2":
-            state.selected_videos["video_2"] = gcs_uri
-            state.selected_videos_display_urls["video_2"] = create_display_url(gcs_uri)
-        elif state.chooser_dialog_key == "video_for_audio":
-            state.selected_video_for_audio = gcs_uri
-            state.selected_video_for_audio_display_url = create_display_url(gcs_uri)
-        elif state.chooser_dialog_key == "audio_1":
-            state.selected_audio = gcs_uri
-            state.selected_audio_display_url = create_display_url(gcs_uri)
-
-        state.show_chooser_dialog = False
-        yield
-
-    def handle_load_more(e: me.WebEvent):
-        if state.chooser_is_loading or state.chooser_all_items_loaded:
-            return
-
-        state.chooser_is_loading = True
-        yield
-
-        last_doc_ref = (
-            db.collection(config.GENMEDIA_COLLECTION_NAME)
-            .document(state.chooser_last_doc_id)
-            .get()
-        )
-
-        new_items, last_doc = get_media_for_chooser(
-            media_type=state.chooser_dialog_media_type,
-            page_size=20,
-            start_after=last_doc_ref,
-        )
-        # Sign the URLs once on load
-        sign_items_in_parallel(new_items)
-        state.chooser_media_items.extend(new_items)
-        state.chooser_last_doc_id = last_doc.id if last_doc else ""
-        if not last_doc:
-            state.chooser_all_items_loaded = True
-        state.chooser_is_loading = False
-        yield
-
-    dialog_style = me.Style(
-        width="95vw", height="80vh", display="flex", flex_direction="column"
-    )
-
-    with dialog(is_open=state.show_chooser_dialog, dialog_style=dialog_style): # pylint: disable=E1129:not-context-manager
-        if state.show_chooser_dialog:
-            with me.box(
-                style=me.Style(
-                    display="flex", flex_direction="column", gap=16, flex_grow=1
-                )
-            ):
-                # Dialog header with title and close button
-                with me.box(
-                    style=me.Style(
-                        display="flex",
-                        flex_direction="row",
-                        justify_content="space-between",
-                        align_items="center",
-                        width="100%",
-                    )
-                ):
-                    me.text(
-                        f"Select a {state.chooser_dialog_media_type.capitalize()} from Library",
-                        type="headline-6",
-                    )
-                    with me.content_button(
-                        type="icon",
-                        on_click=lambda e: setattr(
-                            state, "show_chooser_dialog", False
-                        ),
-                    ):
-                        me.icon("close")
-
-                # Main content area with grid and scroller
-                with me.box(
-                    style=me.Style(
-                        flex_grow=1, overflow_y="auto", padding=me.Padding.all(10)
-                    )
-                ):
-                    if state.chooser_is_loading and not state.chooser_media_items:
-                        with me.box(
-                            style=me.Style(
-                                display="flex",
-                                justify_content="center",
-                                align_items="center",
-                                height="100%",
-                            )
-                        ):
-                            me.progress_spinner()
-                    else:
-                        with me.box(
-                            style=me.Style(
-                                display="grid",
-                                grid_template_columns="repeat(auto-fill, minmax(250px, 1fr))",
-                                gap="16px",
-                            )
-                        ):
-                            items_to_render = state.chooser_media_items
-                            if not items_to_render and not state.chooser_is_loading:
-                                me.text(
-                                    f"No items of type '{state.chooser_dialog_media_type}' found in your library."
-                                )
-                            else:
-                                for item in items_to_render:
-                                    https_url = item.signed_url if hasattr(item, "signed_url") else ""
-                                    media_tile(
-                                        key=item.gcsuri
-                                        or (item.gcs_uris[0] if item.gcs_uris else ""),
-                                        on_click=handle_item_selected,
-                                        media_type=item.media_type
-                                        or state.chooser_dialog_media_type,
-                                        https_url=https_url,
-                                        pills_json=get_pills_for_item(item, https_url),
-                                    )
-                        scroll_sentinel(
-                            on_visible=handle_load_more,
-                            is_loading=state.chooser_is_loading,
-                            all_items_loaded=state.chooser_all_items_loaded,
-                        )
 
 
 def on_upload_video_for_audio(e: me.UploadEvent):
@@ -768,6 +573,7 @@ def on_video_select(e: LibrarySelectionChangeEvent):
     state = me.state(PageState)
     # The key of the chooser button tells us which video slot to fill.
     state.selected_videos[e.chooser_id] = e.gcs_uri
+    state.selected_videos_display_urls[e.chooser_id] = create_display_url(e.gcs_uri)
     yield
 
 
