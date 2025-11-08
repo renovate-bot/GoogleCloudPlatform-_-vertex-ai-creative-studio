@@ -175,7 +175,7 @@ def page():
 
     with page_scaffold(page_name="imagen-upscale"):  # pylint: disable=not-context-manager
         with page_frame():  # pylint: disable=not-context-manager
-            header("Image 4 Upscale", "zoom_in", current_status="Preview")
+            header("Imagen 4 Upscale", "zoom_in", current_status="Preview")
 
             with me.box(
                 style=me.Style(
