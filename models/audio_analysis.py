@@ -14,14 +14,17 @@
 
 """Audio analysis using librosa and parselmouth."""
 
-import numpy as np
+import os
+import tempfile
+
 import librosa
+import numpy as np
 import parselmouth
 from parselmouth.praat import call
-from common.storage import download_from_gcs
 from pydantic import BaseModel
-import tempfile
-import os
+
+from common.storage import download_from_gcs
+
 
 class AudioMetrics(BaseModel):
     mean_pitch_hz: float = 0.0
