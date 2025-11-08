@@ -406,3 +406,24 @@ with track_model_call("my-generative-model-v1", prompt_length=len(prompt)):
 # Tool Usage
 
 - **No Command Substitution:** You are not allowed to use command substitution (e.g., `$(...)` or `` `...` ``) within the `run_shell_command` tool for security reasons. If you need the output of one command as an argument for another, you must run them as two separate tool calls.
+
+## Advanced Mesop Patterns: State and Closures
+
+### 1. Global vs. Component State
+**The Problem:** Multiple instances of a custom component (e.g., `library_chooser_button`) on the same page share the same state, causing conflicts (e.g., clicking one button opens the dialog for all of them, or with wrong data).
+**The Cause:** Mesop's `me.state(StateClass)` is global per user session. It does not automatically create separate state instances for different component instances.
+**The Solution:**
+*   **Option A (Preferred for simple cases):** Use a unique `key` for each component instance. In the component's render function, only render active content (like a dialog) if `state.active_key == key`.
+*   **Option B (For complex per-component state):** Use a global dictionary in your state class, keyed by the component's unique key: `choosers: dict[str, ChooserState] = field(default_factory=dict)`.
+
+### 2. Late Binding in Event Handlers
+**The Problem:** A component is used multiple times with different arguments (e.g., `media_type=["video"]` vs `["audio"]`). Clicking any instance always uses the argument value from the *last* instance rendered.
+**The Cause:** Python's late binding in closures. The event handler function (defined inside the component function) captures the *variable*, not the *value* at the time of definition.
+**The Solution:** Force early binding at definition time.
+*   **Use `functools.partial`:** `on_click=partial(handler, arg=current_value)`
+*   **Use default arguments:** `def handler(e, arg=current_value): ...`
+
+### 3. Improving Perceived Responsiveness
+**The Problem:** A dialog takes too long to close after a selection is made.
+**The Cause:** The event handler performs a long-running operation (or yields many times) *before* updating the state that controls the dialog's visibility.
+**The Solution:** Close the dialog immediately. In the selection handler, set `state.show_dialog = False` and `yield` *before* starting any other work.

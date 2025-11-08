@@ -24,7 +24,6 @@ from common.analytics import log_ui_click, track_model_call
 from common.metadata import (
     MediaItem,
     add_media_item_to_firestore,
-    get_media_for_page_optimized,
 )
 from common.prompt_template_service import prompt_template_service
 from common.storage import store_to_gcs
@@ -34,7 +33,7 @@ from components.dialog import dialog
 from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
-from components.library.library_dialog import library_dialog
+from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
@@ -90,10 +89,12 @@ def _uploader_placeholder(on_upload, on_open_library, key_prefix: str, disabled:
             disabled=disabled,
             multiple=True,  # Allow multiple file selection in one go
         )
-        with me.content_button(
-            on_click=on_open_library, type="icon", key=f"{key_prefix}_library_chooser"
-        ):
-            me.icon("photo_library")
+        library_chooser_button(
+            on_library_select=on_open_library,
+            button_type="icon",
+            key=f"{key_prefix}_library_chooser",
+            media_type=["images"],
+        )
 
 
 @me.component
@@ -204,11 +205,6 @@ class PageState:
     description_queue: list[int] = field(default_factory=list)  # pylint: disable=invalid-field-call
     accordion_panels: dict[str, bool] = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
-    # For the library dialog
-    is_library_dialog_open: bool = False
-    is_library_loading: bool = False
-    library_media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=invalid-field-call
-
     info_dialog_open: bool = False
     initial_load_complete: bool = False
 
@@ -233,49 +229,12 @@ with open("config/about_content.json", "r") as f:
     )
 
 
-def open_library_dialog(e: me.ClickEvent):
-    """Opens the library dialog and fetches the initial data."""
-    state = me.state(PageState)
-    state.is_library_dialog_open = True
-    state.is_library_loading = True
-    yield
-
-    # Fetch fresh data every time the dialog is opened
-    items, _ = get_media_for_page_optimized(20, ["images"])
-
-    # Hydrate the items with the cacheable proxy URL
-    for item in items:
-        gcs_uri = (
-            item.gcsuri
-            if item.gcsuri
-            else (item.gcs_uris[0] if item.gcs_uris else None)
-        )
-        if gcs_uri:
-            item.signed_url = create_display_url(gcs_uri)
-        else:
-            item.signed_url = ""
-
-    state.library_media_items = items
-    state.is_library_loading = False
-    yield
-
-
-def close_library_dialog(e: me.ClickEvent):
-    """Closes the library dialog."""
-    state = me.state(PageState)
-    state.is_library_dialog_open = False
-    yield
-
-
-def on_select_from_library_dialog(e: LibrarySelectionChangeEvent):
+def on_media_select(e: LibrarySelectionChangeEvent):
     """
     Handles the selection of an image from the library dialog.
-    Closes the dialog, adds a placeholder, and queues the description generation.
+    Adds a placeholder, and queues the description generation.
     """
     state = me.state(PageState)
-
-    # Close the dialog first
-    state.is_library_dialog_open = False
 
     # Check if there's space for a new image
     if len(state.uploaded_image_gcs_uris) >= MAX_IMAGES:
@@ -502,14 +461,6 @@ def gemini_image_gen_page_content():
 
     state = me.state(PageState)
 
-    library_dialog(
-        is_open=state.is_library_dialog_open,
-        on_select=on_select_from_library_dialog,
-        on_close=close_library_dialog,
-        media_items=state.library_media_items,
-        is_loading=state.is_library_loading,
-    )
-
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             me.text(f"About {NANO_BANANA_INFO['title']}", type="headline-6")
@@ -555,7 +506,7 @@ def gemini_image_gen_page_content():
                 )
                 _image_upload_slots(
                     on_upload=on_upload,
-                    on_open_library=open_library_dialog,
+                    on_open_library=on_media_select,
                     on_remove_image=on_remove_image,
                 )
 
