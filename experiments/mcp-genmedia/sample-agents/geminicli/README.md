@@ -160,3 +160,89 @@ Then, add to that directory a `gemini-extension.json`
 Now, when you start up gemini cli you should see the mpc servers listed when issuing the slash command, `/mcp`
 
 ![geminicli x genmedia mcp](../../assets/geminiclixgenmedia.png)
+
+## Troubleshooting
+
+### Error: spawn mcp-*-go ENOENT
+
+If you encounter errors like the following when starting Gemini CLI:
+
+```text
+Error connecting to MCP server 'veo': failed to start or connect to MCP server 'veo' {"command":"mcp-veo-go","trust":true}; 
+Error: spawn mcp-veo-go ENOENT
+Error connecting to MCP server 'imagen': failed to start or connect to MCP server 'imagen' {"command":"mcp-imagen-go","trust":true}; 
+Error: spawn mcp-imagen-go ENOENT
+Error connecting to MCP server 'chirp3-hd': failed to start or connect to MCP server 'chirp3-hd' {"command":"mcp-chirp3-go","trust":true}; 
+Error: spawn mcp-chirp3-go ENOENT
+Error connecting to MCP server 'lyria': failed to start or connect to MCP server 'lyria' {"command":"mcp-lyria-go","trust":true}; 
+Error: spawn mcp-lyria-go ENOENT
+Error connecting to MCP server 'avtool': failed to start or connect to MCP server 'avtool' {"command":"mcp-avtool-go","trust":true}; 
+Error: spawn mcp-avtool-go ENOENT
+```
+
+**Cause:** This error indicates that the Genmedia MCP server binaries (installed via Go) are not in your terminal's `PATH`. The Gemini CLI cannot locate the commands like `mcp-veo-go`, `mcp-imagen-go`, etc.
+
+**Solution:** Add the Go binary directory to your `PATH`.
+
+#### Temporary Fix (Current Terminal Session Only)
+
+Run the following command in your terminal:
+
+```bash
+export PATH=$PATH:~/go/bin
+```
+
+This adds `~/go/bin` (the default location for Go-installed binaries) to your `PATH` for the current session only.
+
+#### Permanent Fix (Recommended)
+
+To ensure the Go binaries are always available, add the export command to your shell's configuration file:
+
+**For Bash** (most common):
+
+```bash
+echo 'export PATH=$PATH:~/go/bin' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**For Zsh** (macOS default since Catalina):
+
+```bash
+echo 'export PATH=$PATH:~/go/bin' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**For Fish**:
+
+```fish
+fish_add_path ~/go/bin
+```
+
+**Note:** If you have a custom `GOBIN` or `GOPATH` set, adjust the path accordingly. You can check your Go environment with:
+
+```bash
+go env GOBIN
+go env GOPATH
+```
+
+If `GOBIN` is set, use that path. Otherwise, use `$GOPATH/bin` or the default `~/go/bin`.
+
+#### Verify the Fix
+
+After updating your `PATH`, verify that the MCP servers are accessible:
+
+```bash
+which mcp-veo-go
+which mcp-imagen-go
+which mcp-chirp3-go
+```
+
+Each command should return a path like `/home/username/go/bin/mcp-veo-go`. If they do, your `PATH` is configured correctly.
+
+You can also test individual servers directly:
+
+```bash
+mcp-imagen-go --help
+```
+
+This should display the help message for the Imagen MCP server without errors.
