@@ -16,6 +16,7 @@
 import json
 import time
 from typing import Optional
+from dataclasses import field
 
 import mesop as me
 import datetime # Required for timestamp
@@ -32,6 +33,7 @@ from config.default import Default
 from config.rewriters import MUSIC_REWRITER
 from models.gemini import analyze_audio_with_gemini, rewriter
 from models.lyria import generate_music_with_lyria
+from models.audio_analysis import analyze_audio_file
 from state.state import AppState
 from common.utils import create_display_url
 
@@ -43,6 +45,18 @@ def lyria_page():
     state = me.state(AppState)
     with page_scaffold(page_name="lyria"):  # pylint: disable=not-context-manager
         lyria_content(state)
+
+
+@me.stateclass
+class AudioMetricsState:
+    mean_pitch_hz: float = 0.0
+    pitch_std_hz: float = 0.0
+    pitch_range_hz: float = 0.0
+    jitter_percent: float = 0.0
+    shimmer_db: float = 0.0
+    hnr_db: float = 0.0
+    estimated_tempo_bpm: float = 0.0
+    duration_sec: float = 0.0
 
 
 @me.stateclass
@@ -70,6 +84,9 @@ class PageState:
     analysis_error_message: str = ""
 
     info_dialog_open: bool = False
+    
+    audio_metrics: AudioMetricsState = field(default_factory=AudioMetricsState)
+    has_audio_metrics: bool = False
 
 
 # Original box style
@@ -266,6 +283,36 @@ def lyria_content(app_state: me.state):
                     )
                     me.text(pagestate.analysis_error_message)
 
+            # Technical Metrics Display
+            if (
+                pagestate.has_audio_metrics
+                and not pagestate.is_analyzing
+                and not pagestate.is_loading
+            ):
+                with me.box(style=_ANALYSIS_BOX_STYLE):
+                    with me.expansion_panel(
+                        title="Technical Audio Metrics", icon="graphic_eq"
+                    ):
+                        metrics = pagestate.audio_metrics
+                        with me.box(
+                            style=me.Style(
+                                display="grid",
+                                grid_template_columns="1fr 1fr",
+                                gap=16,
+                                padding=me.Padding.all(16),
+                            )
+                        ):
+                            me.text(
+                                f"Duration: {metrics.duration_sec:.2f}s",
+                                style=me.Style(font_weight="bold"),
+                            )
+                            me.text(
+                                f"Tempo: {metrics.estimated_tempo_bpm:.1f} BPM",
+                                style=me.Style(font_weight="bold"),
+                            )
+                            me.text(f"Mean Pitch: {metrics.mean_pitch_hz:.1f} Hz")
+                            me.text(f"Pitch Range: {metrics.pitch_range_hz:.1f} Hz")
+
             # Error Dialog for Generation Errors (Lyria errors)
             with dialog(is_open=pagestate.show_error_dialog):  # pylint: disable=not-context-manager
                 me.text(
@@ -455,6 +502,27 @@ def on_click_lyria(e: me.ClickEvent):
         state.is_analyzing = True
         yield
 
+        # --- Technical Audio Analysis ---
+        try:
+            print(
+                f"Starting technical audio analysis for: {gcs_uri_for_analysis_and_metadata}"
+            )
+            metrics = analyze_audio_file(gcs_uri_for_analysis_and_metadata)
+            state.audio_metrics.mean_pitch_hz = metrics.mean_pitch_hz
+            state.audio_metrics.pitch_std_hz = metrics.pitch_std_hz
+            state.audio_metrics.pitch_range_hz = metrics.pitch_range_hz
+            state.audio_metrics.jitter_percent = metrics.jitter_percent
+            state.audio_metrics.shimmer_db = metrics.shimmer_db
+            state.audio_metrics.hnr_db = metrics.hnr_db
+            state.audio_metrics.estimated_tempo_bpm = metrics.estimated_tempo_bpm
+            state.audio_metrics.duration_sec = metrics.duration_sec
+            state.has_audio_metrics = True
+            print("Technical audio analysis successful.")
+        except Exception as tech_err:
+            print(f"Warning: Technical audio analysis failed: {tech_err}")
+            # Don't fail the whole process, just log it.
+
+        # --- Gemini Analysis ---
         try:
             print(
                 f"Starting analysis with GCS URI: {gcs_uri_for_analysis_and_metadata}"
@@ -533,6 +601,16 @@ def clear_music(e: me.ClickEvent):
     state.audio_analysis_result_json = None
     state.analysis_error_message = ""
     state.loading_operation_message = ""  # Clear loading message
+    state.has_audio_metrics = False
+    # Reset metrics
+    state.audio_metrics.mean_pitch_hz = 0.0
+    state.audio_metrics.pitch_std_hz = 0.0
+    state.audio_metrics.pitch_range_hz = 0.0
+    state.audio_metrics.jitter_percent = 0.0
+    state.audio_metrics.shimmer_db = 0.0
+    state.audio_metrics.hnr_db = 0.0
+    state.audio_metrics.estimated_tempo_bpm = 0.0
+    state.audio_metrics.duration_sec = 0.0
     yield
 
 
