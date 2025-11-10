@@ -95,6 +95,15 @@ def create_initial_job(request: VideoGenerationRequest, user_email: str) -> str:
     model_config = get_veo_model_config(request.model_version_id)
     model_name = model_config.model_name if model_config else request.model_version_id
 
+    # Infer mode
+    mode = "t2v"
+    if request.r2v_references or request.r2v_style_image:
+        mode = "r2v"
+    elif request.reference_image_gcs and request.last_reference_image_gcs:
+        mode = "interpolation"
+    elif request.reference_image_gcs:
+        mode = "i2v"
+
     item = MediaItem(
         user_email=user_email,
         timestamp=datetime.datetime.now(datetime.timezone.utc),
@@ -102,14 +111,17 @@ def create_initial_job(request: VideoGenerationRequest, user_email: str) -> str:
         prompt=request.prompt,
         model=model_name,
         mime_type="video/mp4",
-        # We might not know the final mode here if it was inferred,
-        # but we can try to guess based on inputs or pass it in.
-        # For simplicity, let's leave it generic or pass it if available.
-        # mode=request.mode, # Request doesn't have mode directly, it's inferred.
+        mode=mode,
         aspect=request.aspect_ratio,
         duration=float(request.duration_seconds),
         reference_image=request.reference_image_gcs,
         last_reference_image=request.last_reference_image_gcs,
+        r2v_reference_images=[ref.gcs_uri for ref in request.r2v_references]
+        if request.r2v_references
+        else [],
+        r2v_style_image=request.r2v_style_image.gcs_uri
+        if request.r2v_style_image
+        else None,
         negative_prompt=request.negative_prompt,
         enhanced_prompt_used=request.enhance_prompt,
     )
