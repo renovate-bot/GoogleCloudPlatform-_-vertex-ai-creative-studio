@@ -428,7 +428,7 @@ def on_upload_article_image(e: me.UploadEvent):
             file.getvalue(),
         )
         state.reference_image_gcs_clothing.append(f"{gcs_url}")
-        state.reference_image_uri_clothing.append(create_display_url(gcs_url))
+        state.reference_image_display_urls_clothing.append(create_display_url(gcs_url))
         article_type = gcs_url.split("/")[-2]
         shop_the_look_workflow.store_article_data(file_path, article_type)
 
