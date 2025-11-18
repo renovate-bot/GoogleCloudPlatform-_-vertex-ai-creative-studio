@@ -15,7 +15,7 @@
 import json
 import os
 import random
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
 
 class RetroGameConfig:
     _instance = None
@@ -41,11 +41,11 @@ class RetroGameConfig:
             print(f"Error: Invalid JSON in config file at {config_path}")
             self._config_data = {"themes": {}, "bumper_videos": []}
 
-    def get_theme_names(self) -> List[str]:
+    def get_theme_names(self) -> list[str]:
         """Returns a list of available theme names."""
         return list(self._config_data.get("themes", {}).keys())
 
-    def get_theme_config(self, theme_name: str) -> Optional[Dict[str, str]]:
+    def get_theme_config(self, theme_name: str) -> Optional[dict[str, str]]:
         """Returns the configuration for a specific theme."""
         return self._config_data.get("themes", {}).get(theme_name)
 
