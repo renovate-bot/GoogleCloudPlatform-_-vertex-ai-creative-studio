@@ -450,3 +450,11 @@ When modifying the arguments or return values of a core function (e.g., in `mode
 1.  **Search:** Perform a codebase-wide search (`search_file_content`) for the function name *before* making changes.
 2.  **Inventory:** List every file that calls this function.
 3.  **Update:** Update every call site to match the new signature. If a new return value is not needed in a specific context, explicitly ignore it (e.g., `uris, _, _ = generate(...)`).
+
+## Python Best Practices
+
+### Modern Type Hinting (PEP 585)
+**The Guideline:** In Python 3.9 and newer, use built-in collection types (`list`, `dict`, `tuple`, `set`) for type hinting instead of the deprecated `typing.List`, `typing.Dict`, etc.
+**Reference:** [PEP 585](https://peps.python.org/pep-0585/)
+*   **Bad:** `def get_names() -> List[str]:`
+*   **Good:** `def get_names() -> list[str]:`
