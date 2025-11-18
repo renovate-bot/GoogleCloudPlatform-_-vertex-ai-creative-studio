@@ -92,6 +92,9 @@ class MediaItem:
     modifiers: List[str] = field(
         default_factory=list
     )  # e.g., ["photorealistic", "wide angle"]
+    captions: List[str] = field(
+        default_factory=list
+    )  # Captions or narrative text associated with generated images
     negative_prompt: Optional[str] = None
     num_images: Optional[int] = None  # Number of images generated in a batch
     seed: Optional[int] = (
@@ -144,6 +147,7 @@ class MediaItem:
     # Upscale specific
     original_resolution: Optional[str] = None
     upscale_factor: Optional[str] = None
+    image_size: Optional[str] = None
 
     def __post_init__(self):
         # Ensure audio_analysis is always a JSON string for state serialization.
@@ -318,6 +322,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         enhanced_prompt_used=raw_item_data.get("enhanced_prompt_used"),
         comment=raw_item_data.get("comment"),
         modifiers=raw_item_data.get("modifiers", []),
+        captions=raw_item_data.get("captions", []),
         num_images=num_images,
         seed=seed,
         critique=raw_item_data.get("critique"),
@@ -345,6 +350,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         product_image_gcs=raw_item_data.get("product_image_gcs"),
         original_resolution=raw_item_data.get("original_resolution"),
         upscale_factor=raw_item_data.get("upscale_factor"),
+        image_size=raw_item_data.get("image_size"),
         raw_data=raw_item_data,
     )
     return media_item

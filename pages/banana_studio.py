@@ -35,10 +35,12 @@ from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
+from components.pill import pill
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from components.veo_button.veo_button import veo_button
 from config.default import Default as cfg
+from config.gemini_image_models import get_gemini_image_model_config
 from models.gemini import (
     describe_image,
     evaluate_image_with_questions,
@@ -46,6 +48,7 @@ from models.gemini import (
     generate_image_from_prompt_and_images,
     generate_transformation_prompts,
 )
+from models.upscale import get_image_resolution
 from state.state import AppState
 
 CHIP_STYLE = me.Style(
@@ -54,8 +57,6 @@ CHIP_STYLE = me.Style(
     font_size=14,
     height=32,
 )
-
-MAX_IMAGES = 3
 
 
 @me.component
@@ -139,8 +140,12 @@ def _generate_images_button():
 
 @me.component
 def _image_upload_slots(on_upload, on_open_library, on_remove_image):
-    """The new image upload UI with 3 slots."""
+    """The new image upload UI with dynamic slots."""
     state = me.state(PageState)
+    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    model_config = get_gemini_image_model_config(current_model_name)
+    max_input_images = model_config.max_input_images if model_config else 3
+
     with me.box(
         style=me.Style(
             display="flex",
@@ -148,9 +153,10 @@ def _image_upload_slots(on_upload, on_open_library, on_remove_image):
             gap=10,
             margin=me.Margin(bottom=16),
             justify_content="center",
+            flex_wrap="wrap",
         )
     ):
-        for i in range(MAX_IMAGES):
+        for i in range(max_input_images):
             if i < len(state.uploaded_image_display_urls):
                 image_uri = state.uploaded_image_display_urls[i]
                 image_thumbnail(
@@ -185,6 +191,7 @@ class PageState:
     image_descriptions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
     generated_image_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
+    generated_resolution: str = ""
     is_generating: bool = False
     generation_complete: bool = False
     generation_time: float = 0.0
@@ -193,6 +200,7 @@ class PageState:
     snackbar_message: str = ""
     previous_media_item_id: str | None = None  # For linking generation sequences
     aspect_ratio: str = "1:1"
+    image_size: str = "1K"
     num_images_to_generate: int = 1
     suggested_transformations: list[dict] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_suggesting_transformations: bool = False
@@ -235,11 +243,14 @@ def on_media_select(e: LibrarySelectionChangeEvent):
     Adds a placeholder, and queues the description generation.
     """
     state = me.state(PageState)
+    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    model_config = get_gemini_image_model_config(current_model_name)
+    max_input_images = model_config.max_input_images if model_config else 3
 
     # Check if there's space for a new image
-    if len(state.uploaded_image_gcs_uris) >= MAX_IMAGES:
+    if len(state.uploaded_image_gcs_uris) >= max_input_images:
         yield from show_snackbar(
-            state, f"You can add a maximum of {MAX_IMAGES} images."
+            state, f"You can add a maximum of {max_input_images} images."
         )
         return
 
@@ -296,7 +307,7 @@ def _critique_questions_button():
                 "Generate Critique Questions",
                 on_click=on_generate_questions_click,
                 type="stroked",
-                disabled=not (state.prompt and state.uploaded_image_gcs_uris),
+                disabled=not state.prompt,
             )
 
 
@@ -460,6 +471,9 @@ def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
 
     state = me.state(PageState)
+    
+    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    model_config = get_gemini_image_model_config(current_model_name)
 
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
@@ -467,6 +481,7 @@ def gemini_image_gen_page_content():
             me.markdown(NANO_BANANA_INFO["description"])
             me.divider()
             me.text("Current Settings", type="headline-6")
+            me.text(f"Model: {model_config.model_name}")
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
@@ -522,23 +537,38 @@ def gemini_image_gen_page_content():
 
                 me.box(style=me.Style(height=8))
 
-                me.select(
-                    label="Aspect Ratio",
-                    options=[
-                        me.SelectOption(label="1:1", value="1:1"),
-                        me.SelectOption(label="3:2", value="3:2"),
-                        me.SelectOption(label="2:3", value="2:3"),
-                        me.SelectOption(label="3:4", value="3:4"),
-                        me.SelectOption(label="4:3", value="4:3"),
-                        me.SelectOption(label="4:5", value="4:5"),
-                        me.SelectOption(label="9:16", value="9:16"),
-                        me.SelectOption(label="16:9", value="16:9"),
-                        me.SelectOption(label="21:9", value="21:9"),
-                    ],
-                    on_selection_change=on_aspect_ratio_change,
-                    value=str(state.aspect_ratio),
-                    style=me.Style(width="100%", margin=me.Margin(bottom=16)),
-                )
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+                    me.select(
+                        label="Aspect Ratio",
+                        options=[
+                            me.SelectOption(label="1:1", value="1:1"),
+                            me.SelectOption(label="3:2", value="3:2"),
+                            me.SelectOption(label="2:3", value="2:3"),
+                            me.SelectOption(label="3:4", value="3:4"),
+                            me.SelectOption(label="4:3", value="4:3"),
+                            me.SelectOption(label="4:5", value="4:5"),
+                            me.SelectOption(label="9:16", value="9:16"),
+                            me.SelectOption(label="16:9", value="16:9"),
+                            me.SelectOption(label="21:9", value="21:9"),
+                        ],
+                        on_selection_change=on_aspect_ratio_change,
+                        value=str(state.aspect_ratio),
+                        style=me.Style(flex_grow=1),
+                    )
+
+                    if model_config and model_config.supported_image_sizes:
+                        me.select(
+                            label="Image Size",
+                            options=[
+                                me.SelectOption(label=size, value=size)
+                                for size in model_config.supported_image_sizes
+                            ],
+                            on_selection_change=on_image_size_change,
+                            value=str(state.image_size),
+                            style=me.Style(flex_grow=1, width="65%"),
+                        )
+
+                me.box(style=me.Style(height=16))
 
                 # Generate images button
                 with me.box(
@@ -618,6 +648,10 @@ def gemini_image_gen_page_content():
                                     border_radius=8,
                                 ),
                             )
+
+                            if state.generated_resolution:
+                                with me.box(style=me.Style(margin=me.Margin(top=8))):
+                                    pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
 
                             # Evaluation display
 
@@ -702,8 +736,11 @@ def gemini_image_gen_page_content():
                                     ),
                                 )
 
-                                # Evaluation display
+                                if state.generated_resolution:
+                                    with me.box(style=me.Style(margin=me.Margin(top=8))):
+                                        pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
 
+                                # Evaluation display
                                 with me.box(
                                     style=me.Style(
                                         width="100%", margin=me.Margin(top=16)
@@ -839,21 +876,24 @@ def on_upload(e: me.UploadEvent):
     and then generates descriptions asynchronously.
     """
     state = me.state(PageState)
+    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    model_config = get_gemini_image_model_config(current_model_name)
+    max_input_images = model_config.max_input_images if model_config else 3
 
     # Determine how many new images can be uploaded
-    upload_slots_available = MAX_IMAGES - len(state.uploaded_image_gcs_uris)
+    upload_slots_available = max_input_images - len(state.uploaded_image_gcs_uris)
     files_to_upload = e.files[:upload_slots_available]
 
     if not files_to_upload:
         yield from show_snackbar(
-            state, f"You can upload a maximum of {MAX_IMAGES} images."
+            state, f"You can upload a maximum of {max_input_images} images."
         )
         return
 
     if len(e.files) > len(files_to_upload):
         yield from show_snackbar(
             state,
-            f"You can upload a maximum of {MAX_IMAGES} images. Some files were not uploaded.",
+            f"You can upload a maximum of {max_input_images} images. Some files were not uploaded.",
         )
 
     # --- Step 1: Upload files and add placeholders ---
@@ -955,6 +995,11 @@ def on_aspect_ratio_change(e: me.SelectSelectionChangeEvent):
     me.state(PageState).aspect_ratio = e.value
 
 
+def on_image_size_change(e: me.SelectSelectionChangeEvent):
+    """Changes the image size on page state."""
+    me.state(PageState).image_size = e.value
+
+
 def on_num_images_change(e: me.SelectSelectionChangeEvent):
     """Updates the number of images to generate in the page state."""
     me.state(PageState).num_images_to_generate = int(e.value)
@@ -971,6 +1016,7 @@ def on_clear_click(e: me.ClickEvent):
     """Resets the entire page state to its initial values, clearing all inputs and outputs."""
     state = me.state(PageState)
     state.generated_image_urls = []
+    state.generated_resolution = ""
     state.prompt = ""
     state.uploaded_image_gcs_uris = []
     state.uploaded_image_display_urls = []
@@ -1127,6 +1173,7 @@ def on_continue_click(e: me.ClickEvent):
     state.uploaded_image_gcs_uris = [gcs_uri]
     state.uploaded_image_display_urls = [create_display_url(gcs_uri)]
     state.generated_image_urls = []
+    state.generated_resolution = ""
     state.selected_image_url = ""
     state.generation_time = 0.0
     state.generation_complete = False
@@ -1182,12 +1229,13 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             # num_input_images=len(input_gcs_uris),
             # num_images_generated=state.num_images_to_generate,
         ):
-            gcs_uris, execution_time = generate_image_from_prompt_and_images(
+            gcs_uris, execution_time, captions = generate_image_from_prompt_and_images(
                 prompt=final_prompt,
                 images=input_gcs_uris,
                 aspect_ratio=state.aspect_ratio,
                 gcs_folder="gemini_image_generations",
                 file_prefix="gemini_image",
+                image_size=state.image_size,
             )
 
         state.generation_time = execution_time
@@ -1213,15 +1261,20 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             )
         else:
             state.generated_image_urls = [create_display_url(uri) for uri in gcs_uris]
+            # Measure the actual resolution of the first generated image
+            state.generated_resolution = get_image_resolution(gcs_uris[0])
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 
             # Create and save the main media item
             item = MediaItem(
                 gcs_uris=gcs_uris,
+                captions=captions,
                 prompt=final_prompt,
                 mime_type="image/png",
                 aspect=state.aspect_ratio,
+                resolution=state.generated_resolution,
+                image_size=state.image_size,
                 user_email=app_state.user_email,
                 source_images_gcs=input_gcs_uris,
                 comment="generated by gemini image generation",

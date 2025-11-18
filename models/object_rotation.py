@@ -45,7 +45,7 @@ from models.gemini import generate_image_from_prompt_and_images
 
 async def _generate_single_view(prompt: str, image_uri: str) -> str:
     """Helper to generate one view and return the URI."""
-    gcs_uris, _ = await asyncio.to_thread(
+    gcs_uris, _, _ = await asyncio.to_thread(
         generate_image_from_prompt_and_images,
         prompt=prompt,
         images=[image_uri],

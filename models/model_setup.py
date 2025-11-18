@@ -113,6 +113,7 @@ class GeminiModelSetup:
     def init(
         project_id: Optional[str] = None,
         location: Optional[str] = None,
+        http_options: Optional[dict] = None,
         # model_id is no longer used by init, client is configured generally
     ):
         """Init method for Gemini client. Model is specified at call time."""
@@ -130,5 +131,6 @@ class GeminiModelSetup:
             vertexai=config.INIT_VERTEX,  # This assumes vertexai backend is desired.
             project=effective_project_id,
             location=effective_location,
+            http_options=http_options,
         )
         return client
