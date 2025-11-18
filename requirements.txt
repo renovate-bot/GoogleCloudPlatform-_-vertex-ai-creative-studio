@@ -11,7 +11,7 @@ anyio==4.11.0
     #   google-genai
     #   httpx
     #   starlette
-asttokens==3.0.0
+asttokens==3.0.1
     # via stack-data
 audioop-lts==0.2.2
     # via
@@ -23,7 +23,7 @@ black==25.11.0
     # via veo-app (pyproject.toml)
 blinker==1.9.0
     # via flask
-cachecontrol==0.14.3
+cachecontrol==0.14.4
     # via firebase-admin
 cachetools==6.2.2
     # via google-auth
@@ -38,7 +38,7 @@ cffi==2.0.0
     #   soundfile
 charset-normalizer==3.4.4
     # via requests
-click==8.3.0
+click==8.3.1
     # via
     #   black
     #   flask
@@ -113,7 +113,7 @@ google-cloud-logging==3.12.1
     # via veo-app (pyproject.toml)
 google-cloud-resource-manager==1.15.0
     # via google-cloud-aiplatform
-google-cloud-storage==3.5.0
+google-cloud-storage==3.6.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
@@ -127,7 +127,7 @@ google-genai==1.50.1
     # via
     #   veo-app (pyproject.toml)
     #   google-cloud-aiplatform
-google-resumable-media==2.7.2
+google-resumable-media==2.8.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
@@ -235,7 +235,7 @@ networkx==3.5
     # via scikit-image
 numba==0.62.1
     # via librosa
-numpy==2.3.4
+numpy==2.3.5
     # via
     #   veo-app (pyproject.toml)
     #   contourpy

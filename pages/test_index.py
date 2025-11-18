@@ -32,6 +32,11 @@ def page():
 
     test_pages = [
         {
+            "title": "Retro Games Workflow",
+            "description": "Create a retro game video from an image.",
+            "route": "/retro_games",
+        },
+        {
             "title": "Banana Studio",
             "description": "An experimental Gemini Image Generation page.",
             "route": "/banana-studio",
