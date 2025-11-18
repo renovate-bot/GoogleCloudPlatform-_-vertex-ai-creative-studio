@@ -427,3 +427,34 @@ with track_model_call("my-generative-model-v1", prompt_length=len(prompt)):
 **The Problem:** A dialog takes too long to close after a selection is made.
 **The Cause:** The event handler performs a long-running operation (or yields many times) *before* updating the state that controls the dialog's visibility.
 **The Solution:** Close the dialog immediately. In the selection handler, set `state.show_dialog = False` and `yield` *before* starting any other work.
+
+### 4. Avoid Deeply Nested Logic
+**The Problem:** Inserting `if/else` logic or complex components directly into a deeply nested `with me.box():` structure often leads to unclosed parentheses and `SyntaxError`.
+**The Solution:** Extract conditional UI logic into small helper functions.
+*   **Bad:** Writing a 10-line `if state.value: ...` block inside a 5-level deep component tree.
+*   **Good:** Call `_render_status_pill(state)` inside the tree, and define that function separately. This keeps the main render tree clean and makes syntax errors obvious.
+
+## Deployment and Operations
+
+### Handling Long-Running Requests (Timeouts)
+**The Problem:** Long-running generations (e.g., video) fail after 5 minutes (300s) even if the `Procfile` is correctly set to `--timeout 0`.
+**The Cause:** Cloud Run has a separate infrastructure-level timeout that defaults to 300 seconds. It forcefully terminates connections regardless of the application server's willingness to wait.
+**The Solution:** You must explicitly set the Cloud Run timeout during deployment.
+*   **Flag:** Add `--timeout 3600` (1 hour) to your `gcloud run deploy` command.
+*   **Procfile:** Ensure your `Procfile` still includes `--timeout 0` for Gunicorn.
+
+## Refactoring Protocols
+
+### Signature Change Protocol
+When modifying the arguments or return values of a core function (e.g., in `models/`):
+1.  **Search:** Perform a codebase-wide search (`search_file_content`) for the function name *before* making changes.
+2.  **Inventory:** List every file that calls this function.
+3.  **Update:** Update every call site to match the new signature. If a new return value is not needed in a specific context, explicitly ignore it (e.g., `uris, _, _ = generate(...)`).
+
+## Python Best Practices
+
+### Modern Type Hinting (PEP 585)
+**The Guideline:** In Python 3.9 and newer, use built-in collection types (`list`, `dict`, `tuple`, `set`) for type hinting instead of the deprecated `typing.List`, `typing.Dict`, etc.
+**Reference:** [PEP 585](https://peps.python.org/pep-0585/)
+*   **Bad:** `def get_names() -> List[str]:`
+*   **Good:** `def get_names() -> list[str]:`
