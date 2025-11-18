@@ -98,7 +98,8 @@ def generate_image_from_prompt_and_images(
     gcs_folder: str = "generated_images",
     file_prefix: str = "image",
     candidate_count: int = 1,
-) -> tuple[list[str], float]:
+    image_size: Optional[str] = None,
+) -> tuple[list[str], float, list[str]]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
     model_name = cfg.GEMINI_IMAGE_GEN_MODEL
@@ -109,15 +110,24 @@ def generate_image_from_prompt_and_images(
 
     contents = [types.Content(role="user", parts=parts)]
 
+    http_options = None
+    if cfg.GEMINI_IMAGE_GEN_API_BASE_URL:
+        http_options = {"base_url": cfg.GEMINI_IMAGE_GEN_API_BASE_URL}
+
     client = GeminiModelSetup.init(
         location=cfg.GEMINI_IMAGE_GEN_LOCATION,
+        http_options=http_options,
     )
 
     analytics_logger.info(
-        f"Generating image with model: {model_name}, aspect_ratio: {aspect_ratio}, num_images: {len(images)}"
+        f"Generating image with model: {model_name}, aspect_ratio: {aspect_ratio}, num_images: {len(images)}, image_size: {image_size}"
     )
     for i, img in enumerate(images):
         analytics_logger.info(f"  Image {i}: {img}")
+
+    image_config_args = {"aspect_ratio": aspect_ratio}
+    if image_size:
+        image_config_args["image_size"] = image_size
 
     with track_model_call(
         model_name=model_name,
@@ -128,19 +138,19 @@ def generate_image_from_prompt_and_images(
             model=model_name,
             contents=contents,
             config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"],
-                image_config=types.ImageConfig(
-                    aspect_ratio=aspect_ratio,
-                ),
-                # candiate_count=candidate_count,
+                response_modalities=["IMAGE", "TEXT"],
+                image_config=types.ImageConfig(**image_config_args),
+                # candidate_count=candidate_count,
             ),
         )
 
-    # end_time = time.time() # Removed manual timing
-    # execution_time = end_time - start_time # Removed manual timing
-    execution_time = 0  # Placeholder if needed downstream, though track_model_call handles logging it.
+    end_time = time.time()
+    execution_time = end_time - start_time
 
     gcs_uris = []
+    captions = []
+    current_text_buffer = ""
+
     if (
         response.candidates
         and response.candidates[0].content
@@ -150,10 +160,12 @@ def generate_image_from_prompt_and_images(
             f"generate_image_from_prompt_and_images: {len(response.candidates[0].content.parts)} parts"
         )
         for i, part in enumerate(response.candidates[0].content.parts):
-            if hasattr(part, "text"):
+            if hasattr(part, "text") and part.text:
                 analytics_logger.info(
                     f"generate_image_from_prompt_and_images (text): {part.text}"
                 )
+                current_text_buffer += part.text
+            
             if hasattr(part, "inline_data") and part.inline_data:
                 # Default to "image/png" if mime_type is missing
                 mime_type = "image/png"
@@ -169,9 +181,11 @@ def generate_image_from_prompt_and_images(
                     contents=part.inline_data.data,
                 )
                 gcs_uris.append(gcs_uri)
+                captions.append(current_text_buffer.strip())
+                current_text_buffer = "" # Reset buffer after associating with an image
     else:
         analytics_logger.warning("generate_image_from_prompt_and_images: no images")
-    return gcs_uris, execution_time
+    return gcs_uris, execution_time, captions
 
 
 @retry(
@@ -1031,7 +1045,7 @@ class CritiqueQuestionList(BaseModel):
 def generate_critique_questions(
     prompt: str, image_descriptions: list[str]
 ) -> list[str]:
-    """Generates 5 yes/no questions based on a prompt and image descriptions."""
+    """Generates 5 yes/no questions based on a prompt and optional image descriptions."""
     model_name = cfg.MODEL_ID
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
@@ -1039,11 +1053,15 @@ def generate_critique_questions(
         temperature=0.5,
     )
 
-    meta_prompt = "Using the following prompt and the description of each image, come up with 5 yes/no questions that we could ask of the resulting image that would identify whether the generated images meets the intent of the user based upon the following:\n\n"
-    meta_prompt += f"Prompt: {prompt}\n\n"
+    if image_descriptions:
+        meta_prompt = "Using the following prompt and the description of each image, come up with 5 yes/no questions that we could ask of the resulting image that would identify whether the generated images meets the intent of the user based upon the following:\n\n"
+        meta_prompt += f"Prompt: {prompt}\n\n"
 
-    for i, desc in enumerate(image_descriptions):
-        meta_prompt += f"Image {i + 1} description: {desc}\n"
+        for i, desc in enumerate(image_descriptions):
+            meta_prompt += f"Image {i + 1} description: {desc}\n"
+    else:
+        meta_prompt = "Using the following prompt, come up with 5 yes/no questions that we could ask of a generated image to identify whether it meets the intent of the user:\n\n"
+        meta_prompt += f"Prompt: {prompt}\n\n"
 
     with track_model_call(model_name=model_name, task="generate_critique_questions"):
         response = client.models.generate_content(

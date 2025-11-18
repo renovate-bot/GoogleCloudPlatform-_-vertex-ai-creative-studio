@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.2.10" # shop the look upload fix
+    VERSION: str = "1.3.1" # gemini image
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
@@ -71,6 +71,9 @@ class Default:
     )
     GEMINI_IMAGE_GEN_LOCATION: str = os.environ.get(
         "GEMINI_IMAGE_GEN_LOCATION", "global",
+    )
+    GEMINI_IMAGE_GEN_API_BASE_URL: Optional[str] = os.environ.get(
+        "GEMINI_IMAGE_GEN_API_BASE_URL"
     )
 
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
