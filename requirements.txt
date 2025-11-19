@@ -93,7 +93,7 @@ google-auth==2.43.0
     #   google-cloud-storage
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.127.0
+google-cloud-aiplatform==1.128.0
     # via veo-app (pyproject.toml)
 google-cloud-appengine-logging==1.7.0
     # via google-cloud-logging
