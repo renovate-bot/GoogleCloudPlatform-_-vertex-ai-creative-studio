@@ -19,7 +19,7 @@ from dataclasses import field
 
 import mesop as me
 
-from common.analytics import log_ui_click, track_model_call
+from common.analytics import log_ui_click, track_model_call, analytics_logger
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import store_to_gcs
 from common.utils import create_display_url, https_url_to_gcs_uri
@@ -472,32 +472,33 @@ def gemini_image_gen_page_content():
                                     try:
                                         info = json.loads(state.grounding_info)
                                         
-                                        # Render Search Entry Point
-                                        if info.get("search_entry_point") and "rendered_content" in info["search_entry_point"]:
-                                            search_entry_point(
-                                                html_content=info["search_entry_point"]["rendered_content"],
-                                                theme_mode=app_state.theme_mode,
-                                            )
+                                        if info:
+                                            # Render Search Entry Point
+                                            if info.get("search_entry_point") and "rendered_content" in info["search_entry_point"]:
+                                                search_entry_point(
+                                                    html_content=info["search_entry_point"]["rendered_content"],
+                                                    theme_mode=app_state.theme_mode,
+                                                )
 
-                                        # Render Grounding Chunks as Links
-                                        if "grounding_chunks" in info and isinstance(info["grounding_chunks"], list):
-                                            me.text("Sources", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
-                                            with me.box(style=me.Style(display="flex", flex_direction="column", gap=4, margin=me.Margin(bottom=16))):
-                                                for chunk in info["grounding_chunks"]:
-                                                    if "web" in chunk:
-                                                        web = chunk["web"]
-                                                        title = web.get("title", "Source")
-                                                        uri = web.get("uri", "#")
-                                                        me.link(
-                                                            text=title,
-                                                            url=uri,
-                                                            # target="_blank", # Removed due to error
-                                                            style=me.Style(
-                                                                color=me.theme_var("primary"),
-                                                                text_decoration="underline",
-                                                                font_size=14,
+                                            # Render Grounding Chunks as Links
+                                            if "grounding_chunks" in info and isinstance(info["grounding_chunks"], list):
+                                                me.text("Sources", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
+                                                with me.box(style=me.Style(display="flex", flex_direction="column", gap=4, margin=me.Margin(bottom=16))):
+                                                    for chunk in info["grounding_chunks"]:
+                                                        if "web" in chunk:
+                                                            web = chunk["web"]
+                                                            title = web.get("title", "Source")
+                                                            uri = web.get("uri", "#")
+                                                            me.link(
+                                                                text=title,
+                                                                url=uri,
+                                                                # target="_blank", # Removed due to error
+                                                                style=me.Style(
+                                                                    color=me.theme_var("primary"),
+                                                                    text_decoration="underline",
+                                                                    font_size=14,
+                                                                )
                                                             )
-                                                        )
 
                                     except Exception as e:
                                         me.text(f"Error parsing grounding info: {e}")
@@ -573,32 +574,33 @@ def gemini_image_gen_page_content():
                                         try:
                                             info = json.loads(state.grounding_info)
                                             
-                                            # Render Search Entry Point
-                                            if info.get("search_entry_point") and "rendered_content" in info["search_entry_point"]:
-                                                search_entry_point(
-                                                    html_content=info["search_entry_point"]["rendered_content"],
-                                                    theme_mode=app_state.theme_mode,
-                                                )
+                                            if info:
+                                                # Render Search Entry Point
+                                                if info.get("search_entry_point") and "rendered_content" in info["search_entry_point"]:
+                                                    search_entry_point(
+                                                        html_content=info["search_entry_point"]["rendered_content"],
+                                                        theme_mode=app_state.theme_mode,
+                                                    )
 
-                                            # Render Grounding Chunks as Links
-                                            if "grounding_chunks" in info and isinstance(info["grounding_chunks"], list):
-                                                me.text("Sources", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
-                                                with me.box(style=me.Style(display="flex", flex_direction="column", gap=4, margin=me.Margin(bottom=16))):
-                                                    for chunk in info["grounding_chunks"]:
-                                                        if "web" in chunk:
-                                                            web = chunk["web"]
-                                                            title = web.get("title", "Source")
-                                                            uri = web.get("uri", "#")
-                                                            me.link(
-                                                                text=title,
-                                                                url=uri,
-                                                                # target="_blank", # Removed due to error
-                                                                style=me.Style(
-                                                                    color=me.theme_var("primary"),
-                                                                    text_decoration="underline",
-                                                                    font_size=14,
+                                                # Render Grounding Chunks as Links
+                                                if "grounding_chunks" in info and isinstance(info["grounding_chunks"], list):
+                                                    me.text("Sources", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
+                                                    with me.box(style=me.Style(display="flex", flex_direction="column", gap=4, margin=me.Margin(bottom=16))):
+                                                        for chunk in info["grounding_chunks"]:
+                                                            if "web" in chunk:
+                                                                web = chunk["web"]
+                                                                title = web.get("title", "Source")
+                                                                uri = web.get("uri", "#")
+                                                                me.link(
+                                                                    text=title,
+                                                                    url=uri,
+                                                                    # target="_blank", # Removed due to error
+                                                                    style=me.Style(
+                                                                        color=me.theme_var("primary"),
+                                                                        text_decoration="underline",
+                                                                        font_size=14,
+                                                                    )
                                                                 )
-                                                            )
 
                                         except Exception as e:
                                             me.text(f"Error parsing grounding info: {e}")
@@ -921,9 +923,9 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
 
         state.generation_time = execution_time
         state.grounding_info = json.dumps(grounding_info) if grounding_info else ""
-        
+
         if grounding_info:
-            print(f"Grounding Metadata Keys: {list(grounding_info.keys())}")
+            analytics_logger.info(f"Grounding Metadata Keys: {list(grounding_info.keys())}")
 
         if not gcs_uris:
             item = MediaItem(
