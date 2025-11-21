@@ -473,7 +473,7 @@ def gemini_image_gen_page_content():
                                         info = json.loads(state.grounding_info)
                                         
                                         # Render Search Entry Point
-                                        if "search_entry_point" in info and "rendered_content" in info["search_entry_point"]:
+                                        if info.get("search_entry_point") and "rendered_content" in info["search_entry_point"]:
                                             search_entry_point(
                                                 html_content=info["search_entry_point"]["rendered_content"],
                                                 theme_mode=app_state.theme_mode,
@@ -573,27 +573,32 @@ def gemini_image_gen_page_content():
                                         try:
                                             info = json.loads(state.grounding_info)
                                             
-                                            # Render Search Queries as Chips
-                                            if "web_search_queries" in info and isinstance(info["web_search_queries"], list):
-                                                me.text("Search Queries", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
-                                                with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=8, margin=me.Margin(bottom=16))):
-                                                    for query in info["web_search_queries"]:
-                                                        me.link(
-                                                            text=query,
-                                                            url=f"https://www.google.com/search?q={query}",
-                                                            target="_blank",
-                                                            style=me.Style(
-                                                                background=me.theme_var("surface-container-high"),
-                                                                color=me.theme_var("on-surface"),
-                                                                padding=me.Padding(top=6, bottom=6, left=12, right=12),
-                                                                border_radius=16,
-                                                                text_decoration="none",
-                                                                font_size=14,
+                                            # Render Search Entry Point
+                                            if info.get("search_entry_point") and "rendered_content" in info["search_entry_point"]:
+                                                search_entry_point(
+                                                    html_content=info["search_entry_point"]["rendered_content"],
+                                                    theme_mode=app_state.theme_mode,
+                                                )
+
+                                            # Render Grounding Chunks as Links
+                                            if "grounding_chunks" in info and isinstance(info["grounding_chunks"], list):
+                                                me.text("Sources", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
+                                                with me.box(style=me.Style(display="flex", flex_direction="column", gap=4, margin=me.Margin(bottom=16))):
+                                                    for chunk in info["grounding_chunks"]:
+                                                        if "web" in chunk:
+                                                            web = chunk["web"]
+                                                            title = web.get("title", "Source")
+                                                            uri = web.get("uri", "#")
+                                                            me.link(
+                                                                text=title,
+                                                                url=uri,
+                                                                # target="_blank", # Removed due to error
+                                                                style=me.Style(
+                                                                    color=me.theme_var("primary"),
+                                                                    text_decoration="underline",
+                                                                    font_size=14,
+                                                                )
                                                             )
-                                                        )
-                                            
-                                            # Temporary Debug: Show keys to verify structure
-                                            me.text(f"Debug - Available keys: {list(info.keys())}", style=me.Style(font_size=10, color="grey"))
 
                                         except Exception as e:
                                             me.text(f"Error parsing grounding info: {e}")
