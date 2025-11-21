@@ -379,7 +379,7 @@ requests==2.32.5
     #   pooch
 rsa==4.9.1
     # via google-auth
-ruff==0.14.5
+ruff==0.14.6
     # via veo-app (pyproject.toml)
 scikit-image==0.25.2
     # via veo-app (pyproject.toml)
