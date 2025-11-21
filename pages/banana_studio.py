@@ -1229,7 +1229,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             # num_input_images=len(input_gcs_uris),
             # num_images_generated=state.num_images_to_generate,
         ):
-            gcs_uris, execution_time, captions = generate_image_from_prompt_and_images(
+            gcs_uris, execution_time, captions, _ = generate_image_from_prompt_and_images(
                 prompt=final_prompt,
                 images=input_gcs_uris,
                 aspect_ratio=state.aspect_ratio,

@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "https://esm.sh/lit";
+import { LitElement, css, html } from "https://cdn.jsdelivr.net/npm/lit/+esm";
 import { SvgIcon } from "../svg_icon/svg_icon.js";
 import "../download_button/download_button.js"; // Import the download button component
 import "../convert_to_gif_button/convert_to_gif_button.js";

@@ -86,7 +86,7 @@ class PageState:
     gif_display_url: str = ""
     is_converting_gif: bool = False
 
-    veo_model: str = "2.0"
+    veo_model: str = "3.1-fast"
     veo_prompt_input: str = ""
 
     # I2V reference Image

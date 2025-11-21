@@ -30,6 +30,7 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.pill import pill
+from components.search_entry_point.search_entry_point import search_entry_point
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from config.banana_presets import IMAGE_ACTION_PRESETS
@@ -73,11 +74,16 @@ class PageState:
     num_images_to_generate: int = 0
     suggested_transformations: list[dict] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_suggesting_transformations: bool = False
+    use_search: bool = False
+    grounding_info: str = ""
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
 
 
+def on_search_change(e: me.CheckboxChangeEvent):
+    """Updates the use_search state."""
+    me.state(PageState).use_search = e.checked
 
 
 with open("config/about_content.json", "r") as f:
@@ -95,6 +101,7 @@ with open("config/about_content.json", "r") as f:
 def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
+    app_state = me.state(AppState)
     current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
     model_config = get_gemini_image_model_config(current_model_name)
 
@@ -219,18 +226,26 @@ def gemini_image_gen_page_content():
 
                 max_output_images = model_config.max_output_images if model_config else 1
 
-                if max_output_images > 1:
-                    me.select(
-                        label="Number of Images",
-                        options=[me.SelectOption(label="Auto", value="0")]
-                        + [
-                            me.SelectOption(label=str(i), value=str(i))
-                            for i in range(1, max_output_images + 1)
-                        ],
-                        on_selection_change=on_num_images_change,
-                        value=str(state.num_images_to_generate),
-                        style=me.Style(width="100%", margin=me.Margin(bottom=16)),
-                    )
+                with me.box(style=me.Style(display="flex", flex_direction="row", gap=16, align_items="center", margin=me.Margin(bottom=16))):
+                    if max_output_images > 1:
+                        me.select(
+                            label="Number of Images",
+                            options=[me.SelectOption(label="Auto", value="0")]
+                            + [
+                                me.SelectOption(label=str(i), value=str(i))
+                                for i in range(1, max_output_images + 1)
+                            ],
+                            on_selection_change=on_num_images_change,
+                            value=str(state.num_images_to_generate),
+                            style=me.Style(flex_grow=1),
+                        )
+                    
+                    if model_config and model_config.supports_search:
+                        me.checkbox(
+                            label="Use Search",
+                            checked=state.use_search,
+                            on_change=on_search_change,
+                        )
 
                 with me.box(
                     style=me.Style(
@@ -426,12 +441,14 @@ def gemini_image_gen_page_content():
                     me.text("No images returned.")
                 elif state.generated_image_urls:
                     # This box is to override the parent's centering styles
+
                     with me.box(
                         style=me.Style(
                             width="100%",
                             height="100%",
                             display="flex",
                             flex_direction="column",
+                            overflow_y="auto",
                         )
                     ):
                         if len(state.generated_image_urls) == 1:
@@ -449,6 +466,43 @@ def gemini_image_gen_page_content():
                             if state.generated_resolution:
                                 with me.box(style=me.Style(margin=me.Margin(top=8))):
                                     pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
+                            
+                            if state.grounding_info:
+                                with me.box(style=me.Style(margin=me.Margin(top=16), width="100%")):
+                                    try:
+                                        info = json.loads(state.grounding_info)
+                                        
+                                        # Render Search Entry Point
+                                        if "search_entry_point" in info and "rendered_content" in info["search_entry_point"]:
+                                            search_entry_point(
+                                                html_content=info["search_entry_point"]["rendered_content"],
+                                                theme_mode=app_state.theme_mode,
+                                            )
+
+                                        # Render Grounding Chunks as Links
+                                        if "grounding_chunks" in info and isinstance(info["grounding_chunks"], list):
+                                            me.text("Sources", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
+                                            with me.box(style=me.Style(display="flex", flex_direction="column", gap=4, margin=me.Margin(bottom=16))):
+                                                for chunk in info["grounding_chunks"]:
+                                                    if "web" in chunk:
+                                                        web = chunk["web"]
+                                                        title = web.get("title", "Source")
+                                                        uri = web.get("uri", "#")
+                                                        me.link(
+                                                            text=title,
+                                                            url=uri,
+                                                            # target="_blank", # Removed due to error
+                                                            style=me.Style(
+                                                                color=me.theme_var("primary"),
+                                                                text_decoration="underline",
+                                                                font_size=14,
+                                                            )
+                                                        )
+
+                                    except Exception as e:
+                                        me.text(f"Error parsing grounding info: {e}")
+                                        me.text(state.grounding_info)
+
                         else:
                             # Display multiple images in a gallery view
                             with me.box(
@@ -513,6 +567,37 @@ def gemini_image_gen_page_content():
                                                     border_radius=6,
                                                 ),
                                             )
+                                
+                                if state.grounding_info:
+                                    with me.box(style=me.Style(margin=me.Margin(top=16), width="100%")):
+                                        try:
+                                            info = json.loads(state.grounding_info)
+                                            
+                                            # Render Search Queries as Chips
+                                            if "web_search_queries" in info and isinstance(info["web_search_queries"], list):
+                                                me.text("Search Queries", style=me.Style(font_weight="bold", margin=me.Margin(bottom=8)))
+                                                with me.box(style=me.Style(display="flex", flex_wrap="wrap", gap=8, margin=me.Margin(bottom=16))):
+                                                    for query in info["web_search_queries"]:
+                                                        me.link(
+                                                            text=query,
+                                                            url=f"https://www.google.com/search?q={query}",
+                                                            target="_blank",
+                                                            style=me.Style(
+                                                                background=me.theme_var("surface-container-high"),
+                                                                color=me.theme_var("on-surface"),
+                                                                padding=me.Padding(top=6, bottom=6, left=12, right=12),
+                                                                border_radius=16,
+                                                                text_decoration="none",
+                                                                font_size=14,
+                                                            )
+                                                        )
+                                            
+                                            # Temporary Debug: Show keys to verify structure
+                                            me.text(f"Debug - Available keys: {list(info.keys())}", style=me.Style(font_size=10, color="grey"))
+
+                                        except Exception as e:
+                                            me.text(f"Error parsing grounding info: {e}")
+                                            me.text(state.grounding_info)
                 else:
                     # Placeholder
                     with me.box(
@@ -818,7 +903,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             #num_input_images=len(input_gcs_uris),
             #num_images_generated=state.num_images_to_generate,
         ):
-            gcs_uris, execution_time, captions = generate_image_from_prompt_and_images(
+            gcs_uris, execution_time, captions, grounding_info = generate_image_from_prompt_and_images(
                 prompt=final_prompt,
                 images=input_gcs_uris,
                 aspect_ratio=state.aspect_ratio,
@@ -826,9 +911,14 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 file_prefix="gemini_image",
                 candidate_count=1,
                 image_size=state.image_size,
+                use_search=state.use_search,
             )
 
         state.generation_time = execution_time
+        state.grounding_info = json.dumps(grounding_info) if grounding_info else ""
+        
+        if grounding_info:
+            print(f"Grounding Metadata Keys: {list(grounding_info.keys())}")
 
         if not gcs_uris:
             item = MediaItem(
@@ -842,6 +932,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 related_media_item_id=state.previous_media_item_id,
                 error_message="No images returned.",
                 generation_time=execution_time,
+                grounding_info=state.grounding_info,
             )
             add_media_item_to_firestore(item)
             state.previous_media_item_id = item.id
@@ -871,6 +962,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 model=cfg().GEMINI_IMAGE_GEN_MODEL,
                 related_media_item_id=state.previous_media_item_id,
                 generation_time=execution_time,
+                grounding_info=state.grounding_info,
             )
             add_media_item_to_firestore(item)
             state.previous_media_item_id = item.id

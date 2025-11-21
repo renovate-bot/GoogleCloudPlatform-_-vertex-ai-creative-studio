@@ -37,6 +37,21 @@ def page():
             "route": "/retro_games",
         },
         {
+            "title": "Storyboarder",
+            "description": "Create a video storyboard from a prompt.",
+            "route": "/storyboarder",
+        },
+        {
+            "title": "Character Asset Sheet",
+            "description": "Generate consistent character sheets and scenarios.",
+            "route": "/character_sheet",
+        },
+        {
+            "title": "Brand Adherence",
+            "description": "Generate on-brand images using PDF guidelines.",
+            "route": "/brand_adherence",
+        },
+        {
             "title": "Banana Studio",
             "description": "An experimental Gemini Image Generation page.",
             "route": "/banana-studio",

@@ -1,4 +1,4 @@
-import { LitElement, css, html } from 'https://esm.sh/lit';
+import { LitElement, css, html } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
 
 export class SvgIcon extends LitElement {
   static properties = {

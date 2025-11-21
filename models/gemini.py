@@ -17,7 +17,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 import requests
 from google.cloud.aiplatform import telemetry
@@ -99,7 +99,8 @@ def generate_image_from_prompt_and_images(
     file_prefix: str = "image",
     candidate_count: int = 1,
     image_size: Optional[str] = None,
-) -> tuple[list[str], float, list[str]]:
+    use_search: bool = False,
+) -> tuple[list[str], float, list[str], Optional[Dict[str, Any]]]:
     """Generates images from a prompt and a list of images."""
     start_time = time.time()
     model_name = cfg.GEMINI_IMAGE_GEN_MODEL
@@ -120,7 +121,7 @@ def generate_image_from_prompt_and_images(
     )
 
     analytics_logger.info(
-        f"Generating image with model: {model_name}, aspect_ratio: {aspect_ratio}, num_images: {len(images)}, image_size: {image_size}"
+        f"Generating image with model: {model_name}, aspect_ratio: {aspect_ratio}, num_images: {len(images)}, image_size: {image_size}, use_search: {use_search}"
     )
     for i, img in enumerate(images):
         analytics_logger.info(f"  Image {i}: {img}")
@@ -128,6 +129,10 @@ def generate_image_from_prompt_and_images(
     image_config_args = {"aspect_ratio": aspect_ratio}
     if image_size:
         image_config_args["image_size"] = image_size
+
+    tools = []
+    if use_search:
+        tools.append(types.Tool(google_search=types.GoogleSearch()))
 
     with track_model_call(
         model_name=model_name,
@@ -140,6 +145,7 @@ def generate_image_from_prompt_and_images(
             config=types.GenerateContentConfig(
                 response_modalities=["IMAGE", "TEXT"],
                 image_config=types.ImageConfig(**image_config_args),
+                tools=tools if tools else None,
                 # candidate_count=candidate_count,
             ),
         )
@@ -150,42 +156,48 @@ def generate_image_from_prompt_and_images(
     gcs_uris = []
     captions = []
     current_text_buffer = ""
+    grounding_info = None
 
-    if (
-        response.candidates
-        and response.candidates[0].content
-        and response.candidates[0].content.parts
-    ):
-        analytics_logger.info(
-            f"generate_image_from_prompt_and_images: {len(response.candidates[0].content.parts)} parts"
-        )
-        for i, part in enumerate(response.candidates[0].content.parts):
-            if hasattr(part, "text") and part.text:
-                analytics_logger.info(
-                    f"generate_image_from_prompt_and_images (text): {part.text}"
-                )
-                current_text_buffer += part.text
-            
-            if hasattr(part, "inline_data") and part.inline_data:
-                # Default to "image/png" if mime_type is missing
-                mime_type = "image/png"
-                if (
-                    hasattr(part.inline_data, "mime_type")
-                    and part.inline_data.mime_type
-                ):
-                    mime_type = part.inline_data.mime_type
-                gcs_uri = store_to_gcs(
-                    folder=gcs_folder,
-                    file_name=f"{file_prefix}_{uuid.uuid4()}_{i}.png",
-                    mime_type=mime_type,
-                    contents=part.inline_data.data,
-                )
-                gcs_uris.append(gcs_uri)
-                captions.append(current_text_buffer.strip())
-                current_text_buffer = "" # Reset buffer after associating with an image
+    if response.candidates:
+        candidate = response.candidates[0]
+        if candidate.grounding_metadata:
+            try:
+                # google-genai types usually have model_dump()
+                grounding_info = candidate.grounding_metadata.model_dump()
+            except Exception as e:
+                analytics_logger.warning(f"Failed to extract grounding metadata: {e}")
+
+        if candidate.content and candidate.content.parts:
+            analytics_logger.info(
+                f"generate_image_from_prompt_and_images: {len(candidate.content.parts)} parts"
+            )
+            for i, part in enumerate(candidate.content.parts):
+                if hasattr(part, "text") and part.text:
+                    analytics_logger.info(
+                        f"generate_image_from_prompt_and_images (text): {part.text}"
+                    )
+                    current_text_buffer += part.text
+                
+                if hasattr(part, "inline_data") and part.inline_data:
+                    # Default to "image/png" if mime_type is missing
+                    mime_type = "image/png"
+                    if (
+                        hasattr(part.inline_data, "mime_type")
+                        and part.inline_data.mime_type
+                    ):
+                        mime_type = part.inline_data.mime_type
+                    gcs_uri = store_to_gcs(
+                        folder=gcs_folder,
+                        file_name=f"{file_prefix}_{uuid.uuid4()}_{i}.png",
+                        mime_type=mime_type,
+                        contents=part.inline_data.data,
+                    )
+                    gcs_uris.append(gcs_uri)
+                    captions.append(current_text_buffer.strip())
+                    current_text_buffer = "" # Reset buffer after associating with an image
     else:
         analytics_logger.warning("generate_image_from_prompt_and_images: no images")
-    return gcs_uris, execution_time, captions
+    return gcs_uris, execution_time, captions, grounding_info
 
 
 @retry(

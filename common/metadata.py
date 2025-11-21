@@ -101,6 +101,7 @@ class MediaItem:
         None  # Seed used for generation (also potentially for video/audio)
     )
     critique: Optional[str] = None  # Gemini-generated critique for images
+    grounding_info: Optional[str] = None  # Grounding metadata from search, stored as JSON string
 
     # Music specific
     # duration is shared with Video
@@ -154,6 +155,8 @@ class MediaItem:
         # This handles cases where raw data from Firestore might be a dict.
         if isinstance(self.audio_analysis, dict):
             self.audio_analysis = json.dumps(self.audio_analysis)
+        if isinstance(self.grounding_info, dict):
+            self.grounding_info = json.dumps(self.grounding_info)
 
 
 def add_media_item_to_firestore(item: MediaItem):
@@ -326,6 +329,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         num_images=num_images,
         seed=seed,
         critique=raw_item_data.get("critique"),
+        grounding_info=raw_item_data.get("grounding_info"),
         audio_analysis=raw_item_data.get("audio_analysis"),
         media_type=raw_item_data.get("media_type"),
         source_character_images=raw_item_data.get("source_character_images", []),
