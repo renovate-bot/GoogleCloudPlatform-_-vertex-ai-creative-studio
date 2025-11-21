@@ -160,7 +160,7 @@ class QA(BaseModel):
 class QAList(BaseModel):
     qas: list[QA]
 
-def _generate_questions_from_prompt(prompt_template: str, **kwargs) -> list[str]:
+def _generate_questions_from_prompt(prompt_template: str, image_uri: str | None = None, **kwargs) -> list[str]:
     """Helper to generate questions from a given prompt template."""
     cfg = Default()
     model_name = cfg.MODEL_ID
@@ -170,8 +170,16 @@ def _generate_questions_from_prompt(prompt_template: str, **kwargs) -> list[str]
         temperature=0.2,
     )
     prompt = prompt_template.format(**kwargs)
+    
+    if image_uri:
+        prompt += "\n\n**REFERENCE IMAGE:**\nA reference image has been provided. Use this image to extract additional visual criteria (e.g., specific color shades, logo placement style, lighting mood) that should be enforced."
+
+    contents = [prompt]
+    if image_uri:
+        contents.append(types.Part.from_uri(file_uri=image_uri, mime_type="image/png"))
+
     response = client.models.generate_content(
-        model=model_name, contents=[prompt], config=config
+        model=model_name, contents=contents, config=config
     )
     try:
         qa_list = QAList.model_validate_json(response.text)
@@ -189,50 +197,34 @@ def generate_dsg_gqm_questions(source_prompt: str) -> list[str]:
         DSG_RUBRIC_GENERATION_PROMPT, source_prompt=source_prompt
     )
 
-def generate_bas_questions(prompt: str, additional_guidance: str) -> list[str]:
-
+def generate_bas_questions(prompt: str, additional_guidance: str, image_uri: str | None = None) -> list[str]:
     """Generates BAS questions from a prompt."""
-
     if not prompt:
-
         return []
-
     # Use the same prompt for both criteria and additional guidance for simplicity
-
     return _generate_questions_from_prompt(
-
-        BAS_RUBRIC_GENERATION_PROMPT, criteria=prompt, additional_guidance=additional_guidance
-
+        BAS_RUBRIC_GENERATION_PROMPT, 
+        criteria=prompt, 
+        additional_guidance=additional_guidance,
+        image_uri=image_uri
     )
 
 
-
-
-
-def generate_guideline_criteria(prompt: str, additional_guidance: str) -> dict[str, list[str]]:
-
+def generate_guideline_criteria(prompt: str, additional_guidance: str, reference_image_uri: str | None = None) -> dict[str, list[str]]:
     """Generates a dictionary of critique questions based on a prompt."""
-
     if not prompt:
-
         return {}
 
-
-
     general_criteria = generate_critique_questions(prompt=prompt, image_descriptions=[])
-
     dsg_gqm_criteria = generate_dsg_gqm_questions(source_prompt=prompt)
-
-    bas_criteria = generate_bas_questions(prompt=prompt, additional_guidance=additional_guidance)
-
-
+    bas_criteria = generate_bas_questions(
+        prompt=prompt, 
+        additional_guidance=additional_guidance,
+        image_uri=reference_image_uri
+    )
 
     return {
-
         "General": general_criteria,
-
         "DSG/GQM": dsg_gqm_criteria,
-
         "Brand Alignment (BAS)": bas_criteria,
-
     }

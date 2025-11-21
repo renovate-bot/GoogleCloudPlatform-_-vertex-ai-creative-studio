@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { LitElement, html, css } from 'https://esm.sh/lit';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
 
 const GCS_PUBLIC_URL_PREFIX = 'https://storage.cloud.google.com/';
 

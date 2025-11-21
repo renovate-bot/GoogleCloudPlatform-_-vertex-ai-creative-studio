@@ -39,6 +39,7 @@ class GeminiImageModelConfig:
     # Future-proofing
     supports_negative_prompt: bool = False
     supports_person_generation_filter: bool = True
+    supports_search: bool = False
 
 
 # Single source of truth
@@ -51,6 +52,7 @@ GEMINI_IMAGE_MODELS: List[GeminiImageModelConfig] = [
         max_output_images=1,
         requires_base_url=False,
         supported_image_sizes=["1K", "2K"],
+        supports_search=False,
     ),
     GeminiImageModelConfig(
         version_id="3.0-pro-preview",
@@ -60,9 +62,9 @@ GEMINI_IMAGE_MODELS: List[GeminiImageModelConfig] = [
         max_output_images=10,
         requires_base_url=True,
         supported_image_sizes=["1K", "2K", "4K"],
+        supports_search=True,
     ),
 ]
-
 
 def get_gemini_image_model_config(
     model_name_or_version: str,

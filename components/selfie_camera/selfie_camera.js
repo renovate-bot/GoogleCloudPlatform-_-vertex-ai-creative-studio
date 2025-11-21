@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { LitElement, css, html } from "https://esm.sh/lit";
-import 'https://esm.sh/@material/mwc-button';
+import { LitElement, css, html } from "https://cdn.jsdelivr.net/npm/lit/+esm";
+import 'https://cdn.jsdelivr.net/npm/@material/mwc-button/+esm';
 
 class SelfieCamera extends LitElement {
   static styles = css`
