@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { LitElement, html } from 'https://esm.sh/lit';
+import { LitElement, html } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
 
 class PixieCompositor extends LitElement {
   // --- Properties (Inputs from Mesop) ---

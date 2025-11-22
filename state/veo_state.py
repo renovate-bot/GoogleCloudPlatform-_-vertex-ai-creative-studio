@@ -23,7 +23,7 @@ class PageState:
     
     # pylint: disable=E3701:invalid-field-call
 
-    veo_model: str = "2.0"
+    veo_model: str = "3.1-fast"
     veo_prompt_input: str = ""
     veo_prompt_placeholder: str = ""
     veo_prompt_textarea_key: int = 0
