@@ -21,6 +21,7 @@ node_modules
 dist
 local/  
 recaps/
+plans/
 
 ### Terraform ###
 # Local .terraform directories

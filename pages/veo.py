@@ -320,7 +320,7 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.aspect_ratio = "16:9"
     state.is_loading = False
     state.auto_enhance_prompt = False
-    state.veo_model = "2.0"
+    state.veo_model = "3.1-fast"
     # Clear all image types
     state.reference_image_gcs = None
     state.reference_image_uri = None

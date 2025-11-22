@@ -1,4 +1,4 @@
-import { LitElement, css, html } from 'https://esm.sh/lit';
+import { LitElement, css, html } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
 import { SvgIcon } from '../svg_icon/svg_icon.js';
 
 class WelcomeHero extends LitElement {

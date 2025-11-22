@@ -1,4 +1,4 @@
-import { LitElement } from 'https://esm.sh/lit';
+import { LitElement } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
 
 class ThemeManager extends LitElement {
   static get properties() {

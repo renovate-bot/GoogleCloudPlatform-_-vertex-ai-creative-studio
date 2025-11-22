@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { LitElement, html, css } from 'https://esm.sh/lit';
-import 'https://esm.sh/@material/mwc-button';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
+import 'https://cdn.jsdelivr.net/npm/@material/mwc-button/+esm';
 
 class DownloadButton extends LitElement {
   static get properties() {

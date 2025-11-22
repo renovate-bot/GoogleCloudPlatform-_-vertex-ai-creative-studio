@@ -92,12 +92,16 @@ class MediaItem:
     modifiers: List[str] = field(
         default_factory=list
     )  # e.g., ["photorealistic", "wide angle"]
+    captions: List[str] = field(
+        default_factory=list
+    )  # Captions or narrative text associated with generated images
     negative_prompt: Optional[str] = None
     num_images: Optional[int] = None  # Number of images generated in a batch
     seed: Optional[int] = (
         None  # Seed used for generation (also potentially for video/audio)
     )
     critique: Optional[str] = None  # Gemini-generated critique for images
+    grounding_info: Optional[str] = None  # Grounding metadata from search, stored as JSON string
 
     # Music specific
     # duration is shared with Video
@@ -144,12 +148,15 @@ class MediaItem:
     # Upscale specific
     original_resolution: Optional[str] = None
     upscale_factor: Optional[str] = None
+    image_size: Optional[str] = None
 
     def __post_init__(self):
         # Ensure audio_analysis is always a JSON string for state serialization.
         # This handles cases where raw data from Firestore might be a dict.
         if isinstance(self.audio_analysis, dict):
             self.audio_analysis = json.dumps(self.audio_analysis)
+        if isinstance(self.grounding_info, dict):
+            self.grounding_info = json.dumps(self.grounding_info)
 
 
 def add_media_item_to_firestore(item: MediaItem):
@@ -318,9 +325,11 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         enhanced_prompt_used=raw_item_data.get("enhanced_prompt_used"),
         comment=raw_item_data.get("comment"),
         modifiers=raw_item_data.get("modifiers", []),
+        captions=raw_item_data.get("captions", []),
         num_images=num_images,
         seed=seed,
         critique=raw_item_data.get("critique"),
+        grounding_info=raw_item_data.get("grounding_info"),
         audio_analysis=raw_item_data.get("audio_analysis"),
         media_type=raw_item_data.get("media_type"),
         source_character_images=raw_item_data.get("source_character_images", []),
@@ -345,6 +354,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         product_image_gcs=raw_item_data.get("product_image_gcs"),
         original_resolution=raw_item_data.get("original_resolution"),
         upscale_factor=raw_item_data.get("upscale_factor"),
+        image_size=raw_item_data.get("image_size"),
         raw_data=raw_item_data,
     )
     return media_item

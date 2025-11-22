@@ -1,5 +1,5 @@
-import { LitElement, css, html } from 'https://esm.sh/lit';
-import { styleMap } from 'https://esm.sh/lit/directives/style-map.js';
+import { LitElement, css, html } from 'https://cdn.jsdelivr.net/npm/lit/+esm';
+import { styleMap } from 'https://cdn.jsdelivr.net/npm/lit/directives/style-map.js/+esm';
 import { SvgIcon } from '../svg_icon/svg_icon.js';
 
 class InteractiveTile extends LitElement {

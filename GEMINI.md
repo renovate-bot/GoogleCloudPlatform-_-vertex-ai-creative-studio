@@ -14,14 +14,32 @@ See also AGENTS.md for more information.
 - **CRITICAL: READ, DON'T ASSUME, CUSTOM COMPONENT APIs.** This project contains many custom components in the `components/` directory. Their function signatures (the parameters they accept) are defined *within this project* and may not match your assumptions or standard Mesop patterns. Before using a custom component, you **MUST** read its source file to understand its exact API. Failure to do so will lead to `TypeError` exceptions (e.g., "unexpected keyword argument"). This is the most common and avoidable source of errors.
 - **NEVER use `me.EventHandler` as a type hint.** It does not exist in the Mesop API and will cause an `AttributeError`. The correct type hint for event handler callbacks is `typing.Callable`.
 - **The `key` parameter is for native Mesop components ONLY.** Do not add a `key` parameter to custom `@me.component` functions unless you have specifically programmed them to accept and use it. To differentiate between multiple instances of a custom component, pass a unique identifier to a *different*, dedicated prop (e.g., `component_id: str`) if needed. For event differentiation, the `key` should be placed on the clickable native component *inside* your custom component.
-- **The `key` parameter is for native Mesop components ONLY.** Do not add a `key` parameter to custom `@me.component` functions unless you have specifically programmed them to accept and use it. To differentiate between multiple instances of a custom component, pass a unique identifier to a *different*, dedicated prop (e.g., `component_id: str`) if needed. For event differentiation, the `key` should be placed on the clickable native component *inside* your custom component.
 - **`me.Style` has no `combine` method.** Mesop `Style` objects are immutable and do not have a built-in merge or combine function. To override default styles, you must manually construct a new `me.Style` object, property by property, giving precedence to the custom styles.
 - **`@me.content_component` must always render `me.slot()`**. A function decorated with `@me.content_component` must have a code path that calls `me.slot()`. Do not use an early `return` to control visibility. Instead, the component should always render, and its visibility should be controlled by the `display` property in its style (e.g., `display="block" if is_open else "none"`).
 - **Components must be theme-aware.** Do not hardcode colors like `background="#fff"`. Instead, use `me.theme_var()` (e.g., `me.theme_var("surface")`) to ensure components adapt to the current light or dark theme.
 - **Handle content overflow.** For container components like dialogs, always include `overflow_y="auto"` in the style to ensure that long content is scrollable and does not break the layout.
+- **`me.link` does not support `target` in Python.** The Python wrapper for `me.link` in this version does not accept a `target` argument (e.g., `target="_blank"`). Do not attempt to use it, as it will cause a runtime `TypeError`.
 
 - **Error Recovery for Component APIs:** If you encounter a `TypeError: unexpected keyword argument` or
      `AttributeError` related to a component, it is a strong signal that you have misunderstood its API. Your **immediate first step** must be to stop and use `read_file` to examine the source code of the component that caused the error. Read the `def` line of the component function to see the exact, correct arguments.
+
+# Custom Web Components
+
+When creating custom web components (Lit Elements) for Mesop:
+
+1.  **Correct Decorator:** Use `@me.web_component(path="./my_component.js")` from the main `mesop` package. Do *not* use `mesop.labs` or `@mel.component`.
+2.  **Correct Insertion:** Use `me.insert_web_component(name="my-component", ...)` inside the decorated function. Note that `me.insert_web_component` does *not* take a `path` argument; the path is handled by the decorator.
+3.  **Theme Integration:**
+    *   **Pass Theme Mode:** Pass the current theme (e.g., `theme_mode="dark"`) as a property to the web component.
+    *   **CSS Overrides:** In the Lit component's `updated` lifecycle method, apply a class (e.g., `.dark-theme`) to the container based on the property.
+    *   **Aggressive Styling:** For third-party HTML snippets that have their own styles (like Google Search results), use aggressive CSS overrides (`!important`) scoped to the theme class to force them to respect your app's theme variables.
+    *   **Example:**
+        ```css
+        #container.dark-theme * {
+          background-color: transparent !important;
+          color: var(--md-sys-color-on-surface) !important;
+        }
+        ```
 
 # Mesop Hints and Lessons Learned
 

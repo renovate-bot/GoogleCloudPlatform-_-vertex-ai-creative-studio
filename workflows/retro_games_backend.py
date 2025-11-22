@@ -75,7 +75,7 @@ def step_1_generate_8bit(state: RetroGameWorkflowState) -> RetroGameWorkflowStat
     for attempt in range(max_retries):
         logger.info(f"Workflow {state.workflow_id}: Step 1 (8-bit generation) attempt {attempt + 1}/{max_retries}")
         try:
-            gcs_uris, _ = generate_image_from_prompt_and_images(
+            gcs_uris, _, _ = generate_image_from_prompt_and_images(
                 prompt=full_prompt,
                 images=[state.input_image_uri],
                 aspect_ratio="1:1", # Assuming 1:1 for now, could be made dynamic
@@ -111,7 +111,7 @@ def step_2_generate_character_sheet(state: RetroGameWorkflowState) -> RetroGameW
     prompt = "Create a retro game character sheet for this character. Include front, side, and back views, and a few action poses (idle, walk, jump). Pixel art style matching the input."
     
     try:
-        gcs_uris, _ = generate_image_from_prompt_and_images(
+        gcs_uris, _, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
             images=[state.eight_bit_image_uri],
             aspect_ratio="1:1", # Character sheets are often square-ish
@@ -176,7 +176,7 @@ def step_3_generate_video(state: RetroGameWorkflowState) -> RetroGameWorkflowSta
              state.error_message = f"8-bit logo for theme '{state.theme}' not found."
              return state
 
-        # Use R2V for Veo 3.1 with 8s duration and 3 reference images
+        # Use R2V for Veo 3.1 Preview with 8s duration and 3 reference images
         request = VideoGenerationRequest(
             prompt=state.scene_direction,
             r2v_references=[
@@ -186,7 +186,7 @@ def step_3_generate_video(state: RetroGameWorkflowState) -> RetroGameWorkflowSta
             ],
             duration_seconds=8,
             aspect_ratio="16:9",
-            model_version_id="3.1",
+            model_version_id="3.1-preview",
             video_count=1,
             resolution="720p",
             enhance_prompt=True,
