@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/genai"
+
+	common "github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -42,12 +44,14 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required"), nil
 	}
 
-	model, _ := request.GetArguments()["model"].(string)
-	if model == "nano-banana" || model == "nano banana" {
-		model = "gemini-2.5-flash-image"
-	}
-	if model == "" { // default
-		model = "gemini-2.5-flash-image"
+	modelArg, _ := request.GetArguments()["model"].(string)
+	model := "gemini-2.5-flash-image"
+	if modelArg != "" {
+		if resolved, found := common.ResolveGeminiImageModel(modelArg); found {
+			model = resolved
+		} else {
+			model = modelArg
+		}
 	}
 
 	outputDir := ""
