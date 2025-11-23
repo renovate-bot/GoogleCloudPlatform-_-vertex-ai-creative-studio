@@ -22,6 +22,8 @@ All model definitions reside in `mcp-genmedia-go/mcp-common/models.go`. This fil
 1.  **`...ModelInfo` Structs**: Data structures that define the unique constraints for each model family (e.g., `ImagenModelInfo`, `VeoModelInfo`).
 2.  **`Supported...Models` Maps**: A map for each model family that holds the specific constraint values for every supported model and its aliases.
 
+*Note: Model aliases are **case-insensitive**. The initialization logic automatically converts all aliases to lowercase for lookup.*
+
 **Workflow for Adding or Modifying a Model:**
 
 When you need to add a new model or change the parameters of an existing one, follow this pattern:
