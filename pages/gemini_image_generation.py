@@ -21,6 +21,7 @@ import mesop as me
 
 from common.analytics import log_ui_click, track_model_call, analytics_logger
 from common.metadata import MediaItem, add_media_item_to_firestore
+from common.prompt_template_service import prompt_template_service
 from common.storage import store_to_gcs
 from common.utils import create_display_url, https_url_to_gcs_uri
 from components.dialog import dialog
@@ -50,6 +51,37 @@ CHIP_STYLE = me.Style(
     font_size=14,
     height=32,
 )
+
+
+def get_all_image_presets():
+    """Loads dynamic templates and merges them with static presets."""
+    # Start with a deep copy of the hardcoded presets
+    # to ensure backward compatibility and avoid mutating the original
+    all_presets = {k: [p.copy() for p in v] for k, v in IMAGE_ACTION_PRESETS.items()}
+
+    try:
+        # Load dynamic templates of type 'image'
+        dynamic_templates = prompt_template_service.load_templates(
+            config_path="config/image_prompt_templates.json", template_type="image"
+        )
+
+        for template in dynamic_templates:
+            t_dict = template.model_dump()
+            # Normalize category to lowercase to match keys in IMAGE_ACTION_PRESETS
+            category = t_dict.get("category", "custom").lower()
+
+            if category not in all_presets:
+                all_presets[category] = []
+
+            # Check for duplicates by key to avoid showing the same action twice
+            existing_keys = {p["key"] for p in all_presets[category]}
+            if t_dict["key"] not in existing_keys:
+                all_presets[category].append(t_dict)
+
+    except Exception as e:
+        analytics_logger.error(f"Error loading dynamic prompt templates: {e}")
+
+    return all_presets
 
 
 @me.stateclass
@@ -372,7 +404,9 @@ def gemini_image_gen_page_content():
                     ):
                         #me.text("Image Presets", style=me.Style(font_weight="bold"))
 
-                        for category_name, presets in IMAGE_ACTION_PRESETS.items():
+                        all_presets = get_all_image_presets()
+
+                        for category_name, presets in all_presets.items():
                             if not presets:
                                 continue
 
@@ -769,7 +803,8 @@ def on_image_action_click(e: me.ClickEvent):
 
     # Find the preset that was clicked
     preset = None
-    for category in IMAGE_ACTION_PRESETS.values():
+    all_presets = get_all_image_presets()
+    for category in all_presets.values():
         found = next((p for p in category if p["key"] == e.key), None)
         if found:
             preset = found
