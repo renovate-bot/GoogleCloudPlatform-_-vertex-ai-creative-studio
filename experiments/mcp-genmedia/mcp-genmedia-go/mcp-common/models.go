@@ -124,6 +124,70 @@ func BuildImagenModelDescription() string {
 }
 
 
+// --- Gemini Image Model Configuration ---
+
+// GeminiImageModelInfo holds the details for a specific Gemini Image model.
+type GeminiImageModelInfo struct {
+	CanonicalName string
+	Aliases       []string
+	Description   string
+}
+
+// SupportedGeminiImageModels is the single source of truth for all supported Gemini Image models.
+var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
+	"gemini-3-pro-image-preview": {
+		CanonicalName: "gemini-3-pro-image-preview",
+		Aliases:       []string{"Nano Banana Pro"},
+		Description:   "High quality, preferred alternative to gemini-2.5-flash-image.",
+	},
+	"gemini-2.5-flash-image": {
+		CanonicalName: "gemini-2.5-flash-image",
+		Aliases:       []string{"Nano Banana", "nano-banana"},
+		Description:   "Fast, cost-efficient image generation.",
+	},
+}
+
+var geminiImageAliasMap = make(map[string]string)
+
+func init() {
+	for canonicalName, info := range SupportedGeminiImageModels {
+		geminiImageAliasMap[strings.ToLower(canonicalName)] = canonicalName
+		for _, alias := range info.Aliases {
+			geminiImageAliasMap[strings.ToLower(alias)] = canonicalName
+		}
+	}
+}
+
+// ResolveGeminiImageModel finds the canonical model name from a user-provided name or alias.
+func ResolveGeminiImageModel(modelInput string) (string, bool) {
+	canonicalName, found := geminiImageAliasMap[strings.ToLower(modelInput)]
+	return canonicalName, found
+}
+
+// BuildGeminiImageModelDescription generates a formatted string for the tool description.
+func BuildGeminiImageModelDescription() string {
+	var sb strings.Builder
+	sb.WriteString("Model for image generation. Can be a full model ID or a common name. Supported models:\n")
+	var sortedNames []string
+	for name := range SupportedGeminiImageModels {
+		sortedNames = append(sortedNames, name)
+	}
+	sort.Strings(sortedNames)
+
+	for _, name := range sortedNames {
+		info := SupportedGeminiImageModels[name]
+		sb.WriteString(fmt.Sprintf("- *%s*", info.CanonicalName))
+		if len(info.Aliases) > 0 {
+			sb.WriteString(fmt.Sprintf(" Aliases: *%s*", strings.Join(info.Aliases, "*, *")))
+		}
+		if info.Description != "" {
+			sb.WriteString(fmt.Sprintf(" - %s", info.Description))
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
+
 // --- Veo Model Configuration ---
 
 // VeoModelInfo holds the details for a specific Veo model.

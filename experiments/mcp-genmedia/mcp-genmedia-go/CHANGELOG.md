@@ -1,5 +1,12 @@
 # Changelog
 
+## 2025-11-23
+
+*   **Feat:** Added support for `gemini-3-pro-image-preview` (alias: "Nano Banana Pro") and `gemini-2.5-flash-image` (alias: "Nano Banana") to the `gemini_image_generation` tool in `mcp-gemini-go`.
+*   **Feat:** Added `gemini-2.5-flash-lite-preview-tts` to the supported models in the `gemini_audio_tts` tool in `mcp-gemini-go`.
+*   **Refactor:** Centralized Gemini Image model definitions in `mcp-common/models.go`, matching the architectural pattern used for Imagen and Veo.
+*   **Chore:** Incremented `mcp-gemini-go` version to 0.5.1.
+
 ## 2025-10-09
 
 *   **Feat:** Standardized network port configuration across all MCP servers (`avtool`, `chirp3`, `imagen`, `lyria`, `veo`, `gemini`). All servers now follow a consistent precedence: `--port` flag, `PORT` environment variable, and then transport-specific defaults (`8080` for `http`, `8081` for `sse`).
