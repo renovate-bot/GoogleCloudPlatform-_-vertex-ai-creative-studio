@@ -30,6 +30,7 @@ When you need to add a new model or change the parameters of an existing one, fo
 
 1.  **Update `mcp-common/models.go`**: 
     *   Add or modify the entry in the appropriate `Supported...Models` map. This is the **only** place where you should define constraints like max images, duration, or supported aspect ratios.
+    *   **Tip:** Use the `Description` field to provide context (e.g., "Fast," "High Quality") that helps the LLM choose the correct model.
 
 2.  **Update the Server's Handler (`handlers.go`)**: 
     *   The handler logic **must** use the helper functions from `mcp-common` (e.g., `ResolveVeoModel`) to get the model's specific constraints.
