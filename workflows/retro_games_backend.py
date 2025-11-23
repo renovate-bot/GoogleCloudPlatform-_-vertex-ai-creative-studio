@@ -75,7 +75,7 @@ def step_1_generate_8bit(state: RetroGameWorkflowState) -> RetroGameWorkflowStat
     for attempt in range(max_retries):
         logger.info(f"Workflow {state.workflow_id}: Step 1 (8-bit generation) attempt {attempt + 1}/{max_retries}")
         try:
-            gcs_uris, _, _ = generate_image_from_prompt_and_images(
+            gcs_uris, _, _, _ = generate_image_from_prompt_and_images(
                 prompt=full_prompt,
                 images=[state.input_image_uri],
                 aspect_ratio="1:1", # Assuming 1:1 for now, could be made dynamic
@@ -111,7 +111,7 @@ def step_2_generate_character_sheet(state: RetroGameWorkflowState) -> RetroGameW
     prompt = "Create a retro game character sheet for this character. Include front, side, and back views, and a few action poses (idle, walk, jump). Pixel art style matching the input."
     
     try:
-        gcs_uris, _, _ = generate_image_from_prompt_and_images(
+        gcs_uris, _, _, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
             images=[state.eight_bit_image_uri],
             aspect_ratio="1:1", # Character sheets are often square-ish
