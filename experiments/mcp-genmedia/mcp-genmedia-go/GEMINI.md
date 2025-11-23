@@ -22,12 +22,15 @@ All model definitions reside in `mcp-genmedia-go/mcp-common/models.go`. This fil
 1.  **`...ModelInfo` Structs**: Data structures that define the unique constraints for each model family (e.g., `ImagenModelInfo`, `VeoModelInfo`).
 2.  **`Supported...Models` Maps**: A map for each model family that holds the specific constraint values for every supported model and its aliases.
 
+*Note: Model aliases are **case-insensitive**. The initialization logic automatically converts all aliases to lowercase for lookup.*
+
 **Workflow for Adding or Modifying a Model:**
 
 When you need to add a new model or change the parameters of an existing one, follow this pattern:
 
 1.  **Update `mcp-common/models.go`**: 
     *   Add or modify the entry in the appropriate `Supported...Models` map. This is the **only** place where you should define constraints like max images, duration, or supported aspect ratios.
+    *   **Tip:** Use the `Description` field to provide context (e.g., "Fast," "High Quality") that helps the LLM choose the correct model.
 
 2.  **Update the Server's Handler (`handlers.go`)**: 
     *   The handler logic **must** use the helper functions from `mcp-common` (e.g., `ResolveVeoModel`) to get the model's specific constraints.
