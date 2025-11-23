@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-gemini-go"
-	version     = "0.5.0" // Add http support
+	version     = "0.5.1" // Add new Gemini models
 )
 
 func init() {
@@ -97,9 +97,9 @@ func main() {
 	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, false))
 
 	tool := mcp.NewTool("gemini_image_generation",
-		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini 2.5 Flash Image generation. This model is also called nano-banana."),
+		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini Image generation models."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
-		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image"), mcp.Description("The specific Gemini model to use.")),
+		mcp.WithString("model", mcp.DefaultString("gemini-2.5-flash-image"), mcp.Description(common.BuildGeminiImageModelDescription())),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input images.")),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
@@ -133,7 +133,7 @@ func main() {
 		mcp.WithString("model_name",
 			mcp.DefaultString(defaultGeminiTTSModel),
 			mcp.Description("The model to use."),
-			mcp.Enum("gemini-2.5-flash-tts", "gemini-2.5-pro-tts"),
+			mcp.Enum("gemini-2.5-flash-tts", "gemini-2.5-pro-tts", "gemini-2.5-flash-lite-preview-tts"),
 		),
 		mcp.WithString("language_code",
 			mcp.DefaultString("en-US"),
