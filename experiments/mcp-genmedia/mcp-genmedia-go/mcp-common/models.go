@@ -1,5 +1,3 @@
-
-
 // Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -123,7 +121,6 @@ func BuildImagenModelDescription() string {
 	return sb.String()
 }
 
-
 // --- Gemini Image Model Configuration ---
 
 // GeminiImageModelInfo holds the details for a specific Gemini Image model.
@@ -137,13 +134,13 @@ type GeminiImageModelInfo struct {
 var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
 	"gemini-3-pro-image-preview": {
 		CanonicalName: "gemini-3-pro-image-preview",
-		Aliases:       []string{"Nano Banana Pro"},
-		Description:   "High quality, preferred alternative to gemini-2.5-flash-image.",
+		Aliases:       []string{"Nano Banana Pro", "Gemini 3 Pro Image"},
+		Description:   "Gemini 3 Pro Image, or Gemini 3 Pro (with Nano Banana), is designed to tackle the most challenging image generation by incorporating state-of-the-art reasoning capabilities. It's the best model for complex and multi-turn image generation and editing, having improved accuracy and enhanced image quality.",
 	},
 	"gemini-2.5-flash-image": {
 		CanonicalName: "gemini-2.5-flash-image",
 		Aliases:       []string{"Nano Banana", "nano-banana"},
-		Description:   "Fast, cost-efficient image generation.",
+		Description:   "Gemini 2.5 Flash Image, or Nano Banana, is optimized for image understanding and generation and offers a balance of price and performance.",
 	},
 }
 
