@@ -40,7 +40,7 @@ class PageState:
     video_count: int = 1
     aspect_ratio: str = "16:9"
     resolution: str = "720p"
-    video_length: int = 5  # 5-8
+    video_length: int = 8  # Default for 3.1-fast
 
     # I2V reference Image
     reference_image_file: me.UploadedFile = None
