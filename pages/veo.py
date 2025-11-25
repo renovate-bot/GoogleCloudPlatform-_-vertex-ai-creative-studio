@@ -316,11 +316,11 @@ def on_click_clear(e: me.ClickEvent):  # pylint: disable=unused-argument
     state.veo_prompt_input = None
     state.original_prompt = None
     state.veo_prompt_textarea_key += 1
-    state.video_length = 5
-    state.aspect_ratio = "16:9"
-    state.is_loading = False
-    state.auto_enhance_prompt = False
     state.veo_model = "3.1-fast"
+    # Get default duration for the reset model
+    model_config = get_veo_model_config(state.veo_model)
+    state.video_length = model_config.default_duration if model_config else 8
+    state.aspect_ratio = "16:9"
     # Clear all image types
     state.reference_image_gcs = None
     state.reference_image_uri = None
@@ -630,12 +630,22 @@ def on_r2v_style_remove(e: me.ClickEvent):
 def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
     """VEO image from library handler."""
     state = me.state(PageState)
+    
+    # Helper to infer mime type from extension
+    def infer_mime(uri: str) -> str:
+        if uri.lower().endswith(".png"): return "image/png"
+        if uri.lower().endswith(".jpg") or uri.lower().endswith(".jpeg"): return "image/jpeg"
+        if uri.lower().endswith(".webp"): return "image/webp"
+        return "image/png" # Default fallback
+
     if e.chooser_id.startswith("i2v") or e.chooser_id.startswith("first_frame"):
         state.reference_image_gcs = e.gcs_uri
         state.reference_image_uri = create_display_url(e.gcs_uri)
+        state.reference_image_mime_type = infer_mime(e.gcs_uri)
     elif e.chooser_id.startswith("interpolation_last"):
         state.last_reference_image_gcs = e.gcs_uri
         state.last_reference_image_uri = create_display_url(e.gcs_uri)
+        state.last_reference_image_mime_type = infer_mime(e.gcs_uri)
     elif e.chooser_id.startswith("r2v_asset_library_chooser"):
         if len(state.r2v_reference_images) >= 3:
             state.error_message = "You can upload a maximum of 3 asset images."
@@ -643,9 +653,9 @@ def on_veo_image_from_library(e: LibrarySelectionChangeEvent):
             yield
             return
         state.r2v_reference_images.append(e.gcs_uri)
-        state.r2v_reference_mime_types.append("image/png")
+        state.r2v_reference_mime_types.append(infer_mime(e.gcs_uri))
     elif e.chooser_id.startswith("r2v_style_library_chooser"):
         state.r2v_style_image = e.gcs_uri
-        state.r2v_style_image_mime_type = "image/png"
+        state.r2v_style_image_mime_type = infer_mime(e.gcs_uri)
 
     yield
