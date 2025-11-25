@@ -31,6 +31,7 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.pill import pill
+from components.content_credentials.content_credentials import content_credentials_viewer
 from components.search_entry_point.search_entry_point import search_entry_point
 from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
@@ -43,6 +44,7 @@ from models.gemini import (
 )
 from models.upscale import get_image_resolution
 from state.state import AppState
+from services.c2pa_service import c2pa_service
 
 
 CHIP_STYLE = me.Style(
@@ -108,6 +110,7 @@ class PageState:
     is_suggesting_transformations: bool = False
     use_search: bool = False
     grounding_info: str = ""
+    c2pa_manifests: dict[str, str] = field(default_factory=dict) # Store as dict of strings (url -> json_str)
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
@@ -529,16 +532,23 @@ def gemini_image_gen_page_content():
                     ):
                         if len(state.generated_image_urls) == 1:
                             # Display single, maximized image
-                            me.image(
-                                src=state.generated_image_urls[0],
-                                alt=state.generated_image_captions[0] if state.generated_image_captions else "",
-                                style=me.Style(
-                                    width="100%",
-                                    max_height="85vh",
-                                    object_fit="contain",
-                                    border_radius=8,
-                                ),
-                            )
+                            with me.box(style=me.Style(position="relative", width="100%", height="100%", display="flex", justify_content="center")):
+                                me.image(
+                                    src=state.generated_image_urls[0],
+                                    alt=state.generated_image_captions[0] if state.generated_image_captions else "",
+                                    style=me.Style(
+                                        width="100%",
+                                        max_height="85vh",
+                                        object_fit="contain",
+                                        border_radius=8,
+                                    ),
+                                )
+                                # Content Credentials (C2PA) Viewer
+                                with me.box(style=me.Style(position="absolute", top=16, right=16)):
+                                    manifest_json = state.c2pa_manifests.get(state.generated_image_urls[0])
+                                    if manifest_json:
+                                        content_credentials_viewer(manifest=manifest_json)
+
                             if state.generated_resolution:
                                 with me.box(style=me.Style(margin=me.Margin(top=8))):
                                     pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
@@ -557,16 +567,24 @@ def gemini_image_gen_page_content():
                                 # Main image
                                 selected_index = state.generated_image_urls.index(state.selected_image_url) if state.selected_image_url in state.generated_image_urls else 0
                                 caption = state.generated_image_captions[selected_index] if selected_index < len(state.generated_image_captions) else ""
-                                me.image(
-                                    src=state.selected_image_url,
-                                    alt=caption,
-                                    style=me.Style(
-                                        width="100%",
-                                        max_height="75vh",
-                                        object_fit="contain",
-                                        border_radius=8,
-                                    ),
-                                )
+                                
+                                with me.box(style=me.Style(position="relative", width="100%", display="flex", justify_content="center")):
+                                    me.image(
+                                        src=state.selected_image_url,
+                                        alt=caption,
+                                        style=me.Style(
+                                            width="100%",
+                                            max_height="75vh",
+                                            object_fit="contain",
+                                            border_radius=8,
+                                        ),
+                                    )
+                                    # Content Credentials (C2PA) Viewer
+                                    with me.box(style=me.Style(position="absolute", top=16, right=16)):
+                                        manifest_json = state.c2pa_manifests.get(state.selected_image_url)
+                                        if manifest_json:
+                                            content_credentials_viewer(manifest=manifest_json)
+
                                 if state.generated_resolution:
                                     with me.box(style=me.Style(margin=me.Margin(top=8))):
                                         pill(label=f"Resolution: {state.generated_resolution}", pill_type="resolution")
@@ -963,6 +981,17 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             state.generated_image_captions = captions
             # Measure the actual resolution of the first generated image
             state.generated_resolution = get_image_resolution(gcs_uris[0])
+            
+            # Read C2PA Manifests for all images
+            state.c2pa_manifests = {}
+            for i, uri in enumerate(gcs_uris):
+                manifest = c2pa_service.read_manifest(uri)
+                display_url = state.generated_image_urls[i]
+                if manifest:
+                    state.c2pa_manifests[display_url] = json.dumps(manifest)
+                    if i == 0:
+                        analytics_logger.info("C2PA manifest found and loaded for image 0.")
+            
             if state.generated_image_urls:
                 state.selected_image_url = state.generated_image_urls[0]
 
