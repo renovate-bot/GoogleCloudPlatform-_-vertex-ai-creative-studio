@@ -140,6 +140,14 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
 
     gen_config = types.GenerateVideosConfig(**gen_config_args)
 
+    # Log the full request payload for debugging
+    logger.info(f"Calling generate_videos with model: {model_config.model_name}")
+    logger.info(f"Config: {gen_config_args}")
+    if image_input:
+        logger.info(f"Image Input: gcs_uri={image_input.gcs_uri}, mime_type={image_input.mime_type}")
+    if reference_images_list:
+        logger.info(f"Reference Images Count: {len(reference_images_list)}")
+
     # Call the API
     try:
         operation = client.models.generate_videos(
