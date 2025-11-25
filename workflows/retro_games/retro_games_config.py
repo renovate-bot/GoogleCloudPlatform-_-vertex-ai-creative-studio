@@ -20,6 +20,7 @@ from typing import Any, Optional
 class RetroGameConfig:
     _instance = None
     _config_data = None
+    _prompts_data = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -29,17 +30,29 @@ class RetroGameConfig:
 
     def _load_config(self):
         """Loads the configuration from the JSON file."""
-        config_path = os.path.join(os.path.dirname(__file__), 'retro_games_config.json')
+        base_dir = os.path.dirname(__file__)
+        
+        # Load Config
+        config_path = os.path.join(base_dir, 'config.json')
         try:
             with open(config_path, 'r') as f:
                 self._config_data = json.load(f)
-        except FileNotFoundError:
-            # Fallback or error handling if config is missing
-            print(f"Error: Config file not found at {config_path}")
+        except Exception as e:
+            print(f"Error loading config: {e}")
             self._config_data = {"themes": {}, "bumper_videos": []}
-        except json.JSONDecodeError:
-            print(f"Error: Invalid JSON in config file at {config_path}")
-            self._config_data = {"themes": {}, "bumper_videos": []}
+
+        # Load Prompts
+        prompts_path = os.path.join(base_dir, 'prompts.json')
+        try:
+            with open(prompts_path, 'r') as f:
+                self._prompts_data = json.load(f)
+        except Exception as e:
+            print(f"Error loading prompts: {e}")
+            self._prompts_data = {}
+
+    def get_prompt(self, key: str) -> str:
+        """Returns a prompt template by key."""
+        return self._prompts_data.get(key, "")
 
     def get_theme_names(self) -> list[str]:
         """Returns a list of available theme names."""
