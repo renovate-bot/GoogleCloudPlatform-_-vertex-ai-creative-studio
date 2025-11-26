@@ -214,6 +214,7 @@ def on_click_generate(e: me.ClickEvent):
     state.player2_8bit_display_url = ""
     state.player2_sheet_display_url = ""
     state.final_video_display_url = ""
+    
     state.current_step = "Initializing..."
     state.start_time = time.time()
     state.total_duration = ""
@@ -458,142 +459,156 @@ def retro_games_content():
             # Top Section: Two Columns
             with me.box(
                 style=me.Style(
-                    display="flex", flex_direction="row", gap=24, flex_wrap="wrap"
+                    display="flex", flex_direction="row", gap=24, flex_wrap="wrap",
                 )
             ):
                 # Left Column: Inputs
                 with me.box(
                     style=me.Style(flex_grow=1, flex_basis="300px", min_width="200px")
                 ):
-                    # Player 1 Input
-                    with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
-                        me.text("Player 1", type="headline-6")
-
-                        # Image Display
-                        if state.player1_image_display_url:
-                            me.image(
-                                src=state.player1_image_display_url,
-                                style=me.Style(
-                                    height=150,
-                                    object_fit="contain",
-                                    margin=me.Margin(top=16, bottom=16),
-                                ),
-                            )
-                        else:
-                            with me.box(
-                                style=me.Style(
-                                    height=150,
-                                    width="100%",
-                                    background=me.theme_var("surface-variant"),
-                                    border_radius=8,
-                                    margin=me.Margin(top=16, bottom=16),
-                                    display="flex",
-                                    justify_content="center",
-                                    align_items="center",
-                                )
-                            ):
-                                me.icon(
-                                    "person",
-                                    style=me.Style(
-                                        font_size=48,
-                                        color=me.theme_var("on-surface-variant"),
-                                    ),
-                                )
-
-                        # Input Controls
-                        with me.box(
-                            style=me.Style(
-                                display="flex",
-                                gap=8,
-                                flex_wrap="wrap",
-                                justify_content="center",
-                            )
-                        ):
-                            me.uploader(
-                                label="Upload",
-                                on_upload=on_upload_p1,
-                                accepted_file_types=["image/jpeg", "image/png"],
-                                type="flat",
-                            )
-                            library_chooser_button(
-                                on_library_select=on_library_select,
-                                button_type="icon",
-                                key="retro_lib_p1",
-                            )
-                            with me.content_button(
-                                type="icon", on_click=on_open_selfie_dialog_p1
-                            ):
-                                me.icon("camera_alt")
-                                
-                    # Player 2 Input (Optional)
+                    # Player 1 & 2
                     with me.box(
                         style=me.Style(
-                            flex_basis="max(480px, calc(50% - 48px))",
-                            background=me.theme_var("background"),
-                            border_radius=12,
-                            box_shadow=("0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"),
-                            padding=me.Padding.all(16),
-                            display="flex",
-                            flex_direction="column",
-                            align_items="center",
-                            justify_content="space-between",
-                            width="100%",
-                            margin=me.Margin(top=24),
-                        )
+                            display="flex", flex_direction="row",
+                        ),
                     ):
-                        me.text("Player 2 (Optional)", type="headline-6")
+                        # Player 1 Input
+                        with me.box(style=_BOX_STYLE_CENTER_DISTRIBUTED):
+                            me.text("Player 1", type="headline-6")
 
-                        # Image Display
-                        if state.player2_image_display_url:
-                            me.image(
-                                src=state.player2_image_display_url,
-                                style=me.Style(
-                                    height=150,
-                                    object_fit="contain",
-                                    margin=me.Margin(top=16, bottom=16),
-                                ),
-                            )
-                        else:
+                            # Image Display
+                            if state.player1_image_display_url:
+                                me.image(
+                                    src=state.player1_image_display_url,
+                                    style=me.Style(
+                                        height=150,
+                                        object_fit="contain",
+                                        margin=me.Margin(top=16, bottom=16),
+                                    ),
+                                )
+                            else:
+                                with me.box(
+                                    style=me.Style(
+                                        height=150,
+                                        width="100%",
+                                        background=me.theme_var("surface-variant"),
+                                        border_radius=8,
+                                        margin=me.Margin(top=16, bottom=16),
+                                        display="flex",
+                                        justify_content="center",
+                                        align_items="center",
+                                    )
+                                ):
+                                    me.icon(
+                                        "person",
+                                        style=me.Style(
+                                            font_size=24,
+                                            color=me.theme_var("on-surface-variant"),
+                                        ),
+                                    )
+
+                            # Input Controls
                             with me.box(
                                 style=me.Style(
-                                    height=150,
-                                    width="100%",
-                                    background=me.theme_var("surface-variant"),
-                                    border_radius=8,
-                                    margin=me.Margin(top=16, bottom=16),
                                     display="flex",
+                                    gap=8,
+                                    flex_wrap="wrap",
                                     justify_content="center",
-                                    align_items="center",
                                 )
                             ):
-                                me.text("No P2 Selected", style=me.Style(color=me.theme_var("on-surface-variant")))
-
-                        # Input Controls
+                                me.uploader(
+                                    label="Upload",
+                                    on_upload=on_upload_p1,
+                                    accepted_file_types=["image/jpeg", "image/png"],
+                                    type="flat",
+                                )
+                                library_chooser_button(
+                                    on_library_select=on_library_select,
+                                    button_type="icon",
+                                    key="retro_lib_p1",
+                                )
+                                with me.content_button(
+                                    type="icon", on_click=on_open_selfie_dialog_p1
+                                ):
+                                    me.icon("camera_alt")
+                                    
+                        # Player 2 Input (Optional)
                         with me.box(
-                            style=me.Style(
-                                display="flex",
-                                gap=8,
-                                flex_wrap="wrap",
-                                justify_content="center",
-                            )
+                            style=_BOX_STYLE_CENTER_DISTRIBUTED
+                            # me.Style(
+                            #     flex_basis="max(480px, calc(50% - 48px))",
+                            #     background=me.theme_var("background"),
+                            #     border_radius=12,
+                            #     box_shadow=("0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"),
+                            #     padding=me.Padding.all(16),
+                            #     display="flex",
+                            #     flex_direction="column",
+                            #     align_items="center",
+                            #     justify_content="space-between",
+                            #     width="100%",
+                            #     margin=me.Margin(top=24),
+                            # )
                         ):
-                            me.uploader(
-                                label="Upload",
-                                on_upload=on_upload_p2,
-                                accepted_file_types=["image/jpeg", "image/png"],
-                                type="flat",
-                            )
-                            library_chooser_button(
-                                on_library_select=on_library_select,
-                                button_type="icon",
-                                key="retro_lib_p2",
-                            )
-                            with me.content_button(
-                                type="icon", on_click=on_open_selfie_dialog_p2
+                            me.text("Player 2 (Optional)", type="headline-6")
+
+                            # Image Display
+                            if state.player2_image_display_url:
+                                me.image(
+                                    src=state.player2_image_display_url,
+                                    style=me.Style(
+                                        height=150,
+                                        object_fit="contain",
+                                        margin=me.Margin(top=16, bottom=16),
+                                    ),
+                                )
+                            else:
+                                with me.box(
+                                    style=me.Style(
+                                        height=150,
+                                        width="100%",
+                                        background=me.theme_var("surface-variant"),
+                                        border_radius=8,
+                                        margin=me.Margin(top=16, bottom=16),
+                                        display="flex",
+                                        justify_content="center",
+                                        align_items="center",
+                                    )
+                                ):
+                                    #me.text("No P2 Selected", style=me.Style(color=me.theme_var("on-surface-variant")))
+                                    me.icon(
+                                        "person",
+                                        style=me.Style(
+                                            font_size=24,
+                                            color=me.theme_var("on-surface-variant"),
+                                        ),
+                                    )
+
+                            # Input Controls
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    gap=8,
+                                    flex_wrap="wrap",
+                                    justify_content="center",
+                                )
                             ):
-                                me.icon("camera_alt")
-                            if state.player2_image_uri:
-                                me.button("Clear P2", on_click=on_clear_p2, type="flat", color="warn")
+                                me.uploader(
+                                    label="Upload",
+                                    on_upload=on_upload_p2,
+                                    accepted_file_types=["image/jpeg", "image/png"],
+                                    type="flat",
+                                )
+                                library_chooser_button(
+                                    on_library_select=on_library_select,
+                                    button_type="icon",
+                                    key="retro_lib_p2",
+                                )
+                                with me.content_button(
+                                    type="icon", on_click=on_open_selfie_dialog_p2
+                                ):
+                                    me.icon("camera_alt")
+                                if state.player2_image_uri:
+                                    me.button("Clear P2", on_click=on_clear_p2, type="flat", color="warn")
 
                     # Advanced Options
                     with me.box(
@@ -603,7 +618,7 @@ def retro_games_content():
                             box_shadow=(
                                 "0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"
                             ),
-                            padding=me.Padding.all(16),
+                            padding=me.Padding.all(2),
                             display="flex",
                             flex_direction="column",
                             gap=16,
@@ -637,7 +652,7 @@ def retro_games_content():
                             me.select(
                                 label="Scene Length",
                                 options=[
-                                    me.SelectOption(label="4s", value="4"),
+                                    #me.SelectOption(label="4s", value="4"),
                                     me.SelectOption(label="8s", value="8"),
                                 ],
                                 value=state.selected_duration,
@@ -645,11 +660,11 @@ def retro_games_content():
                                 style=me.Style(width="100px"),
                             )
 
-                        me.checkbox(
-                            label="Append Branded Bumper",
-                            checked=state.include_bumper,
-                            on_change=on_include_bumper_change,
-                        )
+                            me.checkbox(
+                                label="Append Theme Bumper",
+                                checked=state.include_bumper,
+                                on_change=on_include_bumper_change,
+                            )
 
                     # Theme Selection with Logos
                     with me.box(
@@ -802,60 +817,70 @@ def retro_games_content():
                                 me.text(state.total_duration, type="body-1")
 
                     # Intermediate Results Row
-                    with me.box(
-                        style=me.Style(display="flex", flex_wrap="wrap", gap=24)
-                    ):
+                    with me.box(style=me.Style(display="flex", flex_direction="column", gap=16)):
                         # Player 1 Results
                         if state.player1_8bit_display_url:
                             with me.box(
                                 style=me.Style(
-                                    background=me.theme_var("background"),
+                                    background=me.theme_var("surface-variant"),
                                     border_radius=12,
-                                    padding=me.Padding.all(16),
+                                    padding=me.Padding.all(12),
                                     display="flex",
-                                    flex_direction="column",
+                                    flex_direction="row",
                                     align_items="center",
-                                    flex_grow=1,
-                                    flex_basis="200px",
+                                    gap=16,
                                 )
                             ):
-                                me.text("P1: 8-bit", type="subtitle-1")
-                                me.image(
-                                    src=state.player1_8bit_display_url,
-                                    style=me.Style(width="100%", aspect_ratio="1/1", border_radius=8, margin=me.Margin(top=8), object_fit="cover"),
-                                )
-                                if state.player1_sheet_display_url:
-                                    me.text("Sheet", type="subtitle-1", style=me.Style(margin=me.Margin(top=8)))
+                                me.text("Player 1", type="subtitle-1", style=me.Style(font_weight="bold", width="80px"))
+
+                                # 8-bit
+                                with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center")):
                                     me.image(
-                                        src=state.player1_sheet_display_url,
-                                        style=me.Style(width="100%", aspect_ratio="1/1", border_radius=8, margin=me.Margin(top=8), object_fit="cover"),
+                                        src=state.player1_8bit_display_url,
+                                        style=me.Style(height="250px", width="250px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
                                     )
+                                    me.text("8-bit", type="caption", style=me.Style(font_size="10px"))
+
+                                # Sheet
+                                if state.player1_sheet_display_url:
+                                    with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center")):
+                                        me.image(
+                                            src=state.player1_sheet_display_url,
+                                            style=me.Style(height="250px", width="250px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
+                                        )
+                                        me.text("Sheet", type="caption", style=me.Style(font_size="10px"))
 
                         # Player 2 Results
                         if state.player2_8bit_display_url:
                             with me.box(
                                 style=me.Style(
-                                    background=me.theme_var("background"),
+                                    background=me.theme_var("surface-variant"),
                                     border_radius=12,
-                                    padding=me.Padding.all(16),
+                                    padding=me.Padding.all(12),
                                     display="flex",
-                                    flex_direction="column",
+                                    flex_direction="row",
                                     align_items="center",
-                                    flex_grow=1,
-                                    flex_basis="200px",
+                                    gap=16,
                                 )
                             ):
-                                me.text("P2: 8-bit", type="subtitle-1")
-                                me.image(
-                                    src=state.player2_8bit_display_url,
-                                    style=me.Style(width="100%", aspect_ratio="1/1", border_radius=8, margin=me.Margin(top=8), object_fit="cover"),
-                                )
-                                if state.player2_sheet_display_url:
-                                    me.text("Sheet", type="subtitle-1", style=me.Style(margin=me.Margin(top=8)))
+                                me.text("Player 2", type="subtitle-1", style=me.Style(font_weight="bold", width="80px"))
+                                
+                                # 8-bit
+                                with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center")):
                                     me.image(
-                                        src=state.player2_sheet_display_url,
-                                        style=me.Style(width="100%", aspect_ratio="1/1", border_radius=8, margin=me.Margin(top=8), object_fit="cover"),
+                                        src=state.player2_8bit_display_url,
+                                        style=me.Style(height="80px", width="80px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
                                     )
+                                    me.text("8-bit", type="caption", style=me.Style(font_size="10px"))
+
+                                # Sheet
+                                if state.player2_sheet_display_url:
+                                    with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center")):
+                                        me.image(
+                                            src=state.player2_sheet_display_url,
+                                            style=me.Style(height="80px", width="80px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
+                                        )
+                                        me.text("Sheet", type="caption", style=me.Style(font_size="10px"))
 
             # Bottom Section: Final Video (Full Width)
             if state.final_video_display_url:
