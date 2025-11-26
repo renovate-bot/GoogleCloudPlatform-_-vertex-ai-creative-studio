@@ -9,16 +9,27 @@ digraph RetroGamesWorkflow {
         label = "User Inputs";
         style = filled;
         color = lightgrey;
-        InputImage [label="Input Image\n(Upload/Library/Selfie)", shape=note, fillcolor=lightyellow];
-        ThemeSelection [label="Theme Selection\n(Dish/Sling/Boost)", shape=parallelogram, fillcolor=lightcyan];
-        Configuration [label="Configuration\n(Context, Model, Duration, Bumper)", shape=parallelogram, fillcolor=lightcyan];
+        InputImage [label="Input Image(s)\n(P1 & P2)", shape=note, fillcolor=lightyellow];
+        ThemeSelection [label="Theme Selection\n(Your Theme Here)", shape=parallelogram, fillcolor=lightcyan];
+        Configuration [label="Configuration\n(Context, Scenes, Duration, Bumper)", shape=parallelogram, fillcolor=lightcyan];
     }
     
-    Generate8Bit [label="Step 1: Generate 8-bit Image\n(Gemini 2.5 Flash Image)", fillcolor=lightblue];
-    GenerateCharSheet [label="Step 2: Generate Character Sheet\n(Gemini 2.5 Flash Image)", fillcolor=lightblue];
-    GenerateSceneDirection [label="Step 3a: Generate Scene Direction\n(Gemini 2.5 Flash)", fillcolor=lightyellow];
-    GenerateVideo [label="Step 3b: Generate Video\n(Veo 3.1 R2V)", fillcolor=lightpink];
-    AppendBumper [label="Step 4: Append Bumper\n(FFmpeg/MoviePy)", fillcolor=lightgrey, style="dashed,filled"];
+    Generate8Bit [label="Step 1: Generate 8-bit Image(s)\n(Gemini 2.5 Flash Image)", fillcolor=lightblue];
+    GenerateCharSheet [label="Step 2: Generate Character Sheet(s)\n(Gemini 2.5 Flash Image)", fillcolor=lightblue];
+    
+    subgraph cluster_video {
+        label = "Video Generation (Step 3)";
+        style = dashed;
+        color = purple;
+        
+        GenerateStoryboard [label="Step 3a: Generate Storyboard\n(Gemini 2.5 Flash)", fillcolor=lightyellow];
+        GenerateVideo [label="Step 3b: Generate Video Clip\n(Veo 3.1 R2V)", fillcolor=lightpink];
+        
+        GenerateStoryboard -> GenerateVideo [label="Scene Prompts (List)"];
+        GenerateVideo -> GenerateVideo [label="Loop N times"];
+    }
+
+    Assembly [label="Step 4: Assembly & Bumper\n(FFmpeg/MoviePy)", fillcolor=lightgrey];
     
     Regenerate [label="Regenerate Video\n(Skip Steps 1 & 2)", shape=diamond, fillcolor=orange];
 
@@ -29,46 +40,27 @@ digraph RetroGamesWorkflow {
     Start -> ThemeSelection;
     Start -> Configuration;
 
-    InputImage -> Generate8Bit [label="Input"];
+    InputImage -> Generate8Bit [label="Input(s)"];
     ThemeSelection -> Generate8Bit [label="Theme Prompt"];
     
-    Generate8Bit -> GenerateCharSheet [label="8-bit Image"];
-    Generate8Bit -> GenerateSceneDirection [label="8-bit Image"];
-    Generate8Bit -> GenerateVideo [label="R2V Ref 1 (8-bit Image)"];
+    Generate8Bit -> GenerateCharSheet [label="8-bit Image(s)"];
+    Generate8Bit -> GenerateStoryboard [label="8-bit Image(s)"];
+    Generate8Bit -> GenerateVideo [label="R2V Refs"];
     
-    GenerateCharSheet -> GenerateVideo [label="R2V Ref 2 (Char Sheet)"];
+    GenerateCharSheet -> GenerateVideo [label="R2V Refs"];
     
-    Configuration -> GenerateSceneDirection [label="Context"];
+    Configuration -> GenerateStoryboard [label="Context/Scene Count"];
     Configuration -> GenerateVideo [label="Model/Duration"];
-    ThemeSelection -> GenerateVideo [label="Theme Logo (8-bit)"];
+    ThemeSelection -> GenerateVideo [label="Theme Logo"];
     
-    GenerateSceneDirection -> GenerateVideo [label="Prompt"];
+    GenerateVideo -> Assembly [label="Raw Video Clip(s)"];
+    Configuration -> Assembly [label="Toggle Bumper"];
     
-    GenerateVideo -> AppendBumper [label="Raw Video"];
-    Configuration -> AppendBumper [label="Toggle"];
-    
-    AppendBumper -> FinalVideo;
-    GenerateVideo -> FinalVideo [label="If Bumper Disabled", style=dashed];
+    Assembly -> FinalVideo;
     
     FinalVideo -> End;
 
     # Regeneration Path
     FinalVideo -> Regenerate [label="User Action"];
-    Regenerate -> GenerateSceneDirection [label="Reuse Assets"];
-
-    subgraph cluster_gemini {
-        label = "Gemini Models";
-        style = dashed;
-        color = blue;
-        Generate8Bit;
-        GenerateCharSheet;
-        GenerateSceneDirection;
-    }
-
-    subgraph cluster_veo {
-        label = "Veo Models";
-        style = dashed;
-        color = red;
-        GenerateVideo;
-    }
+    Regenerate -> GenerateStoryboard [label="Reuse Assets"];
 }

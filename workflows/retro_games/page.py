@@ -48,10 +48,10 @@ print(f"DEBUG: retro_games loaded. PROJECT_ID={Default().PROJECT_ID}")
 class PageState:
     player1_image_uri: str = ""
     player1_image_display_url: str = ""
-    
+
     player2_image_uri: str = ""
     player2_image_display_url: str = ""
-    
+
     selected_theme_value: str = "Google"  # Default to Google
 
     # New Configuration Fields
@@ -59,6 +59,7 @@ class PageState:
     include_bumper: bool = True
     selected_model: str = "3.1-preview"
     selected_duration: str = "8"  # Stored as string for select component
+    selected_scene_count: str = "1" # Stored as string
 
     # Removed workflow_state from PageState to avoid potential serialization issues
     is_running: bool = False
@@ -69,12 +70,12 @@ class PageState:
     player1_8bit_gcs_uri: str = ""  # Stored for regeneration
     player1_sheet_display_url: str = ""
     player1_sheet_gcs_uri: str = ""  # Stored for regeneration
-    
+
     player2_8bit_display_url: str = ""
     player2_8bit_gcs_uri: str = ""
     player2_sheet_display_url: str = ""
     player2_sheet_gcs_uri: str = ""
-    
+ 
     final_video_display_url: str = ""
 
     error_message: str = ""
@@ -140,6 +141,11 @@ def on_model_change(e: me.SelectSelectionChangeEvent):
 def on_duration_change(e: me.SelectSelectionChangeEvent):
     state = me.state(PageState)
     state.selected_duration = e.value
+    yield
+
+def on_scene_count_change(e: me.SelectSelectionChangeEvent):
+    state = me.state(PageState)
+    state.selected_scene_count = e.value
     yield
 
 
@@ -231,6 +237,7 @@ def on_click_generate(e: me.ClickEvent):
             include_bumper=state.include_bumper,
             model_version=state.selected_model,
             duration=int(state.selected_duration),
+            scene_count=int(state.selected_scene_count),
         )
         yield
 
@@ -309,6 +316,7 @@ def on_click_regenerate_video(e: me.ClickEvent):
             include_bumper=state.include_bumper,
             model_version=state.selected_model,
             duration=int(state.selected_duration),
+            scene_count=int(state.selected_scene_count),
         )
 
         # Manually inject existing assets
@@ -459,7 +467,7 @@ def retro_games_content():
             # Top Section: Two Columns
             with me.box(
                 style=me.Style(
-                    display="flex", flex_direction="row", gap=24, flex_wrap="wrap",
+                    display="flex", flex_direction="row", gap=24,
                 )
             ):
                 # Left Column: Inputs
@@ -469,7 +477,7 @@ def retro_games_content():
                     # Player 1 & 2
                     with me.box(
                         style=me.Style(
-                            display="flex", flex_direction="row",
+                            display="flex", flex_direction="row", gap=16
                         ),
                     ):
                         # Player 1 Input
@@ -659,7 +667,17 @@ def retro_games_content():
                                 on_selection_change=on_duration_change,
                                 style=me.Style(width="100px"),
                             )
-
+                            me.select(
+                                label="Scenes",
+                                options=[
+                                    me.SelectOption(label="1", value="1"),
+                                    me.SelectOption(label="2", value="2"),
+                                    me.SelectOption(label="3", value="3"),
+                                ],
+                                value=state.selected_scene_count,
+                                on_selection_change=on_scene_count_change,
+                                style=me.Style(width="100px"),
+                            )
                             me.checkbox(
                                 label="Append Theme Bumper",
                                 checked=state.include_bumper,
@@ -864,12 +882,12 @@ def retro_games_content():
                                 )
                             ):
                                 me.text("Player 2", type="subtitle-1", style=me.Style(font_weight="bold", width="80px"))
-                                
+
                                 # 8-bit
                                 with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center")):
                                     me.image(
                                         src=state.player2_8bit_display_url,
-                                        style=me.Style(height="80px", width="80px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
+                                        style=me.Style(height="250px", width="250px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
                                     )
                                     me.text("8-bit", type="caption", style=me.Style(font_size="10px"))
 
@@ -878,7 +896,7 @@ def retro_games_content():
                                     with me.box(style=me.Style(display="flex", flex_direction="column", align_items="center")):
                                         me.image(
                                             src=state.player2_sheet_display_url,
-                                            style=me.Style(height="80px", width="80px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
+                                            style=me.Style(height="250px", width="250px", border_radius=8, object_fit="cover", border=me.Border.all(me.BorderSide(width=1, color=me.theme_var("outline-variant")))),
                                         )
                                         me.text("Sheet", type="caption", style=me.Style(font_size="10px"))
 
