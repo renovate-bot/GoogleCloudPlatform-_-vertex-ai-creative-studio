@@ -16,6 +16,7 @@ import uuid
 import time
 import logging
 import io
+import json
 from dataclasses import dataclass
 from PIL import Image
 
@@ -46,18 +47,21 @@ class RetroGameWorkflowState:
     include_bumper: bool = True
     model_version: str = "veo-3.1-preview"
     duration: int = 8
+    scene_count: int = 1
     
-    # Step 1 outputs (8-bit)
+    # Step 1 outputs
     player1_8bit_uri: str | None = None
     player2_8bit_uri: str | None = None
     
-    # Step 2 outputs (Character Sheets)
+    # Step 2 outputs
     player1_sheet_uri: str | None = None
     player2_sheet_uri: str | None = None
     
     # Step 3 outputs
-    scene_direction: str | None = None
-    raw_video_uri: str | None = None
+    scene_direction: str | None = None # Deprecated for multi-scene, keep for compat?
+    scene_directions: list[str] | None = None
+    raw_video_uri: str | None = None # Deprecated
+    raw_video_uris: list[str] | None = None
     
     # Step 4 outputs
     final_video_uri: str | None = None
@@ -73,7 +77,8 @@ def initialize_workflow(
     theme_context: str = "",
     include_bumper: bool = True,
     model_version: str = "veo-3.1-preview",
-    duration: int = 8
+    duration: int = 8,
+    scene_count: int = 1
 ) -> RetroGameWorkflowState:
     return RetroGameWorkflowState(
         workflow_id=str(uuid.uuid4()),
@@ -84,7 +89,10 @@ def initialize_workflow(
         theme_context=theme_context,
         include_bumper=include_bumper,
         model_version=model_version,
-        duration=duration
+        duration=duration,
+        scene_count=scene_count,
+        scene_directions=[],
+        raw_video_uris=[]
     )
 
 def step_1_generate_8bit(state: RetroGameWorkflowState) -> RetroGameWorkflowState:
@@ -233,70 +241,79 @@ def step_3_generate_video(state: RetroGameWorkflowState) -> RetroGameWorkflowSta
     state.status = "generating_scene_direction"
     logger.info(f"Workflow {state.workflow_id}: Starting Step 3 (Scene Direction)")
     
-    # Sub-step 3a: Generate Scene Direction
     config = RetroGameConfig()
-    base_direction_prompt = config.get_prompt("scene_direction")
     
-    # Inject theme context if provided
-    context_str = f" The scene should be set {state.theme_context}." if state.theme_context else ""
-    
-    # Update prompt for two players
-    char_desc = "this character"
+    # Determine Input Images for Prompting (8-bit avatars)
+    prompt_input_images = [state.player1_8bit_uri]
     if state.player2_8bit_uri:
-        char_desc = "these two characters interacting or fighting"
-    
-    # We might need a better prompt template for 2 players, but let's hack it for now or update prompts.json
-    # Ideally, prompts.json should have 'scene_direction_single' and 'scene_direction_multi'.
-    # For now, I'll rely on the generic 'featuring this character' being adaptable or update the string logic.
-    # Let's update the injection.
-    
-    direction_prompt = base_direction_prompt.format(duration=state.duration, theme_context=context_str).replace("this character", char_desc)
-    
-    try:
-        input_images = [state.player1_8bit_uri]
-        if state.player2_8bit_uri:
-            input_images.append(state.player2_8bit_uri)
+        prompt_input_images.append(state.player2_8bit_uri)
 
-        scene_direction, _ = generate_text(
-            prompt=direction_prompt,
-            images=input_images
+    # Context String
+    context_str = f" The scene should be set {state.theme_context}." if state.theme_context else ""
+    char_desc = "this character" if not state.player2_8bit_uri else "these two characters interacting or fighting"
+
+    scene_prompts = []
+
+    if state.scene_count > 1:
+        # --- Multi-Scene Logic ---
+        base_sb_prompt = config.get_prompt("storyboard_generation")
+        sb_prompt = base_sb_prompt.format(
+            scene_count=state.scene_count, 
+            character_desc=char_desc, 
+            theme_context=context_str,
+            duration=state.duration
         )
-        state.scene_direction = scene_direction
-        logger.info(f"Workflow {state.workflow_id}: Scene Direction generated: {scene_direction}")
         
-    except Exception as e:
-        state.status = "error"
-        state.error_message = f"Error in Step 3a (Scene Direction): {str(e)}"
-        logger.error(f"Workflow {state.workflow_id} Step 3a failed: {e}")
-        return state
+        try:
+            # Force JSON response
+            sb_response, _ = generate_text(prompt=sb_prompt, images=prompt_input_images)
+            # Clean up response if it has markdown
+            sb_response = sb_response.replace("```json", "").replace("```", "").strip()
+            scene_prompts = json.loads(sb_response)
+            state.scene_directions = scene_prompts
+            logger.info(f"Storyboard generated: {len(scene_prompts)} scenes")
+        except Exception as e:
+            logger.error(f"Storyboard generation failed: {e}")
+            state.status = "error"
+            state.error_message = f"Storyboard generation failed: {e}"
+            return state
+    else:
+        # --- Single Scene Logic ---
+        base_direction_prompt = config.get_prompt("scene_direction")
+        direction_prompt = base_direction_prompt.format(duration=state.duration, theme_context=context_str).replace("this character", char_desc)
+        
+        try:
+            scene_direction, _ = generate_text(prompt=direction_prompt, images=prompt_input_images)
+            state.scene_direction = scene_direction
+            state.scene_directions = [scene_direction]
+            scene_prompts = [scene_direction]
+            logger.info(f"Scene Direction generated: {scene_direction}")
+        except Exception as e:
+            state.status = "error"
+            state.error_message = f"Scene Direction generation failed: {e}"
+            return state
 
-    # Sub-step 3b: Generate Video with Veo
+    # --- Video Generation Loop ---
     state.status = "generating_video"
-    logger.info(f"Workflow {state.workflow_id}: Starting Step 3b (Veo Video)")
+    state.raw_video_uris = []
     
     try:
         theme_logo_uri = config.get_theme_8bit_logo(state.theme)
-        
         if not theme_logo_uri:
              state.status = "error"
              state.error_message = f"8-bit logo for theme '{state.theme}' not found."
              return state
 
-        # Determine Reference Images
+        # Prepare References
         r2v_references = []
-        
         if state.player2_8bit_uri and state.player2_sheet_uri:
-            # Two Player Mode: Use Composite Images to save slots
-            # Limit is 3. Logo takes 1. We have 2 slots left.
-            # Slot 1: P1 Composite. Slot 2: P2 Composite.
             logger.info(f"Workflow {state.workflow_id}: Creating composites for 2-player mode")
-            
             p1_composite = create_composite_image(state.player1_8bit_uri, state.player1_sheet_uri)
             p2_composite = create_composite_image(state.player2_8bit_uri, state.player2_sheet_uri)
             
             if not p1_composite or not p2_composite:
                 state.status = "error"
-                state.error_message = "Failed to create composite images for 2-player mode."
+                state.error_message = "Failed to create composite images."
                 return state
                 
             r2v_references = [
@@ -305,34 +322,39 @@ def step_3_generate_video(state: RetroGameWorkflowState) -> RetroGameWorkflowSta
                 APIReferenceImage(gcs_uri=theme_logo_uri, mime_type="image/png")
             ]
         else:
-            # Single Player Mode: Standard Refs
             r2v_references = [
                 APIReferenceImage(gcs_uri=state.player1_8bit_uri, mime_type="image/png"),
                 APIReferenceImage(gcs_uri=state.player1_sheet_uri, mime_type="image/png"),
                 APIReferenceImage(gcs_uri=theme_logo_uri, mime_type="image/png")
             ]
 
-        # Use R2V with configured duration and model
-        request = VideoGenerationRequest(
-            prompt=state.scene_direction,
-            r2v_references=r2v_references,
-            duration_seconds=state.duration,
-            aspect_ratio="16:9",
-            model_version_id=state.model_version,
-            video_count=1,
-            resolution="720p",
-            enhance_prompt=True,
-            person_generation="allow_all"
-        )
+        for i, prompt in enumerate(scene_prompts):
+            logger.info(f"Generating video for Scene {i+1}/{len(scene_prompts)}")
+            
+            request = VideoGenerationRequest(
+                prompt=prompt,
+                r2v_references=r2v_references,
+                duration_seconds=state.duration,
+                aspect_ratio="16:9",
+                model_version_id=state.model_version,
+                video_count=1,
+                resolution="720p",
+                enhance_prompt=True,
+                person_generation="allow_all"
+            )
+            
+            video_uris, _ = generate_video(request)
+            if video_uris:
+                state.raw_video_uris.append(video_uris[0])
+            else:
+                state.status = "error"
+                state.error_message = f"Failed to generate video for scene {i+1}"
+                return state
         
-        video_uris, _ = generate_video(request)
-        
-        if video_uris:
-            state.raw_video_uri = video_uris[0]
+        # Success
+        if state.raw_video_uris:
+            state.raw_video_uri = state.raw_video_uris[0] # Legacy field
             state.status = "video_generated"
-        else:
-            state.status = "error"
-            state.error_message = "Failed to generate video."
             
     except Exception as e:
         state.status = "error"
@@ -342,36 +364,51 @@ def step_3_generate_video(state: RetroGameWorkflowState) -> RetroGameWorkflowSta
     return state
 
 def step_4_append_bumper(state: RetroGameWorkflowState) -> RetroGameWorkflowState:
-    """Appends a bumper video to the generated video."""
-    if not state.raw_video_uri:
+    """Appends a bumper video to the generated video(s)."""
+    # Handle single vs multi-scene
+    videos_to_process = []
+    if state.raw_video_uris:
+        videos_to_process = list(state.raw_video_uris) # Copy
+    elif state.raw_video_uri:
+        videos_to_process = [state.raw_video_uri]
+        
+    if not videos_to_process:
         state.status = "error"
-        state.error_message = "Cannot start Step 4: Raw video missing."
+        state.error_message = "Cannot start Step 4: No raw videos generated."
         return state
         
     # Check if bumper is requested
-    if not state.include_bumper:
+    bumper_uri = None
+    if state.include_bumper:
+        logger.info(f"Workflow {state.workflow_id}: Step 4 (Appending Bumper)")
+        try:
+            config = RetroGameConfig()
+            bumper_uri = config.get_random_bumper()
+            if not bumper_uri:
+                 logger.warning(f"Workflow {state.workflow_id}: No bumper videos configured. Skipping append.")
+            else:
+                logger.info(f"Workflow {state.workflow_id}: Selected bumper: {bumper_uri}")
+        except Exception as e:
+            logger.error(f"Error fetching bumper: {e}")
+    else:
         logger.info(f"Workflow {state.workflow_id}: Bumper skipped by user request.")
-        state.final_video_uri = state.raw_video_uri
+
+    # Construct sequence
+    video_sequence = videos_to_process
+    if bumper_uri:
+        video_sequence.append(bumper_uri)
+        
+    # Optimization: If only 1 video total, skip processing
+    if len(video_sequence) == 1:
+        state.final_video_uri = video_sequence[0]
         state.status = "completed"
         return state
 
-    state.status = "appending_bumper"
-    logger.info(f"Workflow {state.workflow_id}: Starting Step 4 (Appending Bumper)")
+    state.status = "processing_video"
     
     try:
-        config = RetroGameConfig()
-        bumper_uri = config.get_random_bumper()
-        
-        if not bumper_uri:
-             logger.warning(f"Workflow {state.workflow_id}: No bumper videos configured. Skipping append.")
-             state.final_video_uri = state.raw_video_uri
-             state.status = "completed"
-             return state
-
-        logger.info(f"Workflow {state.workflow_id}: Selected bumper: {bumper_uri}")
-        
         final_video_uri = process_videos(
-            video_gcs_uris=[state.raw_video_uri, bumper_uri],
+            video_gcs_uris=video_sequence,
             transition="concat"
         )
         
@@ -380,7 +417,7 @@ def step_4_append_bumper(state: RetroGameWorkflowState) -> RetroGameWorkflowStat
         
     except Exception as e:
         state.status = "error"
-        state.error_message = f"Error in Step 4 (Bumper): {str(e)}"
+        state.error_message = f"Error in Step 4 (Video Processing): {str(e)}"
         logger.error(f"Workflow {state.workflow_id} Step 4 failed: {e}")
         
     return state
