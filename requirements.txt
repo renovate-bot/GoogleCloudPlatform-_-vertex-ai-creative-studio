@@ -286,6 +286,7 @@ pexpect==4.9.0
     # via ipython
 pillow==11.3.0
     # via
+    #   veo-app (pyproject.toml)
     #   imageio
     #   matplotlib
     #   mediapy
@@ -341,7 +342,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==2.23
     # via cffi
-pydantic==2.12.4
+pydantic==2.12.5
     # via
     #   fastapi
     #   google-cloud-aiplatform

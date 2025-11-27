@@ -29,6 +29,7 @@ dependencies = [
     "librosa>=0.11.0",
     "praat-parselmouth>=0.4.6",
     "c2pa-python>=0.27.1",
+    "pillow>=11.3.0",
 ]
 
 [tool.ruff]
