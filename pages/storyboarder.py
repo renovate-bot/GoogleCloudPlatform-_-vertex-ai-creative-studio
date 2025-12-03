@@ -226,6 +226,7 @@ def on_generate_video_click(e: me.ClickEvent):
                 user_email=app_state.user_email,
                 timestamp=datetime.datetime.now(datetime.UTC).isoformat(),
                 media_type="video",
+                mime_type="video/mp4",
                 mode="Storyboarder",
                 gcs_uris=[final_uri],
                 thumbnail_uri=final_uri,
