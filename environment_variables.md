@@ -135,7 +135,7 @@ To change a variable from **Group 3** (e.g., `GEMINI_IMAGE_GEN_MODEL`) when depl
     variable "gemini_image_model" {
       description = "Model ID for Gemini Image Generation"
       type        = string
-      default     = "gemini-2.5-flash-image"
+      default     = "gemini-3-pro-image-preview"
     }
     ```
 2.  **Modify `main.tf`:** Update the `locals` block to include the new environment variable mapping.
