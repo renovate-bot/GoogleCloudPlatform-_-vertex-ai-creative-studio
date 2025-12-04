@@ -85,3 +85,65 @@ Defines where data and media assets are stored.
 | **`USE_MEDIA_PROXY`** | `true` | If `true`, media URLs are proxied to avoid CORS/hotlinking issues. |
 | **`CHARACTER_CONSISTENCY_VEO_MODEL`** | `veo-3.0-fast-generate-001` | Model used specifically in the Character Consistency workflow. |
 | **`CHARACTER_CONSISTENCY_GEMINI_MODEL`** | `MODEL_ID` | Gemini model used in the Character Consistency workflow. |
+
+## 🏗️ Terraform Configuration & Deployment
+
+When deploying this application using Terraform (via `main.tf`), not all environment variables are exposed for configuration. The Terraform setup manages a specific subset of variables, primarily those related to infrastructure and core model IDs.
+
+### 1. Variables Controllable via `variables.tf`
+These variables are exposed in `variables.tf` and directly map to environment variables in the Cloud Run service. You can customize these by setting the corresponding Terraform variable during deployment.
+
+| Terraform Variable | Maps to App Env Var | Default in Terraform |
+| :--- | :--- | :--- |
+| `project_id` | `PROJECT_ID` | *(Required)* |
+| `region` | `LOCATION` | `us-central1` |
+| `model_id` | `MODEL_ID` | `gemini-2.5-flash` |
+| `veo_model_id` | `VEO_MODEL_ID` | `veo-3.0-generate-001` |
+| `veo_exp_model_id` | `VEO_EXP_MODEL_ID` | `veo-3.0-generate-preview` |
+| `lyria_model_id` | `LYRIA_MODEL_VERSION` | `lyria-002` |
+| `edit_images_enabled` | `EDIT_IMAGES_ENABLED` | `true` |
+
+### 2. Variables Automatically Managed by Terraform
+These variables are computed within `main.tf` based on the resources Terraform creates (e.g., bucket names, service account emails). You generally **cannot** change these via `variables.tf` as they ensure the application correctly connects to the provisioned infrastructure.
+
+| App Env Var | Source in `main.tf` | Value Logic |
+| :--- | :--- | :--- |
+| `GENMEDIA_BUCKET` | `local.asset_bucket_name` | `creative-studio-{project_id}-assets` |
+| `VIDEO_BUCKET` | `local.asset_bucket_name` | Same as above |
+| `MEDIA_BUCKET` | `local.asset_bucket_name` | Same as above |
+| `IMAGE_BUCKET` | `local.asset_bucket_name` | Same as above |
+| `GCS_ASSETS_BUCKET` | `local.asset_bucket_name` | Same as above |
+| `GENMEDIA_FIREBASE_DB` | Resource Attribute | Name of the created Firestore DB |
+| `SERVICE_ACCOUNT_EMAIL`| Resource Attribute | Email of the created Service Account |
+| `LYRIA_PROJECT_ID` | `var.project_id` | Forces Lyria to use the main project ID |
+
+### 3. Variables NOT Set by Terraform (Using Python Defaults)
+The following variables are **not** explicitly set in the `main.tf` configuration. This means the application will use the **default values defined in `config/default.py`** when deployed via Terraform.
+
+*   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL`, `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
+*   **Veo:** `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
+*   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.
+*   **Imagen:** `MODEL_IMAGEN_PRODUCT_RECONTEXT`, `IMAGEN_GENERATED_SUBFOLDER`, `IMAGEN_EDITED_SUBFOLDER`
+*   **App Logic:** `APP_ENV`, `API_BASE_URL`, `GA_MEASUREMENT_ID`, `LIBRARY_MEDIA_PER_PAGE`, `USE_MEDIA_PROXY`
+*   **Collections:** `GENMEDIA_COLLECTION_NAME`, `SESSIONS_COLLECTION_NAME`
+
+### 🛠️ How to Deploy with Custom Values
+To change a variable from **Group 3** (e.g., `GEMINI_IMAGE_GEN_MODEL`) when deploying with Terraform:
+
+1.  **Modify `variables.tf`:** Add a new variable definition.
+    ```hcl
+    variable "gemini_image_model" {
+      description = "Model ID for Gemini Image Generation"
+      type        = string
+      default     = "gemini-2.5-flash-image"
+    }
+    ```
+2.  **Modify `main.tf`:** Update the `locals` block to include the new environment variable mapping.
+    ```hcl
+    locals {
+      creative_studio_env_vars = {
+        # ... existing vars ...
+        GEMINI_IMAGE_GEN_MODEL = var.gemini_image_model
+      }
+    }
+    ```
