@@ -292,7 +292,7 @@ pillow==11.3.0
     #   mediapy
     #   moviepy
     #   scikit-image
-platformdirs==4.5.0
+platformdirs==4.5.1
     # via
     #   black
     #   pooch
