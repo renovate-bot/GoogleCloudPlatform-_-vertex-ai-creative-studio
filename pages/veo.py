@@ -358,18 +358,18 @@ def on_click_extend_video(e: me.ClickEvent):
         headers = {"X-Goog-Authenticated-User-Email": app_state.user_email}
         
         # Log analytics
-        track_model_call(
+        with track_model_call(
             model_name=model_config.model_name,
             prompt_length=len(request.prompt) if request.prompt else 0,
             duration_seconds=request.duration_seconds,
             aspect_ratio=request.aspect_ratio,
             video_count=request.video_count,
             mode="extension", 
-        )
-
-        response = requests.post(api_url, json=request.model_dump(), headers=headers)
-        response.raise_for_status()
-        data = response.json()
+        ):
+            response = requests.post(api_url, json=request.model_dump(), headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
         yield
@@ -561,18 +561,19 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         
         # Log the initial click/attempt
         model_name_for_analytics = get_veo_model_config(request.model_version_id).model_name
-        track_model_call(
+        
+        with track_model_call(
             model_name=model_name_for_analytics,
             prompt_length=len(request.prompt) if request.prompt else 0,
             duration_seconds=request.duration_seconds,
             aspect_ratio=request.aspect_ratio,
             video_count=request.video_count,
             mode=state.veo_mode,
-        )
-
-        response = requests.post(api_url, json=request.model_dump(), headers=headers)
-        response.raise_for_status()
-        data = response.json()
+        ):
+            response = requests.post(api_url, json=request.model_dump(), headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            
         state.current_job_id = data["job_id"]
         state.job_status = data["status"]
         yield
