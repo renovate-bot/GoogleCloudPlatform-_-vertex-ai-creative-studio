@@ -334,7 +334,7 @@ def on_click_extend_video(e: me.ClickEvent):
     state.result_gcs_uris = []
     state.result_display_urls = []
     state.selected_video_url = ""
-    state.timing = ""
+    state.timing = "Extending video..."
     start_time = time.time()
     yield
 
