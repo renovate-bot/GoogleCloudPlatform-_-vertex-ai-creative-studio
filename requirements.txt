@@ -19,7 +19,7 @@ audioop-lts==0.2.2
     #   standard-sunau
 audioread==3.1.0
     # via librosa
-black==25.11.0
+black==25.12.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 blinker==1.9.0
     # via flask
@@ -127,7 +127,7 @@ google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.53.0
+google-genai==1.54.0
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-cloud-aiplatform
@@ -235,7 +235,7 @@ msgpack==1.1.2
     #   mesop
 mypy-extensions==1.1.0
     # via black
-networkx==3.6
+networkx==3.6.1
     # via scikit-image
 numba==0.62.1
     # via librosa
@@ -276,7 +276,6 @@ packaging==25.0
     #   pooch
     #   pytest
     #   scikit-image
-    #   wheel
 pandas==2.3.3
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 parso==0.8.5
@@ -458,7 +457,7 @@ typing-inspection==0.4.2
     # via pydantic
 tzdata==2025.2
     # via pandas
-urllib3==2.6.0
+urllib3==2.6.1
     # via requests
 uvicorn==0.38.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
@@ -472,7 +471,7 @@ werkzeug==3.1.4
     # via
     #   flask
     #   mesop
-wheel==0.46.1
+wheel==0.45.1
     # via c2pa-python
 zipp==3.23.0
     # via importlib-metadata

@@ -45,6 +45,8 @@ class VeoModelConfig:
     default_prompt_enhancement: bool = True
     supported_durations: Optional[List[int]] = None
     mode_overrides: Optional[Dict[str, ModeOverride]] = None
+    supports_video_extension: bool = False
+    supported_extension_durations: Optional[List[int]] = None
 
 
 # This list is the single source of truth for all VEO model configurations.
@@ -63,6 +65,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         default_samples=1,
         supports_prompt_enhancement=True,
         default_prompt_enhancement=True,
+        supports_video_extension=True,
+        supported_extension_durations=[7],
     ),
     VeoModelConfig(
         version_id="2.0-exp",
@@ -131,6 +135,24 @@ VEO_MODELS: List[VeoModelConfig] = [
         supported_durations=[4, 6, 8],
     ),
     VeoModelConfig(
+        version_id="3.1-fast-preview",
+        model_name="veo-3.1-fast-generate-preview",
+        display_name="Veo 3.1 Fast Preview",
+        supported_modes=["t2v", "i2v", "interpolation"],
+        supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["720p", "1080p"],
+        min_duration=4,
+        max_duration=8,
+        default_duration=8,
+        max_samples=4,
+        default_samples=1,
+        supports_prompt_enhancement=True,
+        default_prompt_enhancement=True,
+        supported_durations=[4, 6, 8],
+        supports_video_extension=True,
+        supported_extension_durations=[7],
+    ),
+    VeoModelConfig(
         version_id="3.1",
         model_name="veo-3.1-generate-001",
         display_name="Veo 3.1",
@@ -169,6 +191,8 @@ VEO_MODELS: List[VeoModelConfig] = [
         supports_prompt_enhancement=True,
         default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
+        supports_video_extension=True,
+        supported_extension_durations=[7],
         mode_overrides={
             "r2v": ModeOverride(
                 supported_durations=[8],
