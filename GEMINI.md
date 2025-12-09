@@ -140,4 +140,13 @@ Use built-in collection types (`list`, `dict`, `tuple`, `set`) for type hinting 
 ### Analytics
 *   **Page Views:** Automatic via `page_scaffold`.
 *   **Clicks:** Use `@track_click(element_id="...")` decorator on event handlers.
-*   **Model Calls:** Use `with track_model_call(...):` context manager.
+*   **Model Calls:** Use `with track_model_call(...):` context manager. **CRITICAL:** Always use this as a `with` statement wrapping the API call. Never call it as a standalone function, or the log will not be generated.
+
+### Metadata Integrity
+*   **Physical Properties:** When saving metadata for generated media (video/audio), prefer inspecting the actual output file (e.g., using `get_video_duration`) to determine properties like duration or resolution. Do not rely solely on the request parameters, as operations like "extension" can result in files that differ from the request input.
+
+### Configuration Patterns
+*   **Capabilities:** When adding model capabilities (e.g., "video extension", "inpainting"), add flags to the model configuration dataclasses (e.g., `VeoModelConfig` in `config/`) rather than hardcoding version string checks in the application logic. Use these flags to drive UI rendering and backend validation.
+
+### Git & PR Workflow
+*   **Stale PR Analysis:** When reviewing a PR, explicitly check the timestamp of the PR's HEAD commit against the current `main` branch. If the PR is significantly older, warn the user about potential regressions or file deletions before suggesting a merge. Prefer cherry-picking specific features over merging stale branches.
