@@ -211,7 +211,7 @@ lazy-loader==0.4
     #   scikit-image
 librosa==0.11.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
-llvmlite==0.45.1
+llvmlite==0.46.0
     # via numba
 markupsafe==3.0.3
     # via
@@ -237,7 +237,7 @@ mypy-extensions==1.1.0
     # via black
 networkx==3.6.1
     # via scikit-image
-numba==0.62.1
+numba==0.63.0
     # via librosa
 numpy==2.3.5
     # via

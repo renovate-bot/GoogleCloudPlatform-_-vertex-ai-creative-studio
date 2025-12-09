@@ -150,3 +150,12 @@ Use built-in collection types (`list`, `dict`, `tuple`, `set`) for type hinting 
 
 ### Git & PR Workflow
 *   **Stale PR Analysis:** When reviewing a PR, explicitly check the timestamp of the PR's HEAD commit against the current `main` branch. If the PR is significantly older, warn the user about potential regressions or file deletions before suggesting a merge. Prefer cherry-picking specific features over merging stale branches.
+
+### Mesop Development
+*   **Type Hints:** When defining arguments for a `@me.component` decorated function, avoid generic types like `callable`. Always use specific type hints from the `typing` module (e.g., `typing.Callable`) to ensure compatibility with Pydantic validation.
+*   **Content Wrappers (Dialogs):** When using custom wrapper components (like `dialog.py`) that manage visibility via CSS (e.g., `display: none`), **do not** use early returns in the consuming component logic (e.g., `if not open: return`). Always invoke the wrapper component so it remains in the DOM to handle its own visibility state.
+*   **Stateclasses:** When creating complex stateful components (like dialogs with forms), define their state as a `@me.stateclass` decorated dataclass. This ensures nested state updates trigger UI refreshes correctly.
+*   **Input Performance:** For text inputs, prefer `on_blur` over `on_input` for state updates to avoid network latency on every keystroke. Use `on_input` only when immediate server-side feedback is critical and latency is acceptable.
+
+### Verification
+*   **Syntax Check:** Before asking the user to run the application after code changes, use `python3 -m compileall <changed_files>` to catch syntax and indentation errors early. This is a lightweight and fast sanity check.
