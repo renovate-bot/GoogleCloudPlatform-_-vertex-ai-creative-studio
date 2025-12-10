@@ -2,6 +2,11 @@
 
 This document details the environment variables used in the application, as defined in `config/default.py`. These variables control infrastructure settings, model versions, storage locations, and feature configurations.
 
+> **Quick Start:** A `dotenv.template` file is provided in the root directory. To set up your local environment, copy this file to `.env` and populate the values:
+> ```bash
+> cp dotenv.template .env
+> ```
+
 ## 🌍 Core Infrastructure & Environment
 These variables define the fundamental operating context of the application.
 
