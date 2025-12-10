@@ -197,17 +197,9 @@ def _render_success_view(state: VeoExtendDialogState, on_close: Callable):
 
 
 def on_prompt_blur(e: me.InputBlurEvent):
-    # We need to find the state instance.
-    # Since we can't pass 'state' directly to the handler in Mesop easily without a closure,
-    # we rely on the parent page state structure.
-    # Assumption: The parent page state has a field 'extend_dialog_state'.
-    # TO DO: This coupling is tight. Ideally, we'd use a dedicated State class for this module if Mesop supported it cleanly.
-    # For now, we will try to find it in the known PageState of library_v2.
-    # Circular import risk: library_v2 imports this file. We import library_v2? No.
-    # We will use a dynamic lookup or expect the caller to pass a 'key' that helps us find it?
-    # Actually, Mesop handlers don't receive context.
-    # We must import the specific PageState class where this is used.
-    pass
+    state = _get_dialog_state()
+    state.prompt = e.value
+    yield
 
 
 # --- Event Handlers ---
