@@ -306,6 +306,10 @@ With any of the deployment options above that use IAP, if you need to add additi
 
 > **Note:** For the application to function correctly, the **Cloud Run service account** must have the **`Storage Object Viewer`** (`roles/storage.objectViewer`) role on the GCS bucket. This allows the application to read media assets and serve them to users through the proxy.
 
+# Frequently Asked Questions
+
+For common questions and troubleshooting tips, please refer to the [FAQ](FAQ.md).
+
 # Solution Design
 
 There are two way to deploy this solution. One using a custom domain with a load balancer and IAP integration. The other is using Cloud Run's default URL and integrating IAP with Cloud Run. The below diagrams depict the components used for each option.
