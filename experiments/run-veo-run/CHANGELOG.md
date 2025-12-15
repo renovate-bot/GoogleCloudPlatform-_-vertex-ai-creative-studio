@@ -1,4 +1,12 @@
 ## 2025-12-15
+- Enforce Video Upload Constraints (run-veo-run-32l)
+- Research Veo Extension Limits (run-veo-run-dk1)
+- Implement ReCAPTCHA Enterprise (run-veo-run-lx8.2)
+- Support Video Upload (run-veo-run-i3a.4)
+- Implement Memory Rate Limiting (run-veo-run-lx8.1)
+- Implement Run, Veo, Run Prototype (run-veo-run-avr)
+- Fix Gemini Content Role (run-veo-run-weg)
+- Support Advanced Generation Modes (run-veo-run-i3a.3)
 - Fix Model Selection for Ingredients (run-veo-run-t7b)
 - Implement Ingredients Mode (run-veo-run-i3a.3.5)
 - Implement Storyboard Mode (run-veo-run-i3a.3.4)

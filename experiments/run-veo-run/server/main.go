@@ -19,12 +19,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"github.com/ghchinoy/run-veo-run/server/internal/config"
 	"github.com/ghchinoy/run-veo-run/server/internal/handlers"
 	"github.com/ghchinoy/run-veo-run/server/internal/logging"
+	"github.com/ghchinoy/run-veo-run/server/internal/security"
 	"google.golang.org/genai"
 )
 
@@ -64,10 +66,13 @@ func main() {
 	// 5. Initialize Handlers
 	h := handlers.New(cfg, authClient, genaiClient)
 
+	// Rate Limiter
+	rl := security.NewRateLimiter(cfg.RateLimitPerMinute, time.Minute)
+
 	// 6. Setup Routes
 	http.HandleFunc("/api/config", h.HandleConfig)
-	http.HandleFunc("/api/veo/generate", h.HandleGenerateVideo)
-	http.HandleFunc("/api/veo/extend", h.HandleExtendVideo)
+	http.HandleFunc("/api/veo/generate", rl.Middleware(h.HandleGenerateVideo))
+	http.HandleFunc("/api/veo/extend", rl.Middleware(h.HandleExtendVideo))
 	http.HandleFunc("/api/gemini/analyze", h.HandleAnalyzeVideo)
 	http.HandleFunc("/api/upload", h.HandleUpload)
 	http.Handle("/", http.FileServer(http.Dir("./dist")))
