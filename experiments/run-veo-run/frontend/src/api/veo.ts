@@ -22,6 +22,7 @@ export interface VeoResponse {
 export interface GenerateOptions {
   prompt: string;
   model?: string;
+  aspectRatio?: string;
   imageUri?: string;
   imageMimeType?: string;
   lastFrameUri?: string;

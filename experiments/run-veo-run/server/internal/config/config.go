@@ -16,16 +16,18 @@ package config
 
 import (
 	"os"
+	"strconv"
 )
 
 type Config struct {
-	ProjectID   string
-	Port        string
-	GeminiModel string
-	VeoModel    string
-	VeoBucket   string
-	Location    string
-	GeminiLocation string
+	ProjectID          string
+	Port               string
+	GeminiModel        string
+	VeoModel           string
+	VeoBucket          string
+	Location           string
+	GeminiLocation     string
+	RateLimitPerMinute int
 }
 
 func Load() *Config {
@@ -64,13 +66,22 @@ func Load() *Config {
 		geminiLocation = location
 	}
 
+	rateLimitStr := os.Getenv("RATE_LIMIT_PER_MINUTE")
+	rateLimit := 3 // Default safe limit (Global quota is ~10 RPM)
+	if rateLimitStr != "" {
+		if val, err := strconv.Atoi(rateLimitStr); err == nil {
+			rateLimit = val
+		}
+	}
+
 	return &Config{
-		ProjectID:      projectID,
-		Port:           port,
-		GeminiModel:    geminiModel,
-		VeoModel:       veoModel,
-		VeoBucket:      veoBucket,
-		Location:       location,
-		GeminiLocation: geminiLocation,
+		ProjectID:          projectID,
+		Port:               port,
+		GeminiModel:        geminiModel,
+		VeoModel:           veoModel,
+		VeoBucket:          veoBucket,
+		Location:           location,
+		GeminiLocation:     geminiLocation,
+		RateLimitPerMinute: rateLimit,
 	}
 }
