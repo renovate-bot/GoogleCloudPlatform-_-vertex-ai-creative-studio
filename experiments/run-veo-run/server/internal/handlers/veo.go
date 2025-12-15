@@ -28,64 +28,70 @@ import (
 )
 
 type VeoRequest struct {
-	Prompt       string `json:"prompt"`
-	VideoURI     string `json:"videoUri,omitempty"`     // For extension (gs://...)
-	MimeType     string `json:"mimeType,omitempty"`     // e.g., video/mp4
-	Model        string `json:"model,omitempty"`        // Optional model override
-		ImageURI      string `json:"imageUri,omitempty"`      // Start frame (gs://...)
-		ImageMimeType string `json:"imageMimeType,omitempty"` // e.g., image/png
-			LastFrameURI  string `json:"lastFrameUri,omitempty"`  // End frame (gs://...)
-			LastFrameMimeType string `json:"lastFrameMimeType,omitempty"`
-			RefImageURIs []string `json:"refImageUris,omitempty"` // Ingredient assets
-			RefImageTypes []string `json:"refImageTypes,omitempty"` // e.g. "ASSET"
+	Prompt            string   `json:"prompt"`
+	VideoURI          string   `json:"videoUri,omitempty"`          // For extension (gs://...)
+	MimeType          string   `json:"mimeType,omitempty"`          // e.g., video/mp4
+	Model             string   `json:"model,omitempty"`             // Optional model override
+	AspectRatio       string   `json:"aspectRatio,omitempty"`       // "16:9" or "9:16"
+	ImageURI          string   `json:"imageUri,omitempty"`          // Start frame (gs://...)
+	ImageMimeType     string   `json:"imageMimeType,omitempty"`     // e.g., image/png
+	LastFrameURI      string   `json:"lastFrameUri,omitempty"`      // End frame (gs://...)
+	LastFrameMimeType string   `json:"lastFrameMimeType,omitempty"` //
+	RefImageURIs      []string `json:"refImageUris,omitempty"`      // Ingredient assets
+	RefImageTypes     []string `json:"refImageTypes,omitempty"`     // e.g. "ASSET"
+}
+
+type VeoResponse struct {
+	VideoURI  string `json:"videoUri"`  // Signed URL for playback
+	SourceURI string `json:"sourceUri"` // Original gs:// URI (for extension)
+}
+
+// HandleGenerateVideo handles text-to-video requests
+func (h *Handler) HandleGenerateVideo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req VeoRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	model := req.Model
+	if model == "" {
+		model = h.Config.VeoModel
+	}
+
+	slog.Info("Generating video", "prompt", req.Prompt, "model", model, "aspect_ratio", req.AspectRatio, "image_uri", req.ImageURI, "last_frame", req.LastFrameURI, "ref_images", len(req.RefImageURIs))
+
+	source := &genai.GenerateVideosSource{
+		Prompt: req.Prompt,
+	}
+
+	if req.ImageURI != "" {
+		mimeType := req.ImageMimeType
+		if mimeType == "" {
+			mimeType = "image/png"
 		}
-		
-		type VeoResponse struct {
-			VideoURI  string `json:"videoUri"`  // Signed URL for playback
-			SourceURI string `json:"sourceUri"` // Original gs:// URI (for extension)
+		source.Image = &genai.Image{
+			GCSURI:   req.ImageURI,
+			MIMEType: mimeType,
 		}
-		
-		// HandleGenerateVideo handles text-to-video requests
-		func (h *Handler) HandleGenerateVideo(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost {
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-				return
-			}
-		
-			var req VeoRequest
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				http.Error(w, "Invalid request body", http.StatusBadRequest)
-				return
-			}
-		
-			model := req.Model
-			if model == "" {
-				model = h.Config.VeoModel
-			}
-		
-			slog.Info("Generating video", "prompt", req.Prompt, "model", model, "image_uri", req.ImageURI, "last_frame", req.LastFrameURI, "ref_images", len(req.RefImageURIs))
-		
-			source := &genai.GenerateVideosSource{
-				Prompt: req.Prompt,
-			}
-		
-			if req.ImageURI != "" {
-				mimeType := req.ImageMimeType
-				if mimeType == "" {
-					mimeType = "image/png"
-				}
-				source.Image = &genai.Image{
-					GCSURI:   req.ImageURI,
-					MIMEType: mimeType,
-				}
-			}
-		
-			gcsDest := fmt.Sprintf("gs://%s/outputs/", h.Config.VeoBucket)
-			cfg := &genai.GenerateVideosConfig{
-				OutputGCSURI: gcsDest,
-			}
-		
-			if req.LastFrameURI != "" {
+	}
+
+	gcsDest := fmt.Sprintf("gs://%s/outputs/", h.Config.VeoBucket)
+	cfg := &genai.GenerateVideosConfig{
+		OutputGCSURI: gcsDest,
+	}
+
+	// Aspect Ratio Handling
+	if req.AspectRatio != "" {
+		cfg.AspectRatio = req.AspectRatio
+	}
+
+	if req.LastFrameURI != "" {
 				mimeType := req.LastFrameMimeType
 				if mimeType == "" {
 					mimeType = "image/png"

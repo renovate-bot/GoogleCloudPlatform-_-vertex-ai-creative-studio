@@ -32,7 +32,7 @@ type UploadResponse struct {
 	SignedURI string `json:"signedUri"` // HTTPS URL for preview
 }
 
-const MaxUploadSize = 10 << 20 // 10 MB
+const MaxUploadSize = 50 << 20 // 50 MB
 
 func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -56,8 +56,12 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Validate content type
 	contentType := header.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "image/") {
-		http.Error(w, "Only images are supported", http.StatusBadRequest)
+	if strings.HasPrefix(contentType, "video/") && contentType != "video/mp4" {
+		http.Error(w, "Only video/mp4 is supported", http.StatusBadRequest)
+		return
+	}
+	if !strings.HasPrefix(contentType, "image/") && contentType != "video/mp4" {
+		http.Error(w, "Only images and MP4 videos are supported", http.StatusBadRequest)
 		return
 	}
 

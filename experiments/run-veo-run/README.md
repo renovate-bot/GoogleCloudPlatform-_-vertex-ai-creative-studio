@@ -2,13 +2,13 @@
 
 > *The ball is round. The game lasts 90 minutes. Everything else is pure theory.*
 
-**Run, Veo, Run** is a real-time, multimodal video generation experiment. It creates an infinite, branching narrative loop using **Vertex AI Veo 3.1** for video extension and **Gemini 3** for context awareness.
+**Run, Veo, Run** is a real-time, multimodal video generation experiment. It creates a branching narrative loop using **Vertex AI Veo 3.1** for video extension and **Gemini 3** for context awareness.
 
 Inspired by the kinetic energy of "Run, Lola, Run", the application features a techno-brutalist aesthetic designed for urgency and focus.
 
 ## 🌟 Features
 
-*   **Infinite Extension:** Upload or generate a clip, then extend it indefinitely (5-7s segments).
+*   **Timeline Extension:** Upload or generate a clip, then extend it up through 30 seconds (5-7s segments).
 *   **Advanced Generation Modes:**
     *   **Text-to-Video:** Classic prompt-based generation.
     *   **Image-to-Video:** Animate a static start frame.
@@ -18,7 +18,7 @@ Inspired by the kinetic energy of "Run, Lola, Run", the application features a t
 *   **Secure Playback:** Uses Signed URLs to securely stream generated content from Google Cloud Storage.
 
 ### 🧠 Continuity Strategy: The "Analyze & Augment" Loop
-To preventing stylistic drift during infinite extensions, the app employs a closed-loop feedback system:
+To preventing stylistic drift during extensions, the app employs a closed-loop feedback system:
 1.  **Analysis:** After Veo generates a clip, **Gemini 3 Multimodal** analyzes the video to extract visual style, lighting, character details, and setting.
 2.  **Augmentation:** When the user extends the timeline, this context is automatically appended to their new prompt (e.g., *"She jumps over a car [Context: Cyberpunk, neon blue lighting...]"*).
 3.  **Consistency:** Veo receives both the pixel data (previous clip) and the semantic guardrails (augmented prompt), ensuring a coherent narrative flow.
@@ -48,6 +48,11 @@ cp sample.env .env
 *   `GOOGLE_CLOUD_PROJECT`: Your GCP Project ID.
 *   `VEO_BUCKET`: A GCS bucket for storing generated videos (must exist).
 *   `SERVICE_ACCOUNT_EMAIL`: The SA email (created in step 2).
+
+**Optional Configuration:**
+See `sample.env` for a full list of configurable options, including:
+*   `RATE_LIMIT_PER_MINUTE`: Control API usage (Default: 3).
+*   `GEMINI_MODEL` / `VEO_MODEL`: Override default model versions.
 
 ### 2. Infrastructure
 Run the setup script to create the required Service Account and assign IAM roles (Vertex AI User, Storage Object User, Logging):
