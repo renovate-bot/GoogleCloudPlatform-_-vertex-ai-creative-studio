@@ -14,9 +14,14 @@ Inspired by the kinetic energy of "Run, Lola, Run", the application features a t
     *   **Image-to-Video:** Animate a static start frame.
     *   **Storyboard:** Guide the video from a Start Frame to a specific End Frame.
     *   **Ingredients:** Use up to 3 Reference Images (Assets) to control style and character consistency.
-*   **Context Awareness:** Gemini 3 analyzes every generated clip to ensure style and character consistency in the next segment.
 *   **Model Control:** Switch between `Veo 3.1 Fast` (Speed) and `Veo 3.1 Standard` (Quality). *Note: Ingredients mode requires Standard model.*
 *   **Secure Playback:** Uses Signed URLs to securely stream generated content from Google Cloud Storage.
+
+### 🧠 Continuity Strategy: The "Analyze & Augment" Loop
+To preventing stylistic drift during infinite extensions, the app employs a closed-loop feedback system:
+1.  **Analysis:** After Veo generates a clip, **Gemini 3 Multimodal** analyzes the video to extract visual style, lighting, character details, and setting.
+2.  **Augmentation:** When the user extends the timeline, this context is automatically appended to their new prompt (e.g., *"She jumps over a car [Context: Cyberpunk, neon blue lighting...]"*).
+3.  **Consistency:** Veo receives both the pixel data (previous clip) and the semantic guardrails (augmented prompt), ensuring a coherent narrative flow.
 
 ## 🏗️ Architecture
 
