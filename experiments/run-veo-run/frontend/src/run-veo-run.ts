@@ -32,9 +32,10 @@ import type { MdDialog } from '@material/web/dialog/dialog.js';
 import { generateVideo, extendVideo } from './api/veo';
 import { analyzeVideo } from './api/gemini';
 import './components/image-upload';
+import './components/video-upload';
 import type { UploadResult } from './components/image-upload';
 
-type GenMode = 'text' | 'image' | 'storyboard' | 'ingredients';
+type GenMode = 'text' | 'image' | 'storyboard' | 'ingredients' | 'video-upload';
 
 @customElement('run-veo-run')
 export class RunVeoRun extends LitElement {
@@ -47,6 +48,7 @@ export class RunVeoRun extends LitElement {
   @state() private error = '';
   
   @state() private selectedModel = 'veo-3.1-fast-generate-preview';
+  @state() private selectedAspectRatio = '16:9';
   @state() private useContinuity = true;
   @state() private genMode: GenMode = 'text';
   @state() private startImageUri = '';
@@ -79,6 +81,16 @@ export class RunVeoRun extends LitElement {
     .header-actions {
       display: flex;
       gap: 8px;
+    }
+
+    .indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: var(--md-sys-color-primary);
+        cursor: help;
     }
 
     .container {
@@ -140,14 +152,34 @@ export class RunVeoRun extends LitElement {
     .uploads > * {
         flex: 1;
     }
+    
+    .aspect-warning {
+        color: var(--md-sys-color-error);
+        font-size: 0.8rem;
+        margin-top: 4px;
+    }
   `;
 
   render() {
+    const isFast = this.selectedModel.includes('fast');
+    const modelLabel = isFast ? 'Veo 3.1 Fast' : 'Veo 3.1 Standard';
+    const modelIcon = isFast ? 'speed' : 'high_quality';
+    
+    const isLandscape = this.selectedAspectRatio === '16:9';
+    const ratioLabel = isLandscape ? 'Landscape (16:9)' : 'Portrait (9:16)';
+    const ratioIcon = isLandscape ? 'crop_landscape' : 'crop_portrait';
+
     return html`
       <div class="container">
         <div class="header">
           <span>Run Veo Run</span>
           <div class="header-actions">
+            <div class="indicator" title="${modelLabel}">
+                <md-icon>${modelIcon}</md-icon>
+            </div>
+            <div class="indicator" title="${ratioLabel}">
+                <md-icon>${ratioIcon}</md-icon>
+            </div>
             <md-icon-button @click="${this.openInfo}">
               <md-icon>info</md-icon>
             </md-icon-button>
@@ -165,10 +197,11 @@ export class RunVeoRun extends LitElement {
           <md-tabs 
             .activeTabIndex="${this.getTabIndex()}"
             @change="${this.handleTabChange}">
-            <md-primary-tab>Text-to-Video</md-primary-tab>
-            <md-primary-tab>Image-to-Video</md-primary-tab>
+            <md-primary-tab>Text</md-primary-tab>
+            <md-primary-tab>Image</md-primary-tab>
             <md-primary-tab>Storyboard</md-primary-tab>
             <md-primary-tab>Ingredients</md-primary-tab>
+            <md-primary-tab>Upload</md-primary-tab>
           </md-tabs>
         ` : ''}
 
@@ -200,6 +233,13 @@ export class RunVeoRun extends LitElement {
                 label="Asset 3"
                 @upload-complete="${(e: CustomEvent<UploadResult>) => this.handleRefUpload(e, 2)}">
             </image-upload>
+            ` : ''}
+
+            ${this.genMode === 'video-upload' && !this.sourceUri ? html`
+            <video-upload
+                label="Upload Video to Extend"
+                @upload-complete="${this.handleVideoUpload}">
+            </video-upload>
             ` : ''}
         </div>
 
@@ -253,7 +293,7 @@ export class RunVeoRun extends LitElement {
 
       <md-dialog id="settings-dialog">
         <div slot="headline">Simulation Settings</div>
-        <form slot="content" id="settings-form" method="dialog">
+        <form slot="content" id="settings-form" method="dialog" style="display: flex; flex-direction: column; gap: 16px;">
           <md-outlined-select
             label="Veo Model"
             .value="${this.selectedModel}"
@@ -265,6 +305,27 @@ export class RunVeoRun extends LitElement {
               <div slot="headline">Veo 3.1 Standard (Preview)</div>
             </md-select-option>
           </md-outlined-select>
+
+          <div>
+              <md-outlined-select
+                label="Aspect Ratio"
+                .value="${this.selectedAspectRatio}"
+                @change="${(e: Event) => this.selectedAspectRatio = (e.target as HTMLSelectElement).value}"
+                ?disabled="${this.genMode === 'ingredients' || !!this.sourceUri}">
+                <md-select-option value="16:9">
+                  <div slot="headline">16:9 (Landscape)</div>
+                </md-select-option>
+                <md-select-option value="9:16">
+                  <div slot="headline">9:16 (Portrait)</div>
+                </md-select-option>
+              </md-outlined-select>
+              ${this.genMode === 'ingredients' ? html`
+                <div class="aspect-warning">Aspect Ratio locked to 16:9 in Ingredients mode.</div>
+              ` : ''}
+              ${!!this.sourceUri ? html`
+                <div class="aspect-warning">Aspect Ratio locked during extension.</div>
+              ` : ''}
+          </div>
         </form>
         <div slot="actions">
           <md-text-button form="settings-form" value="close">Close</md-text-button>
@@ -275,10 +336,10 @@ export class RunVeoRun extends LitElement {
         <div slot="headline">About Run, Veo, Run</div>
         <div slot="content">
           <p>
-            <b>Run, Veo, Run</b>is a sequential video generation experiment inspired by the kinetic energy of "Run, Lola, Run".
+            <b>Run, Veo, Run</b> is a sequential video generation experiment inspired by the kinetic energy of "Run, Lola, Run".
           </p>
           <p>
-            It uses <b>Vertex AI Veo 3.1</b> to extend video clips indefinitely. 
+            It uses <b>Vertex AI Veo 3.1</b> to extend video clips up through 30 seconds.
             When "Enhance with Context Analysis" is enabled, <em>Gemini 3</em> analyzes the previous clip to ensure visual style and character consistency in the next segment.
           </p>
           <p>
@@ -298,6 +359,7 @@ export class RunVeoRun extends LitElement {
           case 'image': return 1;
           case 'storyboard': return 2;
           case 'ingredients': return 3;
+          case 'video-upload': return 4;
           default: return 0;
       }
   }
@@ -307,15 +369,17 @@ export class RunVeoRun extends LitElement {
       if (tabs.activeTabIndex === 0) this.genMode = 'text';
       else if (tabs.activeTabIndex === 1) this.genMode = 'image';
       else if (tabs.activeTabIndex === 2) this.genMode = 'storyboard';
-      else {
+      else if (tabs.activeTabIndex === 3) {
           this.genMode = 'ingredients';
-          // Ingredients mode requires the Standard model
+          // Ingredients requires Standard model and 16:9
           if (this.selectedModel === 'veo-3.1-fast-generate-preview') {
               this.selectedModel = 'veo-3.1-generate-preview';
-              // Ideally show a snackbar here, but console for now
-              console.log('Switched to Standard model for Ingredients support');
+          }
+          if (this.selectedAspectRatio === '9:16') {
+              this.selectedAspectRatio = '16:9';
           }
       }
+      else this.genMode = 'video-upload';
   }
 
   private handleImageUpload(e: CustomEvent<UploadResult>) {
@@ -324,6 +388,13 @@ export class RunVeoRun extends LitElement {
 
   private handleLastFrameUpload(e: CustomEvent<UploadResult>) {
       this.lastImageUri = e.detail.uri;
+  }
+  
+  private handleVideoUpload(e: CustomEvent<UploadResult>) {
+      // Set the uploaded video as the source for extension
+      this.sourceUri = e.detail.uri;
+      this.videoUri = e.detail.signedUri;
+      // Also switch tab context if needed, but the UI should update due to sourceUri check
   }
 
   private handleRefUpload(e: CustomEvent<UploadResult>, index: number) {
@@ -339,7 +410,8 @@ export class RunVeoRun extends LitElement {
       if (this.genMode === 'image' && !this.startImageUri) return true;
       if (this.genMode === 'storyboard' && (!this.startImageUri || !this.lastImageUri)) return true;
       if (this.genMode === 'ingredients' && this.refImageUris.filter(u => u).length === 0) return true;
-      
+      if (this.genMode === 'video-upload' && !this.sourceUri) return true;
+
       return false;
   }
 
@@ -394,6 +466,7 @@ export class RunVeoRun extends LitElement {
         result = await generateVideo({
             prompt: finalPrompt,
             model: this.selectedModel,
+            aspectRatio: this.selectedAspectRatio,
             imageUri: (this.genMode === 'image' || this.genMode === 'storyboard') ? this.startImageUri : undefined,
             lastFrameUri: (this.genMode === 'storyboard') ? this.lastImageUri : undefined,
             refImageUris: (this.genMode === 'ingredients') ? validRefs : undefined,
@@ -424,6 +497,7 @@ export class RunVeoRun extends LitElement {
     this.startImageUri = '';
     this.lastImageUri = '';
     this.refImageUris = [];
+    this.selectedAspectRatio = '16:9'; // Reset aspect ratio
   }
 
   private startTimer() {
