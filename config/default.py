@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.3.15" # Motion portraits fix for Veo 3.1
+    VERSION: str = "1.3.16" # Gemini Writers Studio config
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
@@ -78,6 +78,9 @@ class Default:
 
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash",
+    )
+    GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
+        "GEMINI_WRITERS_WORKSHOP_MODEL_ID", MODEL_ID
     )
 
     # Collections

@@ -238,6 +238,12 @@ def get_config_table(app_state: AppState):
         config_data["Config"].append("Lyria Model Version")
         config_data["Value"].append(Default.LYRIA_MODEL_VERSION)
 
+    if hasattr(Default, "GEMINI_WRITERS_WORKSHOP_MODEL_ID"):
+        writers_model = getattr(Default, "GEMINI_WRITERS_WORKSHOP_MODEL_ID")
+        if writers_model != Default.MODEL_ID:
+            config_data["Config"].append("Writers Workshop Model ID")
+            config_data["Value"].append(writers_model)
+
     config_data["Config"].append("Application Verison")
     config_data["Value"].append(f"{Default.VERSION} {Default.APP_ENV}")
 
