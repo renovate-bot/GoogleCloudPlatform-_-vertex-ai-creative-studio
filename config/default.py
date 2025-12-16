@@ -79,6 +79,9 @@ class Default:
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash",
     )
+    GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
+        "GEMINI_WRITERS_WORKSHOP_MODEL_ID", MODEL_ID
+    )
 
     # Collections
     GENMEDIA_FIREBASE_DB: str = os.environ.get("GENMEDIA_FIREBASE_DB", "(default)")
