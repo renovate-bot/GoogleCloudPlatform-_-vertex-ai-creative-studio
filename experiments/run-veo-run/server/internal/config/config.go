@@ -15,6 +15,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -33,7 +34,7 @@ type Config struct {
 func Load() *Config {
 	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectID == "" {
-		projectID = "genai-blackbelt-fishfooding" // Default
+		projectID = "your-project-here" // Default
 	}
 
 	port := os.Getenv("PORT")
@@ -43,7 +44,7 @@ func Load() *Config {
 
 	geminiModel := os.Getenv("GEMINI_MODEL")
 	if geminiModel == "" {
-		geminiModel = "gemini-3-flash-preview"
+		geminiModel = "gemini-2.5-flash"
 	}
 
 	veoModel := os.Getenv("VEO_MODEL")
@@ -53,7 +54,7 @@ func Load() *Config {
 
 	veoBucket := os.Getenv("VEO_BUCKET")
 	if veoBucket == "" {
-		veoBucket = "genai-blackbelt-fishfooding-assets" // Default bucket
+		veoBucket = fmt.Sprintf("%s-assets", projectID) // Default bucket
 	}
 
 	location := os.Getenv("GOOGLE_CLOUD_LOCATION")
