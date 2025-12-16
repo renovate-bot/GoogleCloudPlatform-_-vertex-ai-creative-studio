@@ -689,12 +689,16 @@ def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
     state.generation_complete = False
     yield
 
+    model_id = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
+
     try:
         with track_model_call(
-            model_name=cfg().MODEL_ID, prompt_length=len(base_prompt)
+            model_name=model_id, prompt_length=len(base_prompt)
         ):
             text_result, execution_time = generate_text(
-                prompt=base_prompt, images=input_gcs_uris
+                prompt=base_prompt,
+                images=input_gcs_uris,
+                model_name=model_id,
             )
         state.generation_time = execution_time
         state.generated_text = text_result
