@@ -29,6 +29,7 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-2.5-flash-image` | The specific model used for image generation features. |
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-2.5-flash` | The model used specifically for analyzing audio content. |
+| **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
 
 ## 🎥 Veo (Video Generation)
 Configuration for the Veo video generation models.
