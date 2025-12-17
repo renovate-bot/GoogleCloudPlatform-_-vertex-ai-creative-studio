@@ -23,10 +23,10 @@ import (
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
-	"github.com/ghchinoy/run-veo-run/server/internal/config"
-	"github.com/ghchinoy/run-veo-run/server/internal/handlers"
-	"github.com/ghchinoy/run-veo-run/server/internal/logging"
-	"github.com/ghchinoy/run-veo-run/server/internal/security"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-veo-run/server/internal/config"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-veo-run/server/internal/handlers"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-veo-run/server/internal/logging"
+	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/run-veo-run/server/internal/security"
 	"google.golang.org/genai"
 )
 
