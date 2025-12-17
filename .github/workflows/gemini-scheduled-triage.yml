@@ -146,10 +146,13 @@ jobs:
             3.  **Generate Output**: Produce a single, minified JSON array containing the triage results.
             4.  **Format**: The output must be a valid JSON array of objects with keys: `issue_number`, `labels_to_set`, `explanation`.
             5.  **Constraints**:
+                - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
                 - Only use labels from `AVAILABLE_LABELS`.
                 - Exclude issues with no matching labels.
                 - Do not use `jq` or other tools to parse the input; read the variables directly.
-                - Your final output to STDOUT must only be the JSON array. Do not include any other text, markdown formatting (specifically do not use ```json blocks), or explanations.
+                - Your final output to STDOUT must only be the JSON array.
+                - IMPORTANT: Do not format the output as markdown. Do not use backticks (```). Just output the raw JSON string.
+                - Do not include any other text or explanations.
 
             **Example Output:**
             [
