@@ -146,7 +146,7 @@ jobs:
             3.  **Generate Output**: Produce a single, minified JSON array containing the triage results.
             4.  **Format**: The output must be a valid JSON array of objects with keys: `issue_number`, `labels_to_set`, `explanation`.
             5.  **Constraints**:
-                - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
+                 - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
                 - Only use labels from `AVAILABLE_LABELS`.
                 - Exclude issues with no matching labels.
                 - Do not use `jq` or other tools to parse the input; read the variables directly.
@@ -174,6 +174,7 @@ jobs:
             echo "::endgroup::"
             echo "gemini_json<<EOF" >> "$GITHUB_OUTPUT"
             cat gemini-artifacts/stdout.log >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::Gemini stdout artifact not found."
