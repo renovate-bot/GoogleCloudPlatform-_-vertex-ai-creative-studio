@@ -31,7 +31,7 @@ To preventing stylistic drift during extensions, the app employs a closed-loop f
 *   **Backend:** Go (1.25+) acting as a secure proxy for Vertex AI and GCS.
 *   **AI Models:**
     *   **Generation:** Veo 3.1 (`veo-3.1-fast-generate-preview`)
-    *   **Analysis:** Gemini 3 (`gemini-3-pro-preview`)
+    *   **Analysis:** Gemini 3 (`gemini-3-flash-preview`)
 *   **Infrastructure:** Cloud Run + Cloud Storage.
 
 ## 🚀 Setup & Configuration
