@@ -27,7 +27,7 @@ c2pa-python==0.27.1
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 cachecontrol==0.14.4
     # via firebase-admin
-cachetools==6.2.3
+cachetools==6.2.4
     # via google-auth
 certifi==2025.11.12
     # via
@@ -86,7 +86,7 @@ google-api-core==2.28.1
     #   google-cloud-resource-manager
     #   google-cloud-storage
     #   google-cloud-texttospeech
-google-auth==2.43.0
+google-auth==2.45.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -99,13 +99,13 @@ google-auth==2.43.0
     #   google-cloud-storage
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.130.0
+google-cloud-aiplatform==1.132.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-appengine-logging==1.7.0
     # via google-cloud-logging
 google-cloud-audit-log==0.4.0
     # via google-cloud-logging
-google-cloud-bigquery==3.38.0
+google-cloud-bigquery==3.39.0
     # via google-cloud-aiplatform
 google-cloud-core==2.5.0
     # via
@@ -113,9 +113,9 @@ google-cloud-core==2.5.0
     #   google-cloud-firestore
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-firestore==2.21.0
+google-cloud-firestore==2.22.0
     # via firebase-admin
-google-cloud-logging==3.12.1
+google-cloud-logging==3.13.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-resource-manager==1.15.0
     # via google-cloud-aiplatform
@@ -125,11 +125,11 @@ google-cloud-storage==3.7.0
     #   google-cloud-aiplatform
 google-cloud-texttospeech==2.33.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
-google-crc32c==1.7.1
+google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.55.0
+google-genai==1.56.0
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-cloud-aiplatform
@@ -201,7 +201,7 @@ jedi==0.19.2
     # via ipython
 jinja2==3.1.6
     # via flask
-joblib==1.5.2
+joblib==1.5.3
     # via
     #   librosa
     #   scikit-learn
@@ -308,7 +308,7 @@ proglog==0.1.12
     # via moviepy
 prompt-toolkit==3.0.52
     # via ipython
-proto-plus==1.26.1
+proto-plus==1.27.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
