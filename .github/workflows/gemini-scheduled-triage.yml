@@ -148,7 +148,7 @@ jobs:
             5.  **Constraints**:
                 - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
                 - Only use labels from `AVAILABLE_LABELS`.
-                - Exclude issues with no matching labels.
+                - If an issue does not clearly match a specific label, apply "status/needs-triage".
                 - Do not use `jq` or other tools to parse the input; read the variables directly.
                 - Your final output to STDOUT must only be the JSON array.
                 - IMPORTANT: Do not format the output as markdown. Do not use backticks (```). Just output the raw JSON string.
