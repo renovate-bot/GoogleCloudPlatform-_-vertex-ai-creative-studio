@@ -149,7 +149,7 @@ jobs:
                 - Only use labels from `AVAILABLE_LABELS`.
                 - Exclude issues with no matching labels.
                 - Do not use `jq` or other tools to parse the input; read the variables directly.
-                - Your final output to STDOUT must only be the JSON array. Do not include any other text, markdown, or explanations.
+                - Your final output to STDOUT must only be the JSON array. Do not include any other text, markdown formatting (specifically do not use ```json blocks), or explanations.
 
             **Example Output:**
             [
