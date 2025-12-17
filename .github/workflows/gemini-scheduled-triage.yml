@@ -146,7 +146,7 @@ jobs:
             3.  **Generate Output**: Produce a single, minified JSON array containing the triage results.
             4.  **Format**: The output must be a valid JSON array of objects with keys: `issue_number`, `labels_to_set`, `explanation`.
             5.  **Constraints**:
-                 - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
+                - Perform the analysis yourself. Do NOT write a script (Python, Bash, etc.) to do it.
                 - Only use labels from `AVAILABLE_LABELS`.
                 - Exclude issues with no matching labels.
                 - Do not use `jq` or other tools to parse the input; read the variables directly.
@@ -222,11 +222,74 @@ jobs:
               .map((label) => label.trim())
               .sort()
 
-            // Parse out the triaged issues
-            const triagedIssues = (JSON.parse(process.env.TRIAGED_ISSUES || '{}'))
-              .sort((a, b) => a.issue_number - b.issue_number)
+            // Robustly parse the Gemini Output
+            let rawInput = process.env.TRIAGED_ISSUES || '';
+            core.debug(`Raw Gemini Output: ${rawInput}`);
 
-            core.debug(`Triaged issues: ${JSON.stringify(triagedIssues)}`);
+            // 1. Clean up potential log pollution (e.g. "Creating GCP exporters...")
+            // We assume the actual output is a JSON object starting with '{' (Session Object)
+            // or a JSON array starting with '[' (Direct Output).
+            const objectStart = rawInput.indexOf('{');
+            const arrayStart = rawInput.indexOf('[');
+            
+            let jsonStartIndex = -1;
+            
+            if (objectStart !== -1 && (arrayStart === -1 || objectStart < arrayStart)) {
+                jsonStartIndex = objectStart;
+            } else if (arrayStart !== -1) {
+                jsonStartIndex = arrayStart;
+            }
+
+            if (jsonStartIndex === -1) {
+                 core.setFailed('No JSON start character ({ or [) found in Gemini output.');
+                 return; 
+            }
+            
+            // Clean input starting from the first JSON character
+            rawInput = rawInput.substring(jsonStartIndex);
+            
+            let triagedIssues = [];
+
+            try {
+                // 2. Parse the outer layer
+                const parsedOutput = JSON.parse(rawInput);
+                
+                // 3. Handle Session Object vs Direct Array
+                if (Array.isArray(parsedOutput)) {
+                    // It was a direct array (ideal case)
+                    triagedIssues = parsedOutput;
+                } else if (parsedOutput.response) {
+                    // It was a Session Object (run-gemini-cli default)
+                    core.info('Detected Session Object, extracting response field...');
+                    let responseText = parsedOutput.response;
+                    
+                    // 4. Clean up inner Markdown/Text
+                    const innerArrayStart = responseText.indexOf('[');
+                    const innerArrayEnd = responseText.lastIndexOf(']');
+                    
+                    if (innerArrayStart !== -1 && innerArrayEnd !== -1) {
+                         responseText = responseText.substring(innerArrayStart, innerArrayEnd + 1);
+                         triagedIssues = JSON.parse(responseText);
+                    } else {
+                        // If we can't find an array, maybe the model failed to output one.
+                        // We'll log the response for debugging and treat it as empty.
+                        core.warning(`Could not find JSON array in model response: ${parsedOutput.response}`);
+                        triagedIssues = [];
+                    }
+                } else {
+                    core.warning('Parsed object is neither an array nor a Session Object with a response field.');
+                    core.debug(JSON.stringify(parsedOutput));
+                }
+
+            } catch (e) {
+                core.setFailed(`Failed to parse Gemini output: ${e.message}`);
+                return;
+            }
+
+            // Sort results
+            triagedIssues.sort((a, b) => a.issue_number - b.issue_number);
+
+            core.debug(`Final Triaged issues: ${JSON.stringify(triagedIssues)}`);
 
             // Iterate over each label
             for (const issue of triagedIssues) {
