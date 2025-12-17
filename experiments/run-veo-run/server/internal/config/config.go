@@ -44,7 +44,7 @@ func Load() *Config {
 
 	geminiModel := os.Getenv("GEMINI_MODEL")
 	if geminiModel == "" {
-		geminiModel = "gemini-2.5-flash"
+		geminiModel = "gemini-3-flash-preview"
 	}
 
 	veoModel := os.Getenv("VEO_MODEL")

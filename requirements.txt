@@ -99,7 +99,7 @@ google-auth==2.45.0
     #   google-cloud-storage
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==1.130.0
+google-cloud-aiplatform==1.132.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-appengine-logging==1.7.0
     # via google-cloud-logging
@@ -113,7 +113,7 @@ google-cloud-core==2.5.0
     #   google-cloud-firestore
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-firestore==2.21.0
+google-cloud-firestore==2.22.0
     # via firebase-admin
 google-cloud-logging==3.13.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
@@ -129,7 +129,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.55.0
+google-genai==1.56.0
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-cloud-aiplatform
