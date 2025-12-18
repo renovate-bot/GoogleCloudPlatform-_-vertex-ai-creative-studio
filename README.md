@@ -74,8 +74,8 @@ Here's a glimpse of what you'll find:
 
 - **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.
 - **Storycraft:** An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.
-- **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
-
+    - **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
+    - **Run, Veo, Run:** A real-time, multimodal video generation experiment that creates a branching narrative loop using Veo 3.1 for video extension and Gemini 3 for context awareness.
 **Prompting Techniques**
 
 - **Promptlandia:** A powerful web app to analyze, refine, and improve your prompts.
