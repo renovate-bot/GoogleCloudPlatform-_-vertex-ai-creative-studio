@@ -463,7 +463,7 @@ tzdata==2025.3
     # via pandas
 urllib3==2.6.2
     # via requests
-uvicorn==0.38.0
+uvicorn==0.40.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 watchdog==6.0.0
     # via mesop
