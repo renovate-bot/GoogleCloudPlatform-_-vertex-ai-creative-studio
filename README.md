@@ -74,7 +74,8 @@ Here's a glimpse of what you'll find:
 
 - **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.
 - **Storycraft:** An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives.
-- **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
+    - **Creative GenMedia Workflow:** An end-to-end workflow to produce high-quality, on-brand creative media.
+    - **Run, Veo, Run:** A real-time, multimodal video generation experiment that creates a branching narrative loop using Veo 3.1 for video extension and Gemini 3 for context awareness.
 
 **Prompting Techniques**
 
@@ -305,6 +306,10 @@ With any of the deployment options above that use IAP, if you need to add additi
 - Image Access - The images are served using the authenticated GCS URL of each storage object so users need to be granted the _Storage Object Viewer_ role. The name of the bucket is available as the `assets-bucket` Terraform output.
 
 > **Note:** For the application to function correctly, the **Cloud Run service account** must have the **`Storage Object Viewer`** (`roles/storage.objectViewer`) role on the GCS bucket. This allows the application to read media assets and serve them to users through the proxy.
+
+# Frequently Asked Questions
+
+For common questions and troubleshooting tips, please refer to the [FAQ](FAQ.md).
 
 # Solution Design
 

@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.3.11" # c2pa visibility fix
+    VERSION: str = "1.3.16" # Gemini Writers Studio config
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
         "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
@@ -79,6 +79,9 @@ class Default:
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash",
     )
+    GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
+        "GEMINI_WRITERS_WORKSHOP_MODEL_ID", MODEL_ID
+    )
 
     # Collections
     GENMEDIA_FIREBASE_DB: str = os.environ.get("GENMEDIA_FIREBASE_DB", "(default)")
@@ -101,13 +104,13 @@ class Default:
     LIBRARY_MEDIA_PER_PAGE: int = int(os.environ.get("LIBRARY_MEDIA_PER_PAGE", 15))
 
     # Veo
-    VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-2.0-generate-001")
+    VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-3.1-fast-generate-001")
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
 
-    VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.1-generate-001")
+    VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.1-generate-preview")
     VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
         "VEO_EXP_FAST_MODEL_ID",
-        "veo-3.1-fast-generate-001",
+        "veo-3.1-fast-generate-preview",
     )
     VEO_EXP_PROJECT_ID: str = os.environ.get("VEO_EXP_PROJECT_ID", PROJECT_ID)
 

@@ -2,6 +2,11 @@
 
 This document details the environment variables used in the application, as defined in `config/default.py`. These variables control infrastructure settings, model versions, storage locations, and feature configurations.
 
+> **Quick Start:** A `dotenv.template` file is provided in the root directory. To set up your local environment, copy this file to `.env` and populate the values:
+> ```bash
+> cp dotenv.template .env
+> ```
+
 ## 🌍 Core Infrastructure & Environment
 These variables define the fundamental operating context of the application.
 
@@ -24,6 +29,7 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-2.5-flash-image` | The specific model used for image generation features. |
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-2.5-flash` | The model used specifically for analyzing audio content. |
+| **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
 
 ## 🎥 Veo (Video Generation)
 Configuration for the Veo video generation models.
