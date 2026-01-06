@@ -80,16 +80,16 @@ jobs:
             --search 'no:label' \
             --json number,title,body \
             --limit '20' \
-            --repo "${GITHUB_REPOSITORY}"
+            --repo "${GITHUB_REPOSITORY}" || echo "[]"
           )"
           NEEDS_TRIAGE_ISSUES="$(gh issue list \
             --state 'open' \
-            --search 'label:\"status/needs-triage\"' \
+            --search 'label:"status/needs-triage"' \
             --json number,title,body \
             --limit '20' \
-            --repo "${GITHUB_REPOSITORY}"
+            --repo "${GITHUB_REPOSITORY}" || echo "[]"
           )"
-          ISSUES="$(echo "${UNLABELED_ISSUES}" "${NEEDS_TRIAGE_ISSUES}" | jq -s 'add | unique_by(.number)')"
+          ISSUES="$(echo "${UNLABELED_ISSUES}" "${NEEDS_TRIAGE_ISSUES}" | jq -s 'add | unique_by(.number) | . // []')"
 
           echo "${ISSUES}" | jq . || { echo "ERROR: Output is not valid JSON"; exit 1; }
 
