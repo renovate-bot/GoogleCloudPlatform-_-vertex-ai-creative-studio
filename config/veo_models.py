@@ -167,14 +167,6 @@ VEO_MODELS: List[VeoModelConfig] = [
         supports_prompt_enhancement=True,
         default_prompt_enhancement=True,
         supported_durations=[4, 6, 8],
-        mode_overrides={
-            "r2v": ModeOverride(
-                supported_durations=[8],
-                default_duration=8,
-                supports_style_reference=False,
-                supported_aspect_ratios=["16:9"],
-            ),
-        },
     ),
     VeoModelConfig(
         version_id="3.1-preview",
@@ -197,8 +189,8 @@ VEO_MODELS: List[VeoModelConfig] = [
             "r2v": ModeOverride(
                 supported_durations=[8],
                 default_duration=8,
-                supports_style_reference=False,
-                supported_aspect_ratios=["16:9"],
+                supports_style_reference=True,
+                supported_aspect_ratios=["16:9", "9:16"],
             ),
         },
     ),

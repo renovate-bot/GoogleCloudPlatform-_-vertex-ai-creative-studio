@@ -65,9 +65,6 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
     if model_config.supports_prompt_enhancement:
         enhance_prompt_for_api = request.enhance_prompt
 
-    # R2V and Veo 3.0 have a mandatory requirement for prompt enhancement
-    if request.r2v_references or request.r2v_style_image or request.model_version_id.startswith("3."):
-        enhance_prompt_for_api = True
     gen_config_args = {
         "aspect_ratio": request.aspect_ratio,
         "number_of_videos": request.video_count,
@@ -170,6 +167,7 @@ def generate_video(request: VideoGenerationRequest) -> tuple[str, str]:
             config=gen_config,
             image=image_input,
             video=video_input,
+            **extra_params,
         )
 
         logger.info("Polling video generation operation...")
