@@ -36,9 +36,16 @@ MODELS = [
 
 SCENARIOS = [
     {"name": "T2V 1080p", "config": {"aspect_ratio": "16:9", "resolution": "1080p"}, "type": "t2v"},
+    {"name": "T2V Audio: On", "config": {"aspect_ratio": "16:9", "resolution": "1080p", "generate_audio": True}, "type": "t2v"},
+    {"name": "T2V Audio: Off", "config": {"aspect_ratio": "16:9", "resolution": "1080p", "generate_audio": False}, "type": "t2v"},
+    {"name": "T2V 4K", "config": {"aspect_ratio": "16:9", "resolution": "4k"}, "type": "t2v"},
+    {"name": "T2V 9:16", "config": {"aspect_ratio": "9:16", "resolution": "1080p"}, "type": "t2v"},
+    {"name": "I2V 1080p", "config": {"aspect_ratio": "16:9", "resolution": "1080p"}, "type": "i2v"},
+    {"name": "I2V 4K", "config": {"aspect_ratio": "16:9", "resolution": "4k"}, "type": "i2v"},
     {"name": "R2V Asset 16:9", "config": {"aspect_ratio": "16:9", "resolution": "1080p"}, "type": "r2v_asset"},
     {"name": "R2V Style 16:9", "config": {"aspect_ratio": "16:9", "resolution": "1080p"}, "type": "r2v_style"},
     {"name": "Interpolation", "config": {"aspect_ratio": "16:9", "resolution": "1080p"}, "type": "interpolation"},
+    {"name": "Video Extension", "config": {"aspect_ratio": "16:9", "resolution": "720p"}, "type": "extension"},
 ]
 
 client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
@@ -54,6 +61,17 @@ def probe_capability(model_id, scenario):
         **scenario['config']
     }
     
+    # Handle generate_audio: Required for Veo 3, not supported by Veo 2
+    if "3." in model_id:
+        if "generate_audio" not in config_args:
+            config_args["generate_audio"] = False
+    else:
+        if config_args.get("generate_audio") is True:
+            # Veo 2 doesn't support generate_audio=True
+            return "❌ Unsupported (Audio)"
+        # Clean up config_args for Veo 2
+        config_args.pop("generate_audio", None)
+
     image_input = None
     video_input = None
     
@@ -68,30 +86,6 @@ def probe_capability(model_id, scenario):
                 image=types.Image(
                     gcs_uri="gs://cloud-samples-data/generative-ai/image/flowers.png",
                     mime_type="image/png"
-                ),
-                reference_type="asset"
-            )
-        ]
-    elif scenario['type'] == 'r2v_3_assets':
-        config_args["reference_images"] = [
-            types.VideoGenerationReferenceImage(
-                image=types.Image(
-                    gcs_uri="gs://cloud-samples-data/generative-ai/image/flowers.png",
-                    mime_type="image/png"
-                ),
-                reference_type="asset"
-            ),
-            types.VideoGenerationReferenceImage(
-                image=types.Image(
-                    gcs_uri="gs://cloud-samples-data/generative-ai/image/daisy.jpg",
-                    mime_type="image/jpeg"
-                ),
-                reference_type="asset"
-            ),
-            types.VideoGenerationReferenceImage(
-                image=types.Image(
-                    gcs_uri="gs://cloud-samples-data/generative-ai/image/small-dog-pink.jpg",
-                    mime_type="image/jpeg"
                 ),
                 reference_type="asset"
             )
@@ -115,6 +109,13 @@ def probe_capability(model_id, scenario):
             gcs_uri="gs://cloud-samples-data/generative-ai/image/daisy.jpg",
             mime_type="image/jpeg"
         )
+    elif scenario['type'] == 'extension':
+        video_input = types.Video(
+            uri="gs://cloud-samples-data/generative-ai/video/animals.mp4",
+            mime_type="video/mp4"
+        )
+        # Extension usually has specific duration requirements, but for probe 4s might be okay or rejected
+        config_args["duration_seconds"] = 7 
 
     try:
         operation = client.models.generate_videos(
@@ -130,28 +131,27 @@ def probe_capability(model_id, scenario):
         if "allowlisted" in err_msg:
             if "4k" in err_msg.lower(): return "🚫 4K Block"
             if "reference to video" in err_msg.lower(): return "🚫 R2V Block"
+            if "video extension" in err_msg.lower(): return "🚫 Extend Block"
             return "🚫 Allowlist Block"
         if "not supported" in err_msg.lower():
             return "❌ Unsupported"
+        if "unexpected keyword argument 'generate_audio'" in err_msg:
+            return "❌ SDK Error (Audio)"
         return f"❌ Error: {err_msg[:30]}..."
 
 def main():
     results = {}
-    detailed_errors = []
     
     for model in MODELS:
         results[model] = {}
         for scenario in SCENARIOS:
             status = probe_capability(model, scenario)
             results[model][scenario['name']] = status
-            if "Error" in status or "Block" in status:
-                # We could capture more details here if needed
-                pass
             time.sleep(1)
 
     # Generate Markdown Table
     headers = ["Model"] + [scenario['name'] for scenario in SCENARIOS]
-    print("\n### Expanded Veo Capability Matrix\n")
+    print("\n### Final Veo Capability Matrix\n")
     header_row = "| " + " | ".join(headers) + " |"
     sep_row = "| " + " | ".join(["---"] * len(headers)) + " |"
     print(header_row)
