@@ -1,3 +1,0 @@
-chore: remove plan documentation and update go.work.sum
-
-Removed obsolete plan files from the root and mcp-genmedia directories to clean up the codebase. Updated the go.work.sum file.
