@@ -18,6 +18,7 @@ import mesop as me
 from state.state import AppState
 from state.veo_state import PageState
 from ..video_thumbnail.video_thumbnail import video_thumbnail
+from ..pill import pill
 from models.video_processing import convert_mp4_to_gif
 from common.utils import https_url_to_gcs_uri, create_display_url
 from config.veo_models import get_veo_model_config
@@ -60,6 +61,7 @@ def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
                 max_height="85vh",
                 margin=me.Margin(left="auto", right="auto"),
                 aspect_ratio=aspect_ratio_css,
+                position="relative", # Allow for absolute positioning of badge
             )
         ):
             me.video(
@@ -72,6 +74,18 @@ def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
                     display="block",
                 ),
             )
+            
+            # Overlay 4K badge if applicable
+            if state.resolution == "4k":
+                with me.box(
+                    style=me.Style(
+                        position="absolute",
+                        top=16,
+                        right=16,
+                        z_index=1,
+                    )
+                ):
+                    pill(label="4K Ultra HD", pill_type="resolution_4k")
 
         # Find the corresponding GCS URI for the selected video URL to pass to the GIF converter.
         try:
