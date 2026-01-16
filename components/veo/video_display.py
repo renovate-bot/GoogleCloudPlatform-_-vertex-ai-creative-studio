@@ -75,17 +75,18 @@ def video_display(on_thumbnail_click: Callable, on_click_extend: Callable):
                 ),
             )
             
-            # Overlay 4K badge if applicable
-            if state.resolution == "4k":
-                with me.box(
-                    style=me.Style(
-                        position="absolute",
-                        top=16,
-                        right=16,
-                        z_index=1,
-                    )
-                ):
-                    pill(label="4K Ultra HD", pill_type="resolution_4k")
+            # 4K badge overlay (Hidden by default to avoid confusion with video content)
+            # To enable, uncomment the block below.
+            # if state.resolution == "4k":
+            #     with me.box(
+            #         style=me.Style(
+            #             position="absolute",
+            #             top=16,
+            #             right=16,
+            #             z_index=1,
+            #         )
+            #     ):
+            #         pill(label="4K Ultra HD", pill_type="resolution_4k")
 
         # Find the corresponding GCS URI for the selected video URL to pass to the GIF converter.
         try:
