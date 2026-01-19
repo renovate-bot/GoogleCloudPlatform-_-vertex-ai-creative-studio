@@ -269,7 +269,8 @@ def on_extend_click(e: me.ClickEvent):
             aspect_ratio="16:9",  # Default, will be overridden by video input usually or model logic
             resolution="720p",  # Extension typically requires 720p
             enhance_prompt=False,
-            person_generation="allow_all",
+            generate_audio=True,
+            person_generation="Allow (Adults only)",
             video_input_gcs=state.input_video_uri,
             video_input_mime_type="video/mp4",
         )
