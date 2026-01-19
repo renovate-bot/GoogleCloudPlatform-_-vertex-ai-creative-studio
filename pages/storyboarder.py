@@ -202,7 +202,8 @@ def on_generate_video_click(e: me.ClickEvent):
                 video_count=1,
                 resolution="720p",
                 enhance_prompt=True,
-                person_generation="allow_adult",
+                generate_audio=True,
+                person_generation="Allow (Adults only)",
             )
             
             video_uris, _ = generate_video(request)

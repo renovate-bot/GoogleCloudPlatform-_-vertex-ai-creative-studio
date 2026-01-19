@@ -50,6 +50,7 @@ def test_veo_extension(
         duration_seconds=7,
         video_count=1,
         enhance_prompt=False,
+        generate_audio=True,
         person_generation="allow_all",
         video_input_gcs=input_video_gcs,
         video_input_mime_type="video/mp4",

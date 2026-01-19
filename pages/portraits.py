@@ -830,6 +830,7 @@ Do not describe the frame. There should be no lip movement like speaking, but th
             aspect_ratio=state.aspect_ratio,
             resolution="720p",  # Motion portraits default to 720p
             enhance_prompt=state.auto_enhance_prompt,
+            generate_audio=True,
             model_version_id=state.veo_model,
             reference_image_gcs=state.reference_image_gcs,
             reference_image_mime_type=state.reference_image_mime_type,

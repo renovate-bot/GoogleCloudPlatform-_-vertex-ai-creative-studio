@@ -172,6 +172,14 @@ def _update_state_for_new_model(model_version_id: str):
             ):
                 state.aspect_ratio = override.supported_aspect_ratios[0]
 
+        # Ensure selected resolution is supported by the new model
+        if state.resolution not in new_model_config.resolutions:
+            state.resolution = new_model_config.resolutions[0]
+
+        # Force auto-enhance prompt if required
+        if new_model_config.requires_prompt_enhancement:
+            state.auto_enhance_prompt = True
+
 
 def on_selection_change_veo_model(e: me.SelectSelectionChangeEvent):
     """Handle changes to the Veo model selection."""
@@ -190,6 +198,20 @@ def on_change_auto_enhance_prompt(e: me.CheckboxChangeEvent):
     )
     state = me.state(PageState)
     state.auto_enhance_prompt = e.checked
+    yield
+
+
+def on_change_generate_audio(e: me.CheckboxChangeEvent):
+    """Toggle audio generation."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="veo_generate_audio",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+        extras={"checked": e.checked},
+    )
+    state = me.state(PageState)
+    state.generate_audio = e.checked
     yield
 
 
@@ -275,6 +297,7 @@ def veo_content(app_state: me.state):
                 on_selection_change_video_count=on_selection_change_video_count,
                 on_selection_change_person_generation=on_selection_change_person_generation,
                 on_change_auto_enhance_prompt=on_change_auto_enhance_prompt,
+                on_change_generate_audio=on_change_generate_audio,
             )
 
         me.box(style=me.Style(height=50))
@@ -347,7 +370,8 @@ def on_click_extend_video(e: me.ClickEvent):
         duration_seconds=state.video_extend_length, # Use extension length
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
-        person_generation=state.person_generation.lower().split(" ")[0],
+        generate_audio=state.generate_audio,
+        person_generation=state.person_generation,
         video_input_gcs=video_input_gcs,
         video_input_mime_type="video/mp4", # Assumed MP4
     )
@@ -530,7 +554,8 @@ def on_click_veo(e: me.ClickEvent):  # pylint: disable=unused-argument
         duration_seconds=state.video_length,
         video_count=state.video_count,
         enhance_prompt=state.auto_enhance_prompt,
-        person_generation=state.person_generation.lower().split(" ")[0],
+        generate_audio=state.generate_audio,
+        person_generation=state.person_generation,
         reference_image_gcs=state.reference_image_gcs
         if state.veo_mode in ["i2v", "r2v", "interpolation"] and state.reference_image_gcs
         else None,
