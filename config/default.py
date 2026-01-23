@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.4.0" # Veo 3.1 / improvements
+    VERSION: str = "1.4.0" # vto GA
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
     
@@ -119,7 +119,7 @@ class Default:
 
     # VTO
     VTO_LOCATION: str = os.environ.get("VTO_LOCATION", "us-central1")
-    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-preview-08-04")
+    VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-001")
     GENMEDIA_VTO_MODEL_COLLECTION_NAME: str = os.environ.get(
         "GENMEDIA_VTO_MODEL_COLLECTION_NAME", "genmedia-vto-model",
     )

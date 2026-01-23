@@ -58,7 +58,7 @@ Specific configuration for the Virtual Try-On feature.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | **`VTO_LOCATION`** | `us-central1` | Region for the VTO API. |
-| **`VTO_MODEL_ID`** | `virtual-try-on-preview-08-04` | The specific VTO model version. |
+| **`VTO_MODEL_ID`** | `virtual-try-on-001` | The specific VTO model version. |
 | **`GENMEDIA_VTO_MODEL_COLLECTION_NAME`** | `genmedia-vto-model` | Firestore collection for VTO model data. |
 | **`GENMEDIA_VTO_CATALOG_COLLECTION_NAME`** | `genmedia-vto-catalog` | Firestore collection for VTO product catalog data. |
 
