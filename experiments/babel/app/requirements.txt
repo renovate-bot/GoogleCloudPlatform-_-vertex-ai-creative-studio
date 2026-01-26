@@ -41,7 +41,7 @@ google-api-core==2.25.2
     #   google-cloud-appengine-logging
     #   google-cloud-core
     #   google-cloud-logging
-google-auth==2.40.3
+google-auth==2.48.0
     # via
     #   babel-web (pyproject.toml)
     #   google-api-core
