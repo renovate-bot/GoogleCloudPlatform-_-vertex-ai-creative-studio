@@ -390,7 +390,7 @@ requests==2.32.5
     #   pooch
 rsa==4.9.1
     # via google-auth
-ruff==0.14.9
+ruff==0.15.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 scikit-image==0.25.2
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
