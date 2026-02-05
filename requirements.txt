@@ -261,7 +261,7 @@ numpy==2.3.5
     #   soundfile
     #   soxr
     #   tifffile
-opencv-python==4.11.0.86
+opencv-python==4.13.0.92
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 opentelemetry-api==1.39.1
     # via google-cloud-logging
