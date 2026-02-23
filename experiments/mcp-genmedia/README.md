@@ -8,7 +8,7 @@ Each server can be enabled and run separately, allowing flexibility for environm
 
 *   **[Gemini 3 Pro multimodal output](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro-image) & [Gemini 2.5 Flash](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)** - for image generation and editing
 *   **[Veo 2 & 3.1](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
-*  **[Gemini TTS](https://docs.cloud.google.com/text-to-speech/docs/gemini-tts)** &  **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for speech synthesis
+*   **[Gemini TTS](https://docs.cloud.google.com/text-to-speech/docs/gemini-tts)** & **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for speech synthesis
 *   **[Imagen 3 & 4](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
 *   **[Lyria](https://cloud.google.com/vertex-ai/generative-ai/docs/music/generate-music)** - for music generation
 *   **AVTool** - for audio/video compositing and manipulation
