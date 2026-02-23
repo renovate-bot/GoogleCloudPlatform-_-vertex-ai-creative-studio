@@ -286,7 +286,7 @@ pathspec==0.12.1
     # via black
 pexpect==4.9.0
     # via ipython
-pillow==11.3.0
+pillow==12.1.1
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   imageio
