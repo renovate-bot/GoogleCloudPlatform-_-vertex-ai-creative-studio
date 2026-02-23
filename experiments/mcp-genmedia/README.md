@@ -1,15 +1,15 @@
 # MCP Servers for Google Cloud Genmedia APIs
 
-This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage Google Cloud's powerful generative media APIs (Imagen, Veo, Chirp, Lyria) and advanced audio/video compositing capabilities (AVTool).
+This repository provides Model Context Protocol (MCP) servers that enable AI agents and applications to easily integrate and leverage the full breadth and depth Google Cloud's powerful generative media APIs (Gemini Image, Gemini TTS, Veo, Chirp, Imagen, Lyria) and advanced audio/video compositing capabilities (AVTool).
 
 Each server can be enabled and run separately, allowing flexibility for environments that don't require all capabilities.
 
 ## Generative Media & Compositing Capabilities
 
-*   **[Gemini 2.5 Flash multimodal output](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)** - for image generation and editing
-*   **[Imagen 3](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
-*   **[Veo 2](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
-*   **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for audio synthesis
+*   **[Gemini 3 Pro multimodal output](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro-image) & [Gemini 2.5 Flash](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)** - for image generation and editing
+*   **[Veo 2 & 3.1](https://cloud.google.com/vertex-ai/generative-ai/docs/video/generate-videos)** - for video creation
+*  **[Gemini TTS](https://docs.cloud.google.com/text-to-speech/docs/gemini-tts)** &  **[Chirp 3 HD](https://cloud.google.com/text-to-speech/docs/chirp3-hd)** - for speech synthesis
+*   **[Imagen 3 & 4](https://cloud.google.com/vertex-ai/generative-ai/docs/image/overview)** - for image generation and editing
 *   **[Lyria](https://cloud.google.com/vertex-ai/generative-ai/docs/music/generate-music)** - for music generation
 *   **AVTool** - for audio/video compositing and manipulation
 

@@ -87,6 +87,14 @@ You should also run the standard Go tests:
 go test ./...
 ```
 
+### **Handling Safety Filters**
+
+Generative models (Veo, Imagen) have strict safety filters that can be triggered by emotionally charged or "high-intensity" language, even in fictional or cinematic contexts.
+
+1.  **The "Clinical Rewrite" Method**: If a prompt is blocked, rewrite it to remove subjective emotional labels (e.g., "terror", "scared", "horror") and replace them with objective physical descriptions (e.g., "eyes widening", "sharp intake of breath", "rhythmic breathing").
+2.  **Silent Blocks**: In Veo, if an operation completes successfully but returns **zero videos**, it is usually a safety block. Review the prompt and the source image (for i2v) for potentially sensitive content.
+3.  **Image Sensitivity**: Some source images (e.g., people in precarious positions) are "hot" and will trigger blocks even with neutral prompts.
+
 ### **New Rule: Standardized Verification**
 
 After making any code change to an MCP server, you **must** ensure a `verify.sh` script exists and is up-to-date. If a script does not exist, you must create one by adapting the script from a neighboring MCP server (e.g., `mcp-gemini-go`). All `verify.sh` scripts should perform a basic build and liveness check by calling `mcptools tools`.
