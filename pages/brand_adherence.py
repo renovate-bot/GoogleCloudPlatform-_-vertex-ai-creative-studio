@@ -237,7 +237,7 @@ Brand Guidelines Context:
         # Pass reference image if available
         images = [state.reference_image_gcs_uri] if state.reference_image_gcs_uri else []
         
-        gcs_uris, _, _, _ = generate_image_from_prompt_and_images(
+        gcs_uris, _, _, _, _ = generate_image_from_prompt_and_images(
             prompt=full_prompt,
             images=images,
             aspect_ratio="16:9",
