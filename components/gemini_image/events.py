@@ -46,10 +46,25 @@ def get_on_model_select(state_class):
     def on_model_select(e: me.WebEvent):
         """Updates the selected model."""
         state = me.state(state_class)
-        state.selected_model = e.value
-        # reset size and aspect ratio just to be safe if they are out of bounds
-        state.image_size = "1K"
-        state.aspect_ratio = "1:1"
+        
+        # Depending on how the custom event is packed, it could be the raw string, or a dict.
+        print(f"model_select raw event: key={e.key}, value={e.value}")
+        val = e.value
+        if isinstance(val, dict):
+            val = val.get("value") or val.get("modelName")
+            
+        if not val:
+            # Fallback to key if passed directly
+            val = e.key
+            
+        if val:
+            print(f"Setting selected_model to: {val}")
+            state.selected_model = val
+            # reset size and aspect ratio just to be safe if they are out of bounds
+            state.image_size = "1K"
+            state.aspect_ratio = "1:1"
+        else:
+            print("WARNING: model_select could not resolve a value from the event!")
     return on_model_select
 
 def get_on_prompt_blur(state_class):
