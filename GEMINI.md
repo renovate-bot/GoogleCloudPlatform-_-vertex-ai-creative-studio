@@ -27,6 +27,14 @@ When new code, features, or experiments are added, it's crucial to update the re
 *   **Model Parameter Probing:** The `google-genai` SDK and Vertex AI backend can be incredibly strict. For example, `types.ImageConfig(image_size="512PX")` will fail validation; it must be `"512"`. `types.ThinkingConfig` expects `thinking_budget` (not `thinking_level`), and setting `include_thoughts=True` without a budget throws a `400 INVALID_ARGUMENT`. Always write a short `test_probe.py` script to verify exact SDK payload shapes before wiring them into the Mesop UI state.
 
 
+
+### Lit WebComponents Interop
+Mesop allows integrating custom Lit WebComponents, but the bridge between JavaScript and Python is highly specific. When creating custom components like `<banana-button>`:
+1. **Property Binding:** Declare properties explicitly in your Lit element's `static properties = { ... }`. Mesop dynamically sets these from the `properties={}` dict in the python wrapper.
+2. **Event Naming (CamelCase Rule):** Mesop automatically transforms kebab-case into camelCase for internal event routing. When firing events from JS to Python, **always use camelCase strings** for both the JS `CustomEvent` name and the python `events={}` dictionary key (e.g. `modelSelected`, not `model-select`).
+3. **Payload Structure:** Mesop expects incoming custom event data to live on the `detail` object, specifically under a `value` key. Always dispatch like this: `this.dispatchEvent(new CustomEvent('eventName', { detail: { value: this.myValue }, bubbles: true, composed: true }))`.
+4. **Python Type Hinting (Critical):** In the python wrapper function (e.g. `@me.web_component(...) def my_component():`), the event handler argument *must* be strictly typed as a callable accepting a `WebEvent` (e.g. `on_click: Callable[[me.WebEvent], Any]`). If you type it as `None` or `Any`, Mesop's reflection engine will silently fail to register the listener, and the events will be dropped over the websocket bridge.
+
 ### 🚨 The `git restore` Trap (Data Loss)
 When performing iterative, multi-step refactoring in a single session without intermediate commits, **do not use `git restore <file>` or `git checkout -- <file>`** to recover from a botched regex or Python script edit.
 *   **Why:** `git restore` resets the file to the last *commit*. This instantly wipes out *all* uncommitted progress you made earlier in the session (such as adding new variables to a `@me.stateclass`, importing new modules, or fixing specific bugs).

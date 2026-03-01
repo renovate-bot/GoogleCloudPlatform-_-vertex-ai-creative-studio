@@ -42,6 +42,23 @@ from components.veo_button.veo_button import veo_button
 from config.default import Default as cfg
 from config.gemini_image_models import get_gemini_image_model_config
 from components.banana_button.banana_button import banana_button
+
+from components.gemini_image.upload_ui import gemini_image_upload_ui
+from components.gemini_image.controls import gemini_image_controls
+from components.gemini_image.gallery import gemini_image_gallery
+from components.gemini_image.events import (
+    get_on_aspect_ratio_change,
+    get_on_image_size_change,
+    get_on_num_images_change,
+    get_on_search_change,
+    get_on_image_search_change,
+    get_on_include_thoughts_change,
+    get_on_thinking_level_change,
+    get_on_model_select,
+    get_on_prompt_blur,
+    get_on_thumbnail_click
+)
+
 from models.gemini import (
     describe_image,
     evaluate_image_with_questions,
@@ -1248,6 +1265,8 @@ def _get_appended_prompt(base_prompt: str, num_images: int) -> str:
     return f"{base_prompt}. {suffix}"
 
 
+
+
 def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     """Core logic to generate images and save results to Firestore."""
     state = me.state(PageState)
@@ -1392,13 +1411,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
     # happens inside the try/except block to ensure UI updates correctly on success or error.
 
 
-def generate_images(e: me.ClickEvent):
-    """Event handler for the main 'Generate Images' button."""
-    state = me.state(PageState)
-    yield from _generate_and_save(
-        base_prompt=state.prompt,
-        input_gcs_uris=state.uploaded_image_gcs_uris,
-    )
+
 
 
 def open_info_dialog(e: me.ClickEvent):
