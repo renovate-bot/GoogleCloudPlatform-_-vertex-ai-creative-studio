@@ -5,7 +5,8 @@ export class BananaButton extends LitElement {
     selected: { type: Boolean, reflect: true },
     badge: { type: String },
     label: { type: String },
-    modelName: { type: String }
+    modelName: { type: String },
+    modelSelected: { type: String }
   };
 
   constructor() {
@@ -31,7 +32,7 @@ export class BananaButton extends LitElement {
       width: 64px;
       height: 64px;
       border-radius: 16px;
-      background-color: var(--md-sys-color-surface-container-high, #f0f0f0);
+      background-color: var(--md-sys-color-surface-container-high);
       border: 2px solid transparent;
       display: flex;
       align-items: center;
@@ -40,7 +41,7 @@ export class BananaButton extends LitElement {
     }
 
     .button-container:hover {
-      background-color: var(--md-sys-color-surface-container-highest, #e0e0e0);
+      background-color: var(--md-sys-color-surface-container-highest);
     }
 
     :host([selected]) .button-container {
@@ -69,7 +70,7 @@ export class BananaButton extends LitElement {
 
     .label {
       font-size: 12px;
-      color: var(--md-sys-color-on-surface, #1d1b20);
+      color: var(--md-sys-color-on-surface);
       text-align: center;
       font-weight: 500;
       max-width: 80px;
@@ -83,12 +84,8 @@ export class BananaButton extends LitElement {
   `;
 
   _handleClick() {
-    this.dispatchEvent(new CustomEvent('model-selected', {
-      // Mesop WebEvent maps to the detail object. Mesop reads the `value` field from here.
-      detail: { value: this.modelName },
-      bubbles: true,
-      composed: true
-    }));
+    console.log("Banana button clicked! Model:", this.modelName, "Event:", this.modelSelected);
+    this.dispatchEvent(new MesopEvent(this.modelSelected, { value: this.modelName }));
   }
 
   render() {

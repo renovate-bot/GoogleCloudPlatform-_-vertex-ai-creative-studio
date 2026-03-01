@@ -15,23 +15,17 @@ def gemini_image_controls(
 ):
     """Shared UI controls for Gemini Image Generation features."""
     with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
-        me.select(
-            label="Aspect Ratio",
-            options=[
-                me.SelectOption(label="1:1", value="1:1"),
-                me.SelectOption(label="3:2", value="3:2"),
-                me.SelectOption(label="2:3", value="2:3"),
-                me.SelectOption(label="3:4", value="3:4"),
-                me.SelectOption(label="4:3", value="4:3"),
-                me.SelectOption(label="4:5", value="4:5"),
-                me.SelectOption(label="9:16", value="9:16"),
-                me.SelectOption(label="16:9", value="16:9"),
-                me.SelectOption(label="21:9", value="21:9"),
-            ],
-            on_selection_change=on_aspect_ratio_change,
-            value=str(state.aspect_ratio),
-            style=me.Style(flex_grow=1),
-        )
+        if model_config and model_config.supported_aspect_ratios:
+            me.select(
+                label="Aspect Ratio",
+                options=[
+                    me.SelectOption(label=ar, value=ar)
+                    for ar in model_config.supported_aspect_ratios
+                ],
+                on_selection_change=on_aspect_ratio_change,
+                value=str(state.aspect_ratio),
+                style=me.Style(flex_grow=1),
+            )
 
         if model_config and model_config.supported_image_sizes:
             me.select(
