@@ -41,6 +41,7 @@ from components.svg_icon.svg_icon import svg_icon
 from components.veo_button.veo_button import veo_button
 from config.default import Default as cfg
 from config.gemini_image_models import get_gemini_image_model_config
+from components.banana_button.banana_button import banana_button
 from models.gemini import (
     describe_image,
     evaluate_image_with_questions,
@@ -142,7 +143,7 @@ def _generate_images_button():
 def _image_upload_slots(on_upload, on_open_library, on_remove_image):
     """The new image upload UI with dynamic slots."""
     state = me.state(PageState)
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
     max_input_images = model_config.max_input_images if model_config else 3
 
@@ -186,6 +187,7 @@ class Evaluation:
 class PageState:
     """Gemini Image Generation Page State"""
 
+    selected_model: str = "gemini-3.1-flash-image-preview"
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     uploaded_image_display_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     image_descriptions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
@@ -208,6 +210,13 @@ class PageState:
     is_generating_questions: bool = False
     prompt_templates: list[dict] = field(default_factory=list) # pylint: disable=invalid-field-call
 
+    use_search: bool = False
+    use_image_search: bool = False
+    include_thoughts: bool = False
+    thinking_level: str = "HIGH"
+    thoughts: str = ""
+    grounding_info: str = ""
+
     evaluations: dict[str, Evaluation] = field(default_factory=dict)  # pylint: disable=invalid-field-call
     is_evaluating: bool = False
     description_queue: list[int] = field(default_factory=list)  # pylint: disable=invalid-field-call
@@ -218,6 +227,18 @@ class PageState:
 
 
 from components.banana_studio.description_tabs import description_tabs
+
+
+on_aspect_ratio_change = get_on_aspect_ratio_change(PageState)
+on_image_size_change = get_on_image_size_change(PageState)
+on_num_images_change = get_on_num_images_change(PageState)
+on_search_change = get_on_search_change(PageState)
+on_image_search_change = get_on_image_search_change(PageState)
+on_include_thoughts_change = get_on_include_thoughts_change(PageState)
+on_thinking_level_change = get_on_thinking_level_change(PageState)
+on_model_select = get_on_model_select(PageState)
+on_prompt_blur = get_on_prompt_blur(PageState)
+on_thumbnail_click = get_on_thumbnail_click(PageState)
 
 NUM_IMAGES_PROMPTS = {
     2: "Give me 2 options.",
@@ -243,7 +264,7 @@ def on_media_select(e: LibrarySelectionChangeEvent):
     Adds a placeholder, and queues the description generation.
     """
     state = me.state(PageState)
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
     max_input_images = model_config.max_input_images if model_config else 3
 
@@ -472,7 +493,7 @@ def gemini_image_gen_page_content():
 
     state = me.state(PageState)
     
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
 
     if state.info_dialog_open:
@@ -510,6 +531,26 @@ def gemini_image_gen_page_content():
                         margin=me.Margin(bottom=16),
                     ),
                 )
+                from config.gemini_image_models import GEMINI_IMAGE_MODELS
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=16,
+                        margin=me.Margin(bottom=16),
+                        justify_content="center",
+                    )
+                ):
+                    for model in GEMINI_IMAGE_MODELS:
+                        is_selected = state.selected_model == model.model_name
+                        banana_button(
+                            selected=is_selected,
+                            badge=model.button_label,
+                            label=model.display_name,
+                            model_name=model.model_name,
+                            on_click=on_model_select,
+                        )
+                
                 me.textarea(
                     label="Prompt",
                     rows=3,
@@ -876,7 +917,7 @@ def on_upload(e: me.UploadEvent):
     and then generates descriptions asynchronously.
     """
     state = me.state(PageState)
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
     max_input_images = model_config.max_input_images if model_config else 3
 
@@ -1229,16 +1270,23 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
             # num_input_images=len(input_gcs_uris),
             # num_images_generated=state.num_images_to_generate,
         ):
-            gcs_uris, execution_time, captions, _ = generate_image_from_prompt_and_images(
+            gcs_uris, execution_time, captions, grounding_info, all_thoughts = generate_image_from_prompt_and_images(
                 prompt=final_prompt,
                 images=input_gcs_uris,
                 aspect_ratio=state.aspect_ratio,
                 gcs_folder="gemini_image_generations",
                 file_prefix="gemini_image",
                 image_size=state.image_size,
+                use_search=state.use_search,
+                use_image_search=state.use_image_search,
+                thinking_level=state.thinking_level,
+                include_thoughts=state.include_thoughts,
+                model_name=state.selected_model,
             )
 
         state.generation_time = execution_time
+        state.grounding_info = json.dumps(grounding_info) if grounding_info else ""
+        state.thoughts = all_thoughts[0] if all_thoughts else ""
 
         if not gcs_uris:
             item = MediaItem(
