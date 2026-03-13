@@ -119,7 +119,7 @@ google-cloud-logging==3.13.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-resource-manager==1.15.0
     # via google-cloud-aiplatform
-google-cloud-storage==3.7.0
+google-cloud-storage==3.9.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
