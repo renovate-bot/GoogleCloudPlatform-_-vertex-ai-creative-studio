@@ -195,7 +195,8 @@ def generate_image_from_prompt_and_images(
             )
             for i, part in enumerate(candidate.content.parts):
                 if hasattr(part, "thought") and part.thought:
-                    current_thought_buffer += part.text
+                    if part.text:
+                        current_thought_buffer += part.text
                 elif hasattr(part, "text") and part.text:
                     analytics_logger.info(
                         f"generate_image_from_prompt_and_images (text): {part.text}"
