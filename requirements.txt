@@ -357,7 +357,7 @@ pygments==2.19.2
     #   ipython
     #   ipython-pygments-lexers
     #   pytest
-pyjwt==2.10.1
+pyjwt==2.12.0
     # via firebase-admin
 pyparsing==3.2.5
     # via matplotlib
