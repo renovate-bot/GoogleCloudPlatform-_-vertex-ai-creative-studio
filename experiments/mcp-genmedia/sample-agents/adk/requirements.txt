@@ -55,7 +55,7 @@ google-api-core==2.30.0
     #   google-cloud-trace
 google-api-python-client==2.190.0
     # via google-adk
-google-auth==2.40.3
+google-auth==2.49.1
     # via
     #   google-api-core
     #   google-api-python-client
