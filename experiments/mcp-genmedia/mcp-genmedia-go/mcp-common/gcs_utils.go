@@ -71,13 +71,14 @@ func DownloadFromGCSAsBytes(ctx context.Context, gcsURI string) ([]byte, error) 
 
 	var rc *storage.Reader
 	var lastErr error
+	var cancel context.CancelFunc
 	// Retry loop to handle eventual consistency of GCS.
 	for i := 0; i < 5; i++ {
-		gcsOpCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		var gcsOpCtx context.Context
+		gcsOpCtx, cancel = context.WithTimeout(ctx, 30*time.Second)
 		rc, lastErr = client.Bucket(bucketName).Object(objectName).NewReader(gcsOpCtx)
 		if lastErr == nil {
-			cancel()
-			break // Success
+			break // Success — don't cancel yet, rc needs the context to stream data
 		}
 		cancel()
 		if !errors.Is(lastErr, storage.ErrObjectNotExist) {
@@ -90,6 +91,7 @@ func DownloadFromGCSAsBytes(ctx context.Context, gcsURI string) ([]byte, error) 
 	if lastErr != nil {
 		return nil, fmt.Errorf("Object(%q).NewReader timed out after retries: %w", objectName, lastErr)
 	}
+	defer cancel()
 	defer rc.Close()
 
 	data, err := io.ReadAll(rc)
