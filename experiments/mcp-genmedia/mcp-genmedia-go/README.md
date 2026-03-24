@@ -6,9 +6,24 @@ These servers enable MCP clients (such as AI agents or other applications) to le
 
 ## Getting Started: Installation
 
-### Easy Installation (Recommended)
+### Easy Installation (Pre-compiled Binaries)
 
-For a guided experience, you can use the interactive installer script. It will help you choose which MCP servers to install, check for prerequisites like Go, and provide instructions for configuring your system.
+For the fastest setup without needing the Go toolchain installed, you can use our online installer script. This script automatically detects your operating system and architecture, downloads the latest pre-compiled binaries from GitHub Releases, and places them in your `~/.local/bin` directory.
+
+Run the following command in your terminal:
+
+```bash
+curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+```
+
+*Note: Ensure `~/.local/bin` is added to your system `PATH`.*
+
+### Local Build Installer (Requires Go)
+
+If you prefer to compile the servers from source or want to modify the code, you can use the local interactive installer script.
+
+
+
 
 1.  **Run the Installer Script**
     From this `mcp-genmedia-go` directory, execute the following command:
