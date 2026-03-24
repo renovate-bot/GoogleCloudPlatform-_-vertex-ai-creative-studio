@@ -1,5 +1,5 @@
 {
-  "name": "google-genmedia-extension",
+  "name": "google-genmedia-video",
   "version": "1.0.0",
   "mcpServers": {
     "veo": {
@@ -9,32 +9,8 @@
         "MCP_SERVER_REQUEST_TIMEOUT": "30000"
       }
     },
-    "imagen": {
-      "command": "mcp-imagen-go",
-      "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
-      }
-    },
-    "chirp3-hd": {
-      "command": "mcp-chirp3-go",
-      "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
-      }
-    },
-    "lyria": {
-      "command": "mcp-lyria-go",
-      "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
-      }
-    },
     "avtool": {
       "command": "mcp-avtool-go",
-      "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
-      }
-    },
-    "nanobanana": {
-      "command": "mcp-nanobanana-go",
       "env": {
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
