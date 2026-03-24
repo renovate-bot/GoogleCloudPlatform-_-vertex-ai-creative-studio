@@ -29,7 +29,7 @@ The server exposes the following tools:
     *   `prompt` (string, optional): Optional text prompt to guide video generation from the image.
     *   `bucket` (string, optional): Google Cloud Storage bucket for output. Same logic as `veo_t2v`.
     *   `output_directory` (string, optional): Local directory for download. Same logic as `veo_t2v`.
-    *   `model` (string, optional): Model to use. Default: `"veo-2.0-generate-001"`.
+    *   `model` (string, optional): Model to use. Default: `"veo-3.1-fast-generate-001"`.
     *   `num_videos` (number, optional): Number of videos. Default: `1`. Min: `1`, Max: `4`.
     *   `aspect_ratio` (string, optional): Aspect ratio. Default: `"16:9"`.
     *   `duration` (number, optional): Duration in seconds. Default: `5`. Min: `5`, Max: `8`.
@@ -87,7 +87,7 @@ Build the tool using `go build` or `go install`.
     "name": "veo_t2v",
     "arguments": {
       "prompt": "A majestic eagle soaring over a mountain range at sunset.",
-      "model": "veo-2.0-generate-001",
+      "model": "veo-3.1-fast-generate-001",
       "num_videos": 1,
       "aspect_ratio": "16:9",
       "duration": 8,
@@ -108,7 +108,7 @@ Build the tool using `go build` or `go install`.
       "image_uri": "gs://your-gcs-bucket/source_images/landscape.png",
       "mime_type": "image/png",
       "prompt": "Animate this landscape with a gentle breeze and flowing river.",
-      "model": "veo-2.0-generate-001",
+      "model": "veo-3.1-fast-generate-001",
       "num_videos": 1,
       "aspect_ratio": "16:9",
       "duration": 6,
