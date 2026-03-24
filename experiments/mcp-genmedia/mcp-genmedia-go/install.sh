@@ -23,7 +23,7 @@ NC='\033[0m' # No Color
 # This function searches for all directories in the current directory that match
 # the pattern 'mcp-*-go' and prints them to standard output.
 find_mcp_servers() {
-  find . -mindepth 1 -maxdepth 1 -type d -name 'mcp-*-go' | sed 's|./||'
+  find . -mindepth 1 -maxdepth 1 -type d -name 'mcp-*-go' ! -name 'mcp-imagen-go' | sed 's|./||'
 }
 
 #

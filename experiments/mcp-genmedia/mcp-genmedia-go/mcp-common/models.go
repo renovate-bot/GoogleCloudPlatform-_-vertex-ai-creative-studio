@@ -132,6 +132,12 @@ type GeminiImageModelInfo struct {
 
 // SupportedGeminiImageModels is the single source of truth for all supported Gemini Image models.
 var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
+	"gemini-3.1-flash-image-preview": {
+		CanonicalName: "gemini-3.1-flash-image-preview",
+		Aliases:       []string{"Nano Banana 2"},
+		Description:   "Gemini 3.1 Flash Image, or Nano Banana 2.",
+	},
+
 	"gemini-3-pro-image-preview": {
 		CanonicalName: "gemini-3-pro-image-preview",
 		Aliases:       []string{"Nano Banana Pro", "Gemini 3 Pro Image"},
@@ -209,24 +215,6 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportedAspectRatios: []string{"16:9", "9:16"},
 		SupportsGenerateAudio: false,
 	},
-	"veo-2.0-generate-exp": {
-		CanonicalName:         "veo-2.0-generate-exp",
-		Aliases:               []string{"Veo 2.0 Exp"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{5, 6, 7, 8},
-		MaxVideos:             4,
-		SupportedAspectRatios: []string{"16:9", "9:16"},
-		SupportsGenerateAudio: false,
-	},
-	"veo-2.0-generate-preview": {
-		CanonicalName:         "veo-2.0-generate-preview",
-		Aliases:               []string{"Veo 2.0 Preview"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{5, 6, 7, 8},
-		MaxVideos:             4,
-		SupportedAspectRatios: []string{"16:9", "9:16"},
-		SupportsGenerateAudio: false,
-	},
 	"veo-3.0-generate-001": {
 		CanonicalName:         "veo-3.0-generate-001",
 		Aliases:               []string{"Veo 3.0"},
@@ -245,26 +233,8 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportedAspectRatios: []string{"16:9"},
 		SupportsGenerateAudio: true,
 	},
-	"veo-3.0-generate-preview": {
-		CanonicalName:         "veo-3.0-generate-preview",
-		Aliases:               []string{"Veo 3"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{4, 6, 8},
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9"},
-		SupportsGenerateAudio: true,
-	},
-	"veo-3.0-fast-generate-preview": {
-		CanonicalName:         "veo-3.0-fast-generate-preview",
-		Aliases:               []string{"Veo 3 Fast"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{4, 6, 8},
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9"},
-		SupportsGenerateAudio: true,
-	},
-	"veo-3.1-generate-preview": {
-		CanonicalName:         "veo-3.1-generate-preview",
+	"veo-3.1-generate-001": {
+		CanonicalName:         "veo-3.1-generate-001",
 		Aliases:               []string{"Veo 3.1"},
 		DefaultDuration:       8,
 		SupportedDurations:    []int32{4, 6, 8},
@@ -272,8 +242,8 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportedAspectRatios: []string{"16:9", "9:16"},
 		SupportsGenerateAudio: true,
 	},
-	"veo-3.1-fast-generate-preview": {
-		CanonicalName:         "veo-3.1-fast-generate-preview",
+	"veo-3.1-fast-generate-001": {
+		CanonicalName:         "veo-3.1-fast-generate-001",
 		Aliases:               []string{"Veo 3.1 Fast"},
 		DefaultDuration:       8,
 		SupportedDurations:    []int32{4, 6, 8},

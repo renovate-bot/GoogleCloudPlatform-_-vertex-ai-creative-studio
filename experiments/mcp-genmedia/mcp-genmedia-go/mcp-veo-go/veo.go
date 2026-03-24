@@ -61,7 +61,7 @@ func init() {
 // and starts listening for requests on the configured transport.
 func main() {
 	var err error
-	
+
 	// Initialize OpenTelemetry
 	var cleanup func()
 	appConfig, cleanup = common.Init(serviceName, version)
@@ -101,7 +101,7 @@ func main() {
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
 		),
 		mcp.WithString("model",
-			mcp.DefaultString("veo-2.0-generate-001"),
+			mcp.DefaultString("veo-3.1-fast-generate-001"),
 			mcp.Description(common.BuildVeoModelDescription()),
 		),
 		mcp.WithNumber("num_videos",
