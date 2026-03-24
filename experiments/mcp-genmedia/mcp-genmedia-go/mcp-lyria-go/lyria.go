@@ -56,7 +56,7 @@ var (
 
 const (
 	serviceName         = "mcp-lyria-go"
-	version             = "1.5.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 	defaultPublisher    = "google"
 	defaultLyriaModelID = "lyria-002"
 	defaultSampleCount  = 1

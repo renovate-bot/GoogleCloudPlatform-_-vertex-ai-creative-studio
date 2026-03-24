@@ -49,7 +49,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "1.12.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 )
 
 func init() {

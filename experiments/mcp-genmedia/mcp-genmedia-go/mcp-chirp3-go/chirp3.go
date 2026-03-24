@@ -33,7 +33,7 @@ var (
 	availableVoices []*texttospeechpb.Voice
 	transport       string
 	port            int
-	version         = "0.3.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 )
 
 const (
