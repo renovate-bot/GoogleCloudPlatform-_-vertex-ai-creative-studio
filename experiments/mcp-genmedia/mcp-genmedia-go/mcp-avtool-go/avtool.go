@@ -73,7 +73,6 @@ func determinePort(transport string, portFlag int) int {
 func main() {
 	flag.Parse() // Ensure flags are parsed before use
 
-	
 	// Initialize OpenTelemetry
 	var cleanup func()
 	cfg, cleanup := common.Init(serviceName, version)

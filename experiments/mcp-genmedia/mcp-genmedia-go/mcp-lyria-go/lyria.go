@@ -78,7 +78,7 @@ func init() {
 // listening for requests on the configured transport.
 func main() {
 	flag.Parse()
-	
+
 	// Initialize OpenTelemetry
 	var cleanup func()
 	appConfig, cleanup = common.Init(serviceName, version)

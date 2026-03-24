@@ -63,7 +63,7 @@ func init() {
 
 // main is the entry point for the mcp-imagen-go service.
 func main() {
-	
+
 	var cleanup func()
 	appConfig, cleanup = common.Init(serviceName, version)
 	defer cleanup()

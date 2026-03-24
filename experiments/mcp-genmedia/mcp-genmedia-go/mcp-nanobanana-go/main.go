@@ -54,7 +54,7 @@ func init() {
 }
 
 func main() {
-	
+
 	// Override default location for Gemini models if not explicitly set
 	if os.Getenv("LOCATION") == "" {
 		log.Printf("LOCATION environment variable not set. Defaulting to 'global' for mcp-nanobanana-go.")
@@ -91,7 +91,7 @@ func main() {
 	tool := mcp.NewTool("nanobanana_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini Image generation models."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
-		mcp.WithString("model", mcp.DefaultString("nanobanana"), mcp.Description(common.BuildGeminiImageModelDescription())),
+		mcp.WithString("model", mcp.DefaultString("gemini-3.1-flash-image-preview"), mcp.Description(common.BuildGeminiImageModelDescription())),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input images.")),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
@@ -101,8 +101,6 @@ func main() {
 		return nanobananaGenerateContentHandler(genAIClient, ctx, request)
 	}
 	s.AddTool(tool, handlerWithClient)
-
-
 
 	switch transport {
 	case "sse":
