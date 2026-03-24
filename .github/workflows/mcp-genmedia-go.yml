@@ -31,9 +31,12 @@ jobs:
     - name: Setup mcptools
       run: go install github.com/f/mcptools/cmd/mcptools@latest
 
-    - name: Install golangci-lint
-      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
 
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.64.5
+        working-directory: experiments/mcp-genmedia/mcp-genmedia-go
 
     - name: Install FFmpeg
       run: sudo apt-get update && sudo apt-get install -y ffmpeg
@@ -46,8 +49,6 @@ jobs:
           echo "Processing $dir"
           cd $dir
           
-          echo "-> Running golangci-lint in $dir"
-          golangci-lint run ./... || { echo "golangci-lint failed"; exit 1; }
           
           echo "-> Running go test in $dir"
           go test -v -timeout 30s ./... || { echo "go test failed"; exit 1; }
