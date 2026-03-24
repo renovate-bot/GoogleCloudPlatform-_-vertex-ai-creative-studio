@@ -11,6 +11,9 @@ To install these MCP servers, please see [Installation](../../mcp-genmedia-go/RE
 
 To configure these servers for gemini cli, you can either add these to your ~/.gemini/settings.json (see [Configuration](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md#available-settings-in-settingsjson)) or create an Extension (preferred, [Extensions](https://github.com/google-gemini/gemini-cli/blob/main/docs/extension.md)).
 
+
+> **Existing Users:** If you have previously installed the GenMedia extension using the older JSON format, please see the [Migration Guide](MIGRATION.md) for quick instructions on upgrading to the new interactive setup.
+
 ## .gemini/settings.json: mcpServers
 
 Add the following to your .gemini/settings.json `mcpServers` - you can do this at your ~/.gemini or per project directory.
