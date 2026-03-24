@@ -63,19 +63,11 @@ func init() {
 
 // main is the entry point for the mcp-imagen-go service.
 func main() {
-	appConfig = common.LoadConfig()
-
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	
+	var cleanup func()
+	appConfig, cleanup = common.Init(serviceName, version)
+	defer cleanup()
+	var err error
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
