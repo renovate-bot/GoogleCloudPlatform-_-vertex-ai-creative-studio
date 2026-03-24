@@ -4,6 +4,8 @@ before:
   hooks:
     - cmd: go work sync
       dir: experiments/mcp-genmedia/mcp-genmedia-go
+    - cmd: cp -r ../sample-agents/geminicli/sample_extensions ./gemini-extensions
+      dir: experiments/mcp-genmedia/mcp-genmedia-go
 
 builds:
   - id: mcp-veo-go
@@ -59,3 +61,5 @@ archives:
       - mcp-gemini-go
       - mcp-lyria-go
       - mcp-avtool-go
+    files:
+      - gemini-extensions/**/*
