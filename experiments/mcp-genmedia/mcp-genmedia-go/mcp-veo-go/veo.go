@@ -34,11 +34,10 @@ import (
 )
 
 var (
-	appConfig    *common.Config
-	genAIClient  *genai.Client // Global GenAI client
-	transport    string
-	port         int
-	otel_enabled bool
+	appConfig   *common.Config
+	genAIClient *genai.Client // Global GenAI client
+	transport   string
+	port        int
 )
 
 const (
@@ -62,21 +61,11 @@ func init() {
 // and starts listening for requests on the configured transport.
 func main() {
 	var err error
-	appConfig = common.LoadConfig()
 
 	// Initialize OpenTelemetry
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
-	
+	var cleanup func()
+	appConfig, cleanup = common.Init(serviceName, version)
+	defer cleanup()
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -112,7 +101,7 @@ func main() {
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
 		),
 		mcp.WithString("model",
-			mcp.DefaultString("veo-2.0-generate-001"),
+			mcp.DefaultString("veo-3.1-fast-generate-001"),
 			mcp.Description(common.BuildVeoModelDescription()),
 		),
 		mcp.WithNumber("num_videos",

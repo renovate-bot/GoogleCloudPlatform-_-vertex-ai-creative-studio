@@ -6,9 +6,24 @@ These servers enable MCP clients (such as AI agents or other applications) to le
 
 ## Getting Started: Installation
 
-### Easy Installation (Recommended)
+### Easy Installation (Pre-compiled Binaries)
 
-For a guided experience, you can use the interactive installer script. It will help you choose which MCP servers to install, check for prerequisites like Go, and provide instructions for configuring your system.
+For the fastest setup without needing the Go toolchain installed, you can use our online installer script. This script automatically detects your operating system and architecture, downloads the latest pre-compiled binaries from GitHub Releases, and places them in your `~/.local/bin` directory.
+
+Run the following command in your terminal:
+
+```bash
+curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creative-studio/main/experiments/mcp-genmedia/mcp-genmedia-go/install-online.sh | bash
+```
+
+*Note: Ensure `~/.local/bin` is added to your system `PATH`.*
+
+### Local Build Installer (Requires Go)
+
+If you prefer to compile the servers from source or want to modify the code, you can use the local interactive installer script.
+
+
+
 
 1.  **Run the Installer Script**
     From this `mcp-genmedia-go` directory, execute the following command:
@@ -44,7 +59,7 @@ This project uses a Go workspace (`go.work`) to manage the multiple modules. The
 3.  **Install the Binaries**
     This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
     ```bash
-    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-nanobanana-go ./mcp-imagen-go ./mcp-lyria-go ./mcp-veo-go
     ```
 
 4.  **Verify the Installation**
@@ -150,6 +165,12 @@ This repository provides AI application samples for:
     *   Enables image generation using Google's Imagen models via Vertex AI.
     *   Tool: `imagen_t2i` for text-to-image generation.
     *   Supports various parameters like aspect ratio and number of images. Output can be directed to GCS, saved locally (including download from GCS if API saves there), or returned as base64 data.
+
+
+*   **`mcp-nanobanana-go`**:
+    *   Provides a dedicated multimodal interface to Google's Nano Banana (Gemini Image) models.
+    *   Tool: `nanobanana_image_generation` for generating text and images.
+    *   Output can be saved to a local directory or GCS.
 
 *   **`mcp-lyria-go`**:
     *   Facilitates music generation using Google's Lyria models via Vertex AI.

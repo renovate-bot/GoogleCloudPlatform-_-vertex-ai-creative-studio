@@ -62,3 +62,11 @@ terraform.rc
 ## MCP Servers
 drivectl-mcp.log
 .genkit/
+temp_*.py
+fix_*.py
+test_gen*.py
+update_*.py
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
