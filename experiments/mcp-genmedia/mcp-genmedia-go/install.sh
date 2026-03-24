@@ -23,6 +23,7 @@ NC='\033[0m' # No Color
 # This function searches for all directories in the current directory that match
 # the pattern 'mcp-*-go' and prints them to standard output.
 find_mcp_servers() {
+  # Imagen deprecation as of June 30, 2026
   find . -mindepth 1 -maxdepth 1 -type d -name 'mcp-*-go' ! -name 'mcp-imagen-go' | sed 's|./||'
 }
 
@@ -96,6 +97,7 @@ main() {
           fi
         done
         echo -e "${GREEN}All MCP servers have been installed successfully.${NC}"
+        echo -e "\n${YELLOW}Reminder: Ensure ${BLUE}\$HOME/go/bin${YELLOW} is in your PATH to run the installed servers.${NC}"
         break
         ;;
       "Exit")
@@ -108,6 +110,7 @@ main() {
                     # Run go mod tidy to prevent checksum mismatch errors
           if (cd "$server" && go mod tidy && go install); then
             echo -e "${GREEN}$server has been installed successfully.${NC}"
+            echo -e "\n${YELLOW}Reminder: Ensure ${BLUE}\$HOME/go/bin${YELLOW} is in your PATH to run the installed server.${NC}"
           else
             echo -e "${RED}ERROR: Failed to install $server. Please check the output above for details.${NC}"
             exit 1
