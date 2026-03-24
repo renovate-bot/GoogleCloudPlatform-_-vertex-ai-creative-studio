@@ -55,15 +55,15 @@ func init() {
 
 func main() {
 
+	var cleanup func()
+	appConfig, cleanup = common.Init(serviceName, version)
+	defer cleanup()
+
 	// Override default location for Gemini models if not explicitly set
 	if os.Getenv("LOCATION") == "" {
 		log.Printf("LOCATION environment variable not set. Defaulting to 'global' for mcp-gemini-go.")
 		appConfig.Location = "global"
 	}
-
-	var cleanup func()
-	appConfig, cleanup = common.Init(serviceName, version)
-	defer cleanup()
 	var err error
 
 	log.Printf("Initializing global GenAI client...")
