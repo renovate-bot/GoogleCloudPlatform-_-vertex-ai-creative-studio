@@ -34,11 +34,10 @@ import (
 )
 
 var (
-	appConfig    *common.Config
-	genAIClient  *genai.Client // Global GenAI client
-	transport    string
-	port         int
-	otel_enabled bool
+	appConfig   *common.Config
+	genAIClient *genai.Client // Global GenAI client
+	transport   string
+	port        int
 )
 
 const (
@@ -76,7 +75,6 @@ func main() {
 			}
 		}()
 	}
-	
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)

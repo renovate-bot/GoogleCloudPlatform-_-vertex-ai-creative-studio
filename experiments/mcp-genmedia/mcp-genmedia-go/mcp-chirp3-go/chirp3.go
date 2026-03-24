@@ -29,15 +29,15 @@ import (
 )
 
 var (
-	ttsClient           *texttospeech.Client // Global Text-to-Speech client
-	availableVoices     []*texttospeechpb.Voice
-	transport           string
-	port                int
-	version             = "0.3.0" // Standardize port handling
+	ttsClient       *texttospeech.Client // Global Text-to-Speech client
+	availableVoices []*texttospeechpb.Voice
+	transport       string
+	port            int
+	version         = "0.3.0" // Standardize port handling
 )
 
 const (
-	serviceName             = "mcp-chirp3-go"
+	serviceName           = "mcp-chirp3-go"
 	timeFormatForFilename = "20060102-150405"
 	defaultChirpVoiceName = "en-US-Chirp3-HD-Zephyr"
 )
@@ -103,7 +103,7 @@ func listAndCacheChirpHDVoices(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("texttospeech.NewClient for voice listing: %w", err)
 	}
-	defer tempClient.Close()
+	defer func() { _ = tempClient.Close() }()
 
 	resp, err := tempClient.ListVoices(ctx, &texttospeechpb.ListVoicesRequest{})
 	if err != nil {
@@ -383,7 +383,7 @@ func main() {
 
 	log.Printf("%s Server has stopped.", serviceName)
 	if ttsClient != nil {
-		ttsClient.Close()
+		_ = ttsClient.Close()
 	}
 }
 

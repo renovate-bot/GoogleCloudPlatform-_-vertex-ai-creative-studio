@@ -111,13 +111,13 @@ func main() {
 			return nil, fmt.Errorf("failed to marshal supported models: %w", err)
 		}
 		return []mcp.ResourceContents{
-			mcp.TextResourceContents{
-				URI:      "imagen://models",
-				MIMEType: "application/json",
-				Text:     string(jsonData),
+				mcp.TextResourceContents{
+					URI:      "imagen://models",
+					MIMEType: "application/json",
+					Text:     string(jsonData),
+				},
 			},
-		},
-		nil
+			nil
 	})
 
 	tool := mcp.NewTool("imagen_t2i",
@@ -292,33 +292,33 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	if numberOfImages < 1 {
 		numberOfImages = 1
 	}
-			if numberOfImages > modelDetails.MaxImages {
-				log.Printf("Warning: Requested %d images, but model %s only supports up to %d. Adjusting to max.", numberOfImages, model, modelDetails.MaxImages)
-				numberOfImages = modelDetails.MaxImages
-			}
-	
-			aspectRatio, ok := request.GetArguments()["aspect_ratio"].(string)
-			if !ok || aspectRatio == "" {
-				log.Printf("Aspect ratio not provided or empty, using default: 1:1")
-				aspectRatio = "1:1"
-			}
-	
-					if !contains(modelDetails.SupportedAspectRatios, aspectRatio) {
-						log.Printf("Warning: Requested aspect ratio '%s' is not supported by model %s. Supported ratios are: %v. Falling back to '1:1'.", aspectRatio, model, modelDetails.SupportedAspectRatios)
-						aspectRatio = "1:1" // Fallback to a safe default
-					}
-			
-					imageSize, _ := request.GetArguments()["image_size"].(string)
-					var finalImageSize string
-					if imageSize != "" {
-						if len(modelDetails.SupportedImageSizes) == 0 {
-							log.Printf("Warning: image_size parameter ('%s') provided, but model %s does not support it. The parameter will be ignored.", imageSize, model)
-						} else if !contains(modelDetails.SupportedImageSizes, imageSize) {
-							log.Printf("Warning: Requested image size '%s' is not supported by model %s. Supported sizes are: %v. The parameter will be ignored.", imageSize, model, modelDetails.SupportedImageSizes)
-						} else {
-							finalImageSize = imageSize
-						}
-					}	// ... rest of handler ...
+	if numberOfImages > modelDetails.MaxImages {
+		log.Printf("Warning: Requested %d images, but model %s only supports up to %d. Adjusting to max.", numberOfImages, model, modelDetails.MaxImages)
+		numberOfImages = modelDetails.MaxImages
+	}
+
+	aspectRatio, ok := request.GetArguments()["aspect_ratio"].(string)
+	if !ok || aspectRatio == "" {
+		log.Printf("Aspect ratio not provided or empty, using default: 1:1")
+		aspectRatio = "1:1"
+	}
+
+	if !contains(modelDetails.SupportedAspectRatios, aspectRatio) {
+		log.Printf("Warning: Requested aspect ratio '%s' is not supported by model %s. Supported ratios are: %v. Falling back to '1:1'.", aspectRatio, model, modelDetails.SupportedAspectRatios)
+		aspectRatio = "1:1" // Fallback to a safe default
+	}
+
+	imageSize, _ := request.GetArguments()["image_size"].(string)
+	var finalImageSize string
+	if imageSize != "" {
+		if len(modelDetails.SupportedImageSizes) == 0 {
+			log.Printf("Warning: image_size parameter ('%s') provided, but model %s does not support it. The parameter will be ignored.", imageSize, model)
+		} else if !contains(modelDetails.SupportedImageSizes, imageSize) {
+			log.Printf("Warning: Requested image size '%s' is not supported by model %s. Supported sizes are: %v. The parameter will be ignored.", imageSize, model, modelDetails.SupportedImageSizes)
+		} else {
+			finalImageSize = imageSize
+		}
+	} // ... rest of handler ...
 	gcsOutputURI := ""
 	gcsBucketUriParam, _ := request.GetArguments()["gcs_bucket_uri"].(string)
 	gcsBucketUriParam = strings.TrimSpace(gcsBucketUriParam)
@@ -422,14 +422,14 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	var failedLocalSaveReasons []string
 	var gcsSavedURIs []string
 	var totalSizeBytesGenerated int64 = 0
-	var imagesWithDataOrURI int = 0
+	imagesWithDataOrURI := 0
 	returnImageDataInResponse := gcsOutputURI == "" && !attemptLocalSave
 	log.Printf("Will return image data in response: %t", returnImageDataInResponse)
 
 	for n, genImg := range response.GeneratedImages {
 		var imageData []byte
-		var imageMimeType string = "image/png"
-		var imageSourceIsGCS bool = false
+		imageMimeType := "image/png"
+		imageSourceIsGCS := false
 		var currentImageGCSURI string
 
 		if genImg.Image != nil && genImg.Image.GCSURI != "" {

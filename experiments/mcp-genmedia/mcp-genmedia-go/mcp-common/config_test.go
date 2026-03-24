@@ -7,11 +7,9 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	t.Run("with all env vars set", func(t *testing.T) {
-		os.Setenv("PROJECT_ID", "test-project")
-		os.Setenv("LOCATION", "test-location")
-		os.Setenv("GENMEDIA_BUCKET", "test-bucket")
-		
-		
+		_ = os.Setenv("PROJECT_ID", "test-project")
+		_ = os.Setenv("LOCATION", "test-location")
+		_ = os.Setenv("GENMEDIA_BUCKET", "test-bucket")
 
 		cfg := LoadConfig()
 
@@ -24,15 +22,12 @@ func TestLoadConfig(t *testing.T) {
 		if cfg.GenmediaBucket != "test-bucket" {
 			t.Errorf("expected GenmediaBucket to be 'test-bucket', but got '%s'", cfg.GenmediaBucket)
 		}
-		
-		
+
 	})
 
 	t.Run("with some env vars missing", func(t *testing.T) {
-		os.Unsetenv("LOCATION")
-		os.Unsetenv("GENMEDIA_BUCKET")
-		
-		
+		_ = os.Unsetenv("LOCATION")
+		_ = os.Unsetenv("GENMEDIA_BUCKET")
 
 		cfg := LoadConfig()
 
@@ -42,7 +37,6 @@ func TestLoadConfig(t *testing.T) {
 		if cfg.GenmediaBucket != "" {
 			t.Errorf("expected GenmediaBucket to be '', but got '%s'", cfg.GenmediaBucket)
 		}
-		
-		
+
 	})
 }

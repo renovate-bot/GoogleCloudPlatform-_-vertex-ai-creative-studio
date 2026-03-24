@@ -55,12 +55,12 @@ var (
 )
 
 const (
-	serviceName                 = "mcp-lyria-go"
-	version                     = "1.5.0" // Standardize port handling
-	defaultPublisher            = "google"
-	defaultLyriaModelID         = "lyria-002"
-	defaultSampleCount          = 1
-	audioMIMEType               = "audio/wav" // Define MIME type for audio
+	serviceName         = "mcp-lyria-go"
+	version             = "1.5.0" // Standardize port handling
+	defaultPublisher    = "google"
+	defaultLyriaModelID = "lyria-002"
+	defaultSampleCount  = 1
+	audioMIMEType       = "audio/wav" // Define MIME type for audio
 )
 
 // init handles command-line flags and initial logging setup.
@@ -146,7 +146,7 @@ func main() {
 	}
 
 	lyriaTool := mcp.NewTool("lyria_generate_music", lyriaToolParams...)
-		s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
+	s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
 
 	s.AddPrompt(mcp.NewPrompt("generate-music",
 		mcp.WithPromptDescription("Generates music from a text prompt."),
@@ -169,7 +169,7 @@ func main() {
 			args[k] = v
 		}
 		toolRequest := mcp.CallToolRequest{
-			Params:   mcp.CallToolParams{Arguments: args},
+			Params: mcp.CallToolParams{Arguments: args},
 		}
 		result, err := lyriaGenerateMusicHandler(ctx, toolRequest)
 		if err != nil {
