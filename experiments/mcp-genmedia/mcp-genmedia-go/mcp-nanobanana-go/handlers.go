@@ -44,6 +44,10 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required"), nil
 	}
 
+	if aspectRatio, ok := request.GetArguments()["aspect_ratio"].(string); ok && strings.TrimSpace(aspectRatio) != "" {
+		prompt += fmt.Sprintf(" Aspect ratio: %s.", aspectRatio)
+	}
+
 	modelArg, _ := request.GetArguments()["model"].(string)
 	model := "gemini-3-pro-image-preview"
 	if modelArg != "" {

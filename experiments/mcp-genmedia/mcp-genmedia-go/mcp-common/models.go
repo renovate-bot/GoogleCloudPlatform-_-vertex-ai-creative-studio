@@ -125,28 +125,32 @@ func BuildImagenModelDescription() string {
 
 // GeminiImageModelInfo holds the details for a specific Gemini Image model.
 type GeminiImageModelInfo struct {
-	CanonicalName string
-	Aliases       []string
-	Description   string
+	CanonicalName         string
+	Aliases               []string
+	SupportedAspectRatios []string
+	Description           string
 }
 
 // SupportedGeminiImageModels is the single source of truth for all supported Gemini Image models.
 var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
 	"gemini-3.1-flash-image-preview": {
-		CanonicalName: "gemini-3.1-flash-image-preview",
-		Aliases:       []string{"Nano Banana 2"},
-		Description:   "Gemini 3.1 Flash Image, or Nano Banana 2.",
+		CanonicalName:         "gemini-3.1-flash-image-preview",
+		Aliases:               []string{"Nano Banana 2"},
+		SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"},
+		Description:           "Gemini 3.1 Flash Image, or Nano Banana 2.",
 	},
 
 	"gemini-3-pro-image-preview": {
-		CanonicalName: "gemini-3-pro-image-preview",
-		Aliases:       []string{"Nano Banana Pro", "Gemini 3 Pro Image"},
-		Description:   "Gemini 3 Pro Image, or Gemini 3 Pro (with Nano Banana), is designed to tackle the most challenging image generation by incorporating state-of-the-art reasoning capabilities. It's the best model for complex and multi-turn image generation and editing, having improved accuracy and enhanced image quality.",
+		CanonicalName:         "gemini-3-pro-image-preview",
+		Aliases:               []string{"Nano Banana Pro", "Gemini 3 Pro Image"},
+		SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
+		Description:           "Gemini 3 Pro Image, or Gemini 3 Pro (with Nano Banana), is designed to tackle the most challenging image generation by incorporating state-of-the-art reasoning capabilities. It's the best model for complex and multi-turn image generation and editing, having improved accuracy and enhanced image quality.",
 	},
 	"gemini-2.5-flash-image": {
-		CanonicalName: "gemini-2.5-flash-image",
-		Aliases:       []string{"Nano Banana", "nano-banana"},
-		Description:   "Gemini 2.5 Flash Image, or Nano Banana, is optimized for image understanding and generation and offers a balance of price and performance.",
+		CanonicalName:         "gemini-2.5-flash-image",
+		Aliases:               []string{"Nano Banana", "nano-banana"},
+		SupportedAspectRatios: []string{"1:1", "3:4", "4:3", "9:16", "16:9"},
+		Description:           "Gemini 2.5 Flash Image, or Nano Banana, is optimized for image understanding and generation and offers a balance of price and performance.",
 	},
 }
 
@@ -179,7 +183,7 @@ func BuildGeminiImageModelDescription() string {
 
 	for _, name := range sortedNames {
 		info := SupportedGeminiImageModels[name]
-		fmt.Fprintf(&sb, "- *%s*", info.CanonicalName)
+		fmt.Fprintf(&sb, "- *%s* (Ratios: %s)", info.CanonicalName, strings.Join(info.SupportedAspectRatios, ", "))
 		if len(info.Aliases) > 0 {
 			fmt.Fprintf(&sb, " Aliases: *%s*", strings.Join(info.Aliases, "*, *"))
 		}
