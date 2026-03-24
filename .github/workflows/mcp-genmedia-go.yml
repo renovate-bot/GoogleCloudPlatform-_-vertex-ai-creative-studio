@@ -46,12 +46,12 @@ jobs:
           echo "Processing $dir"
           cd $dir
           golangci-lint run ./...
-          go test -v ./...
+          go test -v -timeout 30s ./...
           go build ./...
           
           if [ -f "verify.sh" ]; then
             chmod +x verify.sh
-            timeout 15s ./verify.sh
+            timeout 15s ./verify.sh || { echo "Verify timed out or failed!"; exit 1; }
           fi
           cd ..
         done
