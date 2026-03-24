@@ -111,10 +111,10 @@ func BuildImagenModelDescription() string {
 		baseInfo := fmt.Sprintf("- *%s* (Max Images: %d, Ratios: %s)", info.CanonicalName, info.MaxImages, strings.Join(info.SupportedAspectRatios, ", "))
 		sb.WriteString(baseInfo)
 		if len(info.SupportedImageSizes) > 0 {
-			sb.WriteString(fmt.Sprintf(" (Sizes: %s)", strings.Join(info.SupportedImageSizes, ", ")))
+			fmt.Fprintf(&sb, " (Sizes: %s)", strings.Join(info.SupportedImageSizes, ", "))
 		}
 		if len(info.Aliases) > 0 {
-			sb.WriteString(fmt.Sprintf(" Aliases: *%s*", strings.Join(info.Aliases, "*, *")))
+			fmt.Fprintf(&sb, " Aliases: *%s*", strings.Join(info.Aliases, "*, *"))
 		}
 		sb.WriteString("\n")
 	}
@@ -173,12 +173,12 @@ func BuildGeminiImageModelDescription() string {
 
 	for _, name := range sortedNames {
 		info := SupportedGeminiImageModels[name]
-		sb.WriteString(fmt.Sprintf("- *%s*", info.CanonicalName))
+		fmt.Fprintf(&sb, "- *%s*", info.CanonicalName)
 		if len(info.Aliases) > 0 {
-			sb.WriteString(fmt.Sprintf(" Aliases: *%s*", strings.Join(info.Aliases, "*, *")))
+			fmt.Fprintf(&sb, " Aliases: *%s*", strings.Join(info.Aliases, "*, *"))
 		}
 		if info.Description != "" {
-			sb.WriteString(fmt.Sprintf(" - %s", info.Description))
+			fmt.Fprintf(&sb, " - %s", info.Description)
 		}
 		sb.WriteString("\n")
 	}
@@ -316,10 +316,10 @@ func BuildVeoModelDescription() string {
 		for i, d := range info.SupportedDurations {
 			durationsStr[i] = fmt.Sprintf("%d", d)
 		}
-		sb.WriteString(fmt.Sprintf("- *%s* (Durations: [%s]s, Max Videos: %d, Ratios: %s)",
-			info.CanonicalName, strings.Join(durationsStr, ", "), info.MaxVideos, strings.Join(info.SupportedAspectRatios, ", ")))
+		fmt.Fprintf(&sb, "- *%s* (Durations: [%s]s, Max Videos: %d, Ratios: %s)",
+			info.CanonicalName, strings.Join(durationsStr, ", "), info.MaxVideos, strings.Join(info.SupportedAspectRatios, ", "))
 		if len(info.Aliases) > 0 {
-			sb.WriteString(fmt.Sprintf(" Aliases: *%s*", strings.Join(info.Aliases, "*, *")))
+			fmt.Fprintf(&sb, " Aliases: *%s*", strings.Join(info.Aliases, "*, *"))
 		}
 		sb.WriteString("\n")
 	}

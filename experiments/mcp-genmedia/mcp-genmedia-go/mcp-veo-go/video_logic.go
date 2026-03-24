@@ -29,11 +29,9 @@ import (
 	"github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"google.golang.org/genai"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/genai"
 )
-
-
 
 // callGenerateVideosAPI orchestrates the entire video generation process.
 // It initiates the video generation operation, polls for its completion, and handles

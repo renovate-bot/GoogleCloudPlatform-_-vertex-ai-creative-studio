@@ -35,13 +35,13 @@ func registerImagenEditingTools(s *server.MCPServer, client *genai.Client, appCo
 			return nil, fmt.Errorf("failed to marshal segmentation classes: %w", err)
 		}
 		return []mcp.ResourceContents{
-			mcp.TextResourceContents{
-				URI:      "imagen://segmentation_classes",
-				MIMEType: "application/json",
-				Text:     string(jsonData),
+				mcp.TextResourceContents{
+					URI:      "imagen://segmentation_classes",
+					MIMEType: "application/json",
+					Text:     string(jsonData),
+				},
 			},
-		},
-		nil
+			nil
 	})
 
 	// Inpainting Insert Tool
@@ -76,23 +76,23 @@ func registerImagenEditingTools(s *server.MCPServer, client *genai.Client, appCo
 		imageURI, ok := request.Params.Arguments["image_uri"]
 		if !ok || strings.TrimSpace(imageURI) == "" {
 			return mcp.NewGetPromptResult(
-				"Missing Image URI",
-				[]mcp.PromptMessage{
-					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What image (GCS URI) would you like to edit?")),
-				},
-			),
-			nil
+					"Missing Image URI",
+					[]mcp.PromptMessage{
+						mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What image (GCS URI) would you like to edit?")),
+					},
+				),
+				nil
 		}
 
 		prompt, ok := request.Params.Arguments["prompt"]
 		if !ok || strings.TrimSpace(prompt) == "" {
 			return mcp.NewGetPromptResult(
-				"Missing Prompt",
-				[]mcp.PromptMessage{
-					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What would you like to do? (e.g., \"add a hat\", \"remove the car\")")),
-				},
-			),
-			nil
+					"Missing Prompt",
+					[]mcp.PromptMessage{
+						mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent("What would you like to do? (e.g., \"add a hat\", \"remove the car\")")),
+					},
+				),
+				nil
 		}
 
 		// Determine the tool to call based on the prompt
@@ -124,12 +124,12 @@ func registerImagenEditingTools(s *server.MCPServer, client *genai.Client, appCo
 		}
 
 		return mcp.NewGetPromptResult(
-			"Image Editing Result",
-			[]mcp.PromptMessage{
-				mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent(strings.TrimSpace(responseText))),
-			},
-		),
-		nil
+				"Image Editing Result",
+				[]mcp.PromptMessage{
+					mcp.NewPromptMessage(mcp.RoleAssistant, mcp.NewTextContent(strings.TrimSpace(responseText))),
+				},
+			),
+			nil
 	})
 }
 
