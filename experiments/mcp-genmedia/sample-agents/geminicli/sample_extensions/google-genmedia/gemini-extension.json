@@ -1,7 +1,6 @@
 {
   "name": "google-genmedia-extension",
   "version": "1.0.0",
-
   "mcpServers": {
     "veo": {
       "command": "mcp-veo-go",
@@ -41,6 +40,14 @@
       "env": {
         "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "nanobanana": {
+      "command": "mcp-nanobanana-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORGE_BUCKET",
+        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     }
   }
