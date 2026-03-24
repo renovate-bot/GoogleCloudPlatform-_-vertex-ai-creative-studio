@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -74,20 +73,10 @@ func determinePort(transport string, portFlag int) int {
 func main() {
 	flag.Parse() // Ensure flags are parsed before use
 
-	cfg := common.LoadConfig()
-
 	// Initialize OpenTelemetry
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	var cleanup func()
+	cfg, cleanup := common.Init(serviceName, version)
+	defer cleanup()
 
 	s := server.NewMCPServer(
 		"AV Compositing Tool", // More general name

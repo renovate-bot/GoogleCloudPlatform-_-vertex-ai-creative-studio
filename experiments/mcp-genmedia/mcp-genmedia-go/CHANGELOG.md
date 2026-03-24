@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-03-24
+
+*   **Feat:** Added a new `mcp-nanobanana-go` server dedicated to Google Gemini Image models.
+*   **Feat:** Added `gemini-3.1-flash-image-preview` (Nano Banana 2) support to `mcp-gemini-go` and `mcp-nanobanana-go`, setting it as the new default model.
+*   **Feat:** Added `SupportedAspectRatios` to Gemini Image model definitions and updated `mcp-gemini-go` and `mcp-nanobanana-go` to accept an `aspect_ratio` parameter.
+*   **Feat:** Set `veo-3.1-fast-generate-001` as the new default model for `mcp-veo-go`.
+*   **Deprecation:** Removed deprecated Veo models (`veo-2.0-generate-exp`, `veo-2.0-generate-preview`, `veo-3.0-generate-preview`, `veo-3.0-fast-generate-preview`, `veo-3.1-generate-preview`, `veo-3.1-fast-generate-preview`) from supported lists.
+*   **Deprecation:** Excluded `mcp-imagen-go` from the standard `install.sh` installation loop (Imagen models set to be deprecated by June 30, 2026).
+*   **Chore:** Updated Go GenAI SDK (`google.golang.org/genai`) from `v1.22.0` to `v1.51.0` and bumped all other module dependencies to latest versions.
+*   **Fix:** Resolved numerous `golangci-lint` issues (errcheck, unused variables, string formatting) across all modules to ensure zero linting warnings.
+*   **CI:** Added `.golangci.yml` configuration and a dedicated GitHub Actions workflow (`mcp-genmedia-go.yml`) for linting, building, and verifying tests for the MCP servers on PRs/pushes.
+*   **Refactor:** Centralized OpenTelemetry initialization and configuration loading into a unified `common.Init` function in `mcp-common`.
+*   **Docs:** Added a PATH reminder output to `install.sh` upon successful server installation.
+
+
 ## 2025-11-23
 
 *   **Feat:** Added support for `gemini-3-pro-image-preview` (alias: "Nano Banana Pro") and `gemini-2.5-flash-image` (alias: "Nano Banana") to the `gemini_image_generation` tool in `mcp-gemini-go`.

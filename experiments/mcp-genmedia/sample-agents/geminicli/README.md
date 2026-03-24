@@ -11,6 +11,9 @@ To install these MCP servers, please see [Installation](../../mcp-genmedia-go/RE
 
 To configure these servers for gemini cli, you can either add these to your ~/.gemini/settings.json (see [Configuration](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md#available-settings-in-settingsjson)) or create an Extension (preferred, [Extensions](https://github.com/google-gemini/gemini-cli/blob/main/docs/extension.md)).
 
+
+> **Existing Users:** If you have previously installed the GenMedia extension using the older JSON format, please see the [Migration Guide](MIGRATION.md) for quick instructions on upgrading to the new interactive setup.
+
 ## .gemini/settings.json: mcpServers
 
 Add the following to your .gemini/settings.json `mcpServers` - you can do this at your ~/.gemini or per project directory.
@@ -109,53 +112,86 @@ Then, add to that directory a `gemini-extension.json`
 
 ```json
 {
-  "name": "google-genmedia-extension",
+  "name": "google-genmedia",
   "version": "1.0.0",
-
+  "settings": [
+    {
+      "name": "Google Cloud Project ID",
+      "description": "The GCP Project ID where Vertex AI is enabled.",
+      "envVar": "PROJECT_ID",
+      "sensitive": false
+    },
+    {
+      "name": "GenMedia GCS Bucket",
+      "description": "The GCS bucket URI (gs://your-bucket) to save generated media.",
+      "envVar": "GENMEDIA_BUCKET",
+      "sensitive": false
+    }
+  ],
   "mcpServers": {
     "veo": {
       "command": "mcp-veo-go",
       "env": {
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
-        "MCP_SERVER_REQUEST_TIMEOUT": "30000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000"
       }
     },
-    "imagen": {
-      "command": "mcp-imagen-go",
+    "nanobanana": {
+      "command": "mcp-nanobanana-go",
       "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
     "chirp3-hd": {
       "command": "mcp-chirp3-go",
       "env": {
-        "MCP_SERVER_REQUEST_TIMEOUT": "55000",
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
     "lyria": {
       "command": "mcp-lyria-go",
       "env": {
-        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     },
     "avtool": {
       "command": "mcp-avtool-go",
       "env": {
-        "PROJECT_ID": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
         "MCP_SERVER_REQUEST_TIMEOUT": "55000"
       }
     }
   }
 }
 ```
+
+### Interactive Installation
+
+With the new `settings` array in `gemini-extension.json`, Gemini CLI will interactively ask you for your `PROJECT_ID` and `GENMEDIA_BUCKET` when you install the extension. These values are automatically stored securely in the extension's `.env` file and passed to the MCP servers!
+
+```bash
+gemini extensions install ./sample_extensions/google-genmedia
+```
+
+### Partial Extension Configurations
+
+If you only want a subset of the GenMedia tools, we have provided partial configurations:
+- **Images Only**: `gemini extensions install ./sample_extensions/google-genmedia-images` (Installs `nanobanana` and `imagen`)
+- **Video Only**: `gemini extensions install ./sample_extensions/google-genmedia-video` (Installs `veo` and `avtool`)
+
+### Bundled Producer Skill & Commands
+
+The `google-genmedia` extension now comes with a bundled **Agent Skill** and **Custom Slash Commands**. 
+
+Once installed, you can activate the expert media production skill by typing:
+```text
+/skill producer
+```
+This primes the Gemini CLI with expert instructions on handling `ffmpeg` concat filters, podcast storyboarding, and Veo timeout recovery.
+
+You also gain access to bundled workflows via custom commands:
+- `/producer:storyboard "A futuristic city"` -> Automatically generates a structured 5-shot markdown storyboard.
+- `/producer:podcast "The future of AI"` -> Initiates the multi-voice Chirp 3 HD audio assembly workflow.
+
 
 Now, when you start up gemini cli you should see the mpc servers listed when issuing the slash command, `/mcp`
 

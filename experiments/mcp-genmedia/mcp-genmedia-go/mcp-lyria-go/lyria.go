@@ -55,12 +55,12 @@ var (
 )
 
 const (
-	serviceName                 = "mcp-lyria-go"
-	version                     = "1.5.0" // Standardize port handling
-	defaultPublisher            = "google"
-	defaultLyriaModelID         = "lyria-002"
-	defaultSampleCount          = 1
-	audioMIMEType               = "audio/wav" // Define MIME type for audio
+	serviceName         = "mcp-lyria-go"
+	version             = "1.5.0" // Standardize port handling
+	defaultPublisher    = "google"
+	defaultLyriaModelID = "lyria-002"
+	defaultSampleCount  = 1
+	audioMIMEType       = "audio/wav" // Define MIME type for audio
 )
 
 // init handles command-line flags and initial logging setup.
@@ -78,20 +78,12 @@ func init() {
 // listening for requests on the configured transport.
 func main() {
 	flag.Parse()
-	appConfig = common.LoadConfig()
 
 	// Initialize OpenTelemetry
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	var cleanup func()
+	appConfig, cleanup = common.Init(serviceName, version)
+	defer cleanup()
+	var err error
 
 	log.Println("Initializing global AI Platform Prediction client...")
 	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", appConfig.Location)
@@ -146,7 +138,7 @@ func main() {
 	}
 
 	lyriaTool := mcp.NewTool("lyria_generate_music", lyriaToolParams...)
-		s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
+	s.AddTool(lyriaTool, lyriaGenerateMusicHandler)
 
 	s.AddPrompt(mcp.NewPrompt("generate-music",
 		mcp.WithPromptDescription("Generates music from a text prompt."),
@@ -169,7 +161,7 @@ func main() {
 			args[k] = v
 		}
 		toolRequest := mcp.CallToolRequest{
-			Params:   mcp.CallToolParams{Arguments: args},
+			Params: mcp.CallToolParams{Arguments: args},
 		}
 		result, err := lyriaGenerateMusicHandler(ctx, toolRequest)
 		if err != nil {
