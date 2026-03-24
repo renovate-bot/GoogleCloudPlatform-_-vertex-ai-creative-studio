@@ -1,6 +1,6 @@
 module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-chirp3-go
 
-go 1.25.0
+go 1.24.0
 
 toolchain go1.25.6
 
