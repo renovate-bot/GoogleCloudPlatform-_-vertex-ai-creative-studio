@@ -78,20 +78,12 @@ func init() {
 // listening for requests on the configured transport.
 func main() {
 	flag.Parse()
-	appConfig = common.LoadConfig()
-
+	
 	// Initialize OpenTelemetry
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	var cleanup func()
+	appConfig, cleanup = common.Init(serviceName, version)
+	defer cleanup()
+	var err error
 
 	log.Println("Initializing global AI Platform Prediction client...")
 	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", appConfig.Location)

@@ -54,25 +54,17 @@ func init() {
 }
 
 func main() {
-	appConfig = common.LoadConfig()
-
+	
 	// Override default location for Gemini models if not explicitly set
 	if os.Getenv("LOCATION") == "" {
 		log.Printf("LOCATION environment variable not set. Defaulting to 'global' for mcp-gemini-go.")
 		appConfig.Location = "global"
 	}
 
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	var cleanup func()
+	appConfig, cleanup = common.Init(serviceName, version)
+	defer cleanup()
+	var err error
 
 	log.Printf("Initializing global GenAI client...")
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 1*time.Minute)
