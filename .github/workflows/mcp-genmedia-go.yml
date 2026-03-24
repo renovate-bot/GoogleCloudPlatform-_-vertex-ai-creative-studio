@@ -47,7 +47,7 @@ jobs:
           
           if [ -f "verify.sh" ]; then
             chmod +x verify.sh
-            ./verify.sh
+            timeout 15s ./verify.sh
           fi
           cd ..
         done
