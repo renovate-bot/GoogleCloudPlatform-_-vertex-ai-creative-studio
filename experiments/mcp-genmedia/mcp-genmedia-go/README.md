@@ -23,8 +23,6 @@ curl -sL https://raw.githubusercontent.com/GoogleCloudPlatform/vertex-ai-creativ
 If you prefer to compile the servers from source or want to modify the code, you can use the local interactive installer script.
 
 
-
-
 1.  **Run the Installer Script**
     From this `mcp-genmedia-go` directory, execute the following command:
     ```bash
