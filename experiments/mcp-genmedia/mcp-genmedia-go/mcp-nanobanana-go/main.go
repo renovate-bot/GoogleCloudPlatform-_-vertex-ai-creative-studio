@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-nanobanana-go"
-	version     = "0.5.1" // Add new Gemini models
+	version     = "3.0.0" // Add new Gemini models
 )
 
 func init() {

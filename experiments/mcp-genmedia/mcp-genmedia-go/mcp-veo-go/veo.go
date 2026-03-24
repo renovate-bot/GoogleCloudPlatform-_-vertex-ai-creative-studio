@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.13.0" // generate audio and Veo 3.1
+	version     = "3.0.0" // generate audio and Veo 3.1
 )
 
 // init handles command-line flags and initial logging setup.
