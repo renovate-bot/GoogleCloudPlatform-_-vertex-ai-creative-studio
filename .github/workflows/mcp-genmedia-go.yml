@@ -47,9 +47,10 @@ jobs:
           cd $dir
           
           echo "-> Running golangci-lint in $dir"
-          golangci-lint run ./... || { echo "golangci-lint failed"; exit 1; }
+          env GOWORK=off golangci-lint run ./... || { echo "golangci-lint failed"; exit 1; }
           
           echo "-> Running go test in $dir"
+
 
           go test -v -timeout 30s ./... || { echo "go test failed"; exit 1; }
           
