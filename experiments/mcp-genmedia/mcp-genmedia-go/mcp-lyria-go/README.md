@@ -22,7 +22,7 @@ The following tool is exposed by this server:
     *   `file_name` (string, optional): Desired file name (e.g., "my_song.wav"). Used for GCS object and local file. If omitted, a unique name like "lyria_output_&lt;uid&gt;.wav" is generated.
     *   `local_path` (string, optional): Local directory path. If provided, audio is saved locally.
     *   `model_id` (string, optional): Specific Lyria model ID to use for the Vertex AI endpoint.
-        *   Defaults to the value of the `DEFAULT_LYRIA_MODEL_ID` environment variable, or `"lyria-002"` if the variable is not set.
+        *   Defaults to the value of the `DEFAULT_LYRIA_MODEL_ID (Deprecated)` environment variable, or `"lyria-3-clip-preview"` if the variable is not set.
 
 ## Environment Variable Configuration
 
@@ -31,13 +31,13 @@ The tool utilizes the following environment variables:
 *   `PROJECT_ID` (string): **Required**. Your Google Cloud Project ID. The application will terminate if this is not set.
 *   `LOCATION` (string): The primary Google Cloud location for services.
     *   Default: `"us-central1"`
-    *   Also used as the default for `LYRIA_LOCATION` if `LYRIA_LOCATION` is not set.
-*   `LYRIA_LOCATION` (string): The specific Google Cloud location for the Lyria model endpoint.
+    *   Also used as the default for `LYRIA_LOCATION (Deprecated for V3)` if `LYRIA_LOCATION (Deprecated for V3)` is not set.
+*   `LYRIA_LOCATION (Deprecated for V3)` (string): The specific Google Cloud location for the Lyria model endpoint.
     *   Default: Value of `LOCATION` environment variable (e.g., `"us-central1"`).
-*   `LYRIA_MODEL_PUBLISHER` (string): The publisher of the Lyria model in Vertex AI.
+*   `LYRIA_MODEL_PUBLISHER (Deprecated)` (string): The publisher of the Lyria model in Vertex AI.
     *   Default: `"google"`
-*   `DEFAULT_LYRIA_MODEL_ID` (string): The default Lyria model ID to be used if not specified in the request.
-    *   Default: `"lyria-002"` (fallback if the environment variable is not set).
+*   `DEFAULT_LYRIA_MODEL_ID (Deprecated)` (string): The default Lyria model ID to be used if not specified in the request.
+    *   Default: `"lyria-3-clip-preview"` (fallback if the environment variable is not set).
 *   `GENMEDIA_BUCKET` (string): An optional default Google Cloud Storage bucket to use for GCS outputs if `output_gcs_bucket` is not specified in the tool request. The object name will be `lyria_outputs/<generated_filename>.wav` within this bucket.
     *   Default: `""` (empty string, meaning no default GCS output path is formed from this variable unless `output_gcs_bucket` is also absent).
 *   `PORT` (string, for HTTP transport): The port for the HTTP server to listen on.
@@ -84,7 +84,7 @@ Build the tool using `go build` or `go install`.
     "name": "lyria_generate_music",
     "arguments": {
       "prompt": "An upbeat electronic track with a catchy melody, suitable for a retro video game.",
-      "model_id": "lyria-002",
+      "model_id": "lyria-3-clip-preview",
       "sample_count": 1,
       "local_path": "./lyria_output",
       "file_name": "my_retro_tune.wav"
