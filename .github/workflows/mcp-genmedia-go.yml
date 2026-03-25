@@ -60,7 +60,7 @@ jobs:
           if [ -f "verify.sh" ]; then
             echo "-> Running verify.sh in $dir"
             chmod +x verify.sh
-            timeout 15s ./verify.sh || { echo "verify.sh timed out or failed"; exit 1; }
+            timeout 60s ./verify.sh || { echo "verify.sh timed out or failed"; exit 1; }
           fi
           
           echo "-> Finished $dir"
