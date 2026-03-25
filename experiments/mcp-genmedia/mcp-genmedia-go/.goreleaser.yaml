@@ -51,14 +51,7 @@ builds:
     goarch: [amd64, arm64]
 
 archives:
-  - format: tar.gz
+  -
     name_template: "genmedia-mcp-servers_{{ .Os }}_{{ .Arch }}"
-    builds:
-      - mcp-veo-go
-      - mcp-nanobanana-go
-      - mcp-chirp3-go
-      - mcp-gemini-go
-      - mcp-lyria-go
-      - mcp-avtool-go
     files:
       - gemini-extensions/**/*
