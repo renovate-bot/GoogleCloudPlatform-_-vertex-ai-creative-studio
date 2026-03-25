@@ -45,8 +45,10 @@ if [ -z "$TAG" ]; then
 fi
 echo_info "Found version: ${TAG}"
 
-TARBALL="${ARCHIVE_PREFIX}_${OS_TITLE}_${ARCH_MAP}.tar.gz"
-DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/${TARBALL}"
+TARBALL="${ARCHIVE_PREFIX}_${OS}_${ARCH_MAP}.tar.gz"
+# GoReleaser uses the stripped semantic version for the actual release assets if we stripped it in CI
+CLEAN_TAG=${TAG#mcp-}
+DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v${CLEAN_TAG#v}/${TARBALL}"
 
 echo_info "Downloading ${TARBALL}..."
 TMP_DIR=$(mktemp -d)
