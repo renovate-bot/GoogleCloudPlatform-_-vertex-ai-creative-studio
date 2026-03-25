@@ -1,8 +1,6 @@
 module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-chirp3-go
 
-go 1.25.0
-
-toolchain go1.25.6
+go 1.26.0
 
 require (
 	cloud.google.com/go/texttospeech v1.16.0
@@ -76,3 +74,5 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common => ../mcp-common

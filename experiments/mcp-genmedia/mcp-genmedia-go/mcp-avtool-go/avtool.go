@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "2.2.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 )
 
 var (

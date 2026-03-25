@@ -62,6 +62,25 @@ echo_info "Extracting binaries..."
 tar -xzf "$TMP_DIR/$TARBALL" -C "$TMP_DIR"
 
 mkdir -p "$INSTALL_DIR"
+# Install Gemini Extensions if present in the tarball
+if [ -d "$TMP_DIR/gemini-extensions" ]; then
+    echo ""
+    read -p "Are you using Gemini CLI? Would you like to install the Google GenMedia extensions for it? (y/N): " install_ext
+    case "$install_ext" in
+        [yY]|[yY][eE][sS])
+            echo_info "Installing Gemini CLI Extensions..."
+            GEMINI_EXT_DIR="$HOME/.gemini/extensions"
+            mkdir -p "$GEMINI_EXT_DIR"
+            cp -R "$TMP_DIR/gemini-extensions/"* "$GEMINI_EXT_DIR/"
+            echo_success "Extensions installed to $GEMINI_EXT_DIR"
+            echo_info "Restart Gemini CLI and run '/extensions list' to configure them!"
+            ;;
+        *)
+            echo_info "Skipping Gemini CLI extensions installation."
+            ;;
+    esac
+fi
+
 
 echo_info "Installing binaries to ${INSTALL_DIR}..."
 mv "$TMP_DIR"/mcp-*-go "$INSTALL_DIR/" 2>/dev/null || true

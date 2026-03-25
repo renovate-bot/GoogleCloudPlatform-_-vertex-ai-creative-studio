@@ -1,6 +1,6 @@
 module github.com/GoogleCloudPlatform/vertex-ai-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-gemini-go
 
-go 1.25.0
+go 1.26.0
 
 require (
 	cloud.google.com/go/texttospeech v1.16.0
