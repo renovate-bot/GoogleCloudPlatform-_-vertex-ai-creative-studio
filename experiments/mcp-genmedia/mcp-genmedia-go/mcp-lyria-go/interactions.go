@@ -30,8 +30,10 @@ func generateAudioWithInteractions(ctx context.Context, modelID string, prompt s
 		endpoint = appConfig.ApiEndpoint
 	}
 
-	url := fmt.Sprintf("https://%s/v1beta1/projects/%s/locations/%s/interactions",
-		endpoint, appConfig.ProjectID, appConfig.Location)
+	// Lyria 3 preview models via the Interactions API currently only support the global location ("Cardolan").
+	// We hardcode "global" here instead of using appConfig.Location (which defaults to "us-central1").
+	url := fmt.Sprintf("https://%s/v1beta1/projects/%s/locations/global/interactions",
+		endpoint, appConfig.ProjectID)
 
 	payload := map[string]interface{}{
 		"model": modelID,
