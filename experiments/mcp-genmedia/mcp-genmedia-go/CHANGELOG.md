@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-25
+
+*   **Feat:** Added support for `lyria-3-clip-preview` (30s) and `lyria-3-pro-preview` (2:30s) music generation models to `mcp-lyria-go`.
+*   **Feat:** Implemented a new, lightweight Go port of the Vertex AI Interactions API to support the Lyria 3 backends.
+*   **Feat:** Set `lyria-3-clip-preview` as the new default model for the `lyria_generate_music` tool.
+*   **Config:** Added the Lyria model registry to `mcp-common/models.go` to provide self-describing model options to the LLM agent via the MCP tool description.
+
 ## 2026-03-24
 
 *   **Feat:** Added a new `mcp-nanobanana-go` server dedicated to Google Gemini Image models.
