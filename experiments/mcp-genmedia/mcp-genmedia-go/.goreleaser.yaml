@@ -3,10 +3,8 @@ project_name: genmedia-mcp-servers
 
 before:
   hooks:
-    - cmd: go work sync
-      dir: experiments/mcp-genmedia/mcp-genmedia-go
-    - cmd: cp -r ../sample-agents/geminicli/sample_extensions ./gemini-extensions
-      dir: experiments/mcp-genmedia/mcp-genmedia-go
+    - 'sh -c "cd experiments/mcp-genmedia/mcp-genmedia-go && go work sync"'
+    - 'sh -c "cd experiments/mcp-genmedia/mcp-genmedia-go && cp -r ../sample-agents/geminicli/sample_extensions ./gemini-extensions"'
 
 builds:
   - id: mcp-veo-go
@@ -53,14 +51,7 @@ builds:
     goarch: [amd64, arm64]
 
 archives:
-  - format: tar.gz
+  -
     name_template: "genmedia-mcp-servers_{{ .Os }}_{{ .Arch }}"
-    builds:
-      - mcp-veo-go
-      - mcp-nanobanana-go
-      - mcp-chirp3-go
-      - mcp-gemini-go
-      - mcp-lyria-go
-      - mcp-avtool-go
     files:
       - gemini-extensions/**/*
