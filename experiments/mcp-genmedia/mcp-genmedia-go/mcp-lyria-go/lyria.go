@@ -89,7 +89,7 @@ func main() {
 	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", appConfig.Location)
 	predictionClient, err = aiplatform.NewPredictionClient(context.Background(), option.WithEndpoint(regionalEndpoint))
 	if err != nil {
-		log.Fatalf("Failed to create global AI Platform Prediction client: %v", err)
+		log.Printf("Warning: Failed to create global AI Platform Prediction client: %v. Deferring to runtime.", err)
 	}
 	defer func() {
 		if predictionClient != nil {
