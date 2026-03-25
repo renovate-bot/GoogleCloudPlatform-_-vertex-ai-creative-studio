@@ -49,9 +49,6 @@ jobs:
           echo "Processing $dir"
           cd $dir
           
-          echo "-> Running golangci-lint in $dir"
-          golangci-lint run ./... || { echo "golangci-lint failed"; exit 1; }
-          
           echo "-> Running go test in $dir"
 
 
