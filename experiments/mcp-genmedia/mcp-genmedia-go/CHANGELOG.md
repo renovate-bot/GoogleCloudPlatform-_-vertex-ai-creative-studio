@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-25 (v3.1.2)
+
+*   **Fix:** Updated the `mcp-nanobanana-go` and `mcp-gemini-go` servers to natively handle image generation `aspect_ratio` constraints using the `ImageConfig` field rather than prompt injection, causing the API to accurately reject invalid aspect ratios like `"auto"`.
+*   **Fix:** Resolved a bash syntax error in `install-online.sh` that broke the installer when piped directly from `curl` into `bash`.
+*   **Fix:** Corrected an architecture mapping bug in `install-online.sh` that caused `amd64` Linux and Windows users to receive a 404 error when downloading the release binaries.
+*   **Fix:** Configured GoReleaser to properly bundle the Antigravity agent configurations (`mcp_config.json` and `SKILL.md`) inside the `.tar.gz` release archives, enabling the interactive Antigravity installation prompt to function correctly.
+
 ## 2026-03-25 (v3.1.1)
 
 *   **Fix:** Resolved a routing issue where Lyria 3 models were inadvertently hitting the legacy Prediction API instead of the new Interactions API.
