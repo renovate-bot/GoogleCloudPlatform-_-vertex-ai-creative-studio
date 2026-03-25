@@ -44,8 +44,9 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required"), nil
 	}
 
-	if aspectRatio, ok := request.GetArguments()["aspect_ratio"].(string); ok && strings.TrimSpace(aspectRatio) != "" {
-		prompt += fmt.Sprintf(" Aspect ratio: %s.", aspectRatio)
+	aspectRatio := "1:1"
+	if ar, ok := request.GetArguments()["aspect_ratio"].(string); ok && strings.TrimSpace(ar) != "" {
+		aspectRatio = strings.TrimSpace(ar)
 	}
 
 	modelArg, _ := request.GetArguments()["model"].(string)
@@ -93,8 +94,12 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 	log.Printf("Calling GenerateContent with Model: %s, Prompt: \"%s\"", model, prompt)
 	startTime := time.Now()
 
-	config := &genai.GenerateContentConfig{}
-	config.ResponseModalities = []string{"IMAGE", "TEXT"}
+	config := &genai.GenerateContentConfig{
+		ResponseModalities: []string{"IMAGE", "TEXT"},
+		ImageConfig: &genai.ImageConfig{
+			AspectRatio: aspectRatio,
+		},
+	}
 	contents := &genai.Content{Parts: parts, Role: "USER"}
 
 	resp, err := client.Models.GenerateContent(ctx, model, []*genai.Content{contents}, config)
