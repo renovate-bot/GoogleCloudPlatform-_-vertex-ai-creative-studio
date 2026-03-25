@@ -133,7 +133,8 @@ func main() {
 			mcp.Description("Optional. Local directory path. If provided, audio is saved locally and direct audio data is NOT returned (unless GCS is also not specified)."),
 		),
 		mcp.WithString("model_id",
-			mcp.Description(fmt.Sprintf("Optional. Specific Lyria model ID to use for the Vertex AI endpoint. Defaults to '%s'.", defaultLyriaModelID)),
+			mcp.DefaultString(defaultLyriaModelID),
+			mcp.Description(common.BuildLyriaModelDescription()),
 		),
 	}
 
