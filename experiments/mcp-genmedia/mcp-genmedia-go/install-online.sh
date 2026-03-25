@@ -25,7 +25,6 @@ case "$ARCH" in
 esac
 
 OS_TITLE="$(tr '[:lower:]' '[:upper:]' <<< ${OS:0:1})${OS:1}"
-if [ "$ARCH" = "amd64" ]; then ARCH_MAP="x86_64"; else ARCH_MAP="$ARCH"; fi
 
 LATEST_URL="https://api.github.com/repos/${REPO}/releases"
 echo_info "Checking GitHub for the latest MCP release..."
@@ -45,7 +44,7 @@ if [ -z "$TAG" ]; then
 fi
 echo_info "Found version: ${TAG}"
 
-TARBALL="${ARCHIVE_PREFIX}_${OS}_${ARCH_MAP}.tar.gz"
+TARBALL="${ARCHIVE_PREFIX}_${OS}_${ARCH}.tar.gz"
 # GoReleaser uses the stripped semantic version for the actual release assets if we stripped it in CI
 CLEAN_TAG=${TAG#mcp-}
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v${CLEAN_TAG#v}/${TARBALL}"
