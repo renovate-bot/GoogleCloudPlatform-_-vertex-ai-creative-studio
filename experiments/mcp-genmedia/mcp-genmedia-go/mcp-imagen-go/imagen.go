@@ -49,7 +49,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "1.12.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 )
 
 func init() {
@@ -85,9 +85,10 @@ func main() {
 
 	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
-		log.Fatalf("Error creating global GenAI client: %v", err)
+		log.Printf("Warning: Error creating global GenAI client: %v. Deferring initialization to runtime.", err)
+	} else {
+		log.Printf("Global GenAI client initialized successfully.")
 	}
-	log.Printf("Global GenAI client initialized successfully.")
 
 	s := server.NewMCPServer("Imagen", version, server.WithResourceCapabilities(true, true))
 	registerImagenEditingTools(s, genAIClient, appConfig)

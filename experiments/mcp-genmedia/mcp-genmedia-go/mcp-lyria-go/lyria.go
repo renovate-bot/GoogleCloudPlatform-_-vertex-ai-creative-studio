@@ -56,7 +56,7 @@ var (
 
 const (
 	serviceName         = "mcp-lyria-go"
-	version             = "1.5.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 	defaultPublisher    = "google"
 	defaultLyriaModelID = "lyria-002"
 	defaultSampleCount  = 1
@@ -89,7 +89,7 @@ func main() {
 	regionalEndpoint := fmt.Sprintf("%s-aiplatform.googleapis.com:443", appConfig.Location)
 	predictionClient, err = aiplatform.NewPredictionClient(context.Background(), option.WithEndpoint(regionalEndpoint))
 	if err != nil {
-		log.Fatalf("Failed to create global AI Platform Prediction client: %v", err)
+		log.Printf("Warning: Failed to create global AI Platform Prediction client: %v. Deferring to runtime.", err)
 	}
 	defer func() {
 		if predictionClient != nil {

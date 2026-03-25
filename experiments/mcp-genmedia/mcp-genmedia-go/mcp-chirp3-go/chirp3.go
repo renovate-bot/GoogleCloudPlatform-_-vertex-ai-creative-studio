@@ -33,7 +33,7 @@ var (
 	availableVoices []*texttospeechpb.Voice
 	transport       string
 	port            int
-	version         = "0.3.0" // Standardize port handling
+	version     = "3.0.0" // Standardize port handling
 )
 
 const (
@@ -204,22 +204,10 @@ func main() {
 	var cleanup func()
 	_, cleanup = common.Init(serviceName, version)
 	defer cleanup()
-	var err error
+	log.Printf("Initializing global Text-to-Speech client... (Deferred to runtime)")
+	// In order to allow mcptools to verify the schema without Google Cloud credentials,
+	// we defer the actual client initialization to the first tool invocation.
 
-	log.Printf("Initializing global Text-to-Speech client...")
-	startupCtx, startupCancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer startupCancel()
-
-	ttsClient, err = texttospeech.NewClient(startupCtx)
-	if err != nil {
-		log.Fatalf("Error creating global Text-to-Speech client: %v", err)
-	}
-	log.Printf("Global Text-to-Speech client initialized successfully.")
-
-	err = listAndCacheChirpHDVoices(startupCtx)
-	if err != nil {
-		log.Printf("Warning: Could not fetch Chirp3-HD voices at startup: %v. Voice-dependent tools may not function correctly.", err)
-	}
 
 	s := server.NewMCPServer(
 		serviceName, // Standardized name

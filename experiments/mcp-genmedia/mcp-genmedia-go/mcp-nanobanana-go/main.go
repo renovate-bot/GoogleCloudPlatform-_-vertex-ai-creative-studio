@@ -41,7 +41,7 @@ var (
 
 const (
 	serviceName = "mcp-nanobanana-go"
-	version     = "0.5.1" // Add new Gemini models
+	version     = "3.0.0" // Add new Gemini models
 )
 
 func init() {
@@ -82,9 +82,10 @@ func main() {
 
 	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
-		log.Fatalf("Error creating global GenAI client: %v", err)
+		log.Printf("Warning: Error creating global GenAI client: %v. Deferring initialization to runtime.", err)
+	} else {
+		log.Printf("Global GenAI client initialized successfully.")
 	}
-	log.Printf("Global GenAI client initialized successfully.")
 
 	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, false))
 

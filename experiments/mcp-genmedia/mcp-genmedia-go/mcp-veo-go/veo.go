@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "1.13.0" // generate audio and Veo 3.1
+	version     = "3.0.0" // generate audio and Veo 3.1
 )
 
 // init handles command-line flags and initial logging setup.
@@ -84,9 +84,10 @@ func main() {
 
 	genAIClient, err = genai.NewClient(clientCtx, clientConfig)
 	if err != nil {
-		log.Fatalf("Error creating global GenAI client: %v", err)
+		log.Printf("Warning: Error creating global GenAI client: %v. Deferring initialization to runtime.", err)
+	} else {
+		log.Printf("Global GenAI client initialized successfully.")
 	}
-	log.Printf("Global GenAI client initialized successfully.")
 
 	s := server.NewMCPServer(
 		"Veo", // Standardized name
