@@ -5,6 +5,7 @@ before:
   hooks:
     - 'sh -c "cd experiments/mcp-genmedia/mcp-genmedia-go && go work sync"'
     - 'sh -c "cd experiments/mcp-genmedia/mcp-genmedia-go && cp -r ../sample-agents/geminicli/sample_extensions ./gemini-extensions"'
+    - 'sh -c "cd experiments/mcp-genmedia/mcp-genmedia-go && cp -r ../sample-agents/antigravity ./gemini-extensions/antigravity"'
 
 builds:
   - id: mcp-veo-go
