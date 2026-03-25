@@ -81,6 +81,26 @@ if [ -d "$TMP_DIR/gemini-extensions" ]; then
     esac
 fi
 
+# Install Antigravity Skills if present
+if [ -d "$TMP_DIR/gemini-extensions/antigravity" ]; then
+    echo ""
+    read -p "Are you using Antigravity? Would you like to install the Google GenMedia Agent Skills globally? (y/N): " install_agy
+    case "$install_agy" in
+        [yY]|[yY][eE][sS])
+            echo_info "Installing Antigravity Skills..."
+            AGY_SKILL_DIR="$HOME/.gemini/antigravity/skills"
+            mkdir -p "$AGY_SKILL_DIR"
+            cp -R "$TMP_DIR/gemini-extensions/antigravity/.agents/skills/"* "$AGY_SKILL_DIR/"
+            echo_success "Agent Skills installed to $AGY_SKILL_DIR"
+            echo_info "You will still need to manually configure the mcp_config.json via the Antigravity UI."
+            ;;
+        *)
+            echo_info "Skipping Antigravity Skills installation."
+            ;;
+    esac
+fi
+
+
 
 echo_info "Installing binaries to ${INSTALL_DIR}..."
 mv "$TMP_DIR"/mcp-*-go "$INSTALL_DIR/" 2>/dev/null || true
