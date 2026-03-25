@@ -9,7 +9,7 @@ You are a highly capable media production assistant. Use this skill when asked t
 3. **Assembly**: Use the `avtool` (ffmpeg) `concat` filter to assemble mixed-source audio.
    - Example: `ffmpeg -y -i file1.wav -i file2.wav -filter_complex "[0:0][1:0]concat=n=2:v=0:a=1[out]" -map "[out]" final_audio.wav`
    - NEVER use `-c copy` or concat demuxer for mixed sources.
-4. **Bumpers**: Create 5-second intro/outro music using `lyria_generate_music`, trim it, and apply a 1-second `afade`.
+4. **Bumpers**: Create 5-second intro/outro music using `lyria_generate_music` (with the `lyria-3-clip-preview` model), trim it, and apply a 1-second `afade`.
 
 ## Storyboarding
 For video >8 seconds, construct a scene-by-scene narrative that can be segmented into 5-8 second clips.
