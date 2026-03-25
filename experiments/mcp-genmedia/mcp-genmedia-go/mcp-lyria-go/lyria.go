@@ -58,7 +58,7 @@ const (
 	serviceName         = "mcp-lyria-go"
 	version     = "3.0.0" // Standardize port handling
 	defaultPublisher    = "google"
-	defaultLyriaModelID = "lyria-002"
+	defaultLyriaModelID = "lyria-3-clip-preview"
 	defaultSampleCount  = 1
 	audioMIMEType       = "audio/wav" // Define MIME type for audio
 )
@@ -133,7 +133,8 @@ func main() {
 			mcp.Description("Optional. Local directory path. If provided, audio is saved locally and direct audio data is NOT returned (unless GCS is also not specified)."),
 		),
 		mcp.WithString("model_id",
-			mcp.Description(fmt.Sprintf("Optional. Specific Lyria model ID to use for the Vertex AI endpoint. Defaults to '%s'.", defaultLyriaModelID)),
+			mcp.DefaultString(defaultLyriaModelID),
+			mcp.Description(common.BuildLyriaModelDescription()),
 		),
 	}
 
