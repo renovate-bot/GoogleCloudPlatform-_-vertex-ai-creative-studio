@@ -58,7 +58,7 @@ const (
 	serviceName         = "mcp-lyria-go"
 	version     = "3.0.0" // Standardize port handling
 	defaultPublisher    = "google"
-	defaultLyriaModelID = "lyria-002"
+	defaultLyriaModelID = "lyria-3-clip-preview"
 	defaultSampleCount  = 1
 	audioMIMEType       = "audio/wav" // Define MIME type for audio
 )
