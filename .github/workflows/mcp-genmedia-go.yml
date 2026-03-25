@@ -35,6 +35,9 @@ jobs:
     - name: Install golangci-lint
       run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
 
+    - name: Remove go.work for isolated module testing
+      run: rm -f go.work go.work.sum
+
     - name: Install FFmpeg
       run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
@@ -47,7 +50,7 @@ jobs:
           cd $dir
           
           echo "-> Running golangci-lint in $dir"
-          env GOWORK=off golangci-lint run ./... || { echo "golangci-lint failed"; exit 1; }
+          golangci-lint run ./... || { echo "golangci-lint failed"; exit 1; }
           
           echo "-> Running go test in $dir"
 
