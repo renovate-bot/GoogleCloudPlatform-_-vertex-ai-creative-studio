@@ -24,7 +24,10 @@ jobs:
 
       - name: Strip Tag Prefix
         id: strip-tag
-        run: echo "VERSION=${GITHUB_REF_NAME#mcp-}" >> $GITHUB_ENV
+        run: |
+          VERSION=${GITHUB_REF_NAME#mcp-}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          git tag $VERSION
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
