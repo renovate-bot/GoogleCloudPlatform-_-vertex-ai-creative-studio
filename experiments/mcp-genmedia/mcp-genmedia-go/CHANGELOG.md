@@ -1,6 +1,14 @@
 # Changelog
 
-## 2026-03-25
+## 2026-03-25 (v3.1.1)
+
+*   **Fix:** Resolved a routing issue where Lyria 3 models were inadvertently hitting the legacy Prediction API instead of the new Interactions API.
+*   **Fix:** Enforced `global` region strictly for the Lyria 3 Interactions API to prevent `NotFound` errors when `us-central1` is used as a fallback.
+*   **Feat:** Added native support for the [Antigravity](https://antigravity.google) AI editor.
+*   **Feat:** The `install-online.sh` and `install.sh` scripts now interactively offer to install the expert `genmedia-producer` Agent Skill globally for Antigravity.
+*   **Docs:** Provided an Antigravity `mcp_config.json` template and instructions for connecting the GenMedia MCP suite.
+
+## 2026-03-25 (v3.1.0)
 
 *   **Feat:** Added support for `lyria-3-clip-preview` (30s) and `lyria-3-pro-preview` (2:30s) music generation models to `mcp-lyria-go`.
 *   **Feat:** Implemented a new, lightweight Go port of the Vertex AI Interactions API to support the Lyria 3 backends.
