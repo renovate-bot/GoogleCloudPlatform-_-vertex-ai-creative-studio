@@ -299,3 +299,59 @@ func BuildVeoModelDescription() string {
 	}
 	return sb.String()
 }
+
+
+// --- Lyria Model Configuration ---
+
+// LyriaModelInfo holds the details for a specific Lyria model.
+type LyriaModelInfo struct {
+	CanonicalName string
+	Aliases       []string
+	Description   string
+	EndpointType  string // "prediction" or "interactions"
+}
+
+// SupportedLyriaModels is the single source of truth for all supported Lyria models.
+var SupportedLyriaModels = map[string]LyriaModelInfo{
+	"lyria-002": {
+		CanonicalName: "lyria-002",
+		Aliases:       []string{"Lyria 2"},
+		Description:   "The original Lyria 2 model (using standard Vertex AI Prediction API).",
+		EndpointType:  "prediction",
+	},
+	"lyria-3-clip-preview": {
+		CanonicalName: "lyria-3-clip-preview",
+		Aliases:       []string{"Lyria 3 Clip"},
+		Description:   "Lyria 3 Clip model for 30-second audio generation (using Interactions API).",
+		EndpointType:  "interactions",
+	},
+	"lyria-3-pro-preview": {
+		CanonicalName: "lyria-3-pro-preview",
+		Aliases:       []string{"Lyria 3 Pro"},
+		Description:   "Lyria 3 Pro model for 2:30 audio generation (using Interactions API).",
+		EndpointType:  "interactions",
+	},
+}
+
+// BuildLyriaModelDescription returns a markdown-formatted string listing all supported Lyria models
+// and their aliases, suitable for use in an MCP tool description.
+func BuildLyriaModelDescription() string {
+	var sb strings.Builder
+	sb.WriteString("The specific Lyria model ID to use. Supported models:\n")
+
+	keys := make([]string, 0, len(SupportedLyriaModels))
+	for k := range SupportedLyriaModels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		info := SupportedLyriaModels[k]
+		fmt.Fprintf(&sb, "- *%s*", info.CanonicalName)
+		if len(info.Aliases) > 0 {
+			fmt.Fprintf(&sb, " Aliases: *%s*", strings.Join(info.Aliases, "*, *"))
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
