@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.0.0" // Standardize port handling
+	version     = "3.1.3" // Fix JSON Schema validation for arrays without items
 )
 
 var (
