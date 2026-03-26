@@ -49,7 +49,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "3.0.0" // Standardize port handling
+	version     = "3.0.1" // Fix JSON Schema validation for arrays without items
 )
 
 func init() {
