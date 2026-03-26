@@ -1,13 +1,11 @@
 # Changelog
 
-## 2026-03-25 (v3.1.2)
+## 2026-03-26 (v3.1.3)
 
-*   **Fix:** Updated the `mcp-nanobanana-go` and `mcp-gemini-go` servers to natively handle image generation `aspect_ratio` constraints using the `ImageConfig` field rather than prompt injection, causing the API to accurately reject invalid aspect ratios like `"auto"`.
-*   **Fix:** Resolved a bash syntax error in `install-online.sh` that broke the installer when piped directly from `curl` into `bash`.
-*   **Fix:** Corrected an architecture mapping bug in `install-online.sh` that caused `amd64` Linux and Windows users to receive a 404 error when downloading the release binaries.
-*   **Fix:** Configured GoReleaser to properly bundle the Antigravity agent configurations (`mcp_config.json` and `SKILL.md`) inside the `.tar.gz` release archives, enabling the interactive Antigravity installation prompt to function correctly.
 *   **Fix:** Added missing `mcp.Items` to `mcp.WithArray` definitions in `mcp-gemini-go`, `mcp-imagen-go`, and `mcp-avtool-go` to fix JSON Schema validation errors (HTTP 400 Bad Request) when used as Function Declarations in Vertex AI/Gemini API backends.
-*   **Chore:** Incremented versions for `mcp-gemini-go` (3.0.1), `mcp-imagen-go` (3.0.1), and `mcp-avtool-go` (3.0.1).
+*   **Chore:** Incremented versions for `mcp-gemini-go` (3.1.3), `mcp-imagen-go` (3.1.3), `mcp-avtool-go` (3.1.3), `mcp-chirp3-go` (3.1.3), `mcp-lyria-go` (3.1.3), `mcp-nanobanana-go` (3.1.3), and `mcp-veo-go` (3.1.3).
+
+## 2026-03-25 (v3.1.2)
 
 ## 2026-03-25 (v3.1.1)
 
