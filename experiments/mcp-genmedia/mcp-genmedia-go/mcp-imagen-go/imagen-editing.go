@@ -51,7 +51,7 @@ func registerImagenEditingTools(s *server.MCPServer, client *genai.Client, appCo
 		mcp.WithString("image_uri", mcp.Required(), mcp.Description("The GCS URI of the image to edit.")),
 		mcp.WithString("mask_mode", mcp.Required(), mcp.Description("The masking mode to use (e.g., MASK_MODE_FOREGROUND, MASK_MODE_SEMANTIC).")),
 		mcp.WithNumber("mask_dilation", mcp.Description("The dilation to apply to the mask.")),
-		mcp.WithArray("segmentation_classes", mcp.Description("The segmentation classes to use for semantic masking.")),
+		mcp.WithArray("segmentation_classes", mcp.Description("The segmentation classes to use for semantic masking."), mcp.Items(map[string]any{"type": "integer"})),
 	), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return imagenEditHandler(ctx, request, client, appConfig)
 	})
@@ -62,7 +62,7 @@ func registerImagenEditingTools(s *server.MCPServer, client *genai.Client, appCo
 		mcp.WithString("image_uri", mcp.Required(), mcp.Description("The GCS URI of the image to edit.")),
 		mcp.WithString("mask_mode", mcp.Required(), mcp.Description("The masking mode to use (e.g., MASK_MODE_FOREGROUND, MASK_MODE_SEMANTIC).")),
 		mcp.WithNumber("mask_dilation", mcp.Description("The dilation to apply to the mask.")),
-		mcp.WithArray("segmentation_classes", mcp.Description("The segmentation classes to use for semantic masking.")),
+		mcp.WithArray("segmentation_classes", mcp.Description("The segmentation classes to use for semantic masking."), mcp.Items(map[string]any{"type": "integer"})),
 	), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return imagenEditHandler(ctx, request, client, appConfig)
 	})

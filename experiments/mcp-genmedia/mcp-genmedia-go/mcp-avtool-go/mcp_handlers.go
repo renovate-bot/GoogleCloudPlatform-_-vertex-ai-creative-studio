@@ -1082,7 +1082,7 @@ func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest,
 func addLayerAudioTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_layer_audio_files",
 		mcp.WithDescription("Layers multiple audio files together (mixing)."),
-		mcp.WithArray("input_audio_uris", mcp.Required(), mcp.Description("Array of URIs for the input audio files to layer (local paths or gs://).")),
+		mcp.WithArray("input_audio_uris", mcp.Required(), mcp.Description("Array of URIs for the input audio files to layer (local paths or gs://)."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_file_name", mcp.Description("Optional. Desired name for the output mixed audio file (e.g., 'layered_audio.mp3').")),
 		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
 		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to.")),
