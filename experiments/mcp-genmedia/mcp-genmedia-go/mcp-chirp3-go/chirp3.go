@@ -33,7 +33,7 @@ var (
 	availableVoices []*texttospeechpb.Voice
 	transport       string
 	port            int
-	version     = "3.0.0" // Standardize port handling
+	version     = "3.1.3" // Fix JSON Schema validation for arrays without items
 )
 
 const (
