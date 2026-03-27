@@ -232,6 +232,9 @@ def field_names(dataclass_instance):
     return [f.name for f in dataclass_instance.__dataclass_fields__.values()]
 
 
+
+
+
 def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
     """Helper to create a MediaItem from a Firestore document dictionary."""
     if raw_item_data is None:
@@ -355,7 +358,6 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         original_resolution=raw_item_data.get("original_resolution"),
         upscale_factor=raw_item_data.get("upscale_factor"),
         image_size=raw_item_data.get("image_size"),
-        raw_data=raw_item_data,
     )
     return media_item
 
@@ -732,8 +734,7 @@ def get_media_for_page_optimized(
                 ),
                 original_resolution=raw_item_data.get("original_resolution"),
                 upscale_factor=raw_item_data.get("upscale_factor"),
-                raw_data=raw_item_data,
-            )
+                    )
             media_items.append(media_item)
 
         last_doc = docs[-1] if docs else None

@@ -58,7 +58,7 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
                 ),
             )
 
-        me.text(f"Model: {item.raw_data['model']}")
+        me.text(f"Model: {item.model}")
         me.text(f'Prompt: "{item.prompt or "N/A"}"')
         if item.negative_prompt:
             me.text(f'Negative Prompt: "{item.negative_prompt}"')
