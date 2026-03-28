@@ -176,39 +176,49 @@ def lyria_content(app_state: me.state):
             with me.box(style=_REFERENCE_IMAGES_BOX_STYLE):
                 me.text("Reference Images", style=me.Style(font_weight=500))
                 me.box(style=me.Style(height=16))
-                if pagestate.uploaded_image_gcs_uris:
-                    with me.box(
-                        style=me.Style(
-                            display="flex",
-                            flex_direction="row",
-                            gap=10,
-                            flex_wrap="wrap",
-                            align_items="center",
-                        ),
-                    ):
-                        for url in pagestate.uploaded_image_display_urls:
-                            me.image(
-                                src=url,
-                                style=me.Style(
-                                    width=100,
-                                    height=100,
-                                    object_fit="cover",
-                                    border_radius=8,
-                                ),
-                            )
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=16,
+                        margin=me.Margin(bottom=16),
+                        align_items="center",
+                    ),
+                ):
+                    me.uploader(
+                        label="Upload Image(s)",
+                        accepted_file_types=["image/jpeg", "image/png", "image/webp"],
+                        on_upload=on_upload_lyria_image,
+                        multiple=True,
+                        type="flat",
+                    )
+                    library_chooser_button(
+                        on_library_select=on_library_select,
+                        button_label="Choose from Library",
+                    )
+                    if pagestate.uploaded_image_gcs_uris:
                         me.button(
                             "Clear All",
                             on_click=on_clear_lyria_image,
                             type="stroked",
                         )
-                else:
-                    me.uploader(
-                        label="Upload Image(s)",
-                        accepted_file_types=["image/jpeg", "image/png"],
-                        on_upload=on_upload_lyria_image,
-                        multiple=True,
-                        type="flat",
-                    )
+
+                if pagestate.uploaded_image_gcs_uris:
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_wrap="wrap",
+                            gap=10,
+                            justify_content="flex-start",
+                        ),
+                    ):
+                        for i, uri in enumerate(pagestate.uploaded_image_display_urls):
+                            image_thumbnail(
+                                image_uri=uri,
+                                index=i,
+                                on_remove=on_remove_image,
+                                icon_size=18,
+                            )
 
         me.box(style=me.Style(height=24))
 
@@ -280,7 +290,8 @@ def lyria_content(app_state: me.state):
                 if pagestate.generated_text:
                     with me.box(style=me.Style(margin=me.Margin(top=16), width="100%")):
                         with me.expansion_panel(
-                            title="Generated Text Outputs", icon="notes",
+                            title="Generated Text Outputs",
+                            icon="notes",
                         ):
                             for text_output in pagestate.generated_text:
                                 me.markdown(text_output)
@@ -478,6 +489,34 @@ def on_clear_lyria_image(e: me.ClickEvent):
     state.uploaded_image_display_urls = []
 
 
+def on_library_select(e: LibrarySelectionChangeEvent):
+    state = me.state(PageState)
+    # We could restrict max images based on Lyria config here if needed, but for now we'll just append
+    state.uploaded_image_gcs_uris.append(e.gcs_uri)
+
+    # MIME type is hard to guess from just GCS URI in this event,
+    # but we can assume jpeg or png based on extension or fallback to jpeg.
+    ext = e.gcs_uri.split(".")[-1].lower() if "." in e.gcs_uri else "jpeg"
+    mime_type = f"image/{ext}" if ext in ["png", "webp"] else "image/jpeg"
+    state.uploaded_image_mime_types.append(mime_type)
+
+    from common.utils import create_display_url
+
+    state.uploaded_image_display_urls.append(create_display_url(e.gcs_uri))
+    yield
+
+
+def on_remove_image(e: me.ClickEvent):
+    state = me.state(PageState)
+    index_to_remove = int(e.key)
+
+    if 0 <= index_to_remove < len(state.uploaded_image_gcs_uris):
+        state.uploaded_image_gcs_uris.pop(index_to_remove)
+        state.uploaded_image_mime_types.pop(index_to_remove)
+        state.uploaded_image_display_urls.pop(index_to_remove)
+    yield
+
+
 def on_upload_lyria_image(e: me.UploadEvent):
     state = me.state(PageState)
     if not e.files:
@@ -578,7 +617,7 @@ def on_click_lyria(e: me.ClickEvent):
     yield
 
     print(
-        f"Let's make music with: {prompt_for_api} (Model: {state.selected_model_id}, Samples: {state.sample_count})",
+        f"Let's make music with: {prompt_for_api} (Model: {state.selected_model_id}, Samples: {state.sample_count}, Images: {len(state.uploaded_image_gcs_uris)})",
     )
     if state.original_user_prompt and state.original_user_prompt != prompt_for_api:
         print(f"Original user prompt was: {state.original_user_prompt}")
