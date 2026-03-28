@@ -97,7 +97,7 @@ async def favicon():
 # Define allowed origins for CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.cloudshell\.dev|http://localhost:8080",
+    allow_origin_regex=os.environ.get("CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
