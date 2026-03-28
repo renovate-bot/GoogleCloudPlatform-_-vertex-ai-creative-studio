@@ -144,64 +144,7 @@ def lyria_content(app_state: me.state):
                 with me.box(style=_FLEX_BOX_STYLE):
                     me.text("Lyrics (Optional)", style=me.Style(font_weight=500))
                     me.box(style=me.Style(height=16))
-                    with me.box(
-                        style=me.Style(
-                            border_radius=16,
-                            padding=me.Padding.all(8),
-                            background=me.theme_var("secondary-container"),
-                            display="flex",
-                            flex_direction="row",
-                            width="100%",
-                            flex_grow=1,
-                        ),
-                    ):
-                        me.native_textarea(
-                            autosize=True,
-                            min_rows=8,
-                            placeholder="Enter lyrics here...",
-                            style=me.Style(
-                                padding=me.Padding(
-                                    top=16,
-                                    left=16,
-                                    right=16,
-                                    bottom=16,
-                                ),
-                                background=me.theme_var("secondary-container"),
-                                outline="none",
-                                width="100%",
-                                overflow_y="auto",
-                                border=me.Border.all(me.BorderSide(style="none")),
-                                color=me.theme_var("foreground"),
-                                flex_grow=1,
-                            ),
-                            on_blur=on_blur_lyria_lyrics,
-                            value=pagestate.lyrics_placeholder,
-                        )
-                        with me.box(
-                            style=me.Style(
-                                display="flex",
-                                flex_direction="column",
-                                gap=10,
-                                padding=me.Padding(left=16, right=16, bottom=16),
-                            ),
-                        ):
-                            with me.content_button(
-                                type="icon",
-                                on_click=on_click_lyria_lyrics_generate,
-                                disabled=pagestate.is_generating_lyrics
-                                or pagestate.is_loading,
-                            ):
-                                with me.box(
-                                    style=me.Style(
-                                        display="flex",
-                                        flex_direction="column",
-                                        gap=2,
-                                        font_size=10,
-                                        align_items="center",
-                                    ),
-                                ):
-                                    me.icon("auto_awesome")
-                                    me.text("Generate")
+                    subtle_lyrics_input()
         else:
             with me.box(style=_BOX_STYLE):
                 me.text("Prompt for music generation", style=me.Style(font_weight=500))
@@ -393,6 +336,62 @@ def subtle_lyria_input():
                 with me.box(style=icon_style):
                     me.icon("clear")
                     me.text("Clear")
+
+
+@me.component
+def subtle_lyrics_input():
+    """Lyria lyrics input component"""
+    pagestate = me.state(PageState)
+    icon_style = me.Style(
+        display="flex",
+        flex_direction="column",
+        gap=2,
+        font_size=10,
+        align_items="center",
+    )
+    with me.box(
+        style=me.Style(
+            border_radius=16,
+            padding=me.Padding.all(8),
+            background=me.theme_var("secondary-container"),
+            display="flex",
+            width="100%",
+        ),
+    ):
+        with me.box(style=me.Style(flex_grow=1)):
+            me.native_textarea(
+                autosize=True,
+                min_rows=8,
+                placeholder="Enter lyrics here...",
+                style=me.Style(
+                    padding=me.Padding(top=16, left=16, right=16, bottom=16),
+                    background=me.theme_var("secondary-container"),
+                    outline="none",
+                    width="100%",
+                    overflow_y="auto",
+                    border=me.Border.all(me.BorderSide(style="none")),
+                    color=me.theme_var("foreground"),
+                    flex_grow=1,
+                ),
+                on_blur=on_blur_lyria_lyrics,
+                value=pagestate.lyrics_placeholder,
+            )
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="column",
+                gap=10,
+                padding=me.Padding(left=16, right=16, bottom=16),
+            ),
+        ):
+            with me.content_button(
+                type="icon",
+                on_click=on_click_lyria_lyrics_generate,
+                disabled=pagestate.is_generating_lyrics or pagestate.is_loading,
+            ):
+                with me.box(style=icon_style):
+                    me.icon("auto_awesome")
+                    me.text("Generate")
 
 
 def on_lyria_model_change(e: me.SelectSelectionChangeEvent):
