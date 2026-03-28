@@ -328,6 +328,7 @@ def subtle_lyria_input():
                     background=me.theme_var("secondary-container"),
                     outline="none",
                     width="100%",
+                    max_height=300,
                     overflow_y="auto",
                     border=me.Border.all(me.BorderSide(style="none")),
                     color=me.theme_var("foreground"),
@@ -403,6 +404,7 @@ def subtle_lyrics_input():
                     background=me.theme_var("secondary-container"),
                     outline="none",
                     width="100%",
+                    max_height=300,
                     overflow_y="auto",
                     border=me.Border.all(me.BorderSide(style="none")),
                     color=me.theme_var("foreground"),
@@ -773,7 +775,8 @@ def on_click_lyria_lyrics_generate(e: me.ClickEvent):
             prompt_with_seed += f"\n\nSeed Ideas/Partial Lyrics:\n{seed_lyrics}"
 
         generated_lyrics = rewriter(
-            prompt_with_seed, "",
+            prompt_with_seed,
+            "",
         )  # The rewriter function appends the second param to the first if it's not a template. Since we manually formatted it, we can just pass empty string for the template. Actually, `rewriter(user_prompt, system_prompt)` where system_prompt is the rule.
 
         # Let's adjust how we use the rewriter. `rewriter(prompt, template)` does:
