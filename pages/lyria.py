@@ -95,7 +95,7 @@ def lyria_content(app_state: me.state):
                 ],
                 on_selection_change=on_lyria_model_change,
                 value=pagestate.selected_model_id,
-                style=me.Style(width="100%"),
+                style=me.Style(width=250),
             )
 
         model_config = get_lyria_model_config(pagestate.selected_model_id)
@@ -110,7 +110,7 @@ def lyria_content(app_state: me.state):
                     ],
                     on_selection_change=on_lyria_sample_count_change,
                     value=str(pagestate.sample_count),
-                    style=me.Style(width="100%"),
+                    style=me.Style(width=250),
                 )
 
         _FLEX_BOX_STYLE = me.Style(
@@ -150,6 +150,7 @@ def lyria_content(app_state: me.state):
                             padding=me.Padding.all(8),
                             background=me.theme_var("secondary-container"),
                             display="flex",
+                            flex_direction="row",
                             width="100%",
                             flex_grow=1,
                         ),
@@ -160,7 +161,10 @@ def lyria_content(app_state: me.state):
                             placeholder="Enter lyrics here...",
                             style=me.Style(
                                 padding=me.Padding(
-                                    top=16, left=16, right=16, bottom=16,
+                                    top=16,
+                                    left=16,
+                                    right=16,
+                                    bottom=16,
                                 ),
                                 background=me.theme_var("secondary-container"),
                                 outline="none",
@@ -724,7 +728,27 @@ def on_click_lyria_lyrics_generate(e: me.ClickEvent):
         from config.rewriters import LYRICS_GENERATOR
         from models.gemini import rewriter
 
-        generated_lyrics = rewriter(prompt_to_use, LYRICS_GENERATOR)
+        # Handle seed lyrics if the user already started typing something
+        seed_lyrics = state.lyrics_input.strip()
+
+        prompt_with_seed = LYRICS_GENERATOR.format(user_prompt=prompt_to_use)
+        if seed_lyrics:
+            prompt_with_seed += f"\n\nSeed Ideas/Partial Lyrics:\n{seed_lyrics}"
+
+        generated_lyrics = rewriter(
+            prompt_with_seed, ""
+        )  # The rewriter function appends the second param to the first if it's not a template. Since we manually formatted it, we can just pass empty string for the template. Actually, `rewriter(user_prompt, system_prompt)` where system_prompt is the rule.
+
+        # Let's adjust how we use the rewriter. `rewriter(prompt, template)` does:
+        # prompt = template + "\n\n" + user_prompt if template is string.
+        # So we can pass prompt_to_use as the user_prompt, and build a custom template.
+
+        custom_template = LYRICS_GENERATOR
+        if seed_lyrics:
+            custom_template += f"\n\nSeed Ideas/Partial Lyrics:\n{seed_lyrics}"
+
+        generated_lyrics = rewriter(prompt_to_use, custom_template)
+
         state.lyrics_input = generated_lyrics
         state.lyrics_placeholder = generated_lyrics
     except Exception as err:
