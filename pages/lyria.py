@@ -63,6 +63,18 @@ _BOX_STYLE = me.Style(
 )
 
 
+# Combined style for the reference images display box
+_REFERENCE_IMAGES_BOX_STYLE = me.Style(
+    background=me.theme_var("background"),
+    border_radius=12,
+    box_shadow=("0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"),
+    padding=me.Padding(top=16, left=16, right=16, bottom=16),
+    display="flex",
+    flex_direction="column",
+    margin=me.Margin(top=16, bottom=16),
+)
+
+
 def lyria_content(app_state: me.state):
     """Lyria Mesop Page"""
     pagestate = me.state(PageState)
@@ -161,8 +173,7 @@ def lyria_content(app_state: me.state):
                 subtle_lyria_input()
 
         if model_config and model_config.supports_images:
-            me.box(style=me.Style(height=16))
-            with me.box(style=_BOX_STYLE):
+            with me.box(style=_REFERENCE_IMAGES_BOX_STYLE):
                 me.text("Reference Images", style=me.Style(font_weight=500))
                 me.box(style=me.Style(height=16))
                 if pagestate.uploaded_image_gcs_uris:
