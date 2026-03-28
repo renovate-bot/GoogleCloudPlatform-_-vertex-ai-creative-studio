@@ -26,6 +26,7 @@ from components.library.events import LibrarySelectionChangeEvent
 @me.stateclass
 class State:
     """Local mesop state for the audio chooser button."""
+
     show_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
@@ -56,7 +57,10 @@ def audio_chooser_button(
         print(f"Found {len(items)} audio files in the library.")
         import json
         from dataclasses import asdict
-        state.media_items_json = json.dumps([asdict(item) for item in items], default=str)
+
+        state.media_items_json = json.dumps(
+            [asdict(item) for item in items], default=str
+        )
         state.is_loading = False
         if not last_doc:
             state.has_more_items = False
@@ -73,15 +77,23 @@ def audio_chooser_button(
         yield
 
     with me.content_button(on_click=open_dialog, type=button_type, key=key):
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, align_items="center")):
+        with me.box(
+            style=me.Style(
+                display="flex", flex_direction="row", gap=8, align_items="center"
+            )
+        ):
             me.icon("music_note")
             if button_label:
                 me.text(button_label)
 
-    dialog_style = me.Style(width="95vw", height="80vh", display="flex", flex_direction="column")
+    dialog_style = me.Style(
+        width="95vw", height="80vh", display="flex", flex_direction="column"
+    )
 
     with dialog(is_open=state.show_dialog, dialog_style=dialog_style):
-        with me.box(style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)):
+        with me.box(
+            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+        ):
             me.text("Select Audio from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
                 if state.is_loading and not state.media_items:
@@ -96,23 +108,38 @@ def audio_chooser_button(
                         me.progress_spinner()
                 else:
                     import json
-                    items_dicts = json.loads(state.media_items_json) if state.media_items_json else []
+
+                    items_dicts = (
+                        json.loads(state.media_items_json)
+                        if state.media_items_json
+                        else []
+                    )
                     media_items = []
                     for d in items_dicts:
                         valid_keys = MediaItem.__dataclass_fields__.keys()
                         clean_d = {k: v for k, v in d.items() if k in valid_keys}
                         media_items.append(MediaItem(**clean_d))
                     for item in media_items:
-                        uri = item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None)
+                        uri = item.gcsuri or (
+                            item.gcs_uris[0] if item.gcs_uris else None
+                        )
                         if uri:
-                            with me.box(key=uri, on_click=handle_image_selected, style=me.Style(padding=me.Padding.all(8), cursor="pointer")):
+                            with me.box(
+                                key=uri,
+                                on_click=handle_image_selected,
+                                style=me.Style(
+                                    padding=me.Padding.all(8), cursor="pointer"
+                                ),
+                            ):
                                 me.text(uri.split("/")[-1])
 
-
-            with me.box(style=me.Style(display="flex", justify_content="flex-end", margin=me.Margin(top=24))):
+            with me.box(
+                style=me.Style(
+                    display="flex", justify_content="flex-end", margin=me.Margin(top=24)
+                )
+            ):
                 me.button(
                     "Cancel",
                     on_click=lambda e: setattr(state, "show_dialog", False),
                     type="stroked",
                 )
-

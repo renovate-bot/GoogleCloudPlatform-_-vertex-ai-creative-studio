@@ -65,7 +65,9 @@ def library_chooser_button(
         # Use the media_type stored in state, which was set when opening the dialog
         print(f"DEBUG: fetching items with media_type={state.media_type}")
         items, _ = get_media_for_page_optimized(
-            20, state.media_type, filter_by_user_email=user_email,
+            20,
+            state.media_type,
+            filter_by_user_email=user_email,
         )
 
         # Convert GCS URIs to display URLs using the centralized helper.
@@ -81,7 +83,8 @@ def library_chooser_button(
         from dataclasses import asdict
 
         state.media_items_json = json.dumps(
-            [asdict(item) for item in items], default=str,
+            [asdict(item) for item in items],
+            default=str,
         )
         state.is_loading = False
         yield
@@ -148,7 +151,10 @@ def library_chooser_button(
         if is_active:
             with me.box(
                 style=me.Style(
-                    display="flex", flex_direction="column", gap=16, flex_grow=1,
+                    display="flex",
+                    flex_direction="column",
+                    gap=16,
+                    flex_grow=1,
                 ),
             ):
                 # Header with title and toggle
@@ -170,7 +176,8 @@ def library_chooser_button(
                         media_type_label = "Audio"
 
                     me.text(
-                        f"Select {media_type_label} from Library", type="headline-6",
+                        f"Select {media_type_label} from Library",
+                        type="headline-6",
                     )
                     me.slide_toggle(
                         label="Show only my items",

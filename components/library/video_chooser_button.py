@@ -60,7 +60,10 @@ def video_chooser_button(
         print(f"Found {len(items)} videos in the library.")
         import json
         from dataclasses import asdict
-        state.media_items_json = json.dumps([asdict(item) for item in items], default=str)
+
+        state.media_items_json = json.dumps(
+            [asdict(item) for item in items], default=str
+        )
         state.is_loading = False
         if not last_doc:
             state.has_more_items = False
@@ -133,7 +136,12 @@ def video_chooser_button(
                 else:
                     items_to_render = []
                     import json
-                    items_dicts = json.loads(state.media_items_json) if state.media_items_json else []
+
+                    items_dicts = (
+                        json.loads(state.media_items_json)
+                        if state.media_items_json
+                        else []
+                    )
                     media_items = []
                     for d in items_dicts:
                         valid_keys = MediaItem.__dataclass_fields__.keys()
