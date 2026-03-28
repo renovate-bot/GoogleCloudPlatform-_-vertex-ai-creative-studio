@@ -277,6 +277,15 @@ def lyria_content(app_state: me.state):
                             manifest=pagestate.c2pa_manifest_json,
                         )
 
+                if pagestate.generated_text:
+                    with me.box(style=me.Style(margin=me.Margin(top=16), width="100%")):
+                        with me.expansion_panel(
+                            title="Generated Text Outputs", icon="notes",
+                        ):
+                            for text_output in pagestate.generated_text:
+                                me.markdown(text_output)
+                                me.divider()
+
         # Gemini Analysis Loading Indicator - Show if analyzing AND primary loading is done
         if pagestate.is_analyzing and not pagestate.is_loading:
             with me.box(
@@ -568,7 +577,9 @@ def on_click_lyria(e: me.ClickEvent):
     state.analysis_error_message = ""
     yield
 
-    print(f"Let's make music with: {prompt_for_api}")
+    print(
+        f"Let's make music with: {prompt_for_api} (Model: {state.selected_model_id}, Samples: {state.sample_count})",
+    )
     if state.original_user_prompt and state.original_user_prompt != prompt_for_api:
         print(f"Original user prompt was: {state.original_user_prompt}")
 
@@ -579,7 +590,7 @@ def on_click_lyria(e: me.ClickEvent):
     analysis_dict_for_metadata = None
 
     try:
-        destination_blob_paths, c2pa_data = generate_music_with_lyria(
+        destination_blob_paths, c2pa_data, text_outputs = generate_music_with_lyria(
             prompt=prompt_for_api,
             model_name=get_lyria_model_config(state.selected_model_id).model_name,
             lyrics=state.lyrics_input,
@@ -701,6 +712,7 @@ def on_click_lyria(e: me.ClickEvent):
             if lyria_error_message_for_metadata
             else None,
             gcs_uris=state.music_gcs_uris if generated_successfully else [],
+            generated_text=state.generated_text if generated_successfully else [],
             audio_analysis=json.dumps(analysis_dict_for_metadata)
             if analysis_dict_for_metadata
             else None,
@@ -720,6 +732,7 @@ def clear_music(e: me.ClickEvent):
     state.music_gcs_uris = []
     state.music_display_urls = []
     state.selected_track_index = 0
+    state.generated_text = []
     state.is_loading = False
     state.is_analyzing = False
     state.show_error_dialog = False

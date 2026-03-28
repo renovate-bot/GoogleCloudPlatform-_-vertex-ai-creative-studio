@@ -70,7 +70,7 @@ def generate_music_with_lyria(
             ) from client_err
 
         print(
-            f"Prediction client initiated on project {PROJECT_ID} in {cfg.LYRIA_LOCATION}: {LYRIA_ENDPOINT}."
+            f"Prediction client initiated on project {PROJECT_ID} in {cfg.LYRIA_LOCATION}: {LYRIA_ENDPOINT}. Requesting {sample_count} samples."
         )
 
         instances = [{"prompt": prompt}]
@@ -110,7 +110,7 @@ def generate_music_with_lyria(
                 destination_blob_names.append(destination_blob_name)
             
             print(f"{len(destination_blob_names)} audio clips uploaded.")
-            return destination_blob_names, None
+            return destination_blob_names, None, []
 
         except GoogleAPIError as e:
             error_message = f"Lyria API Error: {str(e)}"
@@ -171,12 +171,17 @@ def generate_music_with_lyria(
             resp_json = json.loads(body.decode("utf-8"))
             audio_b64 = None
             c2pa_data = None
+            text_outputs = []
             if "outputs" in resp_json:
                 for o in resp_json["outputs"]:
                     if o.get("type") == "audio":
                         audio_b64 = o.get("data")
                     elif o.get("type") == "content_credentials":
                         c2pa_data = o.get("data")
+                    elif o.get("type") == "text":
+                        text_val = o.get("text")
+                        if text_val:
+                            text_outputs.append(text_val)
 
             if not audio_b64:
                 raise ValueError(
@@ -198,7 +203,7 @@ def generate_music_with_lyria(
             )
             destination_blob_names.append(destination_blob_name)
             print(f"{destination_blob_name} uploaded.")
-            return destination_blob_names, c2pa_data
+            return destination_blob_names, c2pa_data, text_outputs
 
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8")

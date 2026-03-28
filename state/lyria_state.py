@@ -41,6 +41,7 @@ class PageState:
     uploaded_image_mime_types: list[str] = field(default_factory=list)
     uploaded_image_display_urls: list[str] = field(default_factory=list)
     c2pa_manifest_json: str = ""
+    generated_text: list[str] = field(default_factory=list)
 
     timing: str = ""
 
