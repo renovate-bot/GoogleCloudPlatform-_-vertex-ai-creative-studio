@@ -136,7 +136,7 @@ def generate_music_with_lyria(
     if prompt:
         inputs.append({"type": "text", "text": prompt})
     if lyrics:
-        inputs.append({"type": "text", "text": lyrics})
+        inputs.append({"type": "text", "text": f"With the lyrics: {lyrics}"})
     if image_gcs_uri:
         inputs.append(
             {"type": "image", "mime_type": image_mime_type, "uri": image_gcs_uri}
