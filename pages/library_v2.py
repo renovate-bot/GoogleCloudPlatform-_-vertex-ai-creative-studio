@@ -104,10 +104,22 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     if not new_items:
         pagestate.all_items_loaded = True
-    elif is_filter_change:
-        pagestate.media_items = new_items
     else:
-        pagestate.media_items.extend(new_items)
+        import json
+        from dataclasses import asdict
+
+        existing_items = []
+        if pagestate.media_items_json:
+            existing_items = json.loads(pagestate.media_items_json)
+
+        new_items_dicts = [asdict(item) for item in new_items]
+
+        if is_filter_change:
+            combined = new_items_dicts
+        else:
+            combined = existing_items + new_items_dicts
+
+        pagestate.media_items_json = json.dumps(combined, default=str)
 
     pagestate.is_loading = False
     yield
