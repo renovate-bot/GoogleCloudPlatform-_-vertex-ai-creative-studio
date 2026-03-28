@@ -114,7 +114,7 @@ def on_load(e: me.LoadEvent):
         [t.model_dump() for t in all_templates],
         key=lambda x: (x["category"], x["label"]),
     )
-    state.templates_json = json.dumps(templates)
+    state.templates_json = json.dumps(templates, default=str)
     state.is_loading = False
     yield
 
@@ -146,7 +146,7 @@ def on_update_template(template_id: str, updates: dict):
             [t.model_dump() for t in all_templates],
             key=lambda x: (x["category"], x["label"]),
         )
-        state.templates_json = json.dumps(templates)
+        state.templates_json = json.dumps(templates, default=str)
         # Close the dialog
         state.show_template_dialog = False
         state.selected_template_key = None
