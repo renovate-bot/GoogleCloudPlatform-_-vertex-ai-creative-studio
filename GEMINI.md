@@ -28,6 +28,18 @@ When new code, features, or experiments are added, it's crucial to update the re
 
 
 
+### Mesop Serialization Bug (`list[dataclass]` / `__annotations__` crash)
+*   **The Problem:** Mesop `1.2+` has a severe bug in its state deserialization logic when running on Python 3.10+. If a `@me.stateclass` contains a field defined as a list of complex objects (e.g., `list[dict]`, `list[MediaItem]`), Mesop will crash with `AttributeError: 'PageState' object has no attribute '__annotations__'` when the frontend attempts to sync state back to the backend.
+*   **The Fix:** NEVER store `list[dataclass]` or `list[dict]` directly in a Mesop state class if that state needs to be sent back and forth during interactions. Instead, store the data as a serialized JSON string: `my_items_json: str = "[]"`. 
+*   **The Pattern:** 
+    1. During data hydration (e.g., fetching from Firestore), serialize your list to JSON: `state.my_items_json = json.dumps([asdict(i) for i in items], default=str)`.
+    2. During the UI render loop, safely unpack it back into python objects before generating your components.
+    3. **Warning:** Watch out for `datetime` objects. They serialize to ISO strings cleanly, but during the unpack phase, you MUST manually catch those strings and run `datetime.datetime.fromisoformat(val)` before attempting to use them in sorting logic.
+
+### Cloud Run Deployment & CSRF
+*   **The Problem:** When deploying Mesop to Cloud Run behind a Google Cloud load balancer, the proxy rewrites the `Host` header (often to `127.0.0.1:8080`). Mesop's strict CSRF protection compares the browser's `Origin` header to this internal `Host` header, resulting in a silent `403 Forbidden` block on the `/__ui__` POST endpoint.
+*   **The Fix:** You must instruct Gunicorn to trust the proxy headers. In your `Dockerfile` and `Procfile`, append `--forwarded-allow-ips="*"` to the gunicorn command. Additionally, ensure FastAPI is configured with a `BaseHTTPMiddleware` that intercepts `X-Forwarded-Host` and rewrites the `request.scope["headers"]` before the request hits Mesop.
+
 ### Lit WebComponents Interop
 Mesop allows integrating custom Lit WebComponents, but the bridge between JavaScript and Python is highly specific. When creating custom components like `<banana-button>`:
 1. **Property Binding:** Declare properties explicitly in your Lit element's `static properties = { ... }`. Mesop dynamically sets these from the `properties={}` dict in the python wrapper.
