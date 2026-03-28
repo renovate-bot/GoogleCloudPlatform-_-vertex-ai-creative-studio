@@ -70,7 +70,16 @@ def lyria_content(app_state: me.state):
     if pagestate.info_dialog_open:
         with dialog(is_open=pagestate.info_dialog_open):  # pylint: disable=not-context-manager
             me.text("About Lyria", type="headline-6")
-            me.markdown(ABOUT_PAGE_CONTENT["sections"][2]["description"])
+            me.markdown(
+                next(
+                    (
+                        s["description"]
+                        for s in ABOUT_PAGE_CONTENT.get("sections", [])
+                        if s.get("id") == "lyria"
+                    ),
+                    "",
+                )
+            )
             me.divider()
             me.text("Current Settings", type="headline-6")
             me.text(f"Prompt: {pagestate.music_prompt_input}")
