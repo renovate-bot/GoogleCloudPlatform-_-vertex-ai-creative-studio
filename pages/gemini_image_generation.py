@@ -38,6 +38,25 @@ from components.svg_icon.svg_icon import svg_icon
 from config.banana_presets import IMAGE_ACTION_PRESETS
 from config.default import Default as cfg
 from config.gemini_image_models import get_gemini_image_model_config
+from components.banana_button.banana_button import banana_button
+
+from components.gemini_image.upload_ui import gemini_image_upload_ui
+from components.gemini_image.controls import gemini_image_controls
+from components.gemini_image.gallery import gemini_image_gallery
+from components.gemini_image.events import (
+    get_on_aspect_ratio_change,
+    get_on_image_size_change,
+    get_on_num_images_change,
+    get_on_search_change,
+    get_on_image_search_change,
+    get_on_include_thoughts_change,
+    get_on_thinking_level_change,
+    get_on_model_select,
+    get_on_prompt_blur,
+    get_on_thumbnail_click,
+    get_on_remove_image
+)
+
 from models.gemini import (
     generate_image_from_prompt_and_images,
     generate_transformation_prompts,
@@ -90,6 +109,7 @@ def get_all_image_presets():
 class PageState:
     """Gemini Image Generation Page State"""
 
+    selected_model: str = "gemini-3.1-flash-image-preview"
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     uploaded_image_display_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     prompt: str = ""
@@ -109,16 +129,28 @@ class PageState:
     suggested_transformations: list[dict] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_suggesting_transformations: bool = False
     use_search: bool = False
+    use_image_search: bool = False
+    include_thoughts: bool = False
+    thinking_level: str = "HIGH"
+    thoughts: str = ""
     grounding_info: str = ""
     c2pa_manifests: dict[str, str] = field(default_factory=dict) # Store as dict of strings (url -> json_str)
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
 
+on_aspect_ratio_change = get_on_aspect_ratio_change(PageState)
+on_image_size_change = get_on_image_size_change(PageState)
+on_num_images_change = get_on_num_images_change(PageState)
+on_search_change = get_on_search_change(PageState)
+on_image_search_change = get_on_image_search_change(PageState)
+on_include_thoughts_change = get_on_include_thoughts_change(PageState)
+on_thinking_level_change = get_on_thinking_level_change(PageState)
+on_model_select = get_on_model_select(PageState)
+on_prompt_blur = get_on_prompt_blur(PageState)
+on_thumbnail_click = get_on_thumbnail_click(PageState)
 
-def on_search_change(e: me.CheckboxChangeEvent):
-    """Updates the use_search state."""
-    me.state(PageState).use_search = e.checked
+
 
 
 with open("config/about_content.json", "r") as f:
@@ -179,7 +211,7 @@ def gemini_image_gen_page_content():
     """Renders the main UI for the Gemini Image Generation page."""
     state = me.state(PageState)
     app_state = me.state(AppState)
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
 
     if state.info_dialog_open:
@@ -210,6 +242,26 @@ def gemini_image_gen_page_content():
                     border_radius=12,
                 ),
             ):
+                from config.gemini_image_models import GEMINI_IMAGE_MODELS
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=16,
+                        margin=me.Margin(bottom=16),
+                        justify_content="center",
+                    )
+                ):
+                    for model in GEMINI_IMAGE_MODELS:
+                        is_selected = state.selected_model == model.model_name
+                        banana_button(
+                            selected=is_selected,
+                            badge=model.button_label,
+                            label=model.display_name,
+                            model_name=model.model_name,
+                            on_click=on_model_select,
+                        )
+                
                 me.text(
                     "Type a prompt or add images and a prompt",
                     style=me.Style(
@@ -650,7 +702,7 @@ def gemini_image_gen_page_content():
 def on_upload(e: me.UploadEvent):
     """Handles file uploads, stores them in GCS, and updates the state."""
     state = me.state(PageState)
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
     max_input_images = model_config.max_input_images if model_config else 3
 
@@ -685,7 +737,7 @@ def on_upload(e: me.UploadEvent):
 def on_library_select(e: LibrarySelectionChangeEvent):
     """Appends a selected library image's GCS URI to the list of uploaded images."""
     state = me.state(PageState)
-    current_model_name = cfg().GEMINI_IMAGE_GEN_MODEL
+    current_model_name = state.selected_model
     model_config = get_gemini_image_model_config(current_model_name)
     max_input_images = model_config.max_input_images if model_config else 3
 
@@ -705,33 +757,6 @@ def on_remove_image(e: me.ClickEvent):
     state = me.state(PageState)
     del state.uploaded_image_gcs_uris[int(e.key)]
     del state.uploaded_image_display_urls[int(e.key)]
-    yield
-
-
-def on_prompt_blur(e: me.InputEvent):
-    """Updates the prompt in the page state when the input field loses focus."""
-    me.state(PageState).prompt = e.value
-
-
-def on_aspect_ratio_change(e: me.SelectSelectionChangeEvent):
-    """Changes the aspect ratio on page state."""
-    me.state(PageState).aspect_ratio = e.value
-
-
-def on_image_size_change(e: me.SelectSelectionChangeEvent):
-    """Changes the image size on page state."""
-    me.state(PageState).image_size = e.value
-
-
-def on_num_images_change(e: me.SelectSelectionChangeEvent):
-    """Updates the number of images to generate in the page state."""
-    me.state(PageState).num_images_to_generate = int(e.value)
-
-
-def on_thumbnail_click(e: me.ClickEvent):
-    """Sets the clicked thumbnail as the main selected image."""
-    state = me.state(PageState)
-    state.selected_image_url = e.key
     yield
 
 
@@ -933,13 +958,13 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
 
     try:
         with track_model_call(
-            model_name=cfg().GEMINI_IMAGE_GEN_MODEL,
+            model_name=state.selected_model,
             prompt_length=len(final_prompt),
             aspect_ratio=state.aspect_ratio,
             #num_input_images=len(input_gcs_uris),
             #num_images_generated=state.num_images_to_generate,
         ):
-            gcs_uris, execution_time, captions, grounding_info = generate_image_from_prompt_and_images(
+            gcs_uris, execution_time, captions, grounding_info, all_thoughts = generate_image_from_prompt_and_images(
                 prompt=final_prompt,
                 images=input_gcs_uris,
                 aspect_ratio=state.aspect_ratio,
@@ -948,10 +973,15 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 candidate_count=1,
                 image_size=state.image_size,
                 use_search=state.use_search,
+                use_image_search=state.use_image_search,
+                thinking_level=state.thinking_level,
+                include_thoughts=state.include_thoughts,
+                model_name=state.selected_model,
             )
 
         state.generation_time = execution_time
         state.grounding_info = json.dumps(grounding_info) if grounding_info else ""
+        state.thoughts = all_thoughts[0] if all_thoughts else ""
 
         if grounding_info:
             analytics_logger.info(f"Grounding Metadata Keys: {list(grounding_info.keys())}")
@@ -964,7 +994,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 user_email=app_state.user_email,
                 source_images_gcs=input_gcs_uris,
                 comment="generated by gemini image generation",
-                model=cfg().GEMINI_IMAGE_GEN_MODEL,
+                model=state.selected_model,
                 related_media_item_id=state.previous_media_item_id,
                 error_message="No images returned.",
                 generation_time=execution_time,
@@ -1006,7 +1036,7 @@ def _generate_and_save(base_prompt: str, input_gcs_uris: list[str]):
                 user_email=app_state.user_email,
                 source_images_gcs=input_gcs_uris,
                 comment="generated by gemini image generation",
-                model=cfg().GEMINI_IMAGE_GEN_MODEL,
+                model=state.selected_model,
                 related_media_item_id=state.previous_media_item_id,
                 generation_time=execution_time,
                 grounding_info=state.grounding_info,
