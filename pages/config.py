@@ -94,7 +94,7 @@ def _make_tab_style(selected: bool) -> me.Style:
 
 @me.stateclass
 class PageState:
-    templates: list[dict] = field(default_factory=list)
+    templates_json: str = "[]"
     is_loading: bool = False
     active_tab: str = "details"
     show_template_dialog: bool = False
@@ -107,11 +107,14 @@ def on_load(e: me.LoadEvent):
     state.is_loading = True
     yield
 
+    import json
+
     all_templates = prompt_template_service.load_all_templates()
-    state.templates = sorted(
+    templates = sorted(
         [t.model_dump() for t in all_templates],
         key=lambda x: (x["category"], x["label"]),
     )
+    state.templates_json = json.dumps(templates)
     state.is_loading = False
     yield
 
@@ -135,12 +138,15 @@ def on_update_template(template_id: str, updates: dict):
     state = me.state(PageState)
     try:
         prompt_template_service.update_template(template_id, updates)
+        import json
+
         # Reload all templates to reflect the change
         all_templates = prompt_template_service.load_all_templates()
-        state.templates = sorted(
+        templates = sorted(
             [t.model_dump() for t in all_templates],
             key=lambda x: (x["category"], x["label"]),
         )
+        state.templates_json = json.dumps(templates)
         # Close the dialog
         state.show_template_dialog = False
         state.selected_template_key = None
@@ -156,11 +162,15 @@ def page():
     state = me.state(PageState)
     app_state = me.state(AppState)
 
+    import json
+
+    templates = json.loads(state.templates_json) if state.templates_json else []
+
     # Find the template to display at render time
     selected_template = None
     if state.selected_template_key:
         selected_template = next(
-            (t for t in state.templates if t["key"] == state.selected_template_key),
+            (t for t in templates if t["key"] == state.selected_template_key),
             None,
         )
 
@@ -250,7 +260,7 @@ def get_config_table(app_state: AppState):
     if Default.BUILD_COMMIT:
         config_data["Config"].append("Git Commit")
         config_data["Value"].append(Default.BUILD_COMMIT)
-    
+
     if Default.BUILD_DATE:
         config_data["Config"].append("Build Date")
         config_data["Value"].append(Default.BUILD_DATE)
@@ -305,8 +315,12 @@ def _render_prompt_templates_list(app_state: AppState):
                 me.text("Attribution", style=me.Style(font_weight="bold"))
                 me.text("Actions", style=me.Style(font_weight="bold"))
 
+            import json
+
+            templates = json.loads(state.templates_json) if state.templates_json else []
+
             # Data Rows
-            for template in state.templates:
+            for template in templates:
                 with me.box(
                     key=template["key"],
                     on_click=on_row_click,
