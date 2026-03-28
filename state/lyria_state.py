@@ -1,5 +1,6 @@
 import mesop as me
 from dataclasses import field
+from typing import Optional
 
 @me.stateclass
 class AudioMetricsState:
@@ -13,7 +14,7 @@ class AudioMetricsState:
     duration_sec: float = 0.0
 
 @me.stateclass
-class LyriaPageState:
+class PageState:
     """Local Page State for Lyria"""
 
     is_loading: bool = False
@@ -28,6 +29,7 @@ class LyriaPageState:
     music_prompt_textarea_key: int = 0
     music_gcs_uris: list[str] = field(default_factory=list)
     music_display_urls: list[str] = field(default_factory=list)
+    selected_track_index: int = 0
 
     selected_model_id: str = "3-clip-preview"
     sample_count: int = 1
@@ -45,7 +47,7 @@ class LyriaPageState:
     show_error_dialog: bool = False
     error_message: str = ""
 
-    audio_analysis_result_json: str | None = None
+    audio_analysis_result_json: Optional[str] = None
     analysis_error_message: str = ""
 
     info_dialog_open: bool = False

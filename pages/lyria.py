@@ -78,7 +78,7 @@ def lyria_content(app_state: me.state):
                         if s.get("id") == "lyria"
                     ),
                     "",
-                )
+                ),
             )
             me.divider()
             me.text("Current Settings", type="headline-6")
@@ -232,8 +232,34 @@ def lyria_content(app_state: me.state):
                     margin=me.Margin(bottom=16),
                 ),
             ):
-                for url in pagestate.music_display_urls:
-                    me.audio(src=url)
+                if len(pagestate.music_display_urls) > 1:
+                    with me.box(
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=16,
+                            align_items="center",
+                        ),
+                    ):
+                        me.select(
+                            label="Select Track",
+                            options=[
+                                me.SelectOption(label=f"Track {i+1}", value=str(i))
+                                for i in range(len(pagestate.music_display_urls))
+                            ],
+                            on_selection_change=on_track_selection_change,
+                            value=str(pagestate.selected_track_index),
+                            style=me.Style(width=250),
+                        )
+
+                current_audio_url = (
+                    pagestate.music_display_urls[pagestate.selected_track_index]
+                    if pagestate.selected_track_index
+                    < len(pagestate.music_display_urls)
+                    else pagestate.music_display_urls[0]
+                )
+                me.audio(src=current_audio_url)
+
                 if pagestate.c2pa_manifest_json:
                     with me.box(style=me.Style(margin=me.Margin(top=16))):
                         content_credentials_viewer(
@@ -680,6 +706,7 @@ def clear_music(e: me.ClickEvent):
     state.music_prompt_textarea_key += 1
     state.music_gcs_uris = []
     state.music_display_urls = []
+    state.selected_track_index = 0
     state.is_loading = False
     state.is_analyzing = False
     state.show_error_dialog = False
@@ -746,7 +773,7 @@ def on_click_lyria_lyrics_generate(e: me.ClickEvent):
             prompt_with_seed += f"\n\nSeed Ideas/Partial Lyrics:\n{seed_lyrics}"
 
         generated_lyrics = rewriter(
-            prompt_with_seed, ""
+            prompt_with_seed, "",
         )  # The rewriter function appends the second param to the first if it's not a template. Since we manually formatted it, we can just pass empty string for the template. Actually, `rewriter(user_prompt, system_prompt)` where system_prompt is the rule.
 
         # Let's adjust how we use the rewriter. `rewriter(prompt, template)` does:
@@ -773,3 +800,11 @@ def on_click_lyria_lyrics_generate(e: me.ClickEvent):
 def on_lyria_sample_count_change(e: me.SelectSelectionChangeEvent):
     state = me.state(PageState)
     state.sample_count = int(e.value)
+
+
+def on_track_selection_change(e: me.SelectSelectionChangeEvent):
+    state = me.state(PageState)
+    state.selected_track_index = int(e.value)
+
+    # Update analysis if available? We probably want to keep the analysis tied to the first track or explicitly run it again.
+    # For now, just change the active track.
