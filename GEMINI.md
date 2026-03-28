@@ -44,3 +44,15 @@ When performing iterative, multi-step refactoring in a single session without in
 *   **The Solution:** 
     1. Always run `cp file.py file.py.bak` *before* executing a risky string replacement script. If it fails, restore from the local backup: `mv file.py.bak file.py`.
     2. Alternatively, use `git add file.py` to stage known-good intermediate states, allowing you to `git checkout -- file.py` safely back to the *index* rather than the last commit.
+## Go Modules & CI Environments
+
+**golangci-lint in go.work Monorepos:**
+When configuring `golangci-lint` to run in a CI environment (like GitHub Actions) across a multi-module `go.work` repository that uses local `replace` directives (e.g., `replace github.com/.../mcp-common => ../mcp-common`), do **not** use the official `golangci/golangci-lint-action` at the root. The GitHub runner filesystem boundaries will cause the Go typechecker to fail with `context loading failed: no go files to analyze`.
+
+Instead, you MUST:
+1. Physically delete `go.work` and `go.work.sum` in the CI pipeline before linting so Go treats the modules as fully isolated.
+2. Manually install `golangci-lint` via curl.
+3. Run the linter in a bash loop, explicitly changing directories into each submodule (`cd $dir && golangci-lint run ./...`).
+
+**CI Verification Scripts (mcptools):**
+If a Go application initializes network-dependent clients (like Google Cloud `genai.NewClient` or `texttospeech.NewClient`) on startup, it will hang indefinitely inside headless CI runners that lack ADC (Application Default Credentials). To allow tools like `mcptools` to verify the STDIO handshake in CI, you MUST make global client initialization non-fatal during `main()` and defer the strict credential check until the client is actually invoked inside the tool handler.

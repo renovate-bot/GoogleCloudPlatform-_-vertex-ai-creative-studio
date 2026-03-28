@@ -19,7 +19,7 @@ audioop-lts==0.2.2
     #   standard-sunau
 audioread==3.1.0
     # via librosa
-black==25.12.0
+black==26.3.1
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 blinker==1.9.0
     # via flask
@@ -85,7 +85,7 @@ google-api-core==2.30.0
     #   google-cloud-resource-manager
     #   google-cloud-storage
     #   google-cloud-texttospeech
-google-auth==2.48.0
+google-auth==2.49.1
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -118,7 +118,7 @@ google-cloud-logging==3.13.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 google-cloud-resource-manager==1.15.0
     # via google-cloud-aiplatform
-google-cloud-storage==3.7.0
+google-cloud-storage==3.9.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
@@ -259,7 +259,7 @@ numpy==2.3.5
     #   soundfile
     #   soxr
     #   tifffile
-opencv-python==4.11.0.86
+opencv-python==4.13.0.92
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 opentelemetry-api==1.39.1
     # via google-cloud-logging
@@ -356,7 +356,7 @@ pygments==2.19.2
     #   ipython
     #   ipython-pygments-lexers
     #   pytest
-pyjwt==2.10.1
+pyjwt==2.12.0
     # via firebase-admin
 pyparsing==3.2.5
     # via matplotlib

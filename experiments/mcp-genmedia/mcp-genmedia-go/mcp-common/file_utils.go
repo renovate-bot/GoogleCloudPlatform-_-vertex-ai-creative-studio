@@ -42,13 +42,13 @@ func PrepareInputFile(ctx context.Context, fileURI, purpose string, gcpProjectID
 
 		gcsErr := DownloadFromGCS(ctx, fileURI, localPath)
 		if gcsErr != nil {
-			os.RemoveAll(tempDir)
+			_ = os.RemoveAll(tempDir)
 			return "", cleanupFunc, fmt.Errorf("failed to download %s from GCS: %w", fileURI, gcsErr)
 		}
 
 		cleanupFunc = func() {
 			log.Printf("Cleaning up temporary directory for GCS download: %s", tempDir)
-			os.RemoveAll(tempDir)
+			_ = os.RemoveAll(tempDir)
 		}
 		return localPath, cleanupFunc, nil
 	}
@@ -89,7 +89,7 @@ func HandleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLoca
 
 	cleanupFunc = func() {
 		log.Printf("Cleaning up temporary output directory: %s", tempDir)
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	}
 
 	log.Printf("FFMpeg will write temporary output to: %s", tempLocalOutputFile)
@@ -182,4 +182,3 @@ func FormatBytes(bytes int64) string {
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
-

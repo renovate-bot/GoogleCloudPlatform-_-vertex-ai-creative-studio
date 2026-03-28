@@ -17,12 +17,12 @@
 """A component for displaying media item details, including a carousel."""
 
 import os
-from typing import Callable
+from collections.abc import Callable
 
 import mesop as me
 
 from common.metadata import MediaItem
-from common.utils import create_display_url, https_url_to_gcs_uri
+from common.utils import create_display_url
 from components.download_button.download_button import download_button
 from components.edit_button.edit_button import edit_button
 
@@ -40,6 +40,7 @@ def on_next(e: me.ClickEvent) -> None:
 
     Args:
         e: The Mesop click event.
+
     """
     state = me.state(CarouselState)
     state.current_index += 1
@@ -50,6 +51,7 @@ def on_prev(e: me.ClickEvent) -> None:
 
     Args:
         e: The Mesop click event.
+
     """
     state = me.state(CarouselState)
     state.current_index -= 1
@@ -64,6 +66,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
 
     Args:
         item: The MediaItem to display.
+
     """
     state = me.state(CarouselState)
 
@@ -81,8 +84,8 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
 
     with me.box(
         style=me.Style(
-            display="flex", flex_direction="column", align_items="center", gap=16
-        )
+            display="flex", flex_direction="column", align_items="center", gap=16,
+        ),
     ):
         # Image display
         image_url = create_display_url(item.gcs_uris[state.current_index])
@@ -103,7 +106,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                     align_items="center",
                     justify_content="center",
                     gap=16,
-                )
+                ),
             ):
                 me.button(
                     "Back",
@@ -127,7 +130,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
         me.text(f"Critique: {item.critique}")
 
     # Conditionally display VTO input images
-    if item.raw_data and "virtual-try-on" in item.raw_data.get("model", ""):
+    if "virtual-try-on" in (item.model or ""):
         with me.box(style=me.Style(margin=me.Margin(top=16))):
             me.text(
                 "Input Images",
@@ -139,10 +142,10 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                     flex_direction="row",
                     gap=16,
                     justify_content="center",
-                )
+                ),
             ):
                 # Person Image
-                person_gcs_uri = item.raw_data.get("person_image_gcs")
+                person_gcs_uri = item.person_image_gcs
                 if person_gcs_uri:
                     with me.box(
                         style=me.Style(
@@ -150,19 +153,19 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                             flex_direction="column",
                             align_items="center",
                             gap=4,
-                        )
+                        ),
                     ):
                         me.text("Person Image")
                         person_url = create_display_url(person_gcs_uri)
                         me.image(
                             src=person_url,
                             style=me.Style(
-                                width="200px", height="auto", border_radius="8px"
+                                width="200px", height="auto", border_radius="8px",
                             ),
                         )
 
                 # Product Image
-                product_gcs_uri = item.raw_data.get("product_image_gcs")
+                product_gcs_uri = item.product_image_gcs
                 if product_gcs_uri:
                     with me.box(
                         style=me.Style(
@@ -170,14 +173,14 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                             flex_direction="column",
                             align_items="center",
                             gap=4,
-                        )
+                        ),
                     ):
                         me.text("Product Image")
                         product_url = create_display_url(product_gcs_uri)
                         me.image(
                             src=product_url,
                             style=me.Style(
-                                width="200px", height="auto", border_radius="8px"
+                                width="200px", height="auto", border_radius="8px",
                             ),
                         )
     if item.comment == "product recontext":
@@ -192,19 +195,19 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                     flex_direction="row",
                     gap=16,
                     justify_content="center",
-                )
+                ),
             ):
                 for uri in item.source_images_gcs:
                     me.image(
                         src=create_display_url(uri),
                         style=me.Style(
-                            width="100px", height="auto", border_radius="8px"
+                            width="100px", height="auto", border_radius="8px",
                         ),
                     )
     with me.box(
         style=me.Style(
-            display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16)
-        )
+            display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16),
+        ),
     ):
         with me.content_button(
             on_click=on_click_permalink,
@@ -216,7 +219,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
                     flex_direction="row",
                     align_items="center",
                     gap=5,
-                )
+                ),
             ):
                 me.icon(icon="link")
                 me.text("permalink")
