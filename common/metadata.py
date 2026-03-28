@@ -110,6 +110,7 @@ class MediaItem:
     audio_analysis: str | None = (
         None  # Structured analysis from Gemini, stored as a JSON string
     )
+    generated_text: list[str] = field(default_factory=list)
 
     # This field is for loading raw data from Firestore, not for writing.
     # It helps in debugging and displaying all stored fields if needed.
@@ -339,6 +340,7 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
         critique=raw_item_data.get("critique"),
         grounding_info=raw_item_data.get("grounding_info"),
         audio_analysis=raw_item_data.get("audio_analysis"),
+        generated_text=raw_item_data.get("generated_text", []),
         media_type=raw_item_data.get("media_type"),
         source_character_images=raw_item_data.get("source_character_images", []),
         character_description=raw_item_data.get("character_description"),
