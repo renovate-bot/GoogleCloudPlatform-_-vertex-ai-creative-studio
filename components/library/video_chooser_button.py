@@ -33,7 +33,7 @@ class State:
     show_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
+    media_items_json: str = ""
     has_more_items: bool = True
 
 
@@ -58,7 +58,9 @@ def video_chooser_button(
 
         items, last_doc = get_media_for_page_optimized(20, ["videos"])
         print(f"Found {len(items)} videos in the library.")
-        state.media_items = items
+        import json
+        from dataclasses import asdict
+        state.media_items_json = json.dumps([asdict(item) for item in items], default=str)
         state.is_loading = False
         if not last_doc:
             state.has_more_items = False
@@ -130,7 +132,14 @@ def video_chooser_button(
                         me.progress_spinner()
                 else:
                     items_to_render = []
-                    for item in state.media_items:
+                    import json
+                    items_dicts = json.loads(state.media_items_json) if state.media_items_json else []
+                    media_items = []
+                    for d in items_dicts:
+                        valid_keys = MediaItem.__dataclass_fields__.keys()
+                        clean_d = {k: v for k, v in d.items() if k in valid_keys}
+                        media_items.append(MediaItem(**clean_d))
+                    for item in media_items:
                         if item.gcs_uris:
                             for uri in item.gcs_uris:
                                 items_to_render.append({"uri": uri})
