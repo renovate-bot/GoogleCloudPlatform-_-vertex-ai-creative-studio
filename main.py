@@ -95,6 +95,26 @@ async def favicon():
 
 
 # Define allowed origins for CORS
+
+
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class ForwardedHostMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        forwarded_host = request.headers.get("X-Forwarded-Host")
+        if forwarded_host:
+            # Overwrite the host so that Mesop's CSRF check matches the Origin header
+            request.scope["headers"] = [
+                (k, v) if k != b"host" else (k, forwarded_host.encode())
+                for k, v in request.scope["headers"]
+            ]
+        return await call_next(request)
+
+app.add_middleware(ForwardedHostMiddleware)
+
+app.add_middleware(
+    TrustedHostMiddleware, allowed_hosts=["*"]
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=os.environ.get("CORS_ORIGIN_REGEX", r"https://.*|http://localhost:8080"),
