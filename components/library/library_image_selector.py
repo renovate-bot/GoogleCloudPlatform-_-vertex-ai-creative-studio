@@ -38,7 +38,7 @@ def library_image_selector(
             display="grid",
             grid_template_columns="repeat(auto-fill, minmax(150px, 1fr))",
             gap="16px",
-        )
+        ),
     ):
         if not media_items:
             me.text("No recent items found in the library.")

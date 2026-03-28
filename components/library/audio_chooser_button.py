@@ -13,12 +13,11 @@
 # limitations under the License.
 
 
-from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 import mesop as me
 
-from common.metadata import MediaItem, get_media_for_page_optimized, db, config
+from common.metadata import MediaItem, get_media_for_page_optimized
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
 
@@ -59,7 +58,7 @@ def audio_chooser_button(
         from dataclasses import asdict
 
         state.media_items_json = json.dumps(
-            [asdict(item) for item in items], default=str
+            [asdict(item) for item in items], default=str,
         )
         state.is_loading = False
         if not last_doc:
@@ -79,20 +78,20 @@ def audio_chooser_button(
     with me.content_button(on_click=open_dialog, type=button_type, key=key):
         with me.box(
             style=me.Style(
-                display="flex", flex_direction="row", gap=8, align_items="center"
-            )
+                display="flex", flex_direction="row", gap=8, align_items="center",
+            ),
         ):
             me.icon("music_note")
             if button_label:
                 me.text(button_label)
 
     dialog_style = me.Style(
-        width="95vw", height="80vh", display="flex", flex_direction="column"
+        width="95vw", height="80vh", display="flex", flex_direction="column",
     )
 
     with dialog(is_open=state.show_dialog, dialog_style=dialog_style):
         with me.box(
-            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1),
         ):
             me.text("Select Audio from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
@@ -103,7 +102,7 @@ def audio_chooser_button(
                             justify_content="center",
                             align_items="center",
                             height="100%",
-                        )
+                        ),
                     ):
                         me.progress_spinner()
                 else:
@@ -115,9 +114,20 @@ def audio_chooser_button(
                         else []
                     )
                     media_items = []
+                    import datetime
+
                     for d in items_dicts:
                         valid_keys = MediaItem.__dataclass_fields__.keys()
                         clean_d = {k: v for k, v in d.items() if k in valid_keys}
+                        if "timestamp" in clean_d and isinstance(
+                            clean_d["timestamp"], str,
+                        ):
+                            try:
+                                clean_d["timestamp"] = datetime.datetime.fromisoformat(
+                                    clean_d["timestamp"],
+                                )
+                            except ValueError:
+                                pass
                         media_items.append(MediaItem(**clean_d))
                     for item in media_items:
                         uri = item.gcsuri or (
@@ -128,15 +138,15 @@ def audio_chooser_button(
                                 key=uri,
                                 on_click=handle_image_selected,
                                 style=me.Style(
-                                    padding=me.Padding.all(8), cursor="pointer"
+                                    padding=me.Padding.all(8), cursor="pointer",
                                 ),
                             ):
                                 me.text(uri.split("/")[-1])
 
             with me.box(
                 style=me.Style(
-                    display="flex", justify_content="flex-end", margin=me.Margin(top=24)
-                )
+                    display="flex", justify_content="flex-end", margin=me.Margin(top=24),
+                ),
             ):
                 me.button(
                     "Cancel",
