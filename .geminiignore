@@ -1,3 +1,4 @@
+!test/screenshots
 !fix_*.py
 !temp_*.py
 !test_gen*.py
