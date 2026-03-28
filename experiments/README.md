@@ -8,15 +8,12 @@ We'd love to hear your feedback on these!
 
 ## Table of Contents
 
-**Genmedia Creative Studio**
-* [Genmedia Creative Studio v.Next](#genmedia-creative-studio-vnext) - v.next of Genmedia creative studio
-
 **MCP Tools for Genmedia**
 * [MCP Tools for Genmedia](#mcp-tools-for-genmedia) - MCP Servers for Genmedia services
 
 **Combined Workflows**
 * [Countdown Workflow](#countdown-workflow) - An automated two-stage pipeline to create branded countdown videos.
-* [Storycraft](#storycraft) - An AI-powered video storyboard generation platform.
+* Storycraft has graduated! See [Storycraft](https://github.com/mblanc/storycraft)
 * [Creative GenMedia Workflow](#creative-genmedia-workflow) - a Creative GenMedia workflow which takes various inputs to create prompts for Veo 3, plus allows a showcase of output videos.
 * [Run, Veo, Run](#run-veo-run) - A near-real time, multimodal video extension and generation experiment.
 
@@ -40,9 +37,7 @@ We'd love to hear your feedback on these!
 
 ## Storycraft
 
-An AI-powered video storyboard generation platform that transforms text descriptions into complete video narratives using Google's generative AI models. Create cinematic scenes, generate voiceovers, compose music, and export professional videos with a modern web interface.
-
-See [Storycraft](./storycraft/)
+Storycraft has graduated! - See [Storycraft](https://github.com/mblanc/storycraft).
 
 ## Countdown Workflow
 
@@ -92,11 +87,6 @@ This application demonstrates a workflow for generating a video of an item in a 
 
 See [Veo 3 Item Consistency](./veo3-item-consistency/)
 
-## VeoStart
-
-VeoStart has graduated! - See [V-Start](https://github.com/GoogleCloudPlatform/generative-ai/tree/main/vision/sample-apps/V-Start).
-
-
 
 ## MCP Tools for Genmedia
 
@@ -104,14 +94,6 @@ Model Context Protocol servers for Genmedia services for AI applications to util
 
 See [MCP Genmedia](./mcp-genmedia/)
 
-
-## Genmedia Creative Studio v.Next
-
-A stand-alone application for generative video creation with Veo!
-
-![v.Next app ui](assets/veo-app.png)
-
-See [v.Next UI](./veo-app/)
 
 ## Creative Podcast Assistant
 
