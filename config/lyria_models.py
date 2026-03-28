@@ -28,6 +28,7 @@ class LyriaModelConfig:
     supports_lyrics: bool = False
     supports_images: bool = False
     supports_c2pa: bool = False
+    max_samples: int = 1
 
 
 # Single source of truth
@@ -39,6 +40,7 @@ LYRIA_MODELS: List[LyriaModelConfig] = [
         supports_lyrics=False,
         supports_images=False,
         supports_c2pa=False,
+        max_samples=4,
     ),
     LyriaModelConfig(
         version_id="3-clip-preview",

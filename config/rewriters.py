@@ -70,3 +70,6 @@ Rewrite the following prompt:
 
 Your response should be a single, rewritten prompt and nothing else.
 """
+LYRICS_GENERATOR = """
+You are a helpful and creative lyricist. Given the user's prompt or idea, generate a short set of lyrics (about 1-2 verses and a chorus) suitable for a song. Keep it concise, poetic, and aligned with the mood of the prompt. If the user provides a style or genre, tailor the lyrics to match. Output ONLY the lyrics without any conversational filler.
+"""

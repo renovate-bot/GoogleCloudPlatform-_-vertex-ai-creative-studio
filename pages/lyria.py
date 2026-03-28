@@ -68,6 +68,7 @@ class PageState:
     """Local Page State"""
 
     is_loading: bool = False  # Generic loading state for Lyria generation or Rewriter
+    is_generating_lyrics: bool = False
     is_analyzing: bool = False  # Specific loading state for Gemini analysis
 
     loading_operation_message: str = ""  # Message to display during is_loading
@@ -80,6 +81,7 @@ class PageState:
     music_display_url: str = ""
 
     selected_model_id: str = "3-clip-preview"
+    sample_count: int = 1
     lyrics_input: str = ""
     lyrics_placeholder: str = ""
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)
@@ -171,6 +173,19 @@ def lyria_content(app_state: me.state):
 
         model_config = get_lyria_model_config(pagestate.selected_model_id)
 
+        if model_config and model_config.max_samples > 1:
+            with me.box(style=me.Style(margin=me.Margin(bottom=16))):
+                me.select(
+                    label="Sample Count",
+                    options=[
+                        me.SelectOption(label=str(i), value=str(i))
+                        for i in range(1, model_config.max_samples + 1)
+                    ],
+                    on_selection_change=on_lyria_sample_count_change,
+                    value=str(pagestate.sample_count),
+                    style=me.Style(width="100%"),
+                )
+
         _FLEX_BOX_STYLE = me.Style(
             background=me.theme_var("background"),
             border_radius=12,
@@ -186,12 +201,16 @@ def lyria_content(app_state: me.state):
         if model_config and model_config.supports_lyrics:
             with me.box(
                 style=me.Style(
-                    display="flex", flex_direction="row", gap=16, width="100%",
+                    display="flex",
+                    flex_direction="row",
+                    gap=16,
+                    width="100%",
                 ),
             ):
                 with me.box(style=_FLEX_BOX_STYLE):
                     me.text(
-                        "Prompt for music generation", style=me.Style(font_weight=500),
+                        "Prompt for music generation",
+                        style=me.Style(font_weight=500),
                     )
                     me.box(style=me.Style(height=16))
                     subtle_lyria_input()
@@ -214,7 +233,7 @@ def lyria_content(app_state: me.state):
                             placeholder="Enter lyrics here...",
                             style=me.Style(
                                 padding=me.Padding(
-                                    top=16, left=16, right=16, bottom=16,
+                                    top=16, left=16, right=16, bottom=16
                                 ),
                                 background=me.theme_var("secondary-container"),
                                 outline="none",
@@ -227,6 +246,31 @@ def lyria_content(app_state: me.state):
                             on_blur=on_blur_lyria_lyrics,
                             value=pagestate.lyrics_placeholder,
                         )
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="column",
+                                gap=10,
+                                padding=me.Padding(left=16, right=16, bottom=16),
+                            ),
+                        ):
+                            with me.content_button(
+                                type="icon",
+                                on_click=on_click_lyria_lyrics_generate,
+                                disabled=pagestate.is_generating_lyrics
+                                or pagestate.is_loading,
+                            ):
+                                with me.box(
+                                    style=me.Style(
+                                        display="flex",
+                                        flex_direction="column",
+                                        gap=2,
+                                        font_size=10,
+                                        align_items="center",
+                                    )
+                                ):
+                                    me.icon("auto_awesome")
+                                    me.text("Generate")
         else:
             with me.box(style=_BOX_STYLE):
                 me.text("Prompt for music generation", style=me.Style(font_weight=500))
@@ -236,7 +280,7 @@ def lyria_content(app_state: me.state):
         if model_config and model_config.supports_images:
             me.box(style=me.Style(height=16))
             with me.box(style=_BOX_STYLE):
-                me.text("Reference Image (Optional)", style=me.Style(font_weight=500))
+                me.text("Reference Images", style=me.Style(font_weight=500))
                 me.box(style=me.Style(height=16))
                 if pagestate.uploaded_image_gcs_uris:
                     with me.box(
@@ -259,7 +303,9 @@ def lyria_content(app_state: me.state):
                                 ),
                             )
                         me.button(
-                            "Clear All", on_click=on_clear_lyria_image, type="stroked",
+                            "Clear All",
+                            on_click=on_clear_lyria_image,
+                            type="stroked",
                         )
                 else:
                     me.uploader(
@@ -290,19 +336,21 @@ def lyria_content(app_state: me.state):
 
         # Audio Player - Show if URI exists AND primary loading is done
         if (
-            pagestate.music_display_url
+            pagestate.music_display_urls
             and not pagestate.is_loading  # Check generic loading
             and not pagestate.show_error_dialog
         ):
             with me.box(
                 style=me.Style(
-                    display="grid",
-                    justify_content="center",
-                    justify_items="center",
+                    display="flex",
+                    flex_direction="column",
+                    gap=16,
+                    align_items="center",
                     margin=me.Margin(bottom=16),
                 ),
             ):
-                me.audio(src=pagestate.music_display_url)
+                for url in pagestate.music_display_urls:
+                    me.audio(src=url)
                 if pagestate.c2pa_manifest_json:
                     with me.box(style=me.Style(margin=me.Margin(top=16))):
                         content_credentials_viewer(
@@ -573,7 +621,7 @@ def on_clear_lyria_image(e: me.ClickEvent):
 
 def on_upload_lyria_image(e: me.UploadEvent):
     state = me.state(PageState)
-    if not e.file:
+    if not e.files:
         return
     import shortuuid
 
@@ -582,22 +630,24 @@ def on_upload_lyria_image(e: me.UploadEvent):
     from config.default import Default
 
     cfg = Default()
-    mime_type = e.file.mime_type
-    ext = "jpg" if "jpeg" in mime_type else "png"
-    file_name = f"lyria_image_{shortuuid.uuid()}.{ext}"
 
-    # Store to GCS
-    gcs_uri = store_to_gcs(
-        "images",
-        file_name,
-        mime_type,
-        e.file.getvalue(),
-        False,
-        bucket_name=cfg.MEDIA_BUCKET,
-    )
-    state.uploaded_image_gcs_uris.append(gcs_uri)
-    state.uploaded_image_mime_types.append(mime_type)
-    state.uploaded_image_display_urls.append(create_display_url(gcs_uri))
+    for file in e.files:
+        mime_type = file.mime_type
+        ext = "jpg" if "jpeg" in mime_type else "png"
+        file_name = f"lyria_image_{shortuuid.uuid()}.{ext}"
+
+        # Store to GCS
+        gcs_uri = store_to_gcs(
+            "images",
+            file_name,
+            mime_type,
+            file.getvalue(),
+            False,
+            bucket_name=cfg.MEDIA_BUCKET,
+        )
+        state.uploaded_image_gcs_uris.append(gcs_uri)
+        state.uploaded_image_mime_types.append(mime_type)
+        state.uploaded_image_display_urls.append(create_display_url(gcs_uri))
 
 
 def on_blur_lyria_prompt(e: me.InputBlurEvent):
@@ -689,6 +739,7 @@ def on_click_lyria(e: me.ClickEvent):
             image_mime_type=state.uploaded_image_mime_types[0]
             if state.uploaded_image_mime_types
             else None,
+            sample_count=state.sample_count,
         )
         if c2pa_data:
             state.c2pa_manifest_json = json.dumps(
@@ -797,9 +848,7 @@ def on_click_lyria(e: me.ClickEvent):
             error_message=lyria_error_message_for_metadata
             if lyria_error_message_for_metadata
             else None,
-            gcsuri=gcs_uri_for_analysis_and_metadata
-            if generated_successfully and gcs_uri_for_analysis_and_metadata
-            else None,
+            gcs_uris=state.music_gcs_uris if generated_successfully else [],
             audio_analysis=json.dumps(analysis_dict_for_metadata)
             if analysis_dict_for_metadata
             else None,
@@ -816,8 +865,8 @@ def clear_music(e: me.ClickEvent):
     state.music_prompt_placeholder = ""
     state.original_user_prompt = ""
     state.music_prompt_textarea_key += 1
-    state.music_gcs_uri = ""
-    state.music_display_url = ""
+    state.music_gcs_uris = []
+    state.music_display_urls = []
     state.is_loading = False
     state.is_analyzing = False
     state.show_error_dialog = False
@@ -858,3 +907,36 @@ def close_info_dialog(e: me.ClickEvent):
     state = me.state(PageState)
     state.info_dialog_open = False
     yield
+
+
+def on_click_lyria_lyrics_generate(e: me.ClickEvent):
+    state = me.state(PageState)
+    prompt_to_use = state.music_prompt_input
+    if not prompt_to_use:
+        state.error_message = "Please enter a music prompt to generate lyrics from."
+        state.show_error_dialog = True
+        yield
+        return
+
+    state.is_generating_lyrics = True
+    yield
+
+    try:
+        from config.rewriters import LYRICS_GENERATOR
+        from models.gemini import rewriter
+
+        generated_lyrics = rewriter(prompt_to_use, LYRICS_GENERATOR)
+        state.lyrics_input = generated_lyrics
+        state.lyrics_placeholder = generated_lyrics
+    except Exception as err:
+        print(f"Error during lyrics generation: {err}")
+        state.error_message = str(err)
+        state.show_error_dialog = True
+    finally:
+        state.is_generating_lyrics = False
+        yield
+
+
+def on_lyria_sample_count_change(e: me.SelectSelectionChangeEvent):
+    state = me.state(PageState)
+    state.sample_count = int(e.value)
