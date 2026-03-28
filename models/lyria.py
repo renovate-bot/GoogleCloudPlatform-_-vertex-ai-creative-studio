@@ -43,6 +43,7 @@ def generate_music_with_lyria(
     image_gcs_uri: str = None,
     image_b64: str = None,
     image_mime_type: str = "image/jpeg",
+    sample_count: int = 1,
 ):
     """
     Generates music with Lyria and stores it in GCS.
@@ -73,7 +74,7 @@ def generate_music_with_lyria(
         )
 
         instances = [{"prompt": prompt}]
-        parameters = {"sampleCount": 1}
+        parameters = {"sampleCount": sample_count}
 
         try:
             response = client.predict(
@@ -92,22 +93,24 @@ def generate_music_with_lyria(
                 print(error_message)
                 raise ValueError(error_message)
 
-            contents = response.predictions[0]["bytesBase64Encoded"]
-            my_uuid = shortuuid.uuid()
-            file_name = f"lyria_generation_{my_uuid}.wav"
+            destination_blob_names = []
+            for prediction in response.predictions:
+                contents = prediction["bytesBase64Encoded"]
+                my_uuid = shortuuid.uuid()
+                file_name = f"lyria_generation_{my_uuid}.wav"
 
-            destination_blob_name = store_to_gcs(
-                "music",
-                file_name,
-                "audio/wav",
-                contents,
-                True,
-                bucket_name=cfg.MEDIA_BUCKET,
-            )
-            print(
-                f"{destination_blob_name} with contents len {len(contents)} uploaded."
-            )
-            return destination_blob_name, None
+                destination_blob_name = store_to_gcs(
+                    "music",
+                    file_name,
+                    "audio/wav",
+                    contents,
+                    True,
+                    bucket_name=cfg.MEDIA_BUCKET,
+                )
+                destination_blob_names.append(destination_blob_name)
+            
+            print(f"{len(destination_blob_names)} audio clips uploaded.")
+            return destination_blob_names, None
 
         except GoogleAPIError as e:
             error_message = f"Lyria API Error: {str(e)}"
@@ -180,6 +183,7 @@ def generate_music_with_lyria(
                     "Lyria API returned an unexpected response (no valid prediction data)."
                 )
 
+            destination_blob_names = []
             contents = audio_b64
             my_uuid = shortuuid.uuid()
             file_name = f"lyria_generation_{my_uuid}.wav"
@@ -192,8 +196,9 @@ def generate_music_with_lyria(
                 True,
                 bucket_name=cfg.MEDIA_BUCKET,
             )
+            destination_blob_names.append(destination_blob_name)
             print(f"{destination_blob_name} uploaded.")
-            return destination_blob_name, c2pa_data
+            return destination_blob_names, c2pa_data
 
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8")
