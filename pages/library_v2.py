@@ -253,7 +253,16 @@ def library_content():
                             )
                         except ValueError:
                             pass
-                    media_items.append(MediaItem(**clean_d))
+                    item = MediaItem(**clean_d)
+                    gcs_uri = (
+                        item.gcsuri
+                        if item.gcsuri
+                        else (item.gcs_uris[0] if item.gcs_uris else None)
+                    )
+                    from common.utils import create_display_url
+
+                    item.signed_url = create_display_url(gcs_uri) if gcs_uri else ""
+                    media_items.append(item)
 
                 for item in media_items:
                     gcs_uri = (

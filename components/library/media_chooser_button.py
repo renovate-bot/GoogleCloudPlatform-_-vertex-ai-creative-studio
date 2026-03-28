@@ -41,7 +41,10 @@ def media_chooser_button(
     with me.content_button(on_click=on_click, type=button_type, key=key):
         with me.box(
             style=me.Style(
-                display="flex", flex_direction="row", gap=8, align_items="center",
+                display="flex",
+                flex_direction="row",
+                gap=8,
+                align_items="center",
             ),
         ):
             me.icon(icon_name)
