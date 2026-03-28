@@ -129,5 +129,5 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
                     filename = os.path.basename(uri.split("?")[0])
                     # Ensure unique keys for multiple buttons
                     download_button(
-                        url=uri, filename=filename, key=f"{item.id}_download_{i}"
+                        url=uri, filename=filename, key=f"{item.id}_download_{i}",
                     )
