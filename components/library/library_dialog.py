@@ -42,7 +42,9 @@ def library_dialog(
 
     with dialog(is_open=is_open, dialog_style=dialog_style):
         with me.box(
-            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1),
+            style=me.Style(
+                display="flex", flex_direction="column", gap=16, flex_grow=1
+            ),
         ):
             me.text("Select an Image from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
@@ -63,7 +65,9 @@ def library_dialog(
                     )
             with me.box(
                 style=me.Style(
-                    display="flex", justify_content="flex-end", margin=me.Margin(top=24),
+                    display="flex",
+                    justify_content="flex-end",
+                    margin=me.Margin(top=24),
                 ),
             ):
                 me.button(

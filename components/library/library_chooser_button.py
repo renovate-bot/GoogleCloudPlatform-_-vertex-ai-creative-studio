@@ -70,15 +70,6 @@ def library_chooser_button(
             filter_by_user_email=user_email,
         )
 
-        # Convert GCS URIs to display URLs using the centralized helper.
-        for item in items:
-            gcs_uri = (
-                item.gcsuri
-                if item.gcsuri
-                else (item.gcs_uris[0] if item.gcs_uris else None)
-            )
-            item.signed_url = create_display_url(gcs_uri)
-
         import json
         from dataclasses import asdict
 
@@ -209,7 +200,18 @@ def library_chooser_button(
                             # Safely ignore extra kwargs
                             valid_keys = MediaItem.__dataclass_fields__.keys()
                             clean_d = {k: v for k, v in d.items() if k in valid_keys}
-                            media_items.append(MediaItem(**clean_d))
+                            item = MediaItem(**clean_d)
+                            gcs_uri = (
+                                item.gcsuri
+                                if item.gcsuri
+                                else (item.gcs_uris[0] if item.gcs_uris else None)
+                            )
+                            from common.utils import create_display_url
+
+                            item.signed_url = (
+                                create_display_url(gcs_uri) if gcs_uri else ""
+                            )
+                            media_items.append(item)
 
                         library_image_selector(
                             on_select=on_select_from_library,
