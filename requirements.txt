@@ -377,7 +377,7 @@ pytokens==0.3.0
     # via black
 pytz==2025.2
     # via pandas
-requests==2.32.5
+requests==2.33.0
     # via
     #   c2pa-python
     #   cachecontrol
