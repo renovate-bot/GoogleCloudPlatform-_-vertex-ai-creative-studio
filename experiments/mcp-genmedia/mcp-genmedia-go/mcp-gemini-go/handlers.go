@@ -44,6 +44,11 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		return mcp.NewToolResultError("prompt must be a non-empty string and is required"), nil
 	}
 
+	aspectRatio := "1:1"
+	if ar, ok := request.GetArguments()["aspect_ratio"].(string); ok && strings.TrimSpace(ar) != "" {
+		aspectRatio = strings.TrimSpace(ar)
+	}
+
 	modelArg, _ := request.GetArguments()["model"].(string)
 	model := "gemini-2.5-flash-image"
 	if modelArg != "" {
@@ -89,8 +94,12 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 	log.Printf("Calling GenerateContent with Model: %s, Prompt: \"%s\"", model, prompt)
 	startTime := time.Now()
 
-	config := &genai.GenerateContentConfig{}
-	config.ResponseModalities = []string{"IMAGE", "TEXT"}
+	config := &genai.GenerateContentConfig{
+		ResponseModalities: []string{"IMAGE", "TEXT"},
+		ImageConfig: &genai.ImageConfig{
+			AspectRatio: aspectRatio,
+		},
+	}
 	contents := &genai.Content{Parts: parts, Role: "USER"}
 
 	resp, err := client.Models.GenerateContent(ctx, model, []*genai.Content{contents}, config)
