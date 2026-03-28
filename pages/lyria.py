@@ -18,10 +18,6 @@ import json
 import time
 
 import mesop as me
-from components.library.library_chooser_button import library_chooser_button
-from components.library.events import LibrarySelectionChangeEvent
-from components.image_thumbnail import image_thumbnail
-
 
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.utils import create_display_url
@@ -30,6 +26,9 @@ from components.content_credentials.content_credentials import (
 )
 from components.dialog import dialog, dialog_actions
 from components.header import header
+from components.image_thumbnail import image_thumbnail
+from components.library.events import LibrarySelectionChangeEvent
+from components.library.library_chooser_button import library_chooser_button
 from components.lyria.audio_critic import audio_critic
 from components.lyria.technical_metrics import technical_metrics
 from components.page_scaffold import (
