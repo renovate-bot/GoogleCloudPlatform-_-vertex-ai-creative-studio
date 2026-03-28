@@ -18,6 +18,10 @@ import json
 import time
 
 import mesop as me
+from components.library.library_chooser_button import library_chooser_button
+from components.library.events import LibrarySelectionChangeEvent
+from components.image_thumbnail import image_thumbnail
+
 
 from common.metadata import MediaItem, add_media_item_to_firestore  # Updated import
 from common.utils import create_display_url
