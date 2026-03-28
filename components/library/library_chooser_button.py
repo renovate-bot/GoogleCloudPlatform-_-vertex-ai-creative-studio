@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from functools import partial
 from typing import Callable, Optional
 
@@ -33,7 +33,7 @@ class State:
     show_library_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701
+    media_items_json: str = ""
     show_only_my_items: bool = False
     media_type: list[str] = field(default_factory=lambda: ["images"])
 
@@ -65,7 +65,7 @@ def library_chooser_button(
         # Use the media_type stored in state, which was set when opening the dialog
         print(f"DEBUG: fetching items with media_type={state.media_type}")
         items, _ = get_media_for_page_optimized(
-            20, state.media_type, filter_by_user_email=user_email
+            20, state.media_type, filter_by_user_email=user_email,
         )
 
         # Convert GCS URIs to display URLs using the centralized helper.
@@ -77,13 +77,20 @@ def library_chooser_button(
             )
             item.signed_url = create_display_url(gcs_uri)
 
-        state.media_items = items
+        import json
+        from dataclasses import asdict
+
+        state.media_items_json = json.dumps(
+            [asdict(item) for item in items], default=str,
+        )
         state.is_loading = False
         yield
 
     def open_dialog(e: me.ClickEvent, media_type: list[str]):
         """Dedicated click handler for opening the dialog and fetching data."""
-        print(f"CLICK on library_chooser_button with key: '{e.key}', media_type: {media_type}")
+        print(
+            f"CLICK on library_chooser_button with key: '{e.key}', media_type: {media_type}",
+        )
         state.active_chooser_key = e.key
         state.show_library_dialog = True
         # Capture the media_type for this specific button click into the shared state
@@ -123,7 +130,7 @@ def library_chooser_button(
                 flex_direction="row",
                 gap=8,
                 align_items="center",
-            )
+            ),
         ):
             me.icon(icon_name)
             if button_label:
@@ -140,7 +147,9 @@ def library_chooser_button(
     with dialog(is_open=is_active, dialog_style=dialog_style):  # pylint: disable=E1129
         if is_active:
             with me.box(
-                style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+                style=me.Style(
+                    display="flex", flex_direction="column", gap=16, flex_grow=1,
+                ),
             ):
                 # Header with title and toggle
                 with me.box(
@@ -149,7 +158,7 @@ def library_chooser_button(
                         flex_direction="row",
                         justify_content="space-between",
                         align_items="center",
-                    )
+                    ),
                 ):
                     # Dynamic title based on media type
                     media_type_label = "Media"
@@ -160,7 +169,9 @@ def library_chooser_button(
                     elif state.media_type == ["audio"]:
                         media_type_label = "Audio"
 
-                    me.text(f"Select {media_type_label} from Library", type="headline-6")
+                    me.text(
+                        f"Select {media_type_label} from Library", type="headline-6",
+                    )
                     me.slide_toggle(
                         label="Show only my items",
                         checked=state.show_only_my_items,
@@ -175,18 +186,34 @@ def library_chooser_button(
                                 justify_content="center",
                                 align_items="center",
                                 height="100%",
-                            )
+                            ),
                         ):
                             me.progress_spinner()
                     else:
+                        import json
+
+                        items_dicts = (
+                            json.loads(state.media_items_json)
+                            if state.media_items_json
+                            else []
+                        )
+                        media_items = []
+                        for d in items_dicts:
+                            # Safely ignore extra kwargs
+                            valid_keys = MediaItem.__dataclass_fields__.keys()
+                            clean_d = {k: v for k, v in d.items() if k in valid_keys}
+                            media_items.append(MediaItem(**clean_d))
+
                         library_image_selector(
                             on_select=on_select_from_library,
-                            media_items=state.media_items,
+                            media_items=media_items,
                         )
                 with me.box(
                     style=me.Style(
-                        display="flex", justify_content="flex-end", margin=me.Margin(top=24)
-                    )
+                        display="flex",
+                        justify_content="flex-end",
+                        margin=me.Margin(top=24),
+                    ),
                 ):
                     me.button(
                         "Cancel",
