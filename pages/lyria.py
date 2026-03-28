@@ -540,7 +540,7 @@ def on_click_lyria(e: me.ClickEvent):
     analysis_dict_for_metadata = None
 
     try:
-        destination_blob_path, c2pa_data = generate_music_with_lyria(
+        destination_blob_paths, c2pa_data = generate_music_with_lyria(
             prompt=prompt_for_api,
             model_name=get_lyria_model_config(state.selected_model_id).model_name,
             lyrics=state.lyrics_input,
@@ -553,19 +553,21 @@ def on_click_lyria(e: me.ClickEvent):
             sample_count=state.sample_count,
         )
         if c2pa_data:
-            state.c2pa_manifest_json = json.dumps(
-                {"c2pa": c2pa_data},
-            )  # or just pass directly if viewer accepts it. Wait, the viewer usually accepts a dict. But gemini passes json string.
-            # In gemini, it's `state.c2pa_manifests[display_url] = json.dumps(manifest)`
             state.c2pa_manifest_json = (
                 json.dumps(c2pa_data) if isinstance(c2pa_data, dict) else c2pa_data
             )
 
-        gcs_uri_for_analysis_and_metadata = destination_blob_path
-        state.music_gcs_uri = destination_blob_path
-        state.music_display_url = create_display_url(destination_blob_path)
+        state.music_gcs_uris = destination_blob_paths
+        state.music_display_urls = [
+            create_display_url(p) for p in destination_blob_paths
+        ]
 
-        print(f"Music generated: {state.music_display_url}")
+        # Use the first one for analysis and metadata for now
+        gcs_uri_for_analysis_and_metadata = (
+            destination_blob_paths[0] if destination_blob_paths else ""
+        )
+
+        print(f"Music generated: {state.music_display_urls}")
         generated_successfully = True
     except Exception as err:
         print(f"Error during music generation: {err}")
