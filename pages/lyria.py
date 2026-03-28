@@ -16,7 +16,6 @@
 import datetime  # Required for timestamp
 import json
 import time
-from dataclasses import field
 
 import mesop as me
 
@@ -27,17 +26,19 @@ from components.content_credentials.content_credentials import (
 )
 from components.dialog import dialog, dialog_actions
 from components.header import header
+from components.lyria.audio_critic import audio_critic
+from components.lyria.technical_metrics import technical_metrics
 from components.page_scaffold import (
     page_frame,
     page_scaffold,
 )
-from components.pill import pill
 from config.default import ABOUT_PAGE_CONTENT, Default
 from config.lyria_models import LYRIA_MODELS, get_lyria_model_config
 from config.rewriters import MUSIC_REWRITER
 from models.audio_analysis import analyze_audio_file
 from models.gemini import analyze_audio_with_gemini, rewriter
 from models.lyria import generate_music_with_lyria
+from state.lyria_state import PageState
 from state.state import AppState
 
 cfg = Default()
@@ -51,58 +52,6 @@ def lyria_page():
         lyria_content(state)
 
 
-@me.stateclass
-class AudioMetricsState:
-    mean_pitch_hz: float = 0.0
-    pitch_std_hz: float = 0.0
-    pitch_range_hz: float = 0.0
-    jitter_percent: float = 0.0
-    shimmer_db: float = 0.0
-    hnr_db: float = 0.0
-    estimated_tempo_bpm: float = 0.0
-    duration_sec: float = 0.0
-
-
-@me.stateclass
-class PageState:
-    """Local Page State"""
-
-    is_loading: bool = False  # Generic loading state for Lyria generation or Rewriter
-    is_generating_lyrics: bool = False
-    is_analyzing: bool = False  # Specific loading state for Gemini analysis
-
-    loading_operation_message: str = ""  # Message to display during is_loading
-
-    music_prompt_input: str = ""
-    music_prompt_placeholder: str = ""
-    original_user_prompt: str = ""
-    music_prompt_textarea_key: int = 0
-    music_gcs_uri: str = ""
-    music_display_url: str = ""
-
-    selected_model_id: str = "3-clip-preview"
-    sample_count: int = 1
-    lyrics_input: str = ""
-    lyrics_placeholder: str = ""
-    uploaded_image_gcs_uris: list[str] = field(default_factory=list)
-    uploaded_image_mime_types: list[str] = field(default_factory=list)
-    uploaded_image_display_urls: list[str] = field(default_factory=list)
-    c2pa_manifest_json: str = ""
-
-    timing: str = ""
-
-    show_error_dialog: bool = False
-    error_message: str = ""
-
-    audio_analysis_result_json: str | None = None
-    analysis_error_message: str = ""
-
-    info_dialog_open: bool = False
-
-    audio_metrics: AudioMetricsState = field(default_factory=AudioMetricsState)
-    has_audio_metrics: bool = False
-
-
 # Original box style
 _BOX_STYLE = me.Style(
     background=me.theme_var("background"),
@@ -111,28 +60,6 @@ _BOX_STYLE = me.Style(
     padding=me.Padding(top=16, left=16, right=16, bottom=16),
     display="flex",
     flex_direction="column",
-)
-
-# Combined style for the analysis display box
-_ANALYSIS_BOX_STYLE = me.Style(
-    background=me.theme_var("background"),
-    border_radius=12,
-    box_shadow=("0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"),
-    padding=me.Padding(top=16, left=16, right=16, bottom=16),
-    display="flex",
-    flex_direction="column",
-    margin=me.Margin(top=16),
-)
-
-# Combined style for the analysis error display box
-_ANALYSIS_ERROR_BOX_STYLE = me.Style(
-    background=me.theme_var("background"),
-    border_radius=12,
-    padding=me.Padding(top=16, left=16, right=16, bottom=16),
-    display="flex",
-    flex_direction="column",
-    margin=me.Margin(top=16),
-    border=me.Border.all(me.BorderSide(color=me.theme_var("error"), width=1)),
 )
 
 
@@ -233,7 +160,7 @@ def lyria_content(app_state: me.state):
                             placeholder="Enter lyrics here...",
                             style=me.Style(
                                 padding=me.Padding(
-                                    top=16, left=16, right=16, bottom=16
+                                    top=16, left=16, right=16, bottom=16,
                                 ),
                                 background=me.theme_var("secondary-container"),
                                 outline="none",
@@ -267,7 +194,7 @@ def lyria_content(app_state: me.state):
                                         gap=2,
                                         font_size=10,
                                         align_items="center",
-                                    )
+                                    ),
                                 ):
                                     me.icon("auto_awesome")
                                     me.text("Generate")
@@ -373,137 +300,9 @@ def lyria_content(app_state: me.state):
                     style=me.Style(margin=me.Margin(top=8)),
                 )
 
-        # Analysis Display Area
-        if (
-            pagestate.audio_analysis_result_json
-            and not pagestate.is_analyzing
-            and not pagestate.is_loading
-        ):
-            try:
-                analysis = json.loads(pagestate.audio_analysis_result_json)
-                with me.box(style=_ANALYSIS_BOX_STYLE):
-                    me.text(
-                        "Music Critic",
-                        type="headline-5",
-                        style=me.Style(margin=me.Margin(bottom=12)),
-                    )
-                    if analysis.get("genre-quality"):
-                        with me.box(style=me.Style(margin=me.Margin(bottom=10))):
-                            genre_list = analysis["genre-quality"]
+        audio_critic()
 
-                            if isinstance(genre_list, list):
-                                with me.box(
-                                    style=me.Style(
-                                        display="flex",
-                                        flex_direction="row",
-                                        gap=5,
-                                        margin=me.Margin(bottom=5, top=10),
-                                    ),
-                                ):
-                                    # me.text(
-                                    #    "Genres / Qualities:",
-                                    #    style=me.Style(font_weight=450),
-                                    # )
-                                    for item in genre_list:
-                                        pill(item, pill_type="genre")
-                            else:
-                                me.text(str(genre_list))
-
-                    with me.box(
-                        style=me.Style(
-                            margin=me.Margin(bottom=10),
-                            display="flex",
-                            flex_direction="row",
-                            gap=5,
-                        ),
-                    ):
-                        if analysis.get("audio-analysis"):
-                            with me.box(
-                                style=me.Style(
-                                    flex=1,
-                                    margin=me.Margin(bottom=10),
-                                    padding=me.Padding(right=10),
-                                ),
-                            ):
-                                me.text(
-                                    "Description",
-                                    style=me.Style(font_weight="bold"),
-                                )
-                                me.markdown(analysis["audio-analysis"])
-
-                        if analysis.get("prompt-alignment"):
-                            with me.box(
-                                style=me.Style(
-                                    flex=1,
-                                    margin=me.Margin(bottom=10),
-                                    padding=me.Padding(left=10),
-                                ),
-                            ):
-                                me.text(
-                                    "Prompt Alignment",
-                                    style=me.Style(font_weight="bold"),
-                                )
-                                me.markdown(analysis["prompt-alignment"])
-
-            except json.JSONDecodeError:
-                with me.box(style=_ANALYSIS_ERROR_BOX_STYLE):
-                    me.text(
-                        "Audio Analysis Failed",
-                        type="headline-6",
-                        style=me.Style(
-                            color=me.theme_var("error"),
-                            margin=me.Margin(bottom=12),
-                        ),
-                    )
-                    me.text("Error: Could not display analysis data (invalid format).")
-
-        # Analysis Error Display
-        elif (
-            pagestate.analysis_error_message
-            and not pagestate.is_analyzing
-            and not pagestate.is_loading
-        ):
-            with me.box(style=_ANALYSIS_ERROR_BOX_STYLE):
-                me.text(
-                    "Audio Analysis Failed",
-                    type="headline-6",
-                    style=me.Style(
-                        color=me.theme_var("error"),
-                        margin=me.Margin(bottom=12),
-                    ),
-                )
-                me.text(pagestate.analysis_error_message)
-
-        # Technical Metrics Display
-        if (
-            pagestate.has_audio_metrics
-            and not pagestate.is_analyzing
-            and not pagestate.is_loading
-        ):
-            with me.box(style=_ANALYSIS_BOX_STYLE):
-                with me.expansion_panel(
-                    title="Technical Audio Metrics",
-                    icon="graphic_eq",
-                ):
-                    metrics = pagestate.audio_metrics
-                    with me.box(
-                        style=me.Style(
-                            display="grid",
-                            grid_template_columns="1fr 1fr",
-                            gap=16,
-                            padding=me.Padding.all(16),
-                        ),
-                    ):
-                        me.text(
-                            f"Duration: {metrics.duration_sec:.2f}s",
-                            style=me.Style(font_weight="bold"),
-                        )
-                        me.text(
-                            f"Tempo: {metrics.estimated_tempo_bpm:.1f} BPM",
-                            style=me.Style(font_weight="bold"),
-                        )
-                        me.text(f"Mean Pitch: {metrics.mean_pitch_hz:.1f} Hz")
-                        me.text(f"Pitch Range: {metrics.pitch_range_hz:.1f} Hz")
+        technical_metrics()
 
         # Error Dialog for Generation Errors (Lyria errors)
         with dialog(is_open=pagestate.show_error_dialog):  # pylint: disable=not-context-manager
