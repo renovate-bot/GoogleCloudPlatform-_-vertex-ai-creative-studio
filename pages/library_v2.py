@@ -87,7 +87,7 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
 
     if is_filter_change:
         pagestate.current_page = 1
-        pagestate.media_items = []
+        pagestate.media_items_json = "[]"
         pagestate.all_items_loaded = False
 
     pagestate.is_loading = True
@@ -213,13 +213,37 @@ def library_content():
                 width="100%",
             ),
         ):
-            if not pagestate.media_items and not pagestate.is_loading:
+            if (
+                not pagestate.media_items_json or pagestate.media_items_json == "[]"
+            ) and not pagestate.is_loading:
                 with me.box(
                     style=me.Style(padding=me.Padding.all(20), text_align="center"),
                 ):
                     me.text("No media items found for the selected filters.")
             else:
-                for item in pagestate.media_items:
+                import json
+                import datetime
+                from common.metadata import MediaItem
+
+                items_dicts = (
+                    json.loads(pagestate.media_items_json)
+                    if pagestate.media_items_json
+                    else []
+                )
+                media_items = []
+                for d in items_dicts:
+                    valid_keys = MediaItem.__dataclass_fields__.keys()
+                    clean_d = {k: v for k, v in d.items() if k in valid_keys}
+                    if "timestamp" in clean_d and isinstance(clean_d["timestamp"], str):
+                        try:
+                            clean_d["timestamp"] = datetime.datetime.fromisoformat(
+                                clean_d["timestamp"]
+                            )
+                        except ValueError:
+                            pass
+                    media_items.append(MediaItem(**clean_d))
+
+                for item in media_items:
                     gcs_uri = (
                         item.gcsuri
                         if item.gcsuri
@@ -304,8 +328,7 @@ def on_close_extend_dialog(e: me.ClickEvent):
 
 @me.component
 def library_dialog(pagestate: PageState):
-    """Renders the details dialog. Fetches the item on-demand to avoid state issues.
-    """
+    """Renders the details dialog. Fetches the item on-demand to avoid state issues."""
     # The dialog is always in the DOM, just hidden/shown via is_open.
     # We only fetch and render the content if an item is selected.
     if pagestate.show_details_dialog and pagestate.selected_media_item_id:
@@ -396,13 +419,19 @@ def render_tour_detail_dialog(storyboard: dict):
 
         with me.box(
             style=me.Style(
-                display="flex", flex_direction="row", gap=24, margin=me.Margin(top=16),
+                display="flex",
+                flex_direction="row",
+                gap=24,
+                margin=me.Margin(top=16),
             ),
         ):
             # Left Column: Video and Carousel
             with me.box(
                 style=me.Style(
-                    flex_grow=1, display="flex", flex_direction="column", gap=16,
+                    flex_grow=1,
+                    display="flex",
+                    flex_direction="column",
+                    gap=16,
                 ),
             ):
                 final_video_uri = storyboard.get("final_video_uri")
@@ -437,7 +466,10 @@ def render_tour_detail_dialog(storyboard: dict):
             # Right Column: Metadata with Tabs
             with me.box(
                 style=me.Style(
-                    width=300, flex_shrink=0, max_height="80vh", overflow_y="auto",
+                    width=300,
+                    flex_shrink=0,
+                    max_height="80vh",
+                    overflow_y="auto",
                 ),
             ):
                 # Tab header
@@ -452,7 +484,9 @@ def render_tour_detail_dialog(storyboard: dict):
                 ):
                     with me.content_button(
                         on_click=lambda e: setattr(
-                            pagestate, "tour_dialog_active_tab", "details",
+                            pagestate,
+                            "tour_dialog_active_tab",
+                            "details",
                         ),
                         style=me.Style(
                             border=me.Border.all(me.BorderSide(width=0)),
@@ -479,7 +513,9 @@ def render_tour_detail_dialog(storyboard: dict):
                         )
                     with me.content_button(
                         on_click=lambda e: setattr(
-                            pagestate, "tour_dialog_active_tab", "raw",
+                            pagestate,
+                            "tour_dialog_active_tab",
+                            "raw",
                         ),
                         style=me.Style(
                             border=me.Border.all(me.BorderSide(width=0)),
@@ -578,7 +614,9 @@ def render_default_detail_dialog(item: MediaItem):
         metadata_json=json.dumps(metadata),
         id=item.id,
         raw_metadata_json=json.dumps(
-            asdict(item), indent=2, default=json_default_serializer,
+            asdict(item),
+            indent=2,
+            default=json_default_serializer,
         ),
         on_edit_click=handle_edit_click,
         on_veo_click=on_veo_click,
