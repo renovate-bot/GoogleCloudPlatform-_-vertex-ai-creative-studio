@@ -32,7 +32,7 @@ from components.page_scaffold import (
     page_scaffold,
 )
 from components.pill import pill
-from config.default import Default
+from config.default import ABOUT_PAGE_CONTENT, Default
 from config.lyria_models import LYRIA_MODELS, get_lyria_model_config
 from config.rewriters import MUSIC_REWRITER
 from models.audio_analysis import analyze_audio_file
@@ -82,8 +82,9 @@ class PageState:
     selected_model_id: str = "3-clip-preview"
     lyrics_input: str = ""
     lyrics_placeholder: str = ""
-    uploaded_image_gcs_uri: str = ""
-    uploaded_image_mime_type: str = ""
+    uploaded_image_gcs_uris: list[str] = field(default_factory=list)
+    uploaded_image_mime_types: list[str] = field(default_factory=list)
+    uploaded_image_display_urls: list[str] = field(default_factory=list)
     c2pa_manifest_json: str = ""
 
     timing: str = ""
@@ -149,7 +150,10 @@ def lyria_content(app_state: me.state):
 
     with page_frame():  # pylint: disable=not-context-manager
         header(
-            "Lyria", "music_note", show_info_button=True, on_info_click=open_info_dialog,
+            "Lyria",
+            "music_note",
+            show_info_button=True,
+            on_info_click=open_info_dialog,
         )
 
         # Model Selector
@@ -167,50 +171,102 @@ def lyria_content(app_state: me.state):
 
         model_config = get_lyria_model_config(pagestate.selected_model_id)
 
-        with me.box(style=_BOX_STYLE):
-            me.text("Prompt for music generation", style=me.Style(font_weight=500))
-            me.box(style=me.Style(height=16))
-            subtle_lyria_input()
+        _FLEX_BOX_STYLE = me.Style(
+            background=me.theme_var("background"),
+            border_radius=12,
+            box_shadow=(
+                "0 3px 1px -2px #0003, 0 2px 2px #00000024, 0 1px 5px #0000001f"
+            ),
+            padding=me.Padding(top=16, left=16, right=16, bottom=16),
+            display="flex",
+            flex_direction="column",
+            flex=1,
+        )
 
         if model_config and model_config.supports_lyrics:
-            me.box(style=me.Style(height=16))
+            with me.box(
+                style=me.Style(
+                    display="flex", flex_direction="row", gap=16, width="100%",
+                ),
+            ):
+                with me.box(style=_FLEX_BOX_STYLE):
+                    me.text(
+                        "Prompt for music generation", style=me.Style(font_weight=500),
+                    )
+                    me.box(style=me.Style(height=16))
+                    subtle_lyria_input()
+                with me.box(style=_FLEX_BOX_STYLE):
+                    me.text("Lyrics (Optional)", style=me.Style(font_weight=500))
+                    me.box(style=me.Style(height=16))
+                    with me.box(
+                        style=me.Style(
+                            border_radius=16,
+                            padding=me.Padding.all(8),
+                            background=me.theme_var("secondary-container"),
+                            display="flex",
+                            width="100%",
+                            flex_grow=1,
+                        ),
+                    ):
+                        me.native_textarea(
+                            autosize=True,
+                            min_rows=8,
+                            placeholder="Enter lyrics here...",
+                            style=me.Style(
+                                padding=me.Padding(
+                                    top=16, left=16, right=16, bottom=16,
+                                ),
+                                background=me.theme_var("secondary-container"),
+                                outline="none",
+                                width="100%",
+                                overflow_y="auto",
+                                border=me.Border.all(me.BorderSide(style="none")),
+                                color=me.theme_var("foreground"),
+                                flex_grow=1,
+                            ),
+                            on_blur=on_blur_lyria_lyrics,
+                            value=pagestate.lyrics_placeholder,
+                        )
+        else:
             with me.box(style=_BOX_STYLE):
-                me.text("Lyrics (Optional)", style=me.Style(font_weight=500))
+                me.text("Prompt for music generation", style=me.Style(font_weight=500))
                 me.box(style=me.Style(height=16))
-                me.native_textarea(
-                    autosize=True,
-                    min_rows=4,
-                    placeholder="Enter lyrics here...",
-                    style=me.Style(
-                        padding=me.Padding.all(16),
-                        background=me.theme_var("secondary-container"),
-                        outline="none",
-                        width="100%",
-                        border=me.Border.all(me.BorderSide(style="none")),
-                        color=me.theme_var("foreground"),
-                    ),
-                    on_blur=on_blur_lyria_lyrics,
-                    value=pagestate.lyrics_placeholder,
-                )
+                subtle_lyria_input()
 
         if model_config and model_config.supports_images:
             me.box(style=me.Style(height=16))
             with me.box(style=_BOX_STYLE):
                 me.text("Reference Image (Optional)", style=me.Style(font_weight=500))
                 me.box(style=me.Style(height=16))
-                if pagestate.uploaded_image_gcs_uri:
+                if pagestate.uploaded_image_gcs_uris:
                     with me.box(
-                        style=me.Style(display="flex", align_items="center", gap=10),
+                        style=me.Style(
+                            display="flex",
+                            flex_direction="row",
+                            gap=10,
+                            flex_wrap="wrap",
+                            align_items="center",
+                        ),
                     ):
-                        me.text(f"Image uploaded: {pagestate.uploaded_image_gcs_uri}")
+                        for url in pagestate.uploaded_image_display_urls:
+                            me.image(
+                                src=url,
+                                style=me.Style(
+                                    width=100,
+                                    height=100,
+                                    object_fit="cover",
+                                    border_radius=8,
+                                ),
+                            )
                         me.button(
-                            "Clear", on_click=on_clear_lyria_image, type="stroked",
+                            "Clear All", on_click=on_clear_lyria_image, type="stroked",
                         )
                 else:
                     me.uploader(
-                        label="Upload Image",
+                        label="Upload Image(s)",
                         accepted_file_types=["image/jpeg", "image/png"],
                         on_upload=on_upload_lyria_image,
+                        multiple=True,
                         type="flat",
                     )
 
@@ -322,7 +378,8 @@ def lyria_content(app_state: me.state):
                                 ),
                             ):
                                 me.text(
-                                    "Description", style=me.Style(font_weight="bold"),
+                                    "Description",
+                                    style=me.Style(font_weight="bold"),
                                 )
                                 me.markdown(analysis["audio-analysis"])
 
@@ -346,7 +403,8 @@ def lyria_content(app_state: me.state):
                         "Audio Analysis Failed",
                         type="headline-6",
                         style=me.Style(
-                            color=me.theme_var("error"), margin=me.Margin(bottom=12),
+                            color=me.theme_var("error"),
+                            margin=me.Margin(bottom=12),
                         ),
                     )
                     me.text("Error: Could not display analysis data (invalid format).")
@@ -362,7 +420,8 @@ def lyria_content(app_state: me.state):
                     "Audio Analysis Failed",
                     type="headline-6",
                     style=me.Style(
-                        color=me.theme_var("error"), margin=me.Margin(bottom=12),
+                        color=me.theme_var("error"),
+                        margin=me.Margin(bottom=12),
                     ),
                 )
                 me.text(pagestate.analysis_error_message)
@@ -375,7 +434,8 @@ def lyria_content(app_state: me.state):
         ):
             with me.box(style=_ANALYSIS_BOX_STYLE):
                 with me.expansion_panel(
-                    title="Technical Audio Metrics", icon="graphic_eq",
+                    title="Technical Audio Metrics",
+                    icon="graphic_eq",
                 ):
                     metrics = pagestate.audio_metrics
                     with me.box(
@@ -493,8 +553,9 @@ def on_lyria_model_change(e: me.SelectSelectionChangeEvent):
         state.lyrics_input = ""
         state.lyrics_placeholder = ""
     if model_config and not model_config.supports_images:
-        state.uploaded_image_gcs_uri = ""
-        state.uploaded_image_mime_type = ""
+        state.uploaded_image_gcs_uris = []
+    state.uploaded_image_mime_types = []
+    state.uploaded_image_display_urls = []
 
 
 def on_blur_lyria_lyrics(e: me.InputBlurEvent):
@@ -505,8 +566,9 @@ def on_blur_lyria_lyrics(e: me.InputBlurEvent):
 
 def on_clear_lyria_image(e: me.ClickEvent):
     state = me.state(PageState)
-    state.uploaded_image_gcs_uri = ""
-    state.uploaded_image_mime_type = ""
+    state.uploaded_image_gcs_uris = []
+    state.uploaded_image_mime_types = []
+    state.uploaded_image_display_urls = []
 
 
 def on_upload_lyria_image(e: me.UploadEvent):
@@ -516,6 +578,7 @@ def on_upload_lyria_image(e: me.UploadEvent):
     import shortuuid
 
     from common.storage import store_to_gcs
+    from common.utils import create_display_url
     from config.default import Default
 
     cfg = Default()
@@ -532,8 +595,9 @@ def on_upload_lyria_image(e: me.UploadEvent):
         False,
         bucket_name=cfg.MEDIA_BUCKET,
     )
-    state.uploaded_image_gcs_uri = gcs_uri
-    state.uploaded_image_mime_type = mime_type
+    state.uploaded_image_gcs_uris.append(gcs_uri)
+    state.uploaded_image_mime_types.append(mime_type)
+    state.uploaded_image_display_urls.append(create_display_url(gcs_uri))
 
 
 def on_blur_lyria_prompt(e: me.InputBlurEvent):
@@ -619,8 +683,12 @@ def on_click_lyria(e: me.ClickEvent):
             prompt=prompt_for_api,
             model_name=get_lyria_model_config(state.selected_model_id).model_name,
             lyrics=state.lyrics_input,
-            image_gcs_uri=state.uploaded_image_gcs_uri,
-            image_mime_type=state.uploaded_image_mime_type,
+            image_gcs_uri=state.uploaded_image_gcs_uris[0]
+            if state.uploaded_image_gcs_uris
+            else None,
+            image_mime_type=state.uploaded_image_mime_types[0]
+            if state.uploaded_image_mime_types
+            else None,
         )
         if c2pa_data:
             state.c2pa_manifest_json = json.dumps(
