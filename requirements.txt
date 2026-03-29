@@ -27,8 +27,6 @@ c2pa-python==0.27.1
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 cachecontrol==0.14.4
     # via firebase-admin
-cachetools==6.2.6
-    # via google-auth
 certifi==2025.11.12
     # via
     #   httpcore
@@ -47,9 +45,10 @@ click==8.3.1
     #   uvicorn
 contourpy==1.3.3
     # via matplotlib
-cryptography==46.0.5
+cryptography==46.0.6
     # via
     #   c2pa-python
+    #   google-auth
     #   pyjwt
 cycler==0.12.1
     # via matplotlib
@@ -58,7 +57,7 @@ decorator==5.2.1
     #   ipython
     #   librosa
     #   moviepy
-deepdiff==8.6.1
+deepdiff==8.6.2
     # via mesop
 distro==1.9.0
     # via google-genai
@@ -129,7 +128,7 @@ google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==1.56.0
+google-genai==1.65.0
     # via
     #   vertex-ai-genmedia-creative-studio (pyproject.toml)
     #   google-cloud-aiplatform
@@ -257,7 +256,6 @@ numpy==2.3.5
     #   scikit-image
     #   scikit-learn
     #   scipy
-    #   shapely
     #   soundfile
     #   soxr
     #   tifffile
@@ -278,6 +276,7 @@ packaging==25.0
     #   pooch
     #   pytest
     #   scikit-image
+    #   wheel
 pandas==2.3.3
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 parso==0.8.5
@@ -294,7 +293,7 @@ pillow==12.1.1
     #   mediapy
     #   moviepy
     #   scikit-image
-platformdirs==4.5.1
+platformdirs==4.9.4
     # via
     #   black
     #   pooch
@@ -350,7 +349,7 @@ pydantic==2.12.5
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.41.5
+pydantic-core==2.44.0
     # via pydantic
 pygments==2.19.2
     # via
@@ -378,7 +377,7 @@ pytokens==0.3.0
     # via black
 pytz==2025.2
     # via pandas
-requests==2.32.5
+requests==2.33.0
     # via
     #   c2pa-python
     #   cachecontrol
@@ -404,8 +403,6 @@ scipy==1.16.3
     #   scikit-learn
 setuptools==80.9.0
     # via c2pa-python
-shapely==2.1.2
-    # via google-cloud-aiplatform
 shortuuid==1.0.13
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 six==1.17.0
@@ -463,7 +460,7 @@ tzdata==2025.3
     # via pandas
 urllib3==2.6.3
     # via requests
-uvicorn==0.38.0
+uvicorn==0.42.0
     # via vertex-ai-genmedia-creative-studio (pyproject.toml)
 watchdog==6.0.0
     # via mesop

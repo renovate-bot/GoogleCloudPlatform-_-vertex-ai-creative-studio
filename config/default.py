@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, TypedDict
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 load_dotenv(override=True)
 
@@ -53,13 +53,13 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.4.0" # vto GA
+    VERSION: str = "1.5.1"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
-    
+
     APP_ENV: str = os.environ.get("APP_ENV", "")
     API_BASE_URL: str = os.environ.get(
-        "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}"
+        "API_BASE_URL", f"http://localhost:{os.environ.get('PORT', '8080')}",
     )
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
@@ -70,20 +70,23 @@ class Default:
     MODEL_ID: str = os.environ.get("MODEL_ID", "gemini-2.5-flash")
     INIT_VERTEX: bool = True
     GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
-        "GEMINI_IMAGE_GEN_MODEL", "gemini-2.5-flash-image",
+        "GEMINI_IMAGE_GEN_MODEL",
+        "gemini-2.5-flash-image",
     )
     GEMINI_IMAGE_GEN_LOCATION: str = os.environ.get(
-        "GEMINI_IMAGE_GEN_LOCATION", "global",
+        "GEMINI_IMAGE_GEN_LOCATION",
+        "global",
     )
     GEMINI_IMAGE_GEN_API_BASE_URL: Optional[str] = os.environ.get(
-        "GEMINI_IMAGE_GEN_API_BASE_URL"
+        "GEMINI_IMAGE_GEN_API_BASE_URL",
     )
 
     GEMINI_AUDIO_ANALYSIS_MODEL_ID: str = os.environ.get(
-        "GEMINI_AUDIO_ANALYSIS_MODEL_ID", "gemini-2.5-flash",
+        "GEMINI_AUDIO_ANALYSIS_MODEL_ID",
+        "gemini-2.5-flash",
     )
     GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
-        "GEMINI_WRITERS_WORKSHOP_MODEL_ID", MODEL_ID
+        "GEMINI_WRITERS_WORKSHOP_MODEL_ID", MODEL_ID,
     )
 
     # Collections
@@ -110,7 +113,9 @@ class Default:
     VEO_MODEL_ID: str = os.environ.get("VEO_MODEL_ID", "veo-3.1-fast-generate-001")
     VEO_PROJECT_ID: str = os.environ.get("VEO_PROJECT_ID", PROJECT_ID)
 
-    VEO_EXP_MODEL_ID: str = os.environ.get("VEO_EXP_MODEL_ID", "veo-3.1-generate-preview")
+    VEO_EXP_MODEL_ID: str = os.environ.get(
+        "VEO_EXP_MODEL_ID", "veo-3.1-generate-preview",
+    )
     VEO_EXP_FAST_MODEL_ID: str = os.environ.get(
         "VEO_EXP_FAST_MODEL_ID",
         "veo-3.1-fast-generate-preview",
@@ -121,10 +126,12 @@ class Default:
     VTO_LOCATION: str = os.environ.get("VTO_LOCATION", "us-central1")
     VTO_MODEL_ID: str = os.environ.get("VTO_MODEL_ID", "virtual-try-on-001")
     GENMEDIA_VTO_MODEL_COLLECTION_NAME: str = os.environ.get(
-        "GENMEDIA_VTO_MODEL_COLLECTION_NAME", "genmedia-vto-model",
+        "GENMEDIA_VTO_MODEL_COLLECTION_NAME",
+        "genmedia-vto-model",
     )
     GENMEDIA_VTO_CATALOG_COLLECTION_NAME: str = os.environ.get(
-        "GENMEDIA_VTO_CATALOG_COLLECTION_NAME", "genmedia-vto-catalog",
+        "GENMEDIA_VTO_CATALOG_COLLECTION_NAME",
+        "genmedia-vto-catalog",
     )
 
     # Temperatures for Character Consistency Workflow
@@ -140,10 +147,10 @@ class Default:
     # Character Consistency
     CHARACTER_CONSISTENCY_IMAGEN_MODEL: str = "imagen-3.0-capability-001"
     CHARACTER_CONSISTENCY_VEO_MODEL: str = os.environ.get(
-        "CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001"
+        "CHARACTER_CONSISTENCY_VEO_MODEL", "veo-3.0-fast-generate-001",
     )
     CHARACTER_CONSISTENCY_GEMINI_MODEL: str = os.environ.get(
-        "CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID
+        "CHARACTER_CONSISTENCY_GEMINI_MODEL", MODEL_ID,
     )
 
     # Lyria
@@ -167,10 +174,10 @@ class Default:
     )
 
     IMAGEN_GENERATED_SUBFOLDER: str = os.environ.get(
-        "IMAGEN_GENERATED_SUBFOLDER", "generated_images"
+        "IMAGEN_GENERATED_SUBFOLDER", "generated_images",
     )
     IMAGEN_EDITED_SUBFOLDER: str = os.environ.get(
-        "IMAGEN_EDITED_SUBFOLDER", "edited_images"
+        "IMAGEN_EDITED_SUBFOLDER", "edited_images",
     )
 
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
@@ -198,12 +205,24 @@ def get_config_path(rel_path: str) -> str:
     return rel_path
 
 
+import importlib.metadata
+
+
+def load_package_version():
+    try:
+        Default.VERSION = importlib.metadata.version(
+            "vertex-ai-genmedia-creative-studio",
+        )
+    except importlib.metadata.PackageNotFoundError:
+        pass  # Keep default
+
+
 def load_build_info():
     """Loads build information from config/build.json if it exists."""
     path = get_config_path("config/build.json")
     if os.path.exists(path):
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = json.load(f)
                 Default.BUILD_COMMIT = data.get("commit", "unknown")
                 Default.BUILD_DATE = data.get("date", "unknown")
@@ -211,12 +230,13 @@ def load_build_info():
             pass
 
 
+load_package_version()
 load_build_info()
 
 
 def get_welcome_page_config():
     path = get_config_path("config/navigation.json")
-    with open(path, "r") as f:
+    with open(path) as f:
         data = json.load(f)
 
     # This will raise a validation error if the JSON is malformed
@@ -244,7 +264,7 @@ def load_about_page_config():
         return None
 
     try:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             content = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return None

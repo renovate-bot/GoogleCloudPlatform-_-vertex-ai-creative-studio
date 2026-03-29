@@ -29,15 +29,15 @@ import (
 )
 
 var (
-	ttsClient           *texttospeech.Client // Global Text-to-Speech client
-	availableVoices     []*texttospeechpb.Voice
-	transport           string
-	port                int
-	version             = "0.3.0" // Standardize port handling
+	ttsClient       *texttospeech.Client // Global Text-to-Speech client
+	availableVoices []*texttospeechpb.Voice
+	transport       string
+	port            int
+	version     = "3.1.3" // Fix JSON Schema validation for arrays without items
 )
 
 const (
-	serviceName             = "mcp-chirp3-go"
+	serviceName           = "mcp-chirp3-go"
 	timeFormatForFilename = "20060102-150405"
 	defaultChirpVoiceName = "en-US-Chirp3-HD-Zephyr"
 )
@@ -103,7 +103,7 @@ func listAndCacheChirpHDVoices(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("texttospeech.NewClient for voice listing: %w", err)
 	}
-	defer tempClient.Close()
+	defer func() { _ = tempClient.Close() }()
 
 	resp, err := tempClient.ListVoices(ctx, &texttospeechpb.ListVoicesRequest{})
 	if err != nil {
@@ -201,32 +201,13 @@ func parseMcpPronunciations(pronunciationsParam interface{}, encodingStr string)
 // on the configured transport (stdio, sse, or http).
 func main() {
 	// Initialize OpenTelemetry
-	tp, err := common.InitTracerProvider(serviceName, version)
-	if err != nil {
-		log.Fatalf("failed to initialize tracer provider: %v", err)
-	}
-	if tp != nil {
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Printf("Error shutting down tracer provider: %v", err)
-			}
-		}()
-	}
+	var cleanup func()
+	_, cleanup = common.Init(serviceName, version)
+	defer cleanup()
+	log.Printf("Initializing global Text-to-Speech client... (Deferred to runtime)")
+	// In order to allow mcptools to verify the schema without Google Cloud credentials,
+	// we defer the actual client initialization to the first tool invocation.
 
-	log.Printf("Initializing global Text-to-Speech client...")
-	startupCtx, startupCancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer startupCancel()
-
-	ttsClient, err = texttospeech.NewClient(startupCtx)
-	if err != nil {
-		log.Fatalf("Error creating global Text-to-Speech client: %v", err)
-	}
-	log.Printf("Global Text-to-Speech client initialized successfully.")
-
-	err = listAndCacheChirpHDVoices(startupCtx)
-	if err != nil {
-		log.Printf("Warning: Could not fetch Chirp3-HD voices at startup: %v. Voice-dependent tools may not function correctly.", err)
-	}
 
 	s := server.NewMCPServer(
 		serviceName, // Standardized name
@@ -383,7 +364,7 @@ func main() {
 
 	log.Printf("%s Server has stopped.", serviceName)
 	if ttsClient != nil {
-		ttsClient.Close()
+		_ = ttsClient.Close()
 	}
 }
 

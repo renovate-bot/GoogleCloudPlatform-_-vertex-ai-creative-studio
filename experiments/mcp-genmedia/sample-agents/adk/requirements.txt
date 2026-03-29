@@ -9,7 +9,7 @@ anyio==4.11.0
     #   mcp
     #   sse-starlette
     #   starlette
-authlib==1.6.7
+authlib==1.6.9
     # via google-adk
 cachetools==6.2.6
     # via google-auth
@@ -18,7 +18,7 @@ certifi==2025.11.12
     #   httpcore
     #   httpx
     #   requests
-cffi==1.17.1 ; platform_python_implementation != 'PyPy'
+cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
@@ -30,7 +30,7 @@ cloudpickle==3.1.1
     # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==46.0.5
+cryptography==46.0.6
     # via authlib
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
@@ -213,7 +213,7 @@ protobuf==6.33.5
     #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
-pyasn1==0.6.2
+pyasn1==0.6.3
     # via
     #   pyasn1-modules
     #   rsa
@@ -229,9 +229,9 @@ pydantic==2.11.10
     #   google-genai
     #   mcp
     #   pydantic-settings
-pydantic-core==2.39.0
+pydantic-core==2.44.0
     # via pydantic
-pydantic-settings==2.10.1
+pydantic-settings==2.13.1
     # via mcp
 pyparsing==3.2.5
     # via httplib2
@@ -296,7 +296,7 @@ uritemplate==4.2.0
     # via google-api-python-client
 urllib3==2.6.3
     # via requests
-uvicorn==0.36.1
+uvicorn==0.42.0
     # via
     #   google-adk
     #   mcp

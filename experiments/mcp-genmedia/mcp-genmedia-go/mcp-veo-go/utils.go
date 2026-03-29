@@ -78,7 +78,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	}
 
 	// Duration
-	var durationSecs int32 = modelDetails.DefaultDuration
+	durationSecs := modelDetails.DefaultDuration
 	if durationArg, ok := args["duration"].(float64); ok {
 		durationSecs = int32(durationArg)
 	}
@@ -115,7 +115,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	}
 
 	// Generate Audio
-	var generateAudio bool = true // Default to true as per user request
+	generateAudio := true // Default to true as per user request
 	if genAudioArg, ok := args["generate_audio"].(bool); ok {
 		generateAudio = genAudioArg
 	}

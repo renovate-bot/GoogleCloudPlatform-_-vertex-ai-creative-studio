@@ -13,20 +13,23 @@
 # limitations under the License.
 """Component for displaying audio details."""
 
-import json
+import os
+from collections.abc import Callable
+from datetime import datetime
+
 import mesop as me
+
 from common.metadata import MediaItem
 from common.utils import gcs_uri_to_https_url
-from datetime import datetime
-import os
 from components.download_button.download_button import download_button
 
-from typing import Callable
 
 @me.component
 def audio_details(item: MediaItem, on_click_permalink: Callable):
     """Renders the details for an audio item."""
-    gcs_uri = item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    gcs_uri = (
+        item.gcsuri if item.gcsuri else (item.gcs_uris[0] if item.gcs_uris else None)
+    )
     item_display_url = gcs_uri_to_https_url(gcs_uri)
 
     with me.box(
@@ -37,13 +40,19 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
             width="100%",
             max_height="80vh",  # Max viewport height
             overflow_y="auto",  # Scroll if content exceeds max height
-        )
+        ),
     ):
-
-        if item_display_url and not item.error_message:
-            me.audio(
-                src=item_display_url,
+        if not item.error_message:
+            # Handle multiple audio tracks if present
+            audio_uris = (
+                item.gcs_uris
+                if item.gcs_uris
+                else ([item.gcsuri] if item.gcsuri else [])
             )
+            for uri in audio_uris:
+                display_url = gcs_uri_to_https_url(uri)
+                if display_url:
+                    me.audio(src=display_url)
 
         if item.error_message:
             me.text(
@@ -58,7 +67,7 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
                 ),
             )
 
-        me.text(f"Model: {item.raw_data['model']}")
+        me.text(f"Model: {item.model}")
         me.text(f'Prompt: "{item.prompt or "N/A"}"')
         if item.negative_prompt:
             me.text(f'Negative Prompt: "{item.negative_prompt}"')
@@ -72,10 +81,8 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
                 if isinstance(item.timestamp, datetime):
                     ts_str_detail = item.timestamp.isoformat()
                 dialog_timestamp_str_detail = datetime.fromisoformat(
-                    ts_str_detail.replace("Z", "+00:00")
-                ).strftime(
-                    "%Y-%m-%d %H:%M:%S %Z"
-                )
+                    ts_str_detail.replace("Z", "+00:00"),
+                ).strftime("%Y-%m-%d %H:%M:%S %Z")
             except Exception:
                 dialog_timestamp_str_detail = str(item.timestamp)
         me.text(f"Generated: {dialog_timestamp_str_detail}")
@@ -88,8 +95,15 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
 
         if item.duration is not None:
             me.text(f"Duration: {item.duration} seconds")
-        
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=10, margin=me.Margin(top=16))):
+
+        with me.box(
+            style=me.Style(
+                display="flex",
+                flex_direction="row",
+                gap=10,
+                margin=me.Margin(top=16),
+            ),
+        ):
             with me.content_button(
                 on_click=on_click_permalink,
                 key=item.id or "",  # Ensure key is not None
@@ -100,11 +114,22 @@ def audio_details(item: MediaItem, on_click_permalink: Callable):
                         flex_direction="row",
                         align_items="center",
                         gap=5,
-                    )
+                    ),
                 ):
                     me.icon(icon="link")
                     me.text("permalink")
-            
-            if item.gcsuri:
-                filename = os.path.basename(item.gcsuri.split('?')[0])
-                download_button(url=item.gcsuri, filename=filename)
+
+            audio_uris = (
+                item.gcs_uris
+                if item.gcs_uris
+                else ([item.gcsuri] if item.gcsuri else [])
+            )
+            for i, uri in enumerate(audio_uris):
+                if uri:
+                    filename = os.path.basename(uri.split("?")[0])
+                    # Ensure unique keys for multiple buttons
+                    download_button(
+                        url=uri,
+                        filename=filename,
+                        key=f"{item.id}_download_{i}",
+                    )
