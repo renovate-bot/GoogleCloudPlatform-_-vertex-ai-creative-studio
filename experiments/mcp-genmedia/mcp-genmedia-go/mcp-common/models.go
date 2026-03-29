@@ -199,61 +199,117 @@ func BuildGeminiImageModelDescription() string {
 
 // VeoModelInfo holds the details for a specific Veo model.
 type VeoModelInfo struct {
-	CanonicalName         string
-	Aliases               []string
-	DefaultDuration       int32
-	SupportedDurations    []int32
-	MaxVideos             int32
-	SupportedAspectRatios []string
-	SupportsGenerateAudio bool
+	CanonicalName          string
+	Aliases                []string
+	DefaultDuration        int32
+	SupportedDurations     []int32
+	MaxVideos              int32
+	SupportedAspectRatios  []string
+	SupportsGenerateAudio  bool
+	SupportsFirstLast      bool
+	SupportsReferenceImage bool
 }
 
 // SupportedVeoModels is the single source of truth for all supported Veo models.
 var SupportedVeoModels = map[string]VeoModelInfo{
 	"veo-2.0-generate-001": {
-		CanonicalName:         "veo-2.0-generate-001",
-		Aliases:               []string{"Veo 2"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{5, 6, 7, 8},
-		MaxVideos:             4,
-		SupportedAspectRatios: []string{"16:9", "9:16"},
-		SupportsGenerateAudio: false,
+		CanonicalName:          "veo-2.0-generate-001",
+		Aliases:                []string{"Veo 2"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{5, 6, 7, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  false,
+		SupportsFirstLast:      false,
+		SupportsReferenceImage: false,
+	},
+	"veo-2.0-generate-exp": {
+		CanonicalName:          "veo-2.0-generate-exp",
+		Aliases:                []string{"Veo 2 Exp"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{5, 6, 7, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  false,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: true,
+	},
+	"veo-2.0-generate-preview": {
+		CanonicalName:          "veo-2.0-generate-preview",
+		Aliases:                []string{"Veo 2 Preview"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{5, 6, 7, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  false,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: false,
 	},
 	"veo-3.0-generate-001": {
-		CanonicalName:         "veo-3.0-generate-001",
-		Aliases:               []string{"Veo 3.0"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{4, 6, 8},
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9"},
-		SupportsGenerateAudio: true,
+		CanonicalName:          "veo-3.0-generate-001",
+		Aliases:                []string{"Veo 3.0"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              2,
+		SupportedAspectRatios:  []string{"16:9"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      false,
+		SupportsReferenceImage: false,
 	},
 	"veo-3.0-fast-generate-001": {
-		CanonicalName:         "veo-3.0-fast-generate-001",
-		Aliases:               []string{"Veo 3.0 Fast"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{4, 6, 8},
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9"},
-		SupportsGenerateAudio: true,
+		CanonicalName:          "veo-3.0-fast-generate-001",
+		Aliases:                []string{"Veo 3.0 Fast"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              2,
+		SupportedAspectRatios:  []string{"16:9"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      false,
+		SupportsReferenceImage: false,
 	},
 	"veo-3.1-generate-001": {
-		CanonicalName:         "veo-3.1-generate-001",
-		Aliases:               []string{"Veo 3.1"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{4, 6, 8},
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9", "9:16"},
-		SupportsGenerateAudio: true,
+		CanonicalName:          "veo-3.1-generate-001",
+		Aliases:                []string{"Veo 3.1"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: false,
 	},
 	"veo-3.1-fast-generate-001": {
-		CanonicalName:         "veo-3.1-fast-generate-001",
-		Aliases:               []string{"Veo 3.1 Fast"},
-		DefaultDuration:       8,
-		SupportedDurations:    []int32{4, 6, 8},
-		MaxVideos:             2,
-		SupportedAspectRatios: []string{"16:9", "9:16"},
-		SupportsGenerateAudio: true,
+		CanonicalName:          "veo-3.1-fast-generate-001",
+		Aliases:                []string{"Veo 3.1 Fast"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: false,
+	},
+	"veo-3.1-generate-preview": {
+		CanonicalName:          "veo-3.1-generate-preview",
+		Aliases:                []string{"Veo 3.1 Preview"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: true,
+	},
+	"veo-3.1-fast-generate-preview": {
+		CanonicalName:          "veo-3.1-fast-generate-preview",
+		Aliases:                []string{"Veo 3.1 Fast Preview"},
+		DefaultDuration:        8,
+		SupportedDurations:     []int32{4, 6, 8},
+		MaxVideos:              4,
+		SupportedAspectRatios:  []string{"16:9", "9:16"},
+		SupportsGenerateAudio:  true,
+		SupportsFirstLast:      true,
+		SupportsReferenceImage: true,
 	},
 }
 
