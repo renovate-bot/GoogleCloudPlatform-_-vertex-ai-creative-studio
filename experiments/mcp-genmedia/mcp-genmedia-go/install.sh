@@ -82,9 +82,15 @@ setup_agent_skills() {
   if [ -d "$SKILLS_DIR" ]; then
     echo -e "\n${BLUE}Expert Agent Skills found at:${NC} $SKILLS_DIR"
     
+    # Check if gemini CLI is installed for remote installation tip
+    if command -v gemini &> /dev/null; then
+      echo -e "${YELLOW}Tip: You can also install these skills remotely via Gemini CLI:${NC}"
+      echo -e "  ${BLUE}gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills${NC}\n"
+    fi
+
     # Gemini CLI
     if [ -d "$HOME/.gemini" ]; then
-      read -p "Would you like to link these skills to Gemini CLI? (y/N): " link_gemini
+      read -p "Would you like to link these skills to Gemini CLI locally? (y/N): " link_gemini
       case "$link_gemini" in
         [yY]|[yY][eE][sS])
           mkdir -p "$HOME/.gemini/skills"
