@@ -63,6 +63,39 @@ echo_info "Extracting binaries..."
 tar -xzf "$TMP_DIR/$TARBALL" -C "$TMP_DIR"
 
 mkdir -p "$INSTALL_DIR"
+
+# Install Agent Skills if present in the tarball
+if [ -d "$TMP_DIR/skills" ]; then
+    echo ""
+    echo_info "Found expert Agent Skills (Producer, Audio Engineer, Video Editor, Image Artist)."
+    
+    # Check for Gemini CLI
+    if [ -d "$HOME/.gemini" ]; then
+        read -p "Install these skills for Gemini CLI? (y/N): " install_gemini_skills
+        case "$install_gemini_skills" in
+            [yY]|[yY][eE][sS])
+                GEMINI_SKILLS_DIR="$HOME/.gemini/skills"
+                mkdir -p "$GEMINI_SKILLS_DIR"
+                cp -R "$TMP_DIR/skills/"* "$GEMINI_SKILLS_DIR/"
+                echo_success "Skills installed to $GEMINI_SKILLS_DIR"
+                ;;
+        esac
+    fi
+
+    # Check for Antigravity
+    if [ -d "$HOME/.gemini/antigravity" ]; then
+        read -p "Install these skills for Antigravity? (y/N): " install_agy_skills
+        case "$install_agy_skills" in
+            [yY]|[yY][eE][sS])
+                AGY_SKILLS_DIR="$HOME/.gemini/antigravity/skills"
+                mkdir -p "$AGY_SKILLS_DIR"
+                cp -R "$TMP_DIR/skills/"* "$AGY_SKILLS_DIR/"
+                echo_success "Skills installed to $AGY_SKILLS_DIR"
+                ;;
+        esac
+    fi
+fi
+
 # Install Gemini Extensions if present in the tarball
 if [ -d "$TMP_DIR/gemini-extensions" ]; then
     echo ""

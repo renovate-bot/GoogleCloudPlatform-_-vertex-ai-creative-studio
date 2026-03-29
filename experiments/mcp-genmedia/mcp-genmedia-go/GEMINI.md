@@ -12,6 +12,8 @@ After making **any** functional or logical code changes, you **must** update bot
 
 2.  **Update Changelog**: Open the `CHANGELOG.md` file in the `mcp-genmedia-go` directory. Add a new entry for the current date and a bulleted list of the changes you made. Use the existing format and tags (e.g., `**Feat:**`, `**Fix:**`, `**Docs:**`) as a guide.
 
+3.  **Release Retries**: GitHub Action workflows triggered by tags use the workflow definition present at the time the tag was created. If a release fails due to a workflow configuration error (like a Go version mismatch), you must fix the workflow on `main` and create a **new tag** (e.g., incrementing the patch version) to trigger a successful release.
+
 ### Architectural Pattern: Model-Specific Constraints
 
 For MCP tools that support different "models" (e.g., `Imagen 3` vs. `Imagen 4`, `Veo 2` vs. `Veo 3`), we use a centralized, configuration-driven approach to manage model-specific parameters and constraints.
@@ -68,6 +70,8 @@ Before running **any** verification or installation command (including `verify.s
 ```bash
 export PROJECT_ID=$(gcloud config get project)
 ```
+
+**Operation Timeouts**: Do not reuse `MCP_SERVER_REQUEST_TIMEOUT` for internal operations (like GCS downloads). Instead, prefer dedicated environment variables (e.g., `GCS_DOWNLOAD_TIMEOUT`) with robust defaults (300s+). This ensures internal tasks have enough time to complete before the top-level client timeout is reached.
 
 ### Mandatory Post-Build Verification
 
@@ -190,3 +194,8 @@ Once complete, output a report with all prompts used for each model along with t
 *Note: When using `output_directory` with `veo_t2v` or `veo_i2v`, the downloaded file is typically named `sample_0.mp4` (or similar) regardless of the `output_file_name` parameter. To prevent overwriting, ensure you rename the downloaded file immediately after generation if you plan to generate multiple videos to the same directory.*
 
 All generated media will be saved to the GCS bucket `gs://genai-blackbelt-fishfooding-assets` and also downloaded locally to `/Users/ghchinoy/genmedia/genmedia_mcp_tool_test/tool_test_run`.
+
+## CI and Workflow Management
+
+### **Version Sync**
+When updating the Go version in `go.mod` or `go.work`, you **must** also search for and update the `go-version` in all relevant GitHub Action workflows (e.g., `.github/workflows/mcp-release.yml` and `mcp-genmedia-go.yml`) to ensure CI compatibility.

@@ -75,6 +75,46 @@ check_path() {
 }
 
 #
+# Function to setup Agent Skills.
+#
+setup_agent_skills() {
+  SKILLS_DIR="$(cd "$(dirname "$0")/../skills" && pwd)"
+  if [ -d "$SKILLS_DIR" ]; then
+    echo -e "\n${BLUE}Expert Agent Skills found at:${NC} $SKILLS_DIR"
+    
+    # Gemini CLI
+    if [ -d "$HOME/.gemini" ]; then
+      read -p "Would you like to link these skills to Gemini CLI? (y/N): " link_gemini
+      case "$link_gemini" in
+        [yY]|[yY][eE][sS])
+          mkdir -p "$HOME/.gemini/skills"
+          # Link all skill directories
+          for skill in "$SKILLS_DIR"/*/; do
+            if [ -d "$skill" ] && [ -f "${skill}SKILL.md" ]; then
+              skill_name=$(basename "$skill")
+              ln -sfn "$skill" "$HOME/.gemini/skills/$skill_name"
+              echo -e "${GREEN}Linked $skill_name to Gemini CLI${NC}"
+            fi
+          done
+          ;;
+      esac
+    fi
+
+    # Antigravity
+    if [ -d "$HOME/.gemini/antigravity" ]; then
+      read -p "Would you like to install these skills for Antigravity? (y/N): " install_agy
+      case "$install_agy" in
+        [yY]|[yY][eE][sS])
+          mkdir -p "$HOME/.gemini/antigravity/skills"
+          cp -R "$SKILLS_DIR"/* "$HOME/.gemini/antigravity/skills/"
+          echo -e "${GREEN}Skills installed to Antigravity global directory${NC}"
+          ;;
+      esac
+    fi
+  fi
+}
+
+#
 # Main function.
 #
 # This is the main entry point of the script. It calls the other functions to
@@ -112,6 +152,7 @@ main() {
         done
         echo -e "${GREEN}All MCP servers have been installed successfully.${NC}"
         echo -e "\n${YELLOW}Reminder: Ensure ${BLUE}\$HOME/go/bin${YELLOW} is in your PATH to run the installed servers.${NC}"
+        setup_agent_skills
         break
         ;;
       "Exit")
@@ -125,6 +166,7 @@ main() {
           if (cd "$server" && go mod tidy && go install); then
             echo -e "${GREEN}$server has been installed successfully.${NC}"
             echo -e "\n${YELLOW}Reminder: Ensure ${BLUE}\$HOME/go/bin${YELLOW} is in your PATH to run the installed server.${NC}"
+            setup_agent_skills
           else
             echo -e "${RED}ERROR: Failed to install $server. Please check the output above for details.${NC}"
             exit 1
