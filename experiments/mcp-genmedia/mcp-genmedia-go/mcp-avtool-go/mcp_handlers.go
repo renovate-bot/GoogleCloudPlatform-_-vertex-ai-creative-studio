@@ -283,7 +283,7 @@ func ffmpegVideoToGifHandler(ctx context.Context, request mcp.CallToolRequest, c
 	}
 	defer func() {
 		log.Printf("Cleaning up GIF processing temporary directory: %s", gifProcessingTempDir)
-		os.RemoveAll(gifProcessingTempDir)
+		_ = os.RemoveAll(gifProcessingTempDir)
 	}()
 
 	palettePath := filepath.Join(gifProcessingTempDir, "palette.png")
@@ -331,7 +331,7 @@ func ffmpegVideoToGifHandler(ctx context.Context, request mcp.CallToolRequest, c
 	if finalLocalPath != "" {
 		if outputLocalDir != "" {
 			messageParts = append(messageParts, fmt.Sprintf("Output GIF saved locally to: %s.", finalLocalPath))
-		} else if !(outputGCSBucket != "" && finalGCSPath != "") {
+		} else if outputGCSBucket == "" || finalGCSPath == "" {
 			messageParts = append(messageParts, fmt.Sprintf("Temporary GIF output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
 		}
 	}
@@ -794,7 +794,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 			}
 			defer func() {
 				log.Printf("Cleaning up PCM concat list temporary directory: %s", concatListTempDir)
-				os.RemoveAll(concatListTempDir)
+				_ = os.RemoveAll(concatListTempDir)
 			}()
 
 			concatListPath := filepath.Join(concatListTempDir, "concat_list_pcm.txt")
@@ -805,7 +805,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 					span.RecordError(absErr)
 					return mcp.NewToolResultError(fmt.Sprintf("Failed to get absolute path for PCM file %s: %v", pcmPath, absErr)), nil
 				}
-				fileListContent.WriteString(fmt.Sprintf("file '%s'\n", absPath))
+				fmt.Fprintf(&fileListContent, "file '%s'\n", absPath)
 			}
 			if errWriteList := os.WriteFile(concatListPath, []byte(fileListContent.String()), 0644); errWriteList != nil {
 				span.RecordError(errWriteList)
@@ -836,7 +836,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 		}
 		defer func() {
 			log.Printf("Cleaning up standardization temporary directory: %s", standardizationTempDir)
-			os.RemoveAll(standardizationTempDir)
+			_ = os.RemoveAll(standardizationTempDir)
 		}()
 
 		commonWidth := 1280
@@ -902,7 +902,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 		}
 		defer func() {
 			log.Printf("Cleaning up standardized concat list temporary directory: %s", concatListTempDir)
-			os.RemoveAll(concatListTempDir)
+			_ = os.RemoveAll(concatListTempDir)
 		}()
 
 		concatListPath := filepath.Join(concatListTempDir, "concat_list_std.txt")
@@ -913,7 +913,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 				span.RecordError(absErr)
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to get absolute path for standardized file %s: %v", sf, absErr)), nil
 			}
-			fileListContent.WriteString(fmt.Sprintf("file '%s'\n", absPath))
+			fmt.Fprintf(&fileListContent, "file '%s'\n", absPath)
 		}
 		if errWriteList := os.WriteFile(concatListPath, []byte(fileListContent.String()), 0644); errWriteList != nil {
 			span.RecordError(errWriteList)
@@ -943,7 +943,7 @@ func ffmpegConcatenateMediaHandler(ctx context.Context, request mcp.CallToolRequ
 	messageParts = append(messageParts, fmt.Sprintf("Media concatenation completed in %v.", duration))
 	if outputLocalDir != "" && finalLocalPath != "" {
 		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
-	} else if finalLocalPath != "" && !(outputGCSBucket != "" && finalGCSPath != "") {
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
 		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
 	}
 	if finalGCSPath != "" {
@@ -1065,7 +1065,7 @@ func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest,
 	messageParts = append(messageParts, fmt.Sprintf("Volume adjustment (%ddB) completed in %v.", volumeDBChange, duration))
 	if outputLocalDir != "" && finalLocalPath != "" {
 		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
-	} else if finalLocalPath != "" && !(outputGCSBucket != "" && finalGCSPath != "") {
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
 		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
 	}
 	if finalGCSPath != "" {
@@ -1082,7 +1082,7 @@ func ffmpegAdjustVolumeHandler(ctx context.Context, request mcp.CallToolRequest,
 func addLayerAudioTool(s *server.MCPServer, cfg *common.Config) {
 	tool := mcp.NewTool("ffmpeg_layer_audio_files",
 		mcp.WithDescription("Layers multiple audio files together (mixing)."),
-		mcp.WithArray("input_audio_uris", mcp.Required(), mcp.Description("Array of URIs for the input audio files to layer (local paths or gs://).")),
+		mcp.WithArray("input_audio_uris", mcp.Required(), mcp.Description("Array of URIs for the input audio files to layer (local paths or gs://)."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_file_name", mcp.Description("Optional. Desired name for the output mixed audio file (e.g., 'layered_audio.mp3').")),
 		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
 		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to.")),
@@ -1113,7 +1113,7 @@ func addLayerAudioTool(s *server.MCPServer, cfg *common.Config) {
 			args[k] = v
 		}
 		toolRequest := mcp.CallToolRequest{
-			Params:   mcp.CallToolParams{Arguments: args},
+			Params: mcp.CallToolParams{Arguments: args},
 		}
 		result, err := ffmpegVideoToGifHandler(ctx, toolRequest, cfg)
 		if err != nil {
@@ -1272,7 +1272,7 @@ func ffmpegLayerAudioHandler(ctx context.Context, request mcp.CallToolRequest, c
 	messageParts = append(messageParts, fmt.Sprintf("Audio layering of %d files completed in %v.", len(localInputFiles), duration))
 	if outputLocalDir != "" && finalLocalPath != "" {
 		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
-	} else if finalLocalPath != "" && !(outputGCSBucket != "" && finalGCSPath != "") {
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
 		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
 	}
 	if finalGCSPath != "" {

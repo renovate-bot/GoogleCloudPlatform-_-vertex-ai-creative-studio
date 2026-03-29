@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import Optional
 
 import mesop as me
@@ -33,7 +32,7 @@ class State:
     show_dialog: bool = False
     active_chooser_key: str = ""
     is_loading: bool = False
-    media_items: list[MediaItem] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
+    media_items_json: str = ""
     has_more_items: bool = True
 
 
@@ -58,7 +57,13 @@ def video_chooser_button(
 
         items, last_doc = get_media_for_page_optimized(20, ["videos"])
         print(f"Found {len(items)} videos in the library.")
-        state.media_items = items
+        import json
+        from dataclasses import asdict
+
+        state.media_items_json = json.dumps(
+            [asdict(item) for item in items],
+            default=str,
+        )
         state.is_loading = False
         if not last_doc:
             state.has_more_items = False
@@ -78,7 +83,9 @@ def video_chooser_button(
         )
 
         new_items, last_doc = get_media_for_page_optimized(
-            20, ["videos"], start_after=last_doc_ref
+            20,
+            ["videos"],
+            start_after=last_doc_ref,
         )
         if new_items:
             state.media_items.extend(new_items)
@@ -101,20 +108,28 @@ def video_chooser_button(
     with me.content_button(on_click=open_dialog, type=button_type, key=key):
         with me.box(
             style=me.Style(
-                display="flex", flex_direction="row", gap=8, align_items="center"
-            )
+                display="flex",
+                flex_direction="row",
+                gap=8,
+                align_items="center",
+            ),
         ):
             me.icon("video_library")
             if button_label:
                 me.text(button_label)
 
     dialog_style = me.Style(
-        width="95vw", height="80vh", display="flex", flex_direction="column"
+        width="95vw",
+        height="80vh",
+        display="flex",
+        flex_direction="column",
     )
 
     with dialog(is_open=state.show_dialog, dialog_style=dialog_style):  # pylint: disable=E1129:not-context-manager
         with me.box(
-            style=me.Style(display="flex", flex_direction="column", gap=16, flex_grow=1)
+            style=me.Style(
+                display="flex", flex_direction="column", gap=16, flex_grow=1
+            ),
         ):
             me.text("Select a Video from Library", type="headline-6")
             with me.box(style=me.Style(flex_grow=1, overflow_y="auto")):
@@ -125,12 +140,45 @@ def video_chooser_button(
                             justify_content="center",
                             align_items="center",
                             height="100%",
-                        )
+                        ),
                     ):
                         me.progress_spinner()
                 else:
                     items_to_render = []
-                    for item in state.media_items:
+                    import json
+
+                    items_dicts = (
+                        json.loads(state.media_items_json)
+                        if state.media_items_json
+                        else []
+                    )
+                    media_items = []
+                    import datetime
+
+                    for d in items_dicts:
+                        valid_keys = MediaItem.__dataclass_fields__.keys()
+                        clean_d = {k: v for k, v in d.items() if k in valid_keys}
+                        if "timestamp" in clean_d and isinstance(
+                            clean_d["timestamp"],
+                            str,
+                        ):
+                            try:
+                                clean_d["timestamp"] = datetime.datetime.fromisoformat(
+                                    clean_d["timestamp"],
+                                )
+                            except ValueError:
+                                pass
+                        item = MediaItem(**clean_d)
+                    gcs_uri = (
+                        item.gcsuri
+                        if item.gcsuri
+                        else (item.gcs_uris[0] if item.gcs_uris else None)
+                    )
+                    from common.utils import create_display_url
+
+                    item.signed_url = create_display_url(gcs_uri) if gcs_uri else ""
+                    media_items.append(item)
+                    for item in media_items:
                         if item.gcs_uris:
                             for uri in item.gcs_uris:
                                 items_to_render.append({"uri": uri})
@@ -146,8 +194,10 @@ def video_chooser_button(
                     )
             with me.box(
                 style=me.Style(
-                    display="flex", justify_content="flex-end", margin=me.Margin(top=24)
-                )
+                    display="flex",
+                    justify_content="flex-end",
+                    margin=me.Margin(top=24),
+                ),
             ):
                 me.button(
                     "Cancel",

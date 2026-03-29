@@ -29,7 +29,7 @@ func DownloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	gcsOpCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
@@ -37,7 +37,7 @@ func DownloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
 	if err != nil {
 		return fmt.Errorf("Object(%q).NewReader: %w", objectName, err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	destDir := filepath.Dir(localDestPath)
 	if err := os.MkdirAll(destDir, 0755); err != nil {
@@ -48,7 +48,7 @@ func DownloadFromGCS(ctx context.Context, gcsURI, localDestPath string) error {
 	if err != nil {
 		return fmt.Errorf("os.Create: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := io.Copy(f, rc); err != nil {
 		return fmt.Errorf("io.Copy: %w", err)
@@ -67,7 +67,7 @@ func DownloadFromGCSAsBytes(ctx context.Context, gcsURI string) ([]byte, error) 
 	if err != nil {
 		return nil, fmt.Errorf("storage.NewClient: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	var rc *storage.Reader
 	var lastErr error
@@ -92,7 +92,7 @@ func DownloadFromGCSAsBytes(ctx context.Context, gcsURI string) ([]byte, error) 
 		return nil, fmt.Errorf("Object(%q).NewReader timed out after retries: %w", objectName, lastErr)
 	}
 	defer cancel()
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	data, err := io.ReadAll(rc)
 	if err != nil {
@@ -110,7 +110,7 @@ func UploadToGCS(ctx context.Context, bucketName, objectName, contentType string
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	obj := client.Bucket(bucketName).Object(objectName)
 	wc := obj.NewWriter(ctx)
@@ -148,7 +148,7 @@ func UploadToGCS(ctx context.Context, bucketName, objectName, contentType string
 	}
 
 	if _, err := wc.Write(data); err != nil {
-		wc.Close()
+		_ = wc.Close()
 		return fmt.Errorf("Writer.Write: %w", err)
 	}
 	if err := wc.Close(); err != nil {
