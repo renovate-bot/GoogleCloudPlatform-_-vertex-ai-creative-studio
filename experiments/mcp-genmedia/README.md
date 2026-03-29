@@ -14,6 +14,17 @@ Each server can be enabled and run separately, allowing flexibility for environm
 
 *   **AVTool** - for audio/video compositing and manipulation
 
+## 🛠️ Agent Skills
+
+We provide a set of expert **Agent Skills** that provide AI agents (like Gemini CLI or Antigravity) with deep domain knowledge on how to use these MCP tools effectively for complex workflows.
+
+*   `genmedia-producer`: Orchestrates multi-step workflows like podcast creation and storyboarding.
+*   `genmedia-video-editor`: Expertise in FFmpeg composition, image overlays, and GIF generation.
+*   `genmedia-audio-engineer`: Specialist in high-fidelity TTS synthesis and multi-track mixing.
+*   `genmedia-image-artist`: Expert in visual generation, prompt optimization, and collaborative refinement.
+
+See the [Agent Skills](./skills/README.md) directory for more information on how to link or install these skills.
+
 ## Installation
 
 **Install MCP Servers:** For detailed installation instructions, including an easy-to-use installer script, please refer to the [Go Implementations README](./mcp-genmedia-go/README.md).
