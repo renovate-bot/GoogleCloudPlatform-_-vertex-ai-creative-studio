@@ -39,7 +39,7 @@ func inferMimeTypeFromURI(uri string) string {
 }
 
 // parseCommonVideoParams extracts and validates video generation parameters from the request arguments.
-func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config) (string, string, string, string, int32, int32, bool, error) {
+func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config) (string, string, string, string, int32, int32, bool, string, error) {
 	// Model
 	modelInput, ok := args["model"].(string)
 	if !ok || modelInput == "" {
@@ -47,7 +47,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	}
 	canonicalName, found := common.ResolveVeoModel(modelInput)
 	if !found {
-		return "", "", "", "", 0, 0, false, fmt.Errorf("model '%s' is not a valid or supported model name", modelInput)
+		return "", "", "", "", 0, 0, false, "", fmt.Errorf("model '%s' is not a valid or supported model name", modelInput)
 	}
 	model := canonicalName
 	modelDetails := common.SupportedVeoModels[model]
@@ -95,7 +95,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 		for i, d := range modelDetails.SupportedDurations {
 			durationsStr[i] = fmt.Sprintf("%d", d)
 		}
-		return "", "", "", "", 0, 0, false, fmt.Errorf("duration '%d' is not supported by model %s. Supported durations are: [%s]", durationSecs, model, strings.Join(durationsStr, ", "))
+		return "", "", "", "", 0, 0, false, "", fmt.Errorf("duration '%d' is not supported by model %s. Supported durations are: [%s]", durationSecs, model, strings.Join(durationsStr, ", "))
 	}
 
 	// Aspect Ratio
@@ -111,7 +111,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 		}
 	}
 	if !validRatio {
-		return "", "", "", "", 0, 0, false, fmt.Errorf("aspect ratio '%s' is not supported by model %s", finalAspectRatio, model)
+		return "", "", "", "", 0, 0, false, "", fmt.Errorf("aspect ratio '%s' is not supported by model %s", finalAspectRatio, model)
 	}
 
 	// Generate Audio
@@ -121,8 +121,19 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	}
 
 	if generateAudio && !modelDetails.SupportsGenerateAudio {
-		return "", "", "", "", 0, 0, false, fmt.Errorf("generate_audio is set to true, but is not supported by model %s", model)
+		return "", "", "", "", 0, 0, false, "", fmt.Errorf("generate_audio is set to true, but is not supported by model %s", model)
+	}
+	
+	// Person Generation
+	personGeneration, _ := args["person_generation"].(string)
+	if personGeneration == "" {
+		personGeneration = "allow_adult"
+	}
+	
+	validPersonGeneration := personGeneration == "dont_allow" || personGeneration == "allow_adult"
+	if !validPersonGeneration {
+		return "", "", "", "", 0, 0, false, "", fmt.Errorf("person_generation '%s' is invalid. Supported values are 'dont_allow', 'allow_adult'", personGeneration)
 	}
 
-	return gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, nil
+	return gcsBucket, outputDir, model, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, nil
 }
