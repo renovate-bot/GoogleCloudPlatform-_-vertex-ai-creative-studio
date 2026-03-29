@@ -121,6 +121,10 @@ func main() {
 			mcp.DefaultBool(true),
 			mcp.Description("Optional. Generate audio for the video. Only supported by Veo 3 models. Defaults to true."),
 		),
+		mcp.WithString("person_generation",
+			mcp.DefaultString("allow_adult"),
+			mcp.Description("Whether to allow generating videos with people. Supported values: 'dont_allow', 'allow_adult'."),
+		),
 	}
 
 	var textToVideoToolParams []mcp.ToolOption

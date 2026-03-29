@@ -49,7 +49,7 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		prompt = strings.TrimSpace(promptArg)
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -90,6 +90,7 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		attribute.String("last_image_uri", lastImageURI),
 		attribute.String("prompt", prompt),
 		attribute.String("model", modelName),
+		attribute.String("person_generation", personGeneration),
 	)
 
 	mcpServer := server.ServerFromContext(ctx)
@@ -103,7 +104,7 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		log.Printf("Incoming first_last_to_video context was already canceled: %v", ctx.Err())
 		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
 	default:
-		log.Printf("Handling Veo first_last_to_video request: FirstImageURI=\"%s\", LastImageURI=\"%s\", Prompt=\"%s\", Model=%s", firstImageURI, lastImageURI, prompt, modelName)
+		log.Printf("Handling Veo first_last_to_video request: FirstImageURI=\"%s\", LastImageURI=\"%s\", Prompt=\"%s\", Model=%s, PersonGen=%s", firstImageURI, lastImageURI, prompt, modelName, personGeneration)
 	}
 
 	inputImage := &genai.Image{
@@ -112,10 +113,11 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 	}
 
 	config := &genai.GenerateVideosConfig{
-		NumberOfVideos:  numberOfVideos,
-		AspectRatio:     finalAspectRatio,
-		OutputGCSURI:    gcsBucket,
-		DurationSeconds: &durationSecs,
+		NumberOfVideos:   numberOfVideos,
+		AspectRatio:      finalAspectRatio,
+		OutputGCSURI:     gcsBucket,
+		DurationSeconds:  &durationSecs,
+		PersonGeneration: personGeneration,
 		LastFrame: &genai.Image{
 			GCSURI:   lastImageURI,
 			MIMEType: lastMimeType,
@@ -195,7 +197,7 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		})
 	}
 
-	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -209,6 +211,7 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		attribute.String("prompt", prompt),
 		attribute.String("model", modelName),
 		attribute.Int("num_reference_images", len(referenceImages)),
+		attribute.String("person_generation", personGeneration),
 	)
 
 	mcpServer := server.ServerFromContext(ctx)
@@ -222,15 +225,16 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		log.Printf("Incoming reference_to_video context was already canceled: %v", ctx.Err())
 		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
 	default:
-		log.Printf("Handling Veo reference_to_video request: Prompt=\"%s\", Model=%s, NumRefImages=%d", prompt, modelName, len(referenceImages))
+		log.Printf("Handling Veo reference_to_video request: Prompt=\"%s\", Model=%s, NumRefImages=%d, PersonGen=%s", prompt, modelName, len(referenceImages), personGeneration)
 	}
 
 	config := &genai.GenerateVideosConfig{
-		NumberOfVideos:  numberOfVideos,
-		AspectRatio:     finalAspectRatio,
-		OutputGCSURI:    gcsBucket,
-		DurationSeconds: &durationSecs,
-		ReferenceImages: referenceImages,
+		NumberOfVideos:   numberOfVideos,
+		AspectRatio:      finalAspectRatio,
+		OutputGCSURI:     gcsBucket,
+		DurationSeconds:  &durationSecs,
+		ReferenceImages:  referenceImages,
+		PersonGeneration: personGeneration,
 	}
 
 	if generateAudio {
