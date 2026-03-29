@@ -3,8 +3,10 @@
 ## 2026-03-28 (v3.2.0)
 
 *   **Feat:** Added `veo_first_last_to_video` tool to support First-Last Frame video generation modality in `mcp-veo-go`.
-*   **Feat:** Added `veo_reference_to_video` tool to support video generation with up to 3 reference images in `mcp-veo-go`.
+*   **Feat:** Added `veo_reference_to_video` tool (with `veo_ingredients_to_video` alias) to support video generation with up to 3 reference images in `mcp-veo-go`.
+*   **Feat:** Added optional `person_generation` parameter to all Veo tools (defaulting to `allow_adult`) to prevent silent filtering of humans.
 *   **Feat:** Registered Veo preview models (`veo-2.0-generate-exp`, `veo-2.0-generate-preview`, `veo-3.1-generate-preview`, `veo-3.1-fast-generate-preview`) and updated output constraints.
+*   **Fix:** Added explicit optional MIME type parameters (`first_mime_type`, `last_mime_type`, `reference_mime_types`) to new Veo modalities to prevent unsafe inference fallbacks.
 
 ## 2026-03-26 (v3.1.3)
 
