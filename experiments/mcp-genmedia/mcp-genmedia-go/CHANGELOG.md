@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-28 (v3.2.0)
+
+*   **Feat:** Added `veo_first_last_to_video` tool to support First-Last Frame video generation modality in `mcp-veo-go`.
+*   **Feat:** Added `veo_reference_to_video` tool to support video generation with up to 3 reference images in `mcp-veo-go`.
+*   **Feat:** Registered Veo preview models (`veo-2.0-generate-exp`, `veo-2.0-generate-preview`, `veo-3.1-generate-preview`, `veo-3.1-fast-generate-preview`) and updated output constraints.
+
 ## 2026-03-26 (v3.1.3)
 
 *   **Fix:** Added missing `mcp.Items` to `mcp.WithArray` definitions in `mcp-gemini-go`, `mcp-imagen-go`, and `mcp-avtool-go` to fix JSON Schema validation errors (HTTP 400 Bad Request) when used as Function Declarations in Vertex AI/Gemini API backends.
