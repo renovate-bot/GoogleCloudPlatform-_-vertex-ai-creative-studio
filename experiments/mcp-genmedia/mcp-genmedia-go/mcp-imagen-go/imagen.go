@@ -49,7 +49,7 @@ var (
 
 const (
 	serviceName = "mcp-imagen-go"
-	version     = "3.1.3" // Fix JSON Schema validation for arrays without items
+	version     = "3.2.0" // Synchronize release version
 )
 
 func init() {
