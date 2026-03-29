@@ -11,18 +11,24 @@ This directory contains a set of expert **Agent Skills** designed to provide AI 
 
 ## Installation & Usage
 
-### For Gemini CLI
+### For Gemini CLI (Remote)
 
-Gemini CLI can link to these skills directly from your workspace. Run the following command within your interactive session:
+You can install these skills directly from GitHub without cloning the repository:
+
+```bash
+# Install all skills in this directory
+gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills
+
+# Install a specific skill (e.g., Producer)
+gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-producer
+```
+
+### For Gemini CLI (Local)
+
+If you have already cloned the repository, Gemini CLI can link to these skills from your workspace. Run the following command within your interactive session:
 
 ```bash
 /skills link ./skills --scope workspace
-```
-
-Alternatively, you can install them globally:
-
-```bash
-gemini skills link /path/to/this/repo/experiments/mcp-genmedia/skills
 ```
 
 ### For Antigravity
