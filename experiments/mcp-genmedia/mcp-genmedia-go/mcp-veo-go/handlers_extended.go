@@ -59,13 +59,30 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		return mcp.NewToolResultError(fmt.Sprintf("Model %s does not support first-last video generation.", modelName)), nil
 	}
 
-	firstMimeType := inferMimeTypeFromURI(firstImageURI)
-	if firstMimeType == "" {
-		firstMimeType = "image/jpeg"
+	firstMimeType := ""
+	if mt, ok := request.GetArguments()["first_mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
+		firstMimeType = strings.ToLower(strings.TrimSpace(mt))
+		if firstMimeType != "image/jpeg" && firstMimeType != "image/png" {
+			return mcp.NewToolResultError(fmt.Sprintf("Unsupported first_mime_type '%s'. Please use 'image/jpeg' or 'image/png'.", firstMimeType)), nil
+		}
+	} else {
+		firstMimeType = inferMimeTypeFromURI(firstImageURI)
+		if firstMimeType == "" {
+			return mcp.NewToolResultError(fmt.Sprintf("MIME type for first image '%s' could not be inferred. Please specify 'first_mime_type' as 'image/jpeg' or 'image/png'.", firstImageURI)), nil
+		}
 	}
-	lastMimeType := inferMimeTypeFromURI(lastImageURI)
-	if lastMimeType == "" {
-		lastMimeType = "image/jpeg"
+
+	lastMimeType := ""
+	if mt, ok := request.GetArguments()["last_mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
+		lastMimeType = strings.ToLower(strings.TrimSpace(mt))
+		if lastMimeType != "image/jpeg" && lastMimeType != "image/png" {
+			return mcp.NewToolResultError(fmt.Sprintf("Unsupported last_mime_type '%s'. Please use 'image/jpeg' or 'image/png'.", lastMimeType)), nil
+		}
+	} else {
+		lastMimeType = inferMimeTypeFromURI(lastImageURI)
+		if lastMimeType == "" {
+			return mcp.NewToolResultError(fmt.Sprintf("MIME type for last image '%s' could not be inferred. Please specify 'last_mime_type' as 'image/jpeg' or 'image/png'.", lastImageURI)), nil
+		}
 	}
 
 	span.SetAttributes(
@@ -132,16 +149,41 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		return mcp.NewToolResultError("A maximum of 3 reference images are supported"), nil
 	}
 
+	var referenceMimeTypes []string
+	if mimeTypesRaw, ok := request.GetArguments()["reference_mime_types"].([]interface{}); ok {
+		if len(mimeTypesRaw) != len(referenceImageURIsRaw) {
+			return mcp.NewToolResultError(fmt.Sprintf("If reference_mime_types is provided, its length (%d) must match reference_image_uris length (%d)", len(mimeTypesRaw), len(referenceImageURIsRaw))), nil
+		}
+		for _, mtRaw := range mimeTypesRaw {
+			if mt, ok := mtRaw.(string); ok {
+				referenceMimeTypes = append(referenceMimeTypes, strings.ToLower(strings.TrimSpace(mt)))
+			} else {
+				return mcp.NewToolResultError("All elements in reference_mime_types must be strings"), nil
+			}
+		}
+	}
+
 	var referenceImages []*genai.VideoGenerationReferenceImage
-	for _, rawURI := range referenceImageURIsRaw {
+	for i, rawURI := range referenceImageURIsRaw {
 		uriStr, ok := rawURI.(string)
 		if !ok || !strings.HasPrefix(uriStr, "gs://") {
 			return mcp.NewToolResultError(fmt.Sprintf("Invalid reference image URI: %v. Must be a GCS URI starting with 'gs://'", rawURI)), nil
 		}
 
-		mimeType := inferMimeTypeFromURI(uriStr)
+		mimeType := ""
+		if len(referenceMimeTypes) > i {
+			mimeType = referenceMimeTypes[i]
+		}
+
 		if mimeType == "" {
-			mimeType = "image/jpeg"
+			mimeType = inferMimeTypeFromURI(uriStr)
+			if mimeType == "" {
+				return mcp.NewToolResultError(fmt.Sprintf("MIME type for reference image '%s' could not be inferred. Please provide 'reference_mime_types' array.", uriStr)), nil
+			}
+		}
+
+		if mimeType != "image/jpeg" && mimeType != "image/png" {
+			return mcp.NewToolResultError(fmt.Sprintf("Unsupported MIME type '%s' for reference image '%s'. Please use 'image/jpeg' or 'image/png'.", mimeType, uriStr)), nil
 		}
 
 		referenceImages = append(referenceImages, &genai.VideoGenerationReferenceImage{
