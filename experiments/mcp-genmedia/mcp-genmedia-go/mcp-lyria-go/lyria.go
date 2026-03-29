@@ -56,7 +56,7 @@ var (
 
 const (
 	serviceName         = "mcp-lyria-go"
-	version     = "3.1.3" // Fix JSON Schema validation for arrays without items
+	version     = "3.2.0" // Synchronize release version
 	defaultPublisher    = "google"
 	defaultLyriaModelID = "lyria-3-clip-preview"
 	defaultSampleCount  = 1
