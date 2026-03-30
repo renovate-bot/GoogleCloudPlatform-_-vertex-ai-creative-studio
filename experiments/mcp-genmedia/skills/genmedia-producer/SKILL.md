@@ -1,7 +1,7 @@
 ---
 name: genmedia-producer
 description: Expert media production assistant. Use when requested to help with storyboarding, podcast creation, audio assembly, or complex multi-step media workflows using the GenMedia MCP servers (Veo, Lyria, Gemini TTS, NanoBanana).
-allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_lyria_lyria_generate_music mcp_gemini-multimodal_gemini_audio_tts mcp_nanobanana_nanobanana_image_generation mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_get_media_info mcp_avtool_ffmpeg_combine_audio_and_video
+allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_veo_veo_first_last_to_video mcp_veo_veo_ingredients_to_video mcp_lyria_lyria_generate_music mcp_gemini-multimodal_gemini_audio_tts mcp_nanobanana_nanobanana_image_generation mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_get_media_info mcp_avtool_ffmpeg_combine_audio_and_video
 metadata:
   veo_prompting_guide: https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-veo-3-1?e=48754805
 ---
@@ -23,6 +23,7 @@ For video >8 seconds, construct a scene-by-scene narrative that can be segmented
 ## Veo Video Generation (Veo 3.1)
 - Use the **Five-Part Formula** for prompts: Cinematography, Subject, Action, Context, and Style.
 - **Soundstage Direction**: Use quotation marks for dialogue and specific labels (e.g., `[loud thunder]`) for sound effects.
+- **Advanced Modalities**: Use `veo_first_last_to_video` for transitions and `veo_ingredients_to_video` for character/style consistency across scenes.
 - If a request times out, retry once. If it fails again, reduce the `duration` parameter and inform the user.
 - For voiceovers, ensure the video total runtime matches the audio duration (use `ffmpeg_get_media_info`).
 - The `bucket` parameter must be a full GCS URI (`gs://...`).
