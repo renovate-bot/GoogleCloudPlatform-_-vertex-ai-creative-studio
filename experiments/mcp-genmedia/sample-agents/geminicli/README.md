@@ -178,17 +178,38 @@ If you only want a subset of the GenMedia tools, we have provided partial config
 - **Images Only**: `gemini extensions install ./sample_extensions/google-genmedia-images` (Installs `nanobanana` and `imagen`)
 - **Video Only**: `gemini extensions install ./sample_extensions/google-genmedia-video` (Installs `veo` and `avtool`)
 
-### Bundled Producer Skill & Commands
+### 🛠️ Using Expert Agent Skills
 
-The `google-genmedia` extension now comes with a bundled **Agent Skill** and **Custom Slash Commands**. 
+We have uplifted our expert media workflows into a dedicated `skills/` directory. These skills provide Gemini CLI with deep domain expertise for audio engineering, video editing, and visual arts.
 
-Once installed, you can activate the expert media production skill by typing:
-```text
-/skill producer
+#### 1. Remote Installation (Direct from GitHub)
+You can install these skills directly from this repository without cloning it:
+
+```bash
+# Install the high-level Producer skill
+gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-producer
+
+# Install the Video Editor skill
+gemini skills install https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio.git --path experiments/mcp-genmedia/skills/genmedia-video-editor
 ```
-This primes the Gemini CLI with expert instructions on handling `ffmpeg` concat filters, podcast storyboarding, and Veo timeout recovery.
 
-You also gain access to bundled workflows via custom commands:
+#### 2. Local Linking (Workspace)
+If you have already cloned the repository, you can link the entire skills directory to your current workspace:
+
+```bash
+/skills link ../../skills --scope workspace
+```
+
+#### 3. Available Skills
+Once linked or installed, Gemini CLI can automatically activate these skills when relevant:
+
+- `genmedia-producer`: The orchestrator for complex multi-step media workflows (podcasts, storyboards).
+- `genmedia-video-editor`: Expert in FFmpeg composition, overlays, and GIF generation.
+- `genmedia-audio-engineer`: Specialist in TTS synthesis, music generation, and multi-track mixing.
+- `genmedia-image-artist`: Expert in high-fidelity visual generation and prompt optimization.
+
+#### 4. Example Interaction
+Once the `genmedia-producer` skill is active, you gain access to expert workflows:
 - `/producer:storyboard "A futuristic city"` -> Automatically generates a structured 5-shot markdown storyboard.
 - `/producer:podcast "The future of AI"` -> Initiates the multi-voice Chirp 3 HD audio assembly workflow.
 

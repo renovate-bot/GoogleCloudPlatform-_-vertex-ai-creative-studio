@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "3.1.3" // Fix JSON Schema validation for arrays without items
+	version     = "3.2.0" // Add first-last and reference image to video generation modalities
 )
 
 // init handles command-line flags and initial logging setup.
@@ -121,6 +121,10 @@ func main() {
 			mcp.DefaultBool(true),
 			mcp.Description("Optional. Generate audio for the video. Only supported by Veo 3 models. Defaults to true."),
 		),
+		mcp.WithString("person_generation",
+			mcp.DefaultString("allow_adult"),
+			mcp.Description("Whether to allow generating videos with people. Supported values: 'dont_allow', 'allow_adult'."),
+		),
 	}
 
 	var textToVideoToolParams []mcp.ToolOption
@@ -161,6 +165,70 @@ func main() {
 	)
 	s.AddTool(imageToVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return veoImageToVideoHandler(genAIClient, ctx, request)
+	})
+
+	var firstLastToVideoToolParams []mcp.ToolOption
+	firstLastToVideoToolParams = append(firstLastToVideoToolParams,
+		mcp.WithDescription("Generate a video using a first and last frame image using Veo. Video is saved to GCS and optionally downloaded locally. Supported image MIME types: image/jpeg, image/png."),
+		mcp.WithString("first_image_uri",
+			mcp.Required(),
+			mcp.Description("GCS URI of the first input image (e.g., gs://your-bucket/first-image.png)."),
+		),
+		mcp.WithString("first_mime_type",
+			mcp.Description("MIME type of the first image. Supported types are 'image/jpeg' and 'image/png'. If not provided, inferred from the first_image_uri extension."),
+		),
+		mcp.WithString("last_image_uri",
+			mcp.Required(),
+			mcp.Description("GCS URI of the last input image (e.g., gs://your-bucket/last-image.png)."),
+		),
+		mcp.WithString("last_mime_type",
+			mcp.Description("MIME type of the last image. Supported types are 'image/jpeg' and 'image/png'. If not provided, inferred from the last_image_uri extension."),
+		),
+		mcp.WithString("prompt",
+			mcp.Description("Optional text prompt to guide video generation."),
+		),
+	)
+	firstLastToVideoToolParams = append(firstLastToVideoToolParams, commonVideoParams...)
+
+	firstLastToVideoTool := mcp.NewTool("veo_first_last_to_video",
+		firstLastToVideoToolParams...,
+	)
+	s.AddTool(firstLastToVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return veoFirstLastToVideoHandler(genAIClient, ctx, request)
+	})
+
+	var referenceToVideoToolParams []mcp.ToolOption
+	referenceToVideoToolParams = append(referenceToVideoToolParams,
+		mcp.WithDescription("Generate a video using reference images (up to 3) and a text prompt using Veo. Video is saved to GCS and optionally downloaded locally. Supported image MIME types: image/jpeg, image/png."),
+		mcp.WithString("prompt",
+			mcp.Required(),
+			mcp.Description("Text prompt for video generation (Required when using reference images)."),
+		),
+		mcp.WithArray("reference_image_uris",
+			mcp.Required(),
+			mcp.Description("Array of up to 3 GCS URIs of input reference images (e.g., [\"gs://your-bucket/ref1.png\"])."),
+			mcp.WithStringItems(),
+		),
+		mcp.WithArray("reference_mime_types",
+			mcp.Description("Optional array of MIME types corresponding to reference_image_uris. If provided, must match the length of URIs. If not provided, inferred from extensions."),
+			mcp.WithStringItems(),
+		),
+	)
+	referenceToVideoToolParams = append(referenceToVideoToolParams, commonVideoParams...)
+
+	referenceToVideoTool := mcp.NewTool("veo_reference_to_video",
+		referenceToVideoToolParams...,
+	)
+	s.AddTool(referenceToVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return veoReferenceToVideoHandler(genAIClient, ctx, request)
+	})
+
+	// Alias for reference to video
+	ingredientsToVideoTool := mcp.NewTool("veo_ingredients_to_video",
+		referenceToVideoToolParams...,
+	)
+	s.AddTool(ingredientsToVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return veoReferenceToVideoHandler(genAIClient, ctx, request)
 	})
 
 	s.AddPrompt(mcp.NewPrompt("generate-video",
