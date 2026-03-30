@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -44,6 +45,20 @@ func LoadConfig() *Config {
 		GenmediaBucket: genmediaBucket,
 		ApiEndpoint:    os.Getenv("VERTEX_API_ENDPOINT"), // Use os.Getenv for optional value
 	}
+}
+
+// GetGCSDownloadTimeout returns the timeout duration for GCS download operations.
+// It reads from the GCS_DOWNLOAD_TIMEOUT environment variable, which accepts
+// Go duration strings (e.g. "30s", "5m", "2m30s"). If the variable is not set
+// or contains an invalid value, it defaults to 5 minutes.
+func GetGCSDownloadTimeout() time.Duration {
+	if v := os.Getenv("GCS_DOWNLOAD_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+		log.Printf("Invalid GCS_DOWNLOAD_TIMEOUT value %q, using default of 5m", v)
+	}
+	return 5 * time.Minute
 }
 
 // GetEnv retrieves an environment variable by its key.
