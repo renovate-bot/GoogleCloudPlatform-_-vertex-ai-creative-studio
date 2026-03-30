@@ -1,7 +1,7 @@
 ---
 name: genmedia-video-editor
 description: Expert in video composition, editing, and format conversion. Use when the user wants to generate high-quality video, overlay images on video, concatenate clips, create GIFs, or sync audio to video using mcp-avtool-go and mcp-veo-go.
-allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_avtool_ffmpeg_overlay_image_on_video mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_video_to_gif mcp_avtool_ffmpeg_combine_audio_and_video mcp_avtool_ffmpeg_get_media_info
+allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_veo_veo_first_last_to_video mcp_veo_veo_ingredients_to_video mcp_avtool_ffmpeg_overlay_image_on_video mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_video_to_gif mcp_avtool_ffmpeg_combine_audio_and_video mcp_avtool_ffmpeg_get_media_info
 metadata:
   veo_prompting_guide: https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-veo-3-1?e=48754805
 ---
@@ -17,7 +17,9 @@ When generating video, use the [Veo 3.1 Prompting Guide](https://cloud.google.co
 - **Five-Part Formula**: Combine **Cinematography** (e.g., "high-angle long shot"), **Subject**, **Action**, **Context** (e.g., "Parisian cafe at dusk"), and **Style** (e.g., "vintage 16mm film").
 - **Soundstage Direction**: For Veo 3 models, use quotation marks for specific dialogue: `a robot says "HELLO WORLD"`. Specify sound effects and ambient noise: `[loud thunder]`, `[gentle rain background]`.
 - **Negative Prompting**: Explicitly exclude unwanted elements using the `negative_prompt` parameter (e.g., "blurry", "static", "distorted faces").
-- **Character & Style Consistency**: Use `veo_i2v` with reference "ingredients" (character sheets, style references) to maintain visual consistency across multi-shot sequences.
+- **Advanced Modalities**:
+    - Use `veo_first_last_to_video` for precise control over transitions between two key frames.
+    - Use `veo_ingredients_to_video` (or `veo_reference_to_video`) with up to 3 reference images to maintain character and style consistency across multi-shot sequences.
 
 ### Image-on-Video Overlay
 When placing logos, watermarks, or static elements on a video:
