@@ -1,7 +1,9 @@
 ---
 name: genmedia-audio-engineer
-description: Expert in audio synthesis, music generation, and mixing. Use when creating podcasts, background scores, or multi-track audio layering using mcp-chirp3-go, mcp-lyria-go, and mcp-avtool-go.
-allowed-tools: mcp_chirp3-hd_chirp_tts mcp_lyria_lyria_generate_music mcp_avtool_ffmpeg_layer_audio_files mcp_avtool_ffmpeg_adjust_volume mcp_avtool_ffmpeg_convert_audio_wav_to_mp3
+description: Expert in audio synthesis, music generation, and mixing. Use when creating podcasts, background scores, or multi-track audio layering using mcp-chirp3-go, mcp-lyria-go, mcp-gemini-go, mcp-nanobanana-go, and mcp-avtool-go.
+allowed-tools: mcp_chirp3-hd_list_chirp_voices mcp_chirp3-hd_chirp_tts mcp_lyria_lyria_generate_music mcp_avtool_ffmpeg_layer_audio_files mcp_avtool_ffmpeg_adjust_volume mcp_avtool_ffmpeg_convert_audio_wav_to_mp3 mcp_avtool_ffmpeg_get_media_info mcp_avtool_ffmpeg_concatenate_media_files mcp_gemini-multimodal_gemini_audio_tts mcp_gemini-multimodal_list_gemini_voices mcp_nanobanana_nanobanana_image_generation
+metadata:
+  lyria_prompt_guide: https://deepmind.google/models/lyria/prompt-guide/
 ---
 
 # GenMedia Audio Engineer Skill
@@ -11,14 +13,24 @@ You are a specialized audio engineer. Your expertise lies in high-fidelity speec
 ## Core Workflows
 
 ### Podcast and Dialogue Generation
-1. Use `list_chirp_voices` to find a suitable persona.
-2. For long scripts, use `chirp_tts` in segments (<5000 bytes).
-3. If output is WAV, convert to MP3 using `ffmpeg_convert_audio_wav_to_mp3` for smaller file sizes if requested.
+**Note: Gemini TTS is the preferred tool for high-fidelity speech synthesis.**
+
+1. Use `list_gemini_voices` to explore available personas.
+2. Use `gemini_audio_tts` for core synthesis. It supports granular stylistic control via the `prompt` parameter (e.g., "warm, upbeat narrator voice").
+3. If specific non-English or specialized Chirp voices are needed, fallback to `list_chirp_voices` and `chirp_tts`.
+4. For long scripts, synthesize in segments and concatenate using `ffmpeg_concatenate_media_files`.
+5. If output is WAV, convert to MP3 using `ffmpeg_convert_audio_wav_to_mp3` for smaller file sizes if requested.
 
 ### Soundtrack and Bumper Creation
-- Use `lyria_generate_music` for atmospheric or thematic tracks.
-- Specify duration in the prompt (e.g., "10 second upbeat synth-pop intro").
-- Use `lyria-3-clip-preview` for short snippets and `lyria-3-pro-preview` for full tracks.
+Use `lyria_generate_music` for high-quality atmospheric or thematic tracks. For Lyria 3, follow the [Lyria 3 Prompt Guide](https://deepmind.google/models/lyria/prompt-guide/) for best results. Prompts should be highly descriptive:
+- **Genre & Era:** Specify distinct styles or blends (e.g., "90s boom-bap hip-hop" or "K-pop with a 60s Motown edge").
+- **Tempo & Dynamics:** Describe the energy and progression (e.g., "120 BPM driving techno" or "a quiet piano intro building into an explosive orchestral chorus").
+- **Instruments:** List specific instruments to guide the arrangement (e.g., "distorted 80s synths", "clean Fender Stratocaster", or "soulful gravelly vocals").
+- **Vocals & Lyrics:** 
+    - Use the `Lyrics:` prefix for custom lyrics.
+    - Format backing vocals in round brackets: `Lyrics: Let's go (go)`.
+    - Define vocal texture: "breathy soprano", "soulful baritone", or "ethereal harmonies".
+- **Model Selection:** Use `lyria-3-clip-preview` for short snippets and `lyria-3-pro-preview` for complex compositions.
 
 ### Multi-track Mixing
 When layering voiceover with background music:
