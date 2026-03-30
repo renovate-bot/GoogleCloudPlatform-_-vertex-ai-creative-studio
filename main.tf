@@ -17,10 +17,10 @@
 terraform {
   required_providers {
     google = {
-      version = "~> 6.49"
+      version = "~> 7.0"
     }
     google-beta = {
-      version = "~> 6.49"
+      version = "~> 7.0"
     }
   }
 }
@@ -405,7 +405,7 @@ resource "google_project_iam_member" "build_logs_writer" {
 
 module "source_bucket" {
   source     = "terraform-google-modules/cloud-storage/google"
-  version    = "~>11.0"
+  version    = "~> 12.0"
   project_id = var.project_id
   names      = ["run-resources-${var.project_id}-${var.region}"]
   location   = var.region
