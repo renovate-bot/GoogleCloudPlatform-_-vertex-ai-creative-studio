@@ -10,6 +10,8 @@ The `config.go` file provides a way to load configuration from environment varia
 * `Location`: The Google Cloud location.
 * `GenmediaBucket`: The Google Cloud Storage bucket for general media.
 
+Additionally, the `GetGCSDownloadTimeout` function reads the `GCS_DOWNLOAD_TIMEOUT` environment variable to configure the timeout for GCS download operations. It accepts Go duration strings (e.g. `"30s"`, `"5m"`) and defaults to `5m`.
+
 ## Model Configuration
 
 The `models.go` file provides a centralized, configuration-driven system for managing model-specific parameters and constraints for the various generative media tools.
