@@ -3,6 +3,7 @@ package common
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,4 +40,42 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 	})
+}
+
+func TestGetGCSDownloadTimeout(t *testing.T) {
+	// Save original env var to restore it later
+	originalValue, wasSet := os.LookupEnv("GCS_DOWNLOAD_TIMEOUT")
+	defer func() {
+		if wasSet {
+			os.Setenv("GCS_DOWNLOAD_TIMEOUT", originalValue)
+		} else {
+			os.Unsetenv("GCS_DOWNLOAD_TIMEOUT")
+		}
+	}()
+
+	tests := []struct {
+		name     string
+		envValue string
+		expected time.Duration
+	}{
+		{"default_fallback", "", 5 * time.Minute},
+		{"valid_seconds", "30s", 30 * time.Second},
+		{"valid_minutes", "2m", 2 * time.Minute},
+		{"valid_mixed", "2m30s", 2*time.Minute + 30*time.Second},
+		{"invalid_fallback", "invalid_string", 5 * time.Minute},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.envValue == "" {
+				os.Unsetenv("GCS_DOWNLOAD_TIMEOUT")
+			} else {
+				os.Setenv("GCS_DOWNLOAD_TIMEOUT", tt.envValue)
+			}
+			got := GetGCSDownloadTimeout()
+			if got != tt.expected {
+				t.Errorf("GetGCSDownloadTimeout() = %v, want %v (env: %q)", got, tt.expected, tt.envValue)
+			}
+		})
+	}
 }
