@@ -22,11 +22,11 @@ cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.4.6
     # via requests
-click==8.3.0
+click==8.3.1
     # via
     #   google-adk
     #   uvicorn
-cloudpickle==3.1.1
+cloudpickle==3.1.2
     # via google-cloud-aiplatform
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
@@ -246,7 +246,7 @@ python-multipart==0.0.22
     # via mcp
 pyyaml==6.0.3
     # via google-adk
-requests==2.32.5
+requests==2.33.0
     # via
     #   google-api-core
     #   google-cloud-bigquery

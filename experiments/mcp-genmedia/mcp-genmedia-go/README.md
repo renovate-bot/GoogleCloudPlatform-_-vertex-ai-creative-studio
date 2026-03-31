@@ -103,6 +103,12 @@ Either of these should result in a JSON response with a list of tools, similar t
 }
 ```
 
+## 🛠️ Agent Skills
+
+To get the most out of these servers, we recommend using our expert **Agent Skills**. These skills provide AI agents with the procedural knowledge needed to orchestrate complex workflows like podcast generation or video composition.
+
+See the [Agent Skills](../skills/README.md) directory for installation instructions for Gemini CLI and Antigravity.
+
 ## Using Prompts
 
 In addition to tools, the MCP servers now support prompts, providing a more interactive and user-friendly way to access their core functionality. Prompts guide the user through a task, asking for required information if it's not provided.
