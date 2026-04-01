@@ -5,6 +5,7 @@
 *   **Feat:** Introduce `ALLOW_UNSAFE_MODELS` environment variable to bypass strict model validation for experimental testing.
 *   **Fix:** Enforce correct regional routing and fallback logic for Chirp3-HD based on the `LOCATION` parameter.
 *   **Feat:** Implement optional header capture (`ENABLE_OPTIONAL_HEADER_CAPTURE`) to surface `x-goog-sherlog-link` debug links for Gemini, Imagen, NanoBanana, and Lyria.
+*   **Feat:** Allow per-server LOCATION overrides (e.g., `CHIRP3_LOCATION`, `VEO_LOCATION`) to isolate server environments and support mixed-region deployments.
 
 ## 2026-03-30 (v3.3.0)
 
