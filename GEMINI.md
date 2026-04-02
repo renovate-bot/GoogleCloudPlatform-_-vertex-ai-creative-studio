@@ -68,3 +68,17 @@ Instead, you MUST:
 
 **CI Verification Scripts (mcptools):**
 If a Go application initializes network-dependent clients (like Google Cloud `genai.NewClient` or `texttospeech.NewClient`) on startup, it will hang indefinitely inside headless CI runners that lack ADC (Application Default Credentials). To allow tools like `mcptools` to verify the STDIO handshake in CI, you MUST make global client initialization non-fatal during `main()` and defer the strict credential check until the client is actually invoked inside the tool handler.
+
+## 9. Linting and Code Quality
+
+### Selective Linting
+*   **Targeted Execution:** To avoid massive, unintended changes across the entire project, always run linting and formatting tools (e.g., `ruff`, `black`, `isort`) on **only the files you have modified**.
+*   **Command Pattern:** Prefer `ruff check --fix path/to/file.py` and `ruff format path/to/file.py` over running them on the project root (`.`).
+
+### Mesop Import Protection
+*   **Critical Imports:** In Mesop applications, imports in `main.py` (and other entry points) are often required for route registration via decorators (e.g., `@me.page`). Linters may incorrectly flag these as unused.
+*   **Preservation:** ALWAYS preserve these imports by adding a `# noqa: F401` comment to the end of the import line. NEVER allow a linter to remove them, as this will break the application's routing.
+
+### Transitive Dependency Awareness
+*   **OpenSSL Errors:** If you encounter `ModuleNotFoundError: No module named 'OpenSSL'`, this usually indicates that `pyOpenSSL` is missing. 
+*   **Resolution:** While not always directly imported, `pyOpenSSL` is a common transitive dependency for secure transport in Google SDKs and `google-auth`. Add `pyOpenSSL` to `pyproject.toml` and run `uv sync` to resolve the issue.
