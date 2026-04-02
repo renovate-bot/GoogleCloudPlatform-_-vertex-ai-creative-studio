@@ -209,6 +209,23 @@ VEO_MODELS: List[VeoModelConfig] = [
             ),
         },
     ),
+    VeoModelConfig(
+        version_id="3.1-lite",
+        model_name="veo-3.1-lite-generate-001",
+        display_name="Veo 3.1 Lite",
+        supported_modes=["t2v", "i2v", "interpolation"],
+        supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["720p", "1080p"],
+        min_duration=4,
+        max_duration=8,
+        default_duration=8,
+        max_samples=4,
+        default_samples=1,
+        supports_prompt_enhancement=True,
+        requires_prompt_enhancement=True,
+        default_prompt_enhancement=True,
+        supported_durations=[4, 6, 8],
+    ),
 ]
 
 # Helper function to easily find a model's config by its version_id.
