@@ -15,8 +15,7 @@
 
 import json
 import time
-from dataclasses import dataclass, field
-from typing import List, Optional
+from dataclasses import field
 
 import mesop as me
 
@@ -27,14 +26,12 @@ from common.utils import create_display_url
 from components.copy_button.copy_button import copy_button
 from components.dialog import dialog
 from components.header import header
-from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.prompt_template_form_dialog.prompt_template_form_dialog import (
     prompt_template_form_dialog,
 )
-from components.snackbar import snackbar
 from components.svg_icon.svg_icon import svg_icon
 from components.video_thumbnail.video_thumbnail import video_thumbnail
 from config.default import Default as cfg
@@ -58,7 +55,7 @@ class PageState:
     show_snackbar: bool = False
     snackbar_message: str = ""
     previous_media_item_id: str | None = None
-    prompt_templates: list[dict] = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
+    prompt_templates_json: str = "[]"
     selected_model: str = ""
 
     info_dialog_open: bool = False
@@ -67,7 +64,7 @@ class PageState:
     show_save_template_dialog: bool = False
 
 
-with open("config/about_content.json", "r") as f:
+with open("config/about_content.json") as f:
     about_content = json.load(f)
     WRITERS_WORKSHOP_INFO = {
         "title": "Gemini Writers Workshop",
@@ -93,11 +90,11 @@ def on_load(e: me.LoadEvent):
     state = me.state(PageState)
     if not state.selected_model:
         state.selected_model = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
-    if not state.prompt_templates:
+    if state.prompt_templates_json == "[]":
         templates = prompt_template_service.load_templates(
-            config_path="config/text_prompt_templates.json", template_type="text"
+            config_path="config/text_prompt_templates.json", template_type="text",
         )
-        state.prompt_templates = [t.model_dump() for t in templates]
+        state.prompt_templates_json = json.dumps([t.model_dump() for t in templates], default=str)
     yield
 
 
@@ -178,10 +175,10 @@ def on_save_template(label: str, key: str, category: str, prompt: str):
         # Reload templates
 
         templates = prompt_template_service.load_templates(
-            config_path="config/text_prompt_templates.json", template_type="text"
+            config_path="config/text_prompt_templates.json", template_type="text",
         )
 
-        state.prompt_templates = [t.model_dump() for t in templates]
+        state.prompt_templates_json = json.dumps([t.model_dump() for t in templates], default=str)
 
         # Close dialog
 
@@ -210,10 +207,12 @@ CHIP_STYLE = me.Style(
 @me.component
 def _prompt_templates_ui():
     state = me.state(PageState)
+    print('DUMPING STATE:', repr(state.prompt_templates_json))
+    prompt_templates = json.loads(state.prompt_templates_json)
 
     # Group templates by category (case-insensitive)
     categories = {}
-    for t in state.prompt_templates:
+    for t in prompt_templates:
         category_key = t["category"].lower()
         if category_key not in categories:
             categories[category_key] = []
@@ -228,7 +227,7 @@ def _prompt_templates_ui():
             flex_direction="column",
             gap=8,
             margin=me.Margin(top=16),
-        )
+        ),
     ):
         me.text("Prompt Templates", style=me.Style(font_weight="bold"))
         for category_key, templates in categories.items():
@@ -249,7 +248,7 @@ def _prompt_templates_ui():
                     align_items="center",
                     gap=8,
                     flex_wrap="wrap",
-                )
+                ),
             ):
                 for template in templates:
                     me.button(
@@ -302,8 +301,8 @@ def gemini_writers_workshop_page_content():
         me.text(state.error_message, style=me.Style(margin=me.Margin(top=16)))
         with me.box(
             style=me.Style(
-                display="flex", justify_content="flex-end", margin=me.Margin(top=24)
-            )
+                display="flex", justify_content="flex-end", margin=me.Margin(top=24),
+            ),
         ):
             me.button("Close", on_click=on_close_error_dialog, type="flat")
 
@@ -322,7 +321,7 @@ def gemini_writers_workshop_page_content():
                     background=me.theme_var("surface-container-lowest"),
                     padding=me.Padding.all(16),
                     border_radius=12,
-                )
+                ),
             ):
                 me.text(
                     "Type a prompt and optionally add media assets",
@@ -361,7 +360,7 @@ def gemini_writers_workshop_page_content():
                     )
                 else:
                     me.text(f"Model: {cfg().MODEL_ID}")
-                
+
                 with me.box(
                     style=me.Style(
                         display="flex",
@@ -369,7 +368,7 @@ def gemini_writers_workshop_page_content():
                         align_items="center",
                         gap=16,
                         margin=me.Margin(top=16),
-                    )
+                    ),
                 ):
                     _generate_text_button()
                     with me.content_button(on_click=on_clear_click, type="icon"):
@@ -402,7 +401,7 @@ def gemini_writers_workshop_page_content():
                     border_radius=12,
                     padding=me.Padding.all(16),
                     min_height=400,
-                )
+                ),
             ):
                 if me.state(PageState).generated_text:
                     with me.box(
@@ -411,7 +410,7 @@ def gemini_writers_workshop_page_content():
                             flex_direction="row",
                             justify_content="space-between",
                             align_items="center",
-                        )
+                        ),
                     ):
                         me.text("Generated Text", type="headline-6")
                         copy_button(text_to_copy=me.state(PageState).generated_text)
@@ -427,7 +426,7 @@ def gemini_writers_workshop_page_content():
                             align_items="center",
                             justify_content="center",
                             height="100%",
-                        )
+                        ),
                     ):
                         with me.box(
                             style=me.Style(
@@ -435,7 +434,7 @@ def gemini_writers_workshop_page_content():
                                 width=128,
                                 height=128,
                                 color=me.theme_var("on-surface-variant"),
-                            )
+                            ),
                         ):
                             svg_icon(icon_name="spark")
 
@@ -451,7 +450,7 @@ def _media_upload_slots():
             gap=10,
             margin=me.Margin(bottom=16),
             justify_content="center",
-        )
+        ),
     ):
         for i in range(MAX_MEDIA_ASSETS):
             if i < len(state.uploaded_media_display_urls):
@@ -486,7 +485,7 @@ def _media_upload_slots():
                                 display="flex",
                                 align_items="center",
                                 justify_content="center",
-                            )
+                            ),
                         ):
                             me.icon("article")
                     else:
@@ -498,7 +497,7 @@ def _media_upload_slots():
                                 display="flex",
                                 align_items="center",
                                 justify_content="center",
-                            )
+                            ),
                         ):
                             me.icon("article")
 
@@ -540,7 +539,7 @@ def _uploader_placeholder(key_prefix: str):
                     width=1,
                     style="dashed",
                     color=me.theme_var("outline"),
-                )
+                ),
             ),
             border_radius=8,
             display="flex",
@@ -548,7 +547,7 @@ def _uploader_placeholder(key_prefix: str):
             align_items="center",
             justify_content="center",
             gap=8,
-        )
+        ),
     ):
         me.uploader(
             label="Upload Media",
@@ -579,11 +578,11 @@ def _empty_placeholder():
             height=100,
             width=100,
             border=me.Border.all(
-                me.BorderSide(width=1, style="dashed", color=me.theme_var("outline"))
+                me.BorderSide(width=1, style="dashed", color=me.theme_var("outline")),
             ),
             border_radius=8,
             opacity=0.5,
-        )
+        ),
     )
 
 
@@ -599,7 +598,7 @@ def _generate_text_button():
                     flex_direction="row",
                     align_items="center",
                     gap=8,
-                )
+                ),
             ):
                 me.progress_spinner(diameter=20, stroke_width=3)
                 me.text("Generating Text...")
@@ -706,7 +705,7 @@ def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
 
     try:
         with track_model_call(
-            model_name=model_id, prompt_length=len(base_prompt)
+            model_name=model_id, prompt_length=len(base_prompt),
         ):
             text_result, execution_time = generate_text(
                 prompt=base_prompt,

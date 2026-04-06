@@ -53,7 +53,6 @@ Settings for Imagen models, including specialized versions for editing and produ
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`MODEL_IMAGEN_PRODUCT_RECONTEXT`** | `imagen-product-recontext-preview-06-30` | Model used for "Product Recontextualization" features. |
 | **`IMAGEN_GENERATED_SUBFOLDER`** | `generated_images` | Subfolder in the GCS bucket where generated images are saved. |
 | **`IMAGEN_EDITED_SUBFOLDER`** | `edited_images` | Subfolder for images resulting from editing operations. |
 
