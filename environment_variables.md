@@ -31,6 +31,8 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-2.5-flash` | The model used specifically for analyzing audio content. |
 | **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
+| **`GEMINI_CRITIQUE_MODEL_ID`** | `gemini-3-flash-preview` | The specific model used for the Imagen critique functionality. |
+| **`GEMINI_CRITIQUE_LOCATION`** | `global` | The region for the Gemini image critique model. |
 
 ## 🎥 Veo (Video Generation)
 Configuration for the Veo video generation models.
@@ -119,6 +121,8 @@ These variables are exposed in `variables.tf` and directly map to environment va
 | `project_id` | `PROJECT_ID` | *(Required)* |
 | `region` | `LOCATION` | `us-central1` |
 | `model_id` | `MODEL_ID` | `gemini-2.5-flash` |
+| `gemini_critique_model_id` | `GEMINI_CRITIQUE_MODEL_ID` | `gemini-3-flash-preview` |
+| `gemini_critique_location` | `GEMINI_CRITIQUE_LOCATION` | `global` |
 | `veo_model_id` | `VEO_MODEL_ID` | `veo-3.1-fast-generate-001` |
 | `veo_exp_model_id` | `VEO_EXP_MODEL_ID` | `veo-3.1-generate-001` |
 | `lyria_model_id` | `LYRIA_MODEL_VERSION` | `lyria-002` |
