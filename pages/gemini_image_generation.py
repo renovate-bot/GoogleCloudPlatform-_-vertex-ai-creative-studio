@@ -1185,22 +1185,20 @@ def on_load(e: me.LoadEvent):
     state = me.state(PageState)
     # This flag ensures the logic runs only once on initial page load,
     # not on subsequent yields or interactions.
-    if not state.initial_load_complete:
-        image_uri = me.query_params.get("image_uri")
-        if image_uri:
-            final_gcs_uri = image_uri
-            # If a signed URL is passed, convert it back to a GCS URI.
-            if image_uri.startswith("https://"):
-                # Strip the query parameters from the signed URL.
-                base_url = image_uri.split("?")[0]
-                final_gcs_uri = https_url_to_gcs_uri(base_url)
+    image_uri = me.query_params.get("image_uri")
+    if image_uri:
+        final_gcs_uri = image_uri
+        # If a signed URL is passed, convert it back to a GCS URI.
+        if image_uri.startswith("https://"):
+            # Strip the query parameters from the signed URL.
+            base_url = image_uri.split("?")[0]
+            final_gcs_uri = https_url_to_gcs_uri(base_url)
 
-            if final_gcs_uri and final_gcs_uri not in state.uploaded_image_gcs_uris:
-                state.uploaded_image_gcs_uris.append(final_gcs_uri)
-                state.uploaded_image_display_urls.append(
-                    create_display_url(final_gcs_uri),
-                )
-        state.initial_load_complete = True
+        if final_gcs_uri and final_gcs_uri not in state.uploaded_image_gcs_uris:
+            state.uploaded_image_gcs_uris.append(final_gcs_uri)
+            state.uploaded_image_display_urls.append(
+                create_display_url(final_gcs_uri),
+            )
     yield
 
 

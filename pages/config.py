@@ -14,7 +14,7 @@
 
 """Configuration page for the application."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable
 
 import mesop as me
@@ -51,10 +51,10 @@ def _tab_group(tabs: list[Tab], on_tab_click: Callable, selected_tab_key: str):
             display="flex",
             border=me.Border(
                 bottom=me.BorderSide(
-                    width=1, style="solid", color=me.theme_var("outline-variant")
-                )
+                    width=1, style="solid", color=me.theme_var("outline-variant"),
+                ),
             ),
-        )
+        ),
     ):
         for tab in tabs:
             is_selected = tab.key == selected_tab_key
@@ -86,7 +86,7 @@ def _make_tab_style(selected: bool) -> me.Style:
     if selected:
         style.background = me.theme_var("surface-container")
         style.border = me.Border(
-            bottom=me.BorderSide(width=2, style="solid", color=me.theme_var("primary"))
+            bottom=me.BorderSide(width=2, style="solid", color=me.theme_var("primary")),
         )
         style.cursor = "default"
     return style
@@ -254,6 +254,18 @@ def get_config_table(app_state: AppState):
             config_data["Config"].append("Writers Workshop Model ID")
             config_data["Value"].append(writers_model)
 
+    if hasattr(Default, "GEMINI_CRITIQUE_MODEL_ID"):
+        config_data["Config"].append("Critique Model ID")
+        config_data["Value"].append(Default.GEMINI_CRITIQUE_MODEL_ID)
+        config_data["Config"].append("Critique Location")
+        config_data["Value"].append(Default.GEMINI_CRITIQUE_LOCATION)
+
+    if hasattr(Default, "CHARACTER_CONSISTENCY_GEMINI_MODEL"):
+        config_data["Config"].append("Character Consistency Gemini Model")
+        config_data["Value"].append(Default.CHARACTER_CONSISTENCY_GEMINI_MODEL)
+        config_data["Config"].append("Character Consistency Gemini Location")
+        config_data["Value"].append(Default.CHARACTER_CONSISTENCY_GEMINI_LOCATION)
+
     config_data["Config"].append("Application Version")
     config_data["Value"].append(f"{Default.VERSION} {Default.APP_ENV}")
 
@@ -303,10 +315,10 @@ def _render_prompt_templates_list(app_state: AppState):
                     padding=me.Padding(bottom=8),
                     border=me.Border(
                         bottom=me.BorderSide(
-                            width=1, style="solid", color=me.theme_var("outline")
-                        )
+                            width=1, style="solid", color=me.theme_var("outline"),
+                        ),
                     ),
-                )
+                ),
             ):
                 me.text("Label", style=me.Style(font_weight="bold"))
                 me.text("Key", style=me.Style(font_weight="bold"))
@@ -334,7 +346,7 @@ def _render_prompt_templates_list(app_state: AppState):
                                 width=1,
                                 style="solid",
                                 color=me.theme_var("outline-variant"),
-                            )
+                            ),
                         ),
                         align_items="center",
                         cursor="pointer",

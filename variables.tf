@@ -109,3 +109,10 @@ variable "gemini_critique_location" {
   default     = "global"
 }
 
+
+variable "character_consistency_gemini_location" {
+  description = "Location for the Gemini character consistency model"
+  type        = string
+  default     = "global"
+}
+
