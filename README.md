@@ -100,15 +100,6 @@ Here's a glimpse of what you'll find:
 
 ...and much more! For a full, detailed list of all experiments, please see the [Experiments README](./experiments/README.md).
 
-## 🤖 AI Assistants
-
-This repository uses **Google's Gemini CLI** to automate software engineering tasks.
-
-- **Code Reviewer:** Automatically reviews Pull Requests for bugs and security issues.
-- **Issue Triage:** Automatically labels and categorizes new issues.
-- **Maintainer Commands:** Allows maintainers to manually trigger reviews (`@gemini-cli /review`) or ask questions (`@gemini-cli Explain this...`).
-
-For detailed documentation on the agents and workflows, see [AGENTS.md](./AGENTS.md).
 
 ## Deploying GenMedia Creative Studio
 

@@ -22,12 +22,14 @@ from pydantic import BaseModel
 
 load_dotenv(override=True)
 
+
 # Define ImageModel here
 class ImageModel(TypedDict):
     """Defines Models For Image Generation."""
 
     display: str
     model_name: str
+
 
 class NavItem(BaseModel):
     id: int
@@ -42,14 +44,16 @@ class NavItem(BaseModel):
     video_url: Optional[str] = None
     video_object_position: Optional[str] = None
 
+
 class NavConfig(BaseModel):
     pages: List[NavItem]
+
 
 @dataclass
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.7.5"  # Fallback if package metadata is missing
+    VERSION: str = "1.7.6"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -168,6 +172,10 @@ class Default:
         "CHARACTER_CONSISTENCY_GEMINI_MODEL",
         MODEL_ID,
     )
+    CHARACTER_CONSISTENCY_GEMINI_LOCATION: str = os.environ.get(
+        "CHARACTER_CONSISTENCY_GEMINI_LOCATION",
+        "global",
+    )
 
     # Lyria
     LYRIA_LOCATION: str = os.environ.get("LYRIA_LOCATION", "us-central1")
@@ -208,6 +216,7 @@ class Default:
         ],
     )
 
+
 def get_config_path(rel_path: str) -> str:
     """Returns the path to a configuration file, respecting GMCS_OVERRIDE_PATH."""
     override_base = os.environ.get("GMCS_OVERRIDE_PATH")
@@ -216,6 +225,7 @@ def get_config_path(rel_path: str) -> str:
         if os.path.exists(override_path):
             return override_path
     return rel_path
+
 
 import importlib.metadata
 
@@ -227,6 +237,7 @@ def load_package_version():
         )
     except importlib.metadata.PackageNotFoundError:
         pass  # Keep default
+
 
 def load_build_info():
     """Loads build information from config/build.json if it exists."""
@@ -240,8 +251,10 @@ def load_build_info():
         except (FileNotFoundError, json.JSONDecodeError):
             pass
 
+
 load_package_version()
 load_build_info()
+
 
 def get_welcome_page_config():
     path = get_config_path("config/navigation.json")
@@ -265,6 +278,7 @@ def get_welcome_page_config():
     ]
 
     return sorted(filtered_pages, key=lambda x: x["id"])
+
 
 def load_about_page_config():
     config_path = get_config_path("config/about_content.json")
@@ -291,5 +305,6 @@ def load_about_page_config():
             section["video"] = f"{base_url}/{section['video']}"
 
     return content
+
 
 ABOUT_PAGE_CONTENT = load_about_page_config()

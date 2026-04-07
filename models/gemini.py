@@ -58,7 +58,8 @@ class Transformation(BaseModel):
         button.""",
     )
     prompt: str = Field(
-        ..., description="The detailed prompt to be used for image generation.",
+        ...,
+        description="The detailed prompt to be used for image generation.",
     )
 
 
@@ -80,13 +81,15 @@ class Room(BaseModel):
 
 class RoomList(BaseModel):
     rooms: list[Room] = Field(
-        ..., description="A list of rooms identified in the floor plan.",
+        ...,
+        description="A list of rooms identified in the floor plan.",
     )
 
 
 # Initialize client and default model ID for rewriter
 client = GeminiModelSetup.init()
 cfg = Default()  # Instantiate config
+cc_client = GeminiModelSetup.init(location=cfg.CHARACTER_CONSISTENCY_GEMINI_LOCATION)
 REWRITER_MODEL_ID = cfg.MODEL_ID  # Use default model from config for rewriter
 
 
@@ -257,7 +260,9 @@ def extract_room_names_from_image(image_uri: str) -> list[str]:
 
     with track_model_call(model_name=model_name, task="extract_room_names"):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
 
     room_list_obj = RoomList.model_validate_json(response.text)
@@ -267,7 +272,9 @@ def extract_room_names_from_image(image_uri: str) -> list[str]:
 
 @retry(
     wait=wait_exponential(
-        multiplier=1, min=1, max=10,
+        multiplier=1,
+        min=1,
+        max=10,
     ),  # Exponential backoff (1s, 2s, 4s... up to 10s)
     stop=stop_after_attempt(3),  # Stop after 3 attempts
     retry=retry_if_exception_type(Exception),  # Retry on all exceptions for robustness
@@ -309,7 +316,8 @@ def rewriter(original_prompt: str, rewriter_prompt: str) -> str:
     reraise=True,
 )
 def analyze_audio_with_gemini(
-    audio_uri: str, music_generation_prompt: str,
+    audio_uri: str,
+    music_generation_prompt: str,
 ) -> Optional[Dict[str, any]]:
     """Analyzes a given audio file URI against an original music generation prompt using Gemini.
 
@@ -654,8 +662,10 @@ def get_facial_composite_profile(image_bytes: bytes) -> FacialCompositeProfile:
         types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
     ]
     with track_model_call(model_name=model_name, task="get_facial_composite_profile"):
-        response = client.models.generate_content(
-            model=model_name, contents=profile_prompt_parts, config=profile_config,
+        response = cc_client.models.generate_content(
+            model=model_name,
+            contents=profile_prompt_parts,
+            config=profile_config,
         )
     return FacialCompositeProfile.model_validate_json(response.text)
 
@@ -680,10 +690,13 @@ def get_natural_language_description(profile: FacialCompositeProfile) -> str:
     {profile.model_dump_json(indent=2)}
     """
     with track_model_call(
-        model_name=model_name, task="get_natural_language_description",
+        model_name=model_name,
+        task="get_natural_language_description",
     ):
-        response = client.models.generate_content(
-            model=model_name, contents=[description_prompt], config=description_config,
+        response = cc_client.models.generate_content(
+            model=model_name,
+            contents=[description_prompt],
+            config=description_config,
         )
     return response.text.strip()
 
@@ -695,7 +708,8 @@ def get_natural_language_description(profile: FacialCompositeProfile) -> str:
     reraise=True,
 )
 def generate_final_scene_prompt(
-    base_description: str, user_prompt: str,
+    base_description: str,
+    user_prompt: str,
 ) -> GeneratedPrompts:
     """Generates a detailed, photorealistic prompt to place a described person
     in a novel scene.
@@ -725,7 +739,9 @@ def generate_final_scene_prompt(
     """
     with track_model_call(model_name=model_name, task="generate_final_scene_prompt"):
         response = client.models.generate_content(
-            model=model_name, contents=[meta_prompt], config=config,
+            model=model_name,
+            contents=[meta_prompt],
+            config=config,
         )
     return GeneratedPrompts.model_validate_json(response.text)
 
@@ -774,7 +790,9 @@ def select_best_image(
 
     with track_model_call(model_name=model, task="select_best_image"):
         response = client.models.generate_content(
-            model=model, contents=prompt_parts, config=config,
+            model=model,
+            contents=prompt_parts,
+            config=config,
         )
     return BestImage.model_validate_json(response.text)
 
@@ -819,7 +837,9 @@ def select_best_image_with_description(
 
     with track_model_call(model_name=model, task="select_best_image_with_description"):
         response = client.models.generate_content(
-            model=model, contents=prompt_parts, config=config,
+            model=model,
+            contents=prompt_parts,
+            config=config,
         )
     return BestImageAccuracy.model_validate_json(response.text)
 
@@ -862,7 +882,9 @@ def final_image_critic(
 
     with track_model_call(model_name=model, task="final_image_critic"):
         response = client.models.generate_content(
-            model=model, contents=prompt_parts, config=config,
+            model=model,
+            contents=prompt_parts,
+            config=config,
         )
     return GeneratedImageAccuracyWrapper.model_validate_json(response.text)
 
@@ -898,7 +920,9 @@ def describe_images_and_look(
 
     with track_model_call(model_name=model, task="describe_images_and_look"):
         response = client.models.generate_content(
-            model=model, contents=prompt_parts, config=config,
+            model=model,
+            contents=prompt_parts,
+            config=config,
         )
 
     return ArticleDescriptionWrapper.model_validate_json(response.text)
@@ -939,10 +963,13 @@ def generate_transformation_prompts(image_uris: list[str]) -> list[Transformatio
         prompt_parts.append(types.Part.from_uri(file_uri=uri, mime_type="image/png"))
 
     with track_model_call(
-        model_name=model_name, task="generate_transformation_prompts",
+        model_name=model_name,
+        task="generate_transformation_prompts",
     ):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
 
     prompts = TransformationPrompts.model_validate_json(response.text)
@@ -965,7 +992,9 @@ def describe_image(image_uri: str) -> str:
     ]
     with track_model_call(model_name=model_name, task="describe_image"):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
     return response.text.strip()
 
@@ -986,7 +1015,9 @@ def describe_video(video_uri: str) -> str:
     ]
     with track_model_call(model_name=model_name, task="describe_video"):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
     return response.text.strip()
 
@@ -1007,7 +1038,9 @@ class EvaluationResult(BaseModel):
     reraise=True,
 )
 def evaluate_media_with_questions(
-    media_uri: str, mime_type: str, questions: list[str],
+    media_uri: str,
+    mime_type: str,
+    questions: list[str],
 ) -> EvaluationResult:
     """Evaluates a media file against a list of yes/no questions."""
     model_name = cfg.MODEL_ID
@@ -1028,7 +1061,9 @@ def evaluate_media_with_questions(
 
     with track_model_call(model_name=model_name, task="evaluate_media_with_questions"):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
 
     return EvaluationResult.model_validate_json(response.text)
@@ -1041,7 +1076,8 @@ def evaluate_media_with_questions(
     reraise=True,
 )
 def evaluate_image_with_questions(
-    image_uri: str, questions: list[str],
+    image_uri: str,
+    questions: list[str],
 ) -> EvaluationResult:
     """Evaluates an image against a list of yes/no questions."""
     model_name = cfg.MODEL_ID
@@ -1062,7 +1098,9 @@ def evaluate_image_with_questions(
 
     with track_model_call(model_name=model_name, task="evaluate_image_with_questions"):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
 
     return EvaluationResult.model_validate_json(response.text)
@@ -1083,7 +1121,8 @@ class CritiqueQuestionList(BaseModel):
     reraise=True,
 )
 def generate_critique_questions(
-    prompt: str, image_descriptions: list[str],
+    prompt: str,
+    image_descriptions: list[str],
 ) -> list[str]:
     """Generates 5 yes/no questions based on a prompt and optional image descriptions."""
     model_name = cfg.MODEL_ID
@@ -1105,7 +1144,9 @@ def generate_critique_questions(
 
     with track_model_call(model_name=model_name, task="generate_critique_questions"):
         response = client.models.generate_content(
-            model=model_name, contents=[meta_prompt], config=config,
+            model=model_name,
+            contents=[meta_prompt],
+            config=config,
         )
 
     question_list = CritiqueQuestionList.model_validate_json(response.text)
@@ -1119,7 +1160,9 @@ def generate_critique_questions(
     reraise=True,
 )
 def generate_text(
-    prompt: str, images: list[str], model_name: Optional[str] = None,
+    prompt: str,
+    images: list[str],
+    model_name: Optional[str] = None,
 ) -> tuple[str, float]:
     """Generates text from a prompt and a list of media files."""
     # print(f"Entering generate_text with prompt: {prompt} and {len(images)} images.")
@@ -1176,13 +1219,18 @@ def generate_text(
 
 class TTSEvaluation(BaseModel):
     quality_score: int = Field(
-        ..., ge=1, le=100, description="Integer score between 1 and 100.",
+        ...,
+        ge=1,
+        le=100,
+        description="Integer score between 1 and 100.",
     )
     justification: str = Field(
-        ..., description="A single sentence summarizing the main reason for the score.",
+        ...,
+        description="A single sentence summarizing the main reason for the score.",
     )
     key_tags: list[str] = Field(
-        ..., description="List of tags describing style, tone, pace, content, voice.",
+        ...,
+        description="List of tags describing style, tone, pace, content, voice.",
     )
 
 
@@ -1193,7 +1241,9 @@ class TTSEvaluation(BaseModel):
     reraise=True,
 )
 def evaluate_tts_audio(
-    audio_uri: str, original_text: str, generation_prompt: str,
+    audio_uri: str,
+    original_text: str,
+    generation_prompt: str,
 ) -> TTSEvaluation:
     """Evaluate TTS audio using a specific prompt template."""
     model_name = cfg.MODEL_ID
@@ -1202,7 +1252,8 @@ def evaluate_tts_audio(
 
     # Replace placeholders
     final_prompt = base_prompt.replace(
-        "[PASTE THE FULL TEXT THAT WAS CONVERTED TO SPEECH HERE]", original_text,
+        "[PASTE THE FULL TEXT THAT WAS CONVERTED TO SPEECH HERE]",
+        original_text,
     )
     final_prompt = final_prompt.replace(
         '[PASTE THE SPECIFIC PROMPT USED TO GENERATE THE AUDIO (e.g., "Narrate this in a friendly, slightly amused tone with a fast pace and a British accent.")]',
@@ -1222,7 +1273,9 @@ def evaluate_tts_audio(
 
     with track_model_call(model_name=model_name, task="evaluate_tts_audio"):
         response = client.models.generate_content(
-            model=model_name, contents=prompt_parts, config=config,
+            model=model_name,
+            contents=prompt_parts,
+            config=config,
         )
 
     return TTSEvaluation.model_validate_json(response.text)

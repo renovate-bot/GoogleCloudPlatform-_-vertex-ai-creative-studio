@@ -207,7 +207,6 @@ CHIP_STYLE = me.Style(
 @me.component
 def _prompt_templates_ui():
     state = me.state(PageState)
-    print('DUMPING STATE:', repr(state.prompt_templates_json))
     prompt_templates = json.loads(state.prompt_templates_json)
 
     # Group templates by category (case-insensitive)

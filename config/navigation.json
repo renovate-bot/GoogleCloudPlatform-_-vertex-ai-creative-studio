@@ -8,17 +8,7 @@
       "description": "The home page of the application."
     },
     {
-      "id": 10,
-      "display": "Veo",
-      "icon": "movie_filter",
-      "route": "/veo",
-      "group": "foundation",
-      "mode": "video",
-      "description": "Generate videos from text or image prompts using Veo.",
-      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/veo__cover_s0RKXWX.mp4"
-    },
-    {
-      "id": 12,
+      "id": 8,
       "display": "Gemini Image Generation",
       "icon": "spark",
       "icon_family": "Google Symbols",
@@ -27,6 +17,16 @@
       "mode": "image",
       "description": "Generate images from text prompts using Gemini.",
       "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/gemini-image__page-cover.mp4"
+    },
+    {
+      "id": 10,
+      "display": "Veo",
+      "icon": "movie_filter",
+      "route": "/veo",
+      "group": "foundation",
+      "mode": "video",
+      "description": "Generate videos from text or image prompts using Veo.",
+      "video_url": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/media/veo__cover_s0RKXWX.mp4"
     },
     {
       "id": 14,

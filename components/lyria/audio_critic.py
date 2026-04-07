@@ -35,6 +35,8 @@ def audio_critic():
     ):
         try:
             analysis = json.loads(pagestate.audio_analysis_result_json)
+            if not isinstance(analysis, dict):
+                raise ValueError("Response is not a valid JSON object")
             with me.box(style=_ANALYSIS_BOX_STYLE):
                 me.text(
                     "Music Critic",
@@ -95,7 +97,7 @@ def audio_critic():
                             )
                             me.markdown(analysis["prompt-alignment"])
 
-        except json.JSONDecodeError:
+        except Exception as e:
             with me.box(style=_ANALYSIS_ERROR_BOX_STYLE):
                 me.text(
                     "Audio Analysis Failed",
@@ -105,7 +107,7 @@ def audio_critic():
                         margin=me.Margin(bottom=12),
                     ),
                 )
-                me.text("Error: Could not display analysis data (invalid format).")
+                me.text(f"Error: Could not display analysis data ({e}).")
 
     # Analysis Error Display
     elif (

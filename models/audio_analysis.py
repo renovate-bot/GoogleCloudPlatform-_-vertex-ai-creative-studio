@@ -45,6 +45,10 @@ def analyze_audio_file(gcs_uri: str) -> AudioMetrics:
     
     metrics = AudioMetrics()
     
+    if not audio_bytes or len(audio_bytes) < 44:
+        print("Warning: Audio file too small or empty, skipping analysis to prevent segfault.")
+        return metrics
+        
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio:
         temp_audio.write(audio_bytes)
         temp_audio_path = temp_audio.name
