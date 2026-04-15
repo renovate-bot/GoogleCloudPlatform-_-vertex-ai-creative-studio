@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-04-14 (v3.7.2)
+
+*   **Fix:** Removed `duration` from the `veo_extend_video` tool schema in `mcp-veo-go`. Because the extension duration is strictly hardcoded to 7 seconds by the backend API, exposing it as an optional parameter confused LLM agents, leading them to falsely assume a conflict between the API requirements and the model's standard limits.
+
 ## 2026-04-14 (v3.7.1)
 
 *   **Fix:** Corrected parameter parsing in `mcp-veo-go`'s `veo_extend_video` tool to correctly bypass standard duration validation and supply the required 7-second duration to the Vertex AI API.

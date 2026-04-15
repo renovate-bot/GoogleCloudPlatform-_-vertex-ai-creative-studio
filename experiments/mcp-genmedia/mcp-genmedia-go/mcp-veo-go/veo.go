@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "3.7.1" // Synchronize release version
+	version     = "3.7.2" // Synchronize release version
 )
 
 // init handles command-line flags and initial logging setup.
@@ -242,8 +242,32 @@ func main() {
 		mcp.WithString("prompt",
 			mcp.Description("Optional text prompt to guide video extension."),
 		),
+		mcp.WithString("bucket",
+			mcp.Description("Google Cloud Storage bucket where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). If not provided, GENMEDIA_BUCKET env var will be used. One of them is required."),
+		),
+		mcp.WithString("output_directory",
+			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
+		),
+		mcp.WithString("model",
+			mcp.DefaultString("veo-3.1-fast-generate-001"),
+			mcp.Description(common.BuildVeoModelDescription()),
+		),
+		mcp.WithNumber("num_videos",
+			mcp.DefaultNumber(1),
+			mcp.Description("Number of videos to generate. Note: the maximum is model-dependent."),
+		),
+		mcp.WithString("aspect_ratio",
+			mcp.Description("Aspect ratio of the generated videos. Note: supported aspect ratios are model-dependent."),
+		),
+		mcp.WithBoolean("generate_audio",
+			mcp.DefaultBool(true),
+			mcp.Description("Optional. Generate audio for the video. Only supported by Veo 3 models. Defaults to true."),
+		),
+		mcp.WithString("person_generation",
+			mcp.DefaultString("allow_adult"),
+			mcp.Description("Whether to allow generating videos with people. Supported values: 'dont_allow', 'allow_adult'."),
+		),
 	)
-	extendVideoToolParams = append(extendVideoToolParams, commonVideoParams...)
 
 	extendVideoTool := mcp.NewTool("veo_extend_video",
 		extendVideoToolParams...,

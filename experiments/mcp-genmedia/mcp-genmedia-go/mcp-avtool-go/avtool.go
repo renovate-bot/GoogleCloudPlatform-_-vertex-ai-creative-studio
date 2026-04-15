@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.7.1" // Fix: Veo Video Extend validation
+	version     = "3.7.2" // Fix: Removed duration param from extend schema
 )
 
 var (
