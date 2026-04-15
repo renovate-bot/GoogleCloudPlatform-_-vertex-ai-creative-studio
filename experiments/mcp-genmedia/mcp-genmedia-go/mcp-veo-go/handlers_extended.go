@@ -128,7 +128,12 @@ func veoFirstLastToVideoHandler(client *genai.Client, ctx context.Context, reque
 		config.GenerateAudio = &generateAudio
 	}
 
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, prompt, inputImage, config, "first_last_to_video")
+	source := &genai.GenerateVideosSource{
+		Prompt: prompt,
+		Image:  inputImage,
+	}
+
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "first_last_to_video")
 }
 
 // veoReferenceToVideoHandler is the handler for the 'veo_reference_to_video' tool.
@@ -241,5 +246,96 @@ func veoReferenceToVideoHandler(client *genai.Client, ctx context.Context, reque
 		config.GenerateAudio = &generateAudio
 	}
 
-	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, prompt, nil, config, "reference_to_video")
+	source := &genai.GenerateVideosSource{
+		Prompt: prompt,
+	}
+
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "reference_to_video")
+}
+
+// veoExtendVideoHandler is the handler for the 'veo_extend_video' tool.
+func veoExtendVideoHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "veo_extend_video")
+	defer span.End()
+
+	videoURI, ok := request.GetArguments()["video_uri"].(string)
+	if !ok || strings.TrimSpace(videoURI) == "" {
+		return mcp.NewToolResultError("video_uri must be a non-empty string (GCS URI) and is required for extending videos"), nil
+	}
+	if !strings.HasPrefix(videoURI, "gs://") {
+		return mcp.NewToolResultError(fmt.Sprintf("invalid video_uri '%s'. Must be a GCS URI starting with 'gs://'", videoURI)), nil
+	}
+
+	mimeType := "video/mp4" // Veo currently only supports MP4 for extension
+	if mt, ok := request.GetArguments()["mime_type"].(string); ok && strings.TrimSpace(mt) != "" {
+		mimeType = strings.ToLower(strings.TrimSpace(mt))
+	}
+
+	prompt := ""
+	if promptArg, ok := request.GetArguments()["prompt"].(string); ok {
+		prompt = strings.TrimSpace(promptArg)
+	}
+
+	gcsBucket, outputDir, modelName, finalAspectRatio, numberOfVideos, durationSecs, generateAudio, personGeneration, err := parseCommonVideoParams(request.GetArguments(), appConfig)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	modelDetails := common.SupportedVeoModels[modelName]
+	if !modelDetails.SupportsExtend {
+		return mcp.NewToolResultError(fmt.Sprintf("Model %s does not support video extension.", modelName)), nil
+	}
+
+	span.SetAttributes(
+		attribute.String("video_uri", videoURI),
+		attribute.String("mime_type", mimeType),
+		attribute.String("prompt", prompt),
+		attribute.String("gcs_bucket", gcsBucket),
+		attribute.String("output_dir", outputDir),
+		attribute.String("model", modelName),
+		attribute.String("aspect_ratio", finalAspectRatio),
+		attribute.Int("num_videos", int(numberOfVideos)),
+		attribute.Int("duration_secs", int(durationSecs)),
+		attribute.Bool("generate_audio", generateAudio),
+		attribute.String("person_generation", personGeneration),
+	)
+
+	mcpServer := server.ServerFromContext(ctx)
+	var progressToken mcp.ProgressToken
+	if request.Params.Meta != nil {
+		progressToken = request.Params.Meta.ProgressToken
+	}
+
+	select {
+	case <-ctx.Done():
+		log.Printf("Incoming extend context for video_uri \"%s\" was already canceled: %v", videoURI, ctx.Err())
+		return mcp.NewToolResultError(fmt.Sprintf("request processing canceled early: %v", ctx.Err())), nil
+	default:
+		log.Printf("Handling Veo extend_video request: VideoURI=\"%s\", Prompt=\"%s\", Model=%s", videoURI, prompt, modelName)
+	}
+
+	inputVideo := &genai.Video{
+		URI:   videoURI,
+		MIMEType: mimeType,
+	}
+
+	config := &genai.GenerateVideosConfig{
+		NumberOfVideos:   numberOfVideos,
+		AspectRatio:      finalAspectRatio,
+		OutputGCSURI:     gcsBucket,
+		DurationSeconds:  &durationSecs,
+		PersonGeneration: personGeneration,
+	}
+
+	if generateAudio {
+		config.GenerateAudio = &generateAudio
+	}
+
+	source := &genai.GenerateVideosSource{
+		Prompt: prompt,
+		Video:  inputVideo,
+	}
+
+	return callGenerateVideosAPI(client, ctx, mcpServer, progressToken, outputDir, modelName, source, config, "extend_video")
 }

@@ -42,7 +42,7 @@ var (
 
 const (
 	serviceName = "mcp-veo-go"
-	version     = "3.6.0" // Synchronize release version
+	version     = "3.7.0" // Synchronize release version
 )
 
 // init handles command-line flags and initial logging setup.
@@ -227,6 +227,29 @@ func main() {
 	)
 	s.AddTool(ingredientsToVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return veoReferenceToVideoHandler(genAIClient, ctx, request)
+	})
+
+	var extendVideoToolParams []mcp.ToolOption
+	extendVideoToolParams = append(extendVideoToolParams,
+		mcp.WithDescription("Extend an existing video using Veo. The input video must be MP4, 1-30s, 24fps, and 720p/1080p/4k in 16:9 or 9:16. Output is a 7s extension. Video is saved to GCS and optionally downloaded locally."),
+		mcp.WithString("video_uri",
+			mcp.Required(),
+			mcp.Description("GCS URI of the input video for extension (e.g., gs://your-bucket/input-video.mp4)."),
+		),
+		mcp.WithString("mime_type",
+			mcp.Description("MIME type of the input video. Currently, only 'video/mp4' is supported. If not provided, assumed to be video/mp4."),
+		),
+		mcp.WithString("prompt",
+			mcp.Description("Optional text prompt to guide video extension."),
+		),
+	)
+	extendVideoToolParams = append(extendVideoToolParams, commonVideoParams...)
+
+	extendVideoTool := mcp.NewTool("veo_extend_video",
+		extendVideoToolParams...,
+	)
+	s.AddTool(extendVideoTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return veoExtendVideoHandler(genAIClient, ctx, request)
 	})
 
 	s.AddPrompt(mcp.NewPrompt("generate-video",

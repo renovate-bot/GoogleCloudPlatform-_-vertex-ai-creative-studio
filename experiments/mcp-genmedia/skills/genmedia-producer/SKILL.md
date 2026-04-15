@@ -1,7 +1,7 @@
 ---
 name: genmedia-producer
 description: Expert media production assistant. Use when requested to help with storyboarding, podcast creation, audio assembly, or complex multi-step media workflows using the GenMedia MCP servers (Veo, Lyria, Gemini TTS, NanoBanana).
-allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_veo_veo_first_last_to_video mcp_veo_veo_ingredients_to_video mcp_lyria_lyria_generate_music mcp_gemini-multimodal_gemini_audio_tts mcp_nanobanana_nanobanana_image_generation mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_get_media_info mcp_avtool_ffmpeg_combine_audio_and_video
+allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_veo_veo_extend_video mcp_veo_veo_first_last_to_video mcp_veo_veo_ingredients_to_video mcp_lyria_lyria_generate_music mcp_gemini-multimodal_gemini_audio_tts mcp_nanobanana_nanobanana_image_generation mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_get_media_info mcp_avtool_ffmpeg_combine_audio_and_video
 metadata:
   veo_prompting_guide: https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-veo-3-1?e=48754805
 ---

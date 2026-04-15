@@ -1,7 +1,7 @@
 ---
 name: genmedia-video-editor
 description: Expert in video composition, editing, and format conversion. Use when the user wants to generate high-quality video, overlay images on video, concatenate clips, create GIFs, or sync audio to video using mcp-avtool-go and mcp-veo-go.
-allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_veo_veo_first_last_to_video mcp_veo_veo_ingredients_to_video mcp_avtool_ffmpeg_overlay_image_on_video mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_video_to_gif mcp_avtool_ffmpeg_combine_audio_and_video mcp_avtool_ffmpeg_get_media_info
+allowed-tools: mcp_veo_veo_t2v mcp_veo_veo_i2v mcp_veo_veo_extend_video mcp_veo_veo_first_last_to_video mcp_veo_veo_ingredients_to_video mcp_avtool_ffmpeg_overlay_image_on_video mcp_avtool_ffmpeg_concatenate_media_files mcp_avtool_ffmpeg_video_to_gif mcp_avtool_ffmpeg_combine_audio_and_video mcp_avtool_ffmpeg_get_media_info
 metadata:
   veo_prompting_guide: https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-veo-3-1?e=48754805
 ---
