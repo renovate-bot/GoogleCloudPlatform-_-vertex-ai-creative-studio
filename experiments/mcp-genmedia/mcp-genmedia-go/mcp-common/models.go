@@ -234,6 +234,7 @@ type VeoModelInfo struct {
 	SupportsGenerateAudio  bool
 	SupportsFirstLast      bool
 	SupportsReferenceImage bool
+	SupportsExtend         bool
 }
 
 // SupportedVeoModels is the single source of truth for all supported Veo models.
@@ -347,6 +348,7 @@ var SupportedVeoModels = map[string]VeoModelInfo{
 		SupportsGenerateAudio:  true,
 		SupportsFirstLast:      true,
 		SupportsReferenceImage: false,
+		SupportsExtend:         true,
 	},
 }
 
@@ -379,6 +381,7 @@ func ResolveVeoModel(modelInput string, allowUnsafe bool) (VeoModelInfo, bool) {
 			SupportsGenerateAudio:  true,
 			SupportsFirstLast:      true,
 			SupportsReferenceImage: true,
+			SupportsExtend:         true,
 		}, true
 	}
 

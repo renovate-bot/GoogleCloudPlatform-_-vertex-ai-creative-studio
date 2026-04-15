@@ -16,7 +16,7 @@ import (
 
 const (
 	serviceName = "mcp-avtool-go"
-	version     = "3.6.0" // Feature: Added volume control and amix for video+audio
+	version     = "3.7.0" // Feature: Veo Video Extend
 )
 
 var (

@@ -71,6 +71,16 @@ Run `bd prime` for workflow context, or install hooks (`bd hooks install`) for a
 For full workflow details: `bd prime`
 
 
+
+## Issue Tracking with Beads (`bd`)
+
+When working with issues using the `bd` (beads) command-line tool, adhere to the following tactical guidelines:
+
+*   **Continuous Synchronization:** Always run `bd sync` at the beginning of a session to ensure your local issue tracker is aligned with the remote git repository. Run `bd sync` again at the very end of your session before your final `git push`.
+*   **State Awareness:** When analyzing a bug or feature request, first run `bd ready` to check if there is already an existing, unblocked issue tracking the work. Do not create duplicate issues.
+*   **Atomic Updates:** When you complete a task or fix a bug, immediately close the corresponding issue (`bd close <id>`) in the same commit or PR as the fix. Do not leave issues dangling.
+*   **Clear Descriptions:** If you discover a new bug during your workflow that is out of scope for your current task, log it immediately using `bd create "Title" --type bug --priority <level>`. Ensure the description clearly outlines the reproduction steps and the context in which it was found.
+
 ## 🤖 GitHub Automation Agents
 
 This repository uses **Google's Gemini CLI** to automate software engineering tasks. Our AI agents assist with code reviews, issue triage, and general maintenance to keep the project moving efficiently.

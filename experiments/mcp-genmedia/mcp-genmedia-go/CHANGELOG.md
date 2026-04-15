@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-14 (v3.7.0)
+
+*   **Feat:** Upgraded `google.golang.org/genai` SDK to `v1.54.0` across all MCP servers.
+*   **Feat:** Migrated `mcp-veo-go` to use the new `GenerateVideosFromSource` API, enabling new features.
+*   **Feat:** Added `veo_extend_video` tool to `mcp-veo-go` to support extending MP4 videos up to 30s. Supported by Veo 3.1 models.
+*   **Chore:** Bumped minor versions for all MCP servers to synchronize the release.
+
 ## 2026-04-14 (v3.6.0)
 
 *   **Feat:** Updated `ffmpeg_combine_audio_and_video` in `mcp-avtool-go` to check if the input video already contains an audio stream. If it does, the tool now uses the `amix` filter to mix the tracks properly instead of appending a secondary audio track.
