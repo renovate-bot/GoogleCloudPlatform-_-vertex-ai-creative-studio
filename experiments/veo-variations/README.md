@@ -51,10 +51,13 @@ This application generates creative variations of a video concept and evaluates 
 
 The application is designed to run on **Google Cloud Run** with **Cloud Storage FUSE** for persistent video storage.
 
-### 1. Configure the Deployment Script
-Edit scripts/deploy.sh and update the following variables:
-- PROJECT_ID: Your Google Cloud Project ID.
-- BUCKET: The GCS bucket name for storing generated videos (without gs://).
+### 1. Environment Configuration
+The deployment script (`scripts/deploy.sh`) automatically reads configuration from your `.env` file at the root of the project. Ensure the following variables are properly set in your `.env` file before deploying:
+- `VEO_PROJECT_ID`: Your Google Cloud Project ID.
+- `VEO_LOCATION`: Your desired deployment region (e.g., `us-central1`).
+- `VEO_BUCKET`: The GCS bucket name for storing generated videos (e.g., `gs://your-bucket`).
+
+If you wish to deploy the application with Identity-Aware Proxy (IAP) protection, set `USE_IAP=true` and provide an `EAP_GROUP` (e.g., `EAP_GROUP=my-team@example.com`) either in the `.env` file or as environment variables when running the script. By default, the application is deployed with public access (`--allow-unauthenticated`).
 
 ### 2. Build the Production UI
 Before deploying, you must build the frontend so it can be served as static files by the backend:
