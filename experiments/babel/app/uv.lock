@@ -61,7 +61,7 @@ requires-dist = [
     { name = "google-auth", specifier = ">=2.38.0" },
     { name = "google-cloud-logging", specifier = ">=3.11.4" },
     { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "mesop", specifier = ">=0.14.1" },
+    { name = "mesop", specifier = ">=1.2.5" },
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "uvicorn", specifier = ">=0.34.0" },
