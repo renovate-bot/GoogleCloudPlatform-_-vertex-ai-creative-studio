@@ -68,6 +68,16 @@ Specific configuration for the Virtual Try-On feature.
 | **`GENMEDIA_VTO_MODEL_COLLECTION_NAME`** | `genmedia-vto-model` | Firestore collection for VTO model data. |
 | **`GENMEDIA_VTO_CATALOG_COLLECTION_NAME`** | `genmedia-vto-catalog` | Firestore collection for VTO product catalog data. |
 
+
+## 🛋️ Interior Design
+Specific configuration for the Interior Design workflow.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| **`INTERIOR_DESIGN_VIDEO_MODEL`** | `veo-3.1-lite-generate-001` | The specific Veo model used for 3D walkthrough video segments. |
+| **`INTERIOR_DESIGN_IMAGE_MODEL`** | `gemini-3-pro-image-preview` | The specific Gemini image model used for floor plan to 3D and styled images. |
+| **`INTERIOR_DESIGN_VIDEO_DURATION`** | `6` | The duration in seconds for each generated video segment. |
+
 ## 🎵 Lyria (Music Generation)
 Configuration for the Lyria music generation model.
 
@@ -151,6 +161,7 @@ The following variables are **not** explicitly set in the `main.tf` configuratio
 *   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `VEO_LOCATION`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
 *   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.
 *   **Imagen:** `MODEL_IMAGEN_PRODUCT_RECONTEXT`, `IMAGEN_GENERATED_SUBFOLDER`, `IMAGEN_EDITED_SUBFOLDER`
+*   **Interior Design:** `INTERIOR_DESIGN_VIDEO_MODEL`, `INTERIOR_DESIGN_IMAGE_MODEL`, `INTERIOR_DESIGN_VIDEO_DURATION`
 *   **App Logic:** `APP_ENV`, `API_BASE_URL`, `GA_MEASUREMENT_ID`, `LIBRARY_MEDIA_PER_PAGE`, `USE_MEDIA_PROXY`
 *   **Collections:** `GENMEDIA_COLLECTION_NAME`, `SESSIONS_COLLECTION_NAME`
 
