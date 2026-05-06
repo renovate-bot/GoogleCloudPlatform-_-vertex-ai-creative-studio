@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.8.2"  # Fallback if package metadata is missing
+    VERSION: str = "1.8.3"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -219,6 +219,15 @@ class Default:
         "INTERIOR_DESIGN_VIDEO_DURATION", 6
     ))
 
+
+
+    # Object Rotation
+    OBJECT_ROTATION_VIDEO_MODEL: str = os.environ.get(
+        "OBJECT_ROTATION_VIDEO_MODEL", "veo-3.1-generate-001"
+    )
+    OBJECT_ROTATION_IMAGE_MODEL: str = os.environ.get(
+        "OBJECT_ROTATION_IMAGE_MODEL", "gemini-2.5-flash-image"
+    )
 
     image_modifiers: list[str] = field(
         default_factory=lambda: [
