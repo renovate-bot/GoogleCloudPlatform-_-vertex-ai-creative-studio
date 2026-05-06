@@ -43,20 +43,21 @@ def save_object_rotation_project(project: dict) -> dict:
 import asyncio
 from models.gemini import generate_image_from_prompt_and_images
 
-async def _generate_single_view(prompt: str, image_uri: str) -> str:
+async def _generate_single_view(prompt: str, image_uri: str, image_model: str) -> str:
     """Helper to generate one view and return the URI."""
-    gcs_uris, _, _, _ = await asyncio.to_thread(
+    gcs_uris, _, _, _, _ = await asyncio.to_thread(
         generate_image_from_prompt_and_images,
         prompt=prompt,
         images=[image_uri],
         aspect_ratio="1:1", # Assuming a square aspect ratio for product views
         gcs_folder="object_rotation_views",
+        model_name=image_model,
     )
     if not gcs_uris:
         raise Exception(f"Failed to generate view for prompt: {prompt}")
     return gcs_uris[0]
 
-async def generate_product_views(product_description: str, image_uri: str) -> dict[str, str]:
+async def generate_product_views(product_description: str, image_uri: str, image_model: str) -> dict[str, str]:
     """Generates four views of a product concurrently."""
     logger.info(f"Generating four views for source image: {image_uri}")
 
@@ -70,7 +71,7 @@ async def generate_product_views(product_description: str, image_uri: str) -> di
     }
 
     tasks = [
-        _generate_single_view(prompt, image_uri) 
+        _generate_single_view(prompt, image_uri, image_model) 
         for prompt in views_to_generate.values()
     ]
 
@@ -84,9 +85,9 @@ async def generate_product_views(product_description: str, image_uri: str) -> di
 
 from models.requests import VideoGenerationRequest, APIReferenceImage
 from models.veo import generate_video
-from config.veo_models import get_veo_model_config
+from config.veo_models import get_veo_model_config, get_version_id_by_model_name
 
-def generate_rotation_video(product_views: dict[str, str]) -> str:
+def generate_rotation_video(product_views: dict[str, str], video_model: str) -> str:
     """Generates a 360 rotation video from the front, back, and left views."""
     logger.info("Generating 360 rotation video from views.")
 
@@ -94,7 +95,7 @@ def generate_rotation_video(product_views: dict[str, str]) -> str:
         raise ValueError("Missing required views (front, back, left) for video generation.")
 
     # Use a model version that supports r2v, driven by config
-    model_version = "3.1"
+    model_version = get_version_id_by_model_name(video_model) or "3.1"
     model_config = get_veo_model_config(model_version)
     if not model_config:
         raise ValueError(f"Could not find configuration for VEO model version: {model_version}")
