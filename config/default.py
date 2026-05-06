@@ -53,7 +53,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class"""
 
-    VERSION: str = "1.8.1"  # Fallback if package metadata is missing
+    VERSION: str = "1.8.2"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -206,6 +206,19 @@ class Default:
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
+
+
+    # Interior Design
+    INTERIOR_DESIGN_VIDEO_MODEL: str = os.environ.get(
+        "INTERIOR_DESIGN_VIDEO_MODEL", "veo-3.1-lite-generate-001"
+    )
+    INTERIOR_DESIGN_IMAGE_MODEL: str = os.environ.get(
+        "INTERIOR_DESIGN_IMAGE_MODEL", "gemini-3-pro-image-preview"
+    )
+    INTERIOR_DESIGN_VIDEO_DURATION: int = int(os.environ.get(
+        "INTERIOR_DESIGN_VIDEO_DURATION", 6
+    ))
+
 
     image_modifiers: list[str] = field(
         default_factory=lambda: [

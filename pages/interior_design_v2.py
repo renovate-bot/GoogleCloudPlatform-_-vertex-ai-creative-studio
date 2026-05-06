@@ -30,7 +30,6 @@ from common.storage import store_to_gcs
 from common.utils import create_display_url
 from components.dialog import dialog
 from components.header import header
-from components.info_dialog.info_dialog import info_dialog
 from components.interior_design.design_studio import design_studio
 from components.interior_design.floor_plan_uploader import floor_plan_uploader
 from components.interior_design.generated_3d_view import generated_3d_view
@@ -42,6 +41,7 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from config.default import Default as cfg
+from config.veo_models import get_version_id_by_model_name
 from models.gemini import (
     extract_room_names_from_image,
     generate_image_from_prompt_and_images,
@@ -144,12 +144,23 @@ def page_content():
 
     snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
 
-    info_dialog(
-        is_open=state.info_dialog_open,
-        info_data=INTERIOR_DESIGN_INFO,
-        on_close=close_info_dialog,
-        default_title="Interior Design",
-    )
+    if state.info_dialog_open:
+        with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
+            if INTERIOR_DESIGN_INFO:
+                me.text(f"About {INTERIOR_DESIGN_INFO[title]}", type="headline-6")
+                me.markdown(INTERIOR_DESIGN_INFO["description"])
+            else:
+                me.text("About Interior Design", type="headline-6")
+                me.markdown("Information for this page has not been configured yet.")
+            
+            me.divider()
+            me.text("Current Settings", type="headline-6")
+            me.text(f"Image Model: {cfg.INTERIOR_DESIGN_IMAGE_MODEL}")
+            me.text(f"Video Model: {cfg.INTERIOR_DESIGN_VIDEO_MODEL}")
+            me.text(f"Video Duration: {cfg.INTERIOR_DESIGN_VIDEO_DURATION} seconds")
+            
+            with me.box(style=me.Style(margin=me.Margin(top=16))):
+                me.button("Close", on_click=close_info_dialog, type="flat")
 
     with me.box(
         style=me.Style(
@@ -382,6 +393,7 @@ def on_generate_3d_view_click(e: me.ClickEvent):
             images=[state.storyboard["original_floor_plan_uri"]],
             aspect_ratio="16:9",
             gcs_folder="interior_design_generations",
+        model_name=cfg.INTERIOR_DESIGN_IMAGE_MODEL,
         )
 
         if gcs_uris:
@@ -455,6 +467,7 @@ def on_room_button_click(e: me.ClickEvent):
             images=[state.storyboard["generated_3d_view_uri"]],
             aspect_ratio="16:9",
             gcs_folder="interior_design_zoomed_views",
+        model_name=cfg.INTERIOR_DESIGN_IMAGE_MODEL,
         )
 
         if gcs_uris:
@@ -548,6 +561,7 @@ def on_design_click(e: me.ClickEvent):
             images=images,
             aspect_ratio="16:9",
             gcs_folder="interior_design_iterations",
+        model_name=cfg.INTERIOR_DESIGN_IMAGE_MODEL,
         )
 
         if gcs_uris:
@@ -606,10 +620,10 @@ def on_generate_video_click(e: me.ClickEvent):
                 )
                 yield
                 request = VideoGenerationRequest(
-                    model_version_id="2.0",
+                    model_version_id=get_version_id_by_model_name(cfg.INTERIOR_DESIGN_VIDEO_MODEL) or "3.1-lite",
                     reference_image_gcs=item["styled_image_uri"],
                     reference_image_mime_type="image/png",
-                    duration_seconds=5,
+                    duration_seconds=cfg.INTERIOR_DESIGN_VIDEO_DURATION,
                     prompt="A slow, gentle panning shot of the room.",
                     aspect_ratio="16:9",
                     video_count=1,
