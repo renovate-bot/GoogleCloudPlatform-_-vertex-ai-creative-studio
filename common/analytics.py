@@ -68,16 +68,28 @@ analytics_logger = get_logger("genmedia.analytics")
 
 def log_page_view(page_name: str, session_id: str = None):
     """Logs a page view event."""
+    try:
+        state = me.state(AppState)
+        user_email = state.user_email
+    except Exception:
+        user_email = "unknown"
+
     extra_data = {
         "event_type": "page_view",
         "page_name": page_name,
         "session_id": session_id,
         "user_email": user_email,
     }
-    analytics_logger.info(f"Page view: {page_name}", extra={'extra_data': extra_data})
+    analytics_logger.info(f"Page view: {page_name}", extra={"extra_data": extra_data})
 
 def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras: dict = None):
     """Logs a UI click event."""
+    try:
+        state = me.state(AppState)
+        user_email = state.user_email
+    except Exception:
+        user_email = "unknown"
+
     extra_data = {
         "event_type": "ui_click",
         "element_id": element_id,
@@ -87,7 +99,7 @@ def log_ui_click(element_id: str, page_name: str, session_id: str = None, extras
     }
     if extras:
         extra_data.update(extras)
-    analytics_logger.info(f"UI Click: {element_id} on {page_name}", extra={'extra_data': extra_data})
+    analytics_logger.info(f"UI Click: {element_id} on {page_name}", extra={"extra_data": extra_data})
 
 def log_model_call(model_name: str, status: str, duration_ms: float = 0, details: dict = None):
     """Logs a generative model call event."""
