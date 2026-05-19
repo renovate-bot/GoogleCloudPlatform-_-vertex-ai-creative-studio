@@ -2629,7 +2629,7 @@ requires-dist = [
     { name = "pyiqa", specifier = ">=0.1.15.post2" },
     { name = "pyopenssl", specifier = ">=26.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "python-multipart", specifier = ">=0.0.26" },
+    { name = "python-multipart", specifier = ">=0.0.27" },
     { name = "requests", specifier = ">=2.33.1" },
     { name = "uvicorn", specifier = ">=0.42.0" },
 ]
