@@ -12,6 +12,16 @@ When new code, features, or experiments are added, it's crucial to update the re
 4.  **Propose Changes:** Present the proposed documentation changes to the user for review and approval before applying them. Use markdown blocks to clearly show the additions or modifications.
 5.  **Apply Changes:** Use the `replace` or `write_file` tool to apply the approved changes.
 
+### Integrating External Agent Skills
+
+When importing, copying, or adding a new Agent Skill to the repository:
+
+1.  **Verify Structure**: Ensure the skill folder has a conforming `SKILL.md` file with YAML frontmatter at its root.
+2.  **Metadata Extraction**: Read the `SKILL.md` file to extract the `name`, `description`, and other relevant attributes from its YAML frontmatter.
+3.  **Synchronize READMEs**: Dynamically and consistently update both the main workspace `README.md` (or the component-level README) and the skills directory `README.md` with the extracted skill name and description to ensure discoverability.
+4.  **Issue Tracking**: Log the skill addition in the beads (`bd`) issue tracker by creating, claiming, and closing a dedicated issue for the work.
+
+
 ## 8. Mesop Development Practices
 
 ### Refactoring and State Management
