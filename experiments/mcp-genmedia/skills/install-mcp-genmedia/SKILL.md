@@ -58,7 +58,17 @@ Configure the environment to include your Google Cloud Project ID and Region:
 }
 ```
 
-### 2. Reload and Verify the Session
-Refresh your environment to activate the new tools:
-*   In Antigravity or Gemini CLI, run: `/skills reload`
-*   In other environments, restart your agent session.
+### 2. Antigravity CLI (agy) Plugin Sync
+If you are running the **Antigravity CLI (agy)** client and want to sync all the expert skills (such as `genmedia-producer`, `genmedia-audio-engineer`, etc.) and their integrated MCP servers that are configured under your main Gemini config, you must import the plugins into Antigravity:
+
+```bash
+antigravity plugin import gemini
+```
+
+This will automatically scan, register, and stage all your active Gemini plugins and MCP servers under your Antigravity configuration folder (`~/.gemini/config/`).
+
+### 3. Reload and Verify the Session
+To register and activate the new tool definitions in your active agent's context, you must reload your active session:
+*   In **Gemini CLI**, run: `/skills reload`
+*   In **Antigravity (agy)**, exit your current chat session and restart the client (e.g., using `antigravity --continue` or starting a new turn) so the tool schemas are re-negotiated and locked.
+
