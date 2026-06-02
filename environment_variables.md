@@ -84,7 +84,7 @@ Specific configuration for the Interior Design workflow.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | **`INTERIOR_DESIGN_VIDEO_MODEL`** | `veo-3.1-lite-generate-001` | The specific Veo model used for 3D walkthrough video segments. |
-| **`INTERIOR_DESIGN_IMAGE_MODEL`** | `gemini-3-pro-image-preview` | The specific Gemini image model used for floor plan to 3D and styled images. |
+| **`INTERIOR_DESIGN_IMAGE_MODEL`** | `gemini-3-pro-image` | The specific Gemini image model used for floor plan to 3D and styled images. |
 | **`INTERIOR_DESIGN_VIDEO_DURATION`** | `6` | The duration in seconds for each generated video segment. |
 
 ## 🎵 Lyria (Music Generation)
@@ -184,7 +184,7 @@ To change a variable from **Group 3** (e.g., `GEMINI_IMAGE_GEN_MODEL`) when depl
     variable "gemini_image_model" {
       description = "Model ID for Gemini Image Generation"
       type        = string
-      default     = "gemini-3-pro-image-preview"
+      default     = "gemini-3-pro-image"
     }
     ```
 2.  **Modify `main.tf`:** Update the `locals` block to include the new environment variable mapping.
