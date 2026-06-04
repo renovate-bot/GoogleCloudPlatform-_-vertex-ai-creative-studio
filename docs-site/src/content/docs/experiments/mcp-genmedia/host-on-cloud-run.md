@@ -27,11 +27,11 @@ Every Go MCP server in this repository has built-in support for both `stdio` and
 Before deploying to the cloud, you can test the streamable HTTP transport locally.
 
 ### Step 1: Build the Server Binary
-Navigate to the root directory of the Go workspace (`experiments/mcp-genmedia/mcp-genmedia-go/`) and build the binary for the server you want to test (e.g., `mcp-imagen-go`):
+Navigate to the root directory of the Go workspace (`experiments/mcp-genmedia/mcp-genmedia-go/`) and build the binary for the server you want to test (e.g., `mcp-nanobanana-go`):
 
 ```bash
-cd experiments/mcp-genmedia/mcp-genmedia-go/mcp-imagen-go
-go build -o mcp-imagen-go
+cd experiments/mcp-genmedia/mcp-genmedia-go/mcp-nanobanana-go
+go build -o mcp-nanobanana-go
 ```
 
 ### Step 2: Run the Server in HTTP Mode
@@ -39,7 +39,7 @@ Run the server by setting the `-transport` (or `-t`) flag to `http` and specifyi
 
 ```bash
 export GOOGLE_CLOUD_PROJECT="your-google-cloud-project-id"
-./mcp-imagen-go -transport http -port 9090
+./mcp-nanobanana-go -transport http -port 9090
 ```
 
 ### Step 3: Perform a Handshake
@@ -98,11 +98,11 @@ This Dockerfile uses multi-stage builds to produce light-weight production image
 
 ## 4. Deploying to Cloud Run
 
-### Option A: Using the Automated Deployment Script (Recommended)
+### Option A: Using the Automated Deployment Script (Preferred / Convenience Method)
 
-A helper script is provided in the repository to automate the entire deployment flow (verifying/creating the repository, building the container, deploying to Cloud Run, and configuring IAM roles).
+For the quickest and most convenient deployment experience, use the interactive helper script. This automates the entire flow—verifying/creating the registry repository, executing the container build, deploying to Cloud Run, injecting required project environment variables, and configuring the necessary Vertex AI and GCS IAM role bindings in one command.
 
-Run the script from the Go workspace directory and follow the interactive prompts:
+Run the script from the root of the Go MCP workspace (`experiments/mcp-genmedia/mcp-genmedia-go/`) and follow the prompts:
 ```bash
 ./deploy-cloudrun.sh
 ```
@@ -193,7 +193,7 @@ Open your client config file (e.g., `~/Library/Application Support/Claude/claude
 ```json
 {
   "mcpServers": {
-    "mcp-imagen-cloudrun": {
+    "mcp-nanobanana-cloudrun": {
       "url": "http://localhost:3000/mcp"
     }
   }
