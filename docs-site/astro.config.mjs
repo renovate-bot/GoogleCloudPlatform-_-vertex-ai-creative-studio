@@ -74,6 +74,7 @@ export default defineConfig({
 							label: 'MCP GenMedia',
 							items: [
 								{ label: 'Overview', slug: 'experiments/mcp-genmedia' },
+								{ label: 'Host on Cloud Run', slug: 'experiments/mcp-genmedia/host-on-cloud-run' },
 								{
 									label: 'Servers',
 									items: [
