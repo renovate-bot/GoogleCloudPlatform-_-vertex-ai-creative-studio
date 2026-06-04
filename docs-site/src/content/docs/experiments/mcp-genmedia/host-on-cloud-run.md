@@ -13,7 +13,7 @@ It also covers how to test these servers locally, automate deployment with helpe
 
 Standard MCP servers typically use the `stdio` transport, which communicates via standard input and output. This works well for local execution, but cannot be easily hosted on serverless platforms.
 
-Cloud Run supports hosting MCP servers via the **Streamable HTTP** transport (aligned with the 2025-03-26 MCP specification). Under this protocol:
+Cloud Run supports hosting MCP servers via the **Streamable HTTP** transport (aligned with the 2025-03-26 MCP specification). For detailed product features, refer to the official [Cloud Run MCP Servers Documentation](https://docs.cloud.google.com/run/docs/host-mcp-servers). Under this protocol:
 *   The MCP client initiates a session and communicates with the server via standard HTTP `POST` requests carrying JSON-RPC payloads.
 *   The server responds with `Content-Type: text/event-stream` and streams notifications or updates back to the client.
 *   Cloud Run handles the secure HTTPS endpoints, scaling, and IAM-based access control automatically.
@@ -204,9 +204,11 @@ Restart your MCP client. It will connect to `http://localhost:3000/mcp` which fo
 
 ---
 
-## 6. Connecting to Gemini Enterprise (Workspace Custom Connectors)
+## 6. Connecting to Gemini Enterprise (Custom Connectors)
 
-Gemini Enterprise allows organizations to bind external MCP servers directly into the Google Cloud Console or Gemini Workspace assistant. Because Gemini Enterprise acts as a managed client on behalf of users, it requires **OAuth 2.0 User Authentication** to access private Cloud Run services.
+Gemini Enterprise allows organizations to bind external MCP servers directly into the Google Cloud Console or Gemini Workspace assistant using **Custom Connectors**. For more details and configuration prerequisites, refer to the official [Gemini Enterprise Custom Connector Documentation](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/custom-mcp-server/set-up-custom-mcp-server).
+
+Because Gemini Enterprise acts as a managed client on behalf of users, it requires **OAuth 2.0 User Authentication** to access private Cloud Run services.
 
 ### Pathway: Private Cloud Run Service with Google Identity (OAuth)
 
@@ -233,7 +235,7 @@ Gemini Enterprise allows organizations to bind external MCP servers directly int
 
 ## 7. Cataloging in Vertex AI Agent Registry
 
-**Agent Registry** acts as a centralized catalog inside Google Cloud for MCP server endpoints and tools. Instead of hardcoding URLs, AI orchestrators (using the Google ADK) can dynamically discover and invoke tools from Agent Registry.
+**Agent Registry** acts as a centralized catalog inside Google Cloud for MCP server endpoints and tools. Instead of hardcoding URLs, AI orchestrators (using the Google ADK) can dynamically discover and invoke tools from Agent Registry. For details on registering servers, refer to the official [Agent Registry MCP Documentation](https://docs.cloud.google.com/agent-registry/register-mcp-servers).
 
 ### Step 1: Generate `toolspec.json`
 Agent Registry requires a tool specification file (max 10 KB). You can generate this directly from your Go MCP binary:
