@@ -92,6 +92,15 @@ Instead, you MUST:
 **CI Verification Scripts (mcptools):**
 If a Go application initializes network-dependent clients (like Google Cloud `genai.NewClient` or `texttospeech.NewClient`) on startup, it will hang indefinitely inside headless CI runners that lack ADC (Application Default Credentials). To allow tools like `mcptools` to verify the STDIO handshake in CI, you MUST make global client initialization non-fatal during `main()` and defer the strict credential check until the client is actually invoked inside the tool handler.
 
+**Monorepo Dependency Synchronization & Isolated CI:**
+When a shared internal library (e.g., `experiments/mcp-genmedia/mcp-common`) is updated in a multi-module repository, all dependent submodules must have their dependencies synchronized. 
+Even if local development runs successfully using `go.work`, CI pipelines often isolate modules by deleting `go.work` and running tests/linting within each module directory individually. 
+Therefore, you MUST run `go mod tidy` recursively across all submodules after any change to a shared internal package. Run a loop similar to this to ensure complete sync:
+```bash
+for d in mcp-*; do (cd "$d" && go mod tidy); done
+```
+This guarantees that every submodule's `go.sum` is fully updated and will compile cleanly in isolation under CI.
+
 ## 9. Linting and Code Quality
 
 ### Selective Linting
