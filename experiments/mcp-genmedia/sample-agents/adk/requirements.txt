@@ -158,7 +158,7 @@ idna==3.18
     #   requests
 importlib-metadata==9.0.0
     # via opentelemetry-api
-mcp==1.28.1
+mcp==2.0.0
     # via google-adk
 numpy==2.5.1
     # via shapely
