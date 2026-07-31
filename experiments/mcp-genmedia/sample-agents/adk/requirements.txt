@@ -300,7 +300,7 @@ uvicorn==0.51.0
     # via
     #   google-adk
     #   mcp
-websockets==16.1
+websockets==17.0.1
     # via google-genai
 wrapt==2.2.2
     # via deprecated
