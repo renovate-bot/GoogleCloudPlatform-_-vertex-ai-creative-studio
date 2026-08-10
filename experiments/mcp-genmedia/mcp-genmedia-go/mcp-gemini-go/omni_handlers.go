@@ -12,7 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main implements an MCP server for Google's Gemini Omni video model.
+// Package main implements an MCP server for Google's Gemini models.
+//
+// This file adds the Gemini Omni video-generation capability to the all-in-one
+// mcp-gemini-go server. Omni (gemini-omni-flash-preview) is reachable only
+// through the Vertex Interactions API, so the handler is a THIN wrapper around
+// the shared common.GenerateOmniVideo / common.PersistMediaOutputs helpers — the
+// identical calls mcp-omni-go's standalone handler makes. There is deliberately
+// no second client on this binary: the Interactions path is fully encapsulated in
+// mcp-common, so the gemini-go and omni-go request/response contracts cannot drift.
 
 package main
 
@@ -45,7 +53,8 @@ const maxInlineMediaBytes = 20 * 1024 * 1024
 // omniVideoGenerationHandler generates one or more videos via the shared
 // common.GenerateOmniVideo entry point and persists the returned MP4 bytes
 // locally and/or to GCS (with best-effort V4 signed URLs), reusing the suite's
-// shared common.PersistMediaOutputs helper.
+// shared common.PersistMediaOutputs helper. It mirrors mcp-omni-go's standalone
+// handler exactly so the two servers never diverge.
 func omniVideoGenerationHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "omni_video_generation")
