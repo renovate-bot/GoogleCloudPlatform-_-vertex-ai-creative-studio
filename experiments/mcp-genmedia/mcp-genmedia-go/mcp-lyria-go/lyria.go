@@ -424,6 +424,11 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	textContent := mcp.TextContent{Type: "text", Text: messageText}
 	resultContents = append(resultContents, textContent)
 
+	// Text output is unchanged; append one resource_link for the GCS artifact
+	// (design #483). Lyria produces a single artifact. GCS and inline audio are
+	// mutually exclusive, so ordering stays content[0]=text, content[1]=link.
+	resultContents = appendLyriaResourceLink(resultContents, gcsBucketParam, gcsUploadedObjectName, audioMIMEType)
+
 	// Only include AudioContent if NEITHER GCS nor local path was specified
 	if gcsBucketParam == "" && localDirectoryPathParameter == "" {
 		log.Printf("Neither GCS nor local path specified. Returning audio data directly. Length: %d", len(base64AudioData))
@@ -437,6 +442,23 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 		Content: resultContents,
 		IsError: false,
 	}, nil
+}
+
+// appendLyriaResourceLink appends the resource_link for the single GCS audio
+// artifact to items when both a GCS bucket and an uploaded object name are present
+// (design #483), described as "lyria output 1 of 1". GCS and inline audio are
+// mutually exclusive, so a link is added only on the GCS path; items is returned
+// unchanged otherwise. This only ADDS a link; the caller's text content is unchanged.
+func appendLyriaResourceLink(items []mcp.Content, gcsBucketParam, gcsUploadedObjectName, mimeType string) []mcp.Content {
+	if gcsBucketParam == "" || gcsUploadedObjectName == "" {
+		return items
+	}
+	fullGCSPath := fmt.Sprintf("gs://%s/%s", gcsBucketParam, gcsUploadedObjectName)
+	return common.AppendMediaContent(items, []common.MediaResult{{
+		GCSURI:      fullGCSPath,
+		MimeType:    mimeType,
+		Description: "lyria output 1 of 1",
+	}})
 }
 
 // resolveLyriaOutputFilename resolves the output file name honoring the canonical

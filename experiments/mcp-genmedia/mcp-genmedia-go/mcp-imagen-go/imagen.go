@@ -502,6 +502,9 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 	var savedLocalFilenames []string
 	var failedLocalSaveReasons []string
 	var gcsSavedURIs []string
+	// gcsSavedMimes stays 1:1 with gcsSavedURIs so a resource_link per GCS
+	// artifact carries the right MIME type (design #483).
+	var gcsSavedMimes []string
 	var totalSizeBytesGenerated int64 = 0
 	imagesWithDataOrURI := 0
 	returnImageDataInResponse := gcsOutputURI == "" && !attemptLocalSave
@@ -538,6 +541,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 			if genImg.Image.MIMEType != "" {
 				imageMimeType = genImg.Image.MIMEType
 			}
+			gcsSavedMimes = append(gcsSavedMimes, imageMimeType)
 		} else if genImg.Image != nil && genImg.Image.ImageBytes != nil && len(genImg.Image.ImageBytes) > 0 {
 			imagesWithDataOrURI++
 			imageData = genImg.Image.ImageBytes
@@ -713,5 +717,27 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		finalContentItems = append(finalContentItems, contentItems...)
 	}
 
+	// Text output is unchanged; append one resource_link per GCS artifact
+	// (design #483), in generation order, using the (possibly renamed) gs:// URIs.
+	finalContentItems = appendImagenResourceLinks(finalContentItems, gcsSavedURIs, gcsSavedMimes)
+
 	return &mcp.CallToolResult{Content: finalContentItems}, nil
+}
+
+// appendImagenResourceLinks appends one resource_link per GCS image artifact to
+// items (design #483). gcsSavedURIs and gcsSavedMimes are aligned 1:1 by
+// construction, so each link carries that artifact's own MIME type; the
+// description is the 1-based "imagen output i of n". This only ADDS links (the
+// caller's text/image content is unchanged) and returns items unchanged when
+// there are no GCS artifacts (inline/local-only paths).
+func appendImagenResourceLinks(items []mcp.Content, gcsSavedURIs, gcsSavedMimes []string) []mcp.Content {
+	var mediaResults []common.MediaResult
+	for i, uri := range gcsSavedURIs {
+		mediaResults = append(mediaResults, common.MediaResult{
+			GCSURI:      uri,
+			MimeType:    gcsSavedMimes[i],
+			Description: fmt.Sprintf("imagen output %d of %d", i+1, len(gcsSavedURIs)),
+		})
+	}
+	return common.AppendMediaContent(items, mediaResults)
 }

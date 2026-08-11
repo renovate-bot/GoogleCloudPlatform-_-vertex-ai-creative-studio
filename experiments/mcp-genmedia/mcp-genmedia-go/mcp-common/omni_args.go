@@ -33,6 +33,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // maxOmniImages is the per-prompt image input limit (findings §1).
@@ -160,11 +162,17 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 // best-effort V4 signed URL) via the shared PersistMediaOutputs helper and builds
 // the tool's user-facing text response: the optional header-capture line, the
 // model text, a thought-step NOTE, per-video GCS warnings / signed URLs, and a
-// final saved-files summary. It returns the trimmed message both servers return
-// verbatim, so the output text can never drift between them.
-func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBucketURI, outputFilename string) (string, error) {
+// final saved-files summary. It returns the tool-result content both servers
+// return verbatim, so the output can never drift between them: content[0] is the
+// trimmed text message (unchanged byte-for-byte) followed by one resource_link
+// per video persisted to GCS (design #483).
+func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBucketURI, outputFilename string) ([]mcp.Content, error) {
 	// --- Process / persist output ---
 	var responseText strings.Builder
+	// mediaResults collects one entry per video persisted to GCS so the result can
+	// carry a resource_link per artifact in addition to the text summary
+	// (design #483). Purely additive: the text built below is unchanged.
+	var mediaResults []MediaResult
 	if result.SherlogLink != "" {
 		fmt.Fprintf(&responseText, "Optional header capture: %s\n\n", result.SherlogLink)
 	}
@@ -193,7 +201,7 @@ func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBuc
 		var err error
 		names, err = BuildOutputFilenames(outputFilename, len(result.Videos), firstMime)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -222,7 +230,7 @@ func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBuc
 			FileName: fileName,
 		}, outputDir, gcsBucketURI, expiry)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		if persisted.LocalPath != "" {
@@ -234,6 +242,13 @@ func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBuc
 		}
 		if persisted.GCSURI != "" {
 			savedFiles = append(savedFiles, persisted.GCSURI)
+			// Collect a resource_link per GCS-persisted artifact. The 1-based
+			// "omni output i of n" description is filled in after the loop (below)
+			// so the numerator/denominator reflect the count of videos actually
+			// persisted to GCS (consistent with the other servers' len(gcsSavedURIs))
+			// rather than the total video count — correct even if a subset of videos
+			// lacks a GCS URI. Behavior is identical in the all-or-none common case.
+			mediaResults = append(mediaResults, MediaResultFromPersisted(persisted, mimeType, ""))
 		}
 		if persisted.SignedURL != "" {
 			fmt.Fprintf(&responseText, "\n\nSigned URL for %s (valid %s):\n%s", persisted.GCSObject, expiry, persisted.SignedURL)
@@ -250,7 +265,17 @@ func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBuc
 		finalMessage += fmt.Sprintf("\n\nGenerated %d video(s) but none were saved (set output_directory or gcs_bucket_uri).", len(result.Videos))
 	}
 
-	return strings.TrimSpace(finalMessage), nil
+	// Fill in the 1-based resource_link descriptions now that the count of videos
+	// actually persisted to GCS is known (review NB-2): the denominator is the GCS
+	// artifact count (len(mediaResults)), matching the other servers' len(gcsSavedURIs).
+	for i := range mediaResults {
+		mediaResults[i].Description = fmt.Sprintf("omni output %d of %d", i+1, len(mediaResults))
+	}
+
+	// Text output is unchanged; append one resource_link per GCS artifact.
+	content := []mcp.Content{mcp.TextContent{Type: "text", Text: strings.TrimSpace(finalMessage)}}
+	content = AppendMediaContent(content, mediaResults)
+	return content, nil
 }
 
 // parseMediaRefs converts a tool argument (expected to be an array of strings,
