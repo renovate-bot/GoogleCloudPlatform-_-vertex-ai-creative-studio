@@ -20,8 +20,10 @@ from google.cloud import storage
 
 from config.default import Default
 from config.firebase_config import FirebaseClient
+from common.analytics import get_logger
 
 cfg = Default()
+logger = get_logger(__name__)
 
 try:
     import urllib3.contrib.pyopenssl
@@ -99,18 +101,21 @@ def store_to_gcs(
     bucket_name: str | None = None,
 ):
     """Store contents to GCS"""
-    actual_bucket_name = bucket_name if bucket_name else cfg.GENMEDIA_BUCKET
-    if not actual_bucket_name:
+    raw_bucket_name = bucket_name if bucket_name else cfg.GENMEDIA_BUCKET
+    if not raw_bucket_name:
         raise ValueError(
             "GCS bucket name is not configured. Please set GENMEDIA_BUCKET environment variable or provide bucket_name.",
         )
-    print(
+    # Strip any leading 'gs://' scheme and subpath (e.g. 'gs://bucket/folder' -> 'bucket')
+    actual_bucket_name = raw_bucket_name.removeprefix("gs://").split("/")[0]
+
+    logger.info(
         f"store_to_gcs: Target project {cfg.PROJECT_ID}, target bucket {actual_bucket_name}",
     )
     client = get_storage_client()
     bucket = client.get_bucket(actual_bucket_name)
     destination_blob_name = f"{folder}/{file_name}"
-    print(f"store_to_gcs: Destination {destination_blob_name}")
+    logger.info(f"store_to_gcs: Destination {destination_blob_name}")
     blob = bucket.blob(destination_blob_name)
     if decode:
         contents_bytes = base64.b64decode(contents)
