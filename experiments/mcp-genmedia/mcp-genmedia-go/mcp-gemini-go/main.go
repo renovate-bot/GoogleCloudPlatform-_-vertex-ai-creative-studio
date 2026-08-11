@@ -55,10 +55,10 @@ func init() {
 	flag.StringVar(&transport, "transport", "stdio", "Transport type (stdio, sse, or http)")
 	flag.IntVar(&port, "p", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
 	flag.IntVar(&port, "port", 0, "Port for SSE/HTTP server (defaults to PORT env var or 8080/8081)")
-	flag.Parse()
 }
 
 func main() {
+	flag.Parse() // Parse in main (not init) so `go test` flags are not consumed; matches sibling servers.
 
 	var cleanup func()
 	appConfig, cleanup = common.Init(serviceName, version)
@@ -106,6 +106,7 @@ func main() {
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input images."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Client-predictable base name for the generated file(s). The extension is forced to the true output media type (e.g. .png). When a single image is produced the name is used as-is (e.g. 'hero.png'); when multiple images are produced they are suffixed '_1', '_2', ... before the extension (e.g. 'hero_1.png', 'hero_2.png'). An existing file/object of the same name is overwritten.")),
 	)
 
 	handlerWithClient := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -142,9 +143,12 @@ func main() {
 			mcp.DefaultString("en-US"),
 			mcp.Description("Optional. The language code to use for the synthesis. Defaults to en-US."),
 		),
+		mcp.WithString("output_filename",
+			mcp.Description("Optional. Client-predictable base name for the saved audio file. The extension is forced to the true audio media type of the selected audio_encoding (e.g. .wav, .mp3, .ogg). Used as-is for a single file (e.g. 'speech.wav'); multiple artifacts are suffixed '_1', '_2', ... before the extension. Takes precedence over the deprecated output_filename_prefix. An existing file of the same name is overwritten."),
+		),
 		mcp.WithString("output_filename_prefix",
 			mcp.DefaultString("gemini_tts_audio"),
-			mcp.Description("Optional. A prefix for the output WAV filename if saving locally. A timestamp and .wav extension will be appended."),
+			mcp.Description("Optional (deprecated; use output_filename). A prefix for the output audio filename if saving locally. A voice name, timestamp and extension will be appended."),
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to save the generated audio file to. If not provided, audio data is returned in the response."),
@@ -178,6 +182,7 @@ func main() {
 		mcp.WithNumber("top_p", mcp.Description("Optional. Nucleus sampling probability mass, 0.0-1.0. Sent in generation_config.")),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save the generated video(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated video(s) (e.g., your-bucket/outputs/). Falls back to GENMEDIA_BUCKET+/omni_outputs/ if set.")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Client-predictable base name for the generated file(s). The extension is forced to the true output media type (e.g. .mp4). When a single video is produced the name is used as-is (e.g. 'clip.mp4'); when multiple videos are produced they are suffixed '_1', '_2', ... before the extension (e.g. 'clip_1.mp4'). An existing file/object of the same name is overwritten.")),
 	)
 	s.AddTool(omniTool, omniVideoGenerationHandler)
 	// --- End of Gemini Omni Video Tool ---

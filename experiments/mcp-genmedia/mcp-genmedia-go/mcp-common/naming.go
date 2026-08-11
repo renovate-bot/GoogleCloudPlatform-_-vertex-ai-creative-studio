@@ -23,6 +23,27 @@ import (
 	"strings"
 )
 
+// ResolveOutputFilename returns the client-supplied base output name, applying
+// the shared accept-and-alias precedence contract (design #842 §4a): the
+// canonical output_filename parameter always wins; otherwise the first non-empty
+// legacy alias (in the order given) is used; otherwise "" so the caller falls
+// back to its existing default naming scheme. Surrounding whitespace is trimmed.
+//
+// This is the single place the precedence rule lives; every genmedia server
+// reuses it (passing its own legacy key(s) as legacyKeys) so the rule this issue
+// exists to unify is never re-implemented per-server.
+func ResolveOutputFilename(args map[string]any, legacyKeys ...string) string {
+	if v, ok := args["output_filename"].(string); ok && strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v)
+	}
+	for _, k := range legacyKeys {
+		if v, ok := args[k].(string); ok && strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
 // BuildOutputFilenames returns deterministic output file names for a generation
 // that produced `count` artifacts, honoring the client base name and forcing the
 // extension to the true media type (design #842 §4b, §4c).
@@ -119,6 +140,14 @@ func ExtensionForMIMEType(mimeType string) string {
 		return ".wav"
 	case "audio/ogg":
 		return ".ogg"
+	case "audio/mp4", "audio/aac", "audio/x-m4a":
+		return ".m4a"
+	case "audio/mulaw":
+		return ".mulaw"
+	case "audio/alaw":
+		return ".alaw"
+	case "audio/pcm", "audio/l8", "audio/l24":
+		return ".pcm"
 	case "video/mp4":
 		return ".mp4"
 	case "video/webm":
