@@ -60,7 +60,7 @@ msgpack==1.2.1
 multidict==6.7.1
 numpy==2.5.2
 orderly-set==5.5.0
-packaging==24.2
+packaging==26.3
 pandas==2.3.3
 pillow==12.3.0
 propcache==0.5.2
