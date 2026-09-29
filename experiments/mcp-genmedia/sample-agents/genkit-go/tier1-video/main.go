@@ -59,10 +59,14 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// modelName is the Vertex Gemini model that orchestrates the tool calls. Verified
-// against the googlegenai plugin registry (models.go: gemini-2.5-flash, provider
-// "vertexai"). Single-sourced here; bump in one place. Matches Tier 0.
-const modelName = "vertexai/gemini-2.5-flash"
+// modelName is the Vertex Gemini model that orchestrates the tool calls.
+// gemini-3.5-flash is the durable, guaranteed strong-tier flash (the official
+// replacement for gemini-2.5-pro; global-only, see orchestratorLocation). The
+// googlegenai plugin accepts it regardless of the pinned curated catalog in
+// models.go — it resolves IDs outside the catalog dynamically with default
+// options, so "vertexai/gemini-3.5-flash" is accepted. Runs in the global region
+// (see orchestratorLocation). Single-sourced here; bump in one place. Matches Tier 0.
+const modelName = "vertexai/gemini-3.5-flash"
 
 // veoModel is the explicit Veo-3 model passed to veo_i2v. This is load-bearing:
 // with no model the veo server falls back to "veo-2.0-generate-001", which
@@ -103,9 +107,15 @@ func run(ctx context.Context) error {
 	if project == "" {
 		return fmt.Errorf("set GOOGLE_CLOUD_PROJECT (or PROJECT_ID) to your Google Cloud project")
 	}
-	location := firstEnv("GOOGLE_CLOUD_LOCATION", "GOOGLE_CLOUD_REGION")
-	if location == "" {
-		location = "us-central1"
+	// The orchestrator (text) model runs in the GLOBAL region: the gemini-3.x
+	// flash family is global-only, so pinning it to a regional endpoint (e.g.
+	// us-central1) makes Vertex return NOT_FOUND. This mirrors the main app, whose
+	// GEMINI_LOCATION defaults to "global". The genmedia MCP media servers are
+	// separate processes that inherit GOOGLE_CLOUD_LOCATION and stay regional
+	// (us-central1) for Veo/Imagen/nanobanana — keep that env set for them.
+	orchestratorLocation := firstEnv("GEMINI_LOCATION")
+	if orchestratorLocation == "" {
+		orchestratorLocation = "global"
 	}
 
 	// Base destination for both the still and the clip. veo_i2v requires its
@@ -124,7 +134,7 @@ func run(ctx context.Context) error {
 	// the Dev UI / tracing exporter when launched via `genkit start`.
 	g := genkit.Init(ctx, genkit.WithPlugins(&googlegenai.VertexAI{
 		ProjectID: project,
-		Location:  location,
+		Location:  orchestratorLocation,
 	}))
 
 	// Connect to BOTH genmedia servers over stdio (launched through
